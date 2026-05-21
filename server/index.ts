@@ -48,7 +48,8 @@ app.use('/api/copilot', copilotRoutes);
 if (process.env.NODE_ENV === 'production') {
   const distPath = path.resolve(process.cwd(), 'dist');
   app.use(express.static(distPath));
-  app.get('*', (_req, res) => {
+  // SPA fallback: serve index.html for any non-API route
+  app.use((_req, res) => {
     res.sendFile(path.join(distPath, 'index.html'));
   });
 }
