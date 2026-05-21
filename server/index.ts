@@ -8,6 +8,11 @@ import systemRoutes from './routes/system.js';
 import evaluationRoutes from './routes/evaluations.js';
 import actionPlanRoutes from './routes/action-plans.js';
 import objectiveRoutes from './routes/objectives.js';
+import announcementRoutes from './routes/announcements.js';
+import vacationRoutes from './routes/vacations.js';
+import questionRoutes from './routes/questions.js';
+import positionRoutes from './routes/positions.js';
+import periodRoutes from './routes/periods.js';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -31,6 +36,11 @@ app.use('/api/system', systemRoutes);
 app.use('/api/evaluations', evaluationRoutes);
 app.use('/api/action-plans', actionPlanRoutes);
 app.use('/api/objectives', objectiveRoutes);
+app.use('/api/announcements', announcementRoutes);
+app.use('/api/vacations', vacationRoutes);
+app.use('/api/questions', questionRoutes);
+app.use('/api/positions', positionRoutes);
+app.use('/api/periods', periodRoutes);
 
 // Serve static files in production
 if (process.env.NODE_ENV === 'production') {
