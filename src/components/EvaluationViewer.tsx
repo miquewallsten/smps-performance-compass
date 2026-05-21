@@ -17,7 +17,8 @@ export default function EvaluationViewer({ evaluation, onClose }: Props) {
   const { data: assignments = [] } = useAssignments();
   const updateEvaluation = useUpdateEvaluation().mutate;
   const { data: actionPlans = [] } = useActionPlans();
-  const { data: customQuestions = [] } = useCustomQuestions();
+  const { data: customQuestionsData = [] } = useCustomQuestions();
+  const customQuestions = Array.isArray(customQuestionsData) ? {} : customQuestionsData;
   const [supComments, setSupComments] = useState(evaluation.supervisorComments || '');
   const [saved, setSaved] = useState(false);
 
@@ -45,12 +46,12 @@ export default function EvaluationViewer({ evaluation, onClose }: Props) {
 
   const handleNAApproval = (questionId: string, approved: boolean) => {
     const newApprovals = { ...(evaluation.naApprovals || {}), [questionId]: approved };
-    const qs = getQuestionsForUser(evaluated, customQuestions);
+    const qs = getQuestionsForUser(evaluated, customQuestions || {});
     const newScore = calculateScore(qs, evaluation.responses, newApprovals);
     updateEvaluation({ ...evaluation, naApprovals: newApprovals, totalScore: newScore });
   };
 
-  const questions = getQuestionsForUser(evaluated, customQuestions);
+  const questions = getQuestionsForUser(evaluated, customQuestions || {});
   const categories: string[] = [...new Set(questions.map(q => q.category as string))];
   const responses = evaluation.responses || [];
 

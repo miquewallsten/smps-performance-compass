@@ -13,6 +13,7 @@ import vacationRoutes from './routes/vacations.js';
 import questionRoutes from './routes/questions.js';
 import positionRoutes from './routes/positions.js';
 import periodRoutes from './routes/periods.js';
+import copilotRoutes from './routes/copilot.js';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -41,6 +42,7 @@ app.use('/api/vacations', vacationRoutes);
 app.use('/api/questions', questionRoutes);
 app.use('/api/positions', positionRoutes);
 app.use('/api/periods', periodRoutes);
+app.use('/api/copilot', copilotRoutes);
 
 // Serve static files in production
 if (process.env.NODE_ENV === 'production') {

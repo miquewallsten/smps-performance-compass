@@ -1,6 +1,5 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { useUsers, useEvaluations, useAssignments, useSystemModules, useSystemStatus, usePeriods, useAnnouncements, useVacationRequests } from '@/api/queries';
-import { CURRENT_PERIOD } from '@/types';
 import { POSITION_LABELS, CURRENT_PERIOD, Position, LEGAL_HIERARCHY, ADMIN_HIERARCHY, POSITION_HIERARCHY } from '@/types';
 import { Users, CheckCircle, Clock, TrendingUp, ChevronDown } from 'lucide-react';
 import { useState } from 'react';

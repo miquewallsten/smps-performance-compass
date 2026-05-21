@@ -4,7 +4,7 @@ import { useUsers, useEvaluations, useAssignments, useCreateEvaluation, useUpdat
 import { QUESTIONS_BY_POSITION, getQuestionsForUser, calculateScore, getSectionForQuestion, SECTION_LABELS, SECTION_ORDER } from '@/data/questions';
 import { getSectionWeights } from '@/data/sectionWeights';
 
-import { CURRENT_PERIOD, SCORE_LABELS, POSITION_LABELS, User, PERIODS, ActionPlan, LEGAL_HIERARCHY, ADMIN_HIERARCHY } from '@/types';
+import { User, CURRENT_PERIOD, SCORE_LABELS, POSITION_LABELS, PERIODS, ActionPlan, LEGAL_HIERARCHY, ADMIN_HIERARCHY } from '@/types';
 import { CheckCircle, AlertCircle, Eye, ArrowLeft, Ban, ShieldCheck, ShieldX, FileText, MessageSquare, MinusCircle } from 'lucide-react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import EvaluationViewer from '@/components/EvaluationViewer';
@@ -66,7 +66,7 @@ export default function Evaluations() {
   completedEmployees.sort((a, b) => a.user.name.localeCompare(b.user.name, 'es'));
 
   const viewableUsers = (isAdminOrSocio
-    ? users.filter(u => u.isActive && !u.isSuperUser).filter(u => canViewUserEvaluations(currentUser, u))
+    ? users.filter(u => u.isActive && !u.isSuperUser).filter(u => canViewUserEvaluations(currentUser as any, u))
     : users.filter(u => myAssignments.some(a => a.employeeId === u.id))
   ).sort(sortByName);
 
@@ -114,7 +114,7 @@ export default function Evaluations() {
   if (selectedEmployee && !submitted) {
     const emp = users.find(u => u.id === selectedEmployee);
     if (!emp) return null;
-    const questions = getQuestionsForUser(emp, customQuestions);
+    const questions = getQuestionsForUser(emp, Array.isArray(customQuestions) ? {} : customQuestions);
 
     const totalResponded = Object.keys(responses).length + Object.keys(naQuestions).length + Object.keys(noElementsQuestions).length;
     const allAnswered = totalResponded === questions.length;
@@ -384,7 +384,7 @@ export default function Evaluations() {
             <div className="space-y-3">
               {evalsWithPendingNA.map(ev => {
                 const evaluated = users.find(u => u.id === ev.evaluatedId);
-                const questions = evaluated ? getQuestionsForUser(evaluated, customQuestions) : [];
+                const questions = evaluated ? getQuestionsForUser(evaluated, Array.isArray(customQuestions) ? {} : customQuestions) : [];
                 const pendingNAResponses = (ev.responses || []).filter(r => r.notApplicable && !ev.naApprovals?.[r.questionId]);
                 return (
                   <div key={ev.id} className="bg-card rounded-xl border p-4">

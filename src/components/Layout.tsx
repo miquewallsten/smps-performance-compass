@@ -3,7 +3,7 @@ import { useAssignments, useEvaluations, useAnnouncements, useVacationRequests, 
 import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 import {
   LayoutDashboard, ClipboardCheck, Users, BarChart3, Settings, LogOut,
-  UserCheck, ClipboardList, ChevronLeft, ChevronRight, Menu, Map, Shield, FileText, Target,
+  UserCheck, ClipboardList, ChevronLeft, ChevronRight, Menu, Map, Shield, FileText, Target, Bot,
   Megaphone, Palmtree, ChevronDown, HelpCircle, BookOpen, Calendar, User as UserIcon
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
@@ -19,6 +19,7 @@ export default function Layout() {
   const { data: announcements = [] } = useAnnouncements();
   const { data: vacationRequests = [] } = useVacationRequests();
   const { data: moduleConfig } = useSystemModules();
+  const modules = moduleConfig || { evaluations: true, communications: true, vacations: true };
   const navigate = useNavigate();
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
@@ -55,7 +56,7 @@ export default function Layout() {
 
   // Pending counts for badges
   const pendingEvalCount = (() => {
-    if (!moduleConfig.evaluations) return 0;
+    if (!modules.evaluations) return 0;
     const myEvaluados = assignments.filter(a => a.supervisorId === currentUser.id && a.period === CURRENT_PERIOD).map(a => a.employeeId);
     const selfDone = evaluations.some(e => e.evaluatedId === currentUser.id && e.type === 'self' && e.period === CURRENT_PERIOD);
     let count = selfDone ? 0 : 1;
@@ -67,7 +68,7 @@ export default function Layout() {
   })();
 
   const unreadAnnouncementCount = (() => {
-    if (!moduleConfig.communications) return 0;
+    if (!modules.communications) return 0;
     return announcements.filter(a => {
       if (a.archived) return false;
       if (a.readBy.includes(currentUser.id)) return false;
@@ -79,7 +80,7 @@ export default function Layout() {
   })();
 
   const pendingVacationCount = (() => {
-    if (!moduleConfig.vacations) return 0;
+    if (!modules.vacations) return 0;
     const myEvaluados = assignments.filter(a => a.supervisorId === currentUser.id && a.period === CURRENT_PERIOD).map(a => a.employeeId);
     return vacationRequests.filter(r => {
       if (r.status !== 'pending') return false;
@@ -88,9 +89,9 @@ export default function Layout() {
     }).length;
   })();
 
-  const showEvalModule = moduleConfig.evaluations || isSuperUser;
-  const showCommModule = moduleConfig.communications || isSuperUser;
-  const showVacModule = moduleConfig.vacations || isSuperUser;
+  const showEvalModule = modules.evaluations || isSuperUser;
+  const showCommModule = modules.communications || isSuperUser;
+  const showVacModule = modules.vacations || isSuperUser;
 
   // Evaluation group items
   const evalItems = [
@@ -114,6 +115,7 @@ export default function Layout() {
     { to: '/vacations', icon: Palmtree, label: 'Vacaciones', show: showVacModule, badge: pendingVacationCount },
     { to: '/settings', icon: Settings, label: 'Mi Perfil', show: true, badge: 0 },
     { to: '/access', icon: Shield, label: 'Acceso', show: !!isSuperUser, badge: 0 },
+    { to: '/copilot', icon: Bot, label: 'Copiloto IA', show: !!isAdminOrSuper, badge: 0 },
   ].filter(i => i.show);
 
   const Badge = ({ count }: { count: number }) => {
@@ -157,7 +159,7 @@ export default function Layout() {
             </div>
             <div>
               <span className="text-primary-foreground font-display font-semibold text-sm">SMPS Performance</span>
-              {isAdmin && <span className="ml-2 text-[10px] bg-accent/20 text-accent-foreground px-1.5 py-0.5 rounded-full">ADMIN</span>}
+              {isSuperUser && <span className="ml-2 text-[10px] bg-yellow-400/20 text-yellow-300 px-1.5 py-0.5 rounded-full font-semibold">SUPERUSER</span>}{!isSuperUser && isAdmin && <span className="ml-2 text-[10px] bg-accent/20 text-accent-foreground px-1.5 py-0.5 rounded-full">ADMIN</span>}
             </div>
           </div>
           <div className="ml-auto flex items-center gap-3">

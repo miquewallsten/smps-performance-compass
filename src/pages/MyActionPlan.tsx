@@ -112,7 +112,7 @@ export default function MyActionPlan() {
   };
 
   const handleApprove = (plan: ActionPlan, status: 'approved' | 'rejected') => {
-    approveActionPlan(plan.id, currentUser.id, status, approvalComments);
+    approveActionPlan({ id: plan.id, status, comments: approvalComments });
     toast.success(status === 'approved' ? 'Plan aprobado' : 'Plan rechazado');
     setApprovalComments('');
   };

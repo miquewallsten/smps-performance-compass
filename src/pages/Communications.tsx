@@ -57,13 +57,9 @@ export default function Communications() {
   const handlePublish = () => {
     if (!title.trim() || !body.trim()) return;
     addAnnouncement({
-      id: `ann-${Date.now()}`,
-      authorId: currentUser.id,
       title: title.trim(),
       body: body.trim(),
       audience: audience as 'all' | 'legal' | 'administrativo',
-      createdAt: new Date().toISOString(),
-      readBy: [],
       expiresAt: expiresAt || undefined,
     });
     setTitle('');
@@ -75,7 +71,7 @@ export default function Communications() {
 
   const handleArchive = (annId: string) => {
     const ann = announcements.find(a => a.id === annId);
-    if (ann) updateAnnouncement({ ...ann, archived: true });
+    if (ann) updateAnnouncement({ id: annId, archived: true });
   };
 
   const getAuthor = (id: string) => users.find(u => u.id === id);
@@ -196,7 +192,7 @@ export default function Communications() {
               variant="outline"
               size="sm"
               className="mt-3 text-xs border-accent text-accent hover:bg-accent hover:text-white transition-colors"
-              onClick={() => markAnnouncementRead(ann.id, currentUser.id)}
+              onClick={() => markAnnouncementRead(ann.id)}
             >
               <CheckCircle2 className="h-3.5 w-3.5 mr-1" />
               Marcar como leído

@@ -53,17 +53,22 @@ export default function Vacations() {
     .filter(a => a.supervisorId === currentUser.id && a.period === CURRENT_PERIOD)
     .map(a => a.employeeId);
 
-  const activeUsers = users.filter(u => u.isActive && !u.isSuperUser && !u.isDummy);
+  const activeUsers = users.filter(u => u.isActive && !u.isSuperUser);
 
   // Calculate vacation days for a user (cumulative with previous years extra days)
-  const carryoverExpiryMonths = vacationConfig._carryoverExpiryMonths ?? 12;
+  // Vacation config is now from API as array {position, days}
+  const vacConfigMap: Record<string, number> = {};
+  if (Array.isArray(vacationConfig)) {
+    vacationConfig.forEach((c: any) => { vacConfigMap[c.position] = c.days; });
+  }
+  const carryoverExpiryMonths = 12;
   const isPasante = (pos: Position) => pos === 'pasante_carrera' || pos === 'pasante_corporativo';
 
   const getUserVacationSummary = (userId: string) => {
     const user = users.find(u => u.id === userId);
     if (!user) return { allowed: 0, used: 0, pending: 0, extra: 0, previousYears: 0, total: 0, available: 0, carryoverExpired: false };
 
-    const configured = vacationConfig[user.position] || 0;
+    const configured = vacConfigMap[user.position] || 0;
     // Mínimo 12 días para no-pasantes (a partir del primer año de contratación)
     const baseDays = isPasante(user.position) ? configured : Math.max(configured, 12);
     const userExtraDays = extraVacationDays.filter(e => e.userId === userId);
@@ -131,15 +136,11 @@ export default function Vacations() {
     const days = calcDays(startDate, endDate);
     if (days <= 0 || days > mySummary.available) return;
     addVacationRequest({
-      id: `vr-${Date.now()}`,
       userId: currentUser.id,
       startDate,
       endDate,
       days,
       reason: reason.trim(),
-      status: 'pending',
-      createdAt: new Date().toISOString(),
-      approvals: [],
       period: new Date().getFullYear().toString(),
     });
     setStartDate('');
@@ -288,8 +289,8 @@ export default function Vacations() {
                       <div className="flex items-center justify-between gap-3">
                         <span className="text-sm text-foreground">Meses de vigencia desde el inicio del año</span>
                         <Input type="number" min={1} max={36} className="w-20 text-center"
-                          value={vacationConfig._carryoverExpiryMonths ?? 12}
-                          onChange={e => updateVacationConfig('_carryoverExpiryMonths', Math.max(1, parseInt(e.target.value) || 12))} />
+                          value={12}
+                          onChange={e => updateVacationConfig([{ position: '_carryoverExpiryMonths', days: Math.max(1, parseInt(e.target.value) || 12) }])} />
                       </div>
                       <p className="text-[11px] text-muted-foreground mt-1">Los días pendientes del año anterior caducan al cumplirse este plazo.</p>
                     </div>
@@ -665,7 +666,7 @@ export default function Vacations() {
                 variant={decision?.action === 'rejected' ? 'destructive' : 'default'}
                 onClick={() => {
                   if (!decision) return;
-                  updateVacationRequestStatus(decision.reqId, decision.action, currentUser.id, decisionComment);
+                  updateVacationRequestStatus({ id: decision.reqId, status: decision.action });
                   setDecision(null);
                   setDecisionComment('');
                 }}

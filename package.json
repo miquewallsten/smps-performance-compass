@@ -15,7 +15,11 @@
     "dev:full": "concurrently \"npm run dev\" \"npm run dev:server\"",
     "build:server": "tsc -p server/tsconfig.json",
     "db:migrate": "tsx server/db/migrate.ts",
-    "db:seed": "tsx server/db/seed.ts"
+    "db:seed": "tsx server/db/seed.ts",
+    "start": "node dist-server/index.js",
+    "build:all": "npm run build",
+    "start:tsx": "tsx server/index.ts",
+    "db:seed-users": "tsx server/db/seed-users.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

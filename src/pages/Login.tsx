@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 
 export default function Login() {
-  const { login } = useAuth();
-  const navigate = window.location;
+  const navigate = useNavigate();
+  const { login, getSecurityQuestion: getSecQ, resetPassword: resetPw } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -25,7 +26,7 @@ export default function Login() {
     setLoading(true);
     try {
       await login(email, password);
-      window.location.href = '/dashboard';
+      navigate('/dashboard');
     } catch (err: any) {
       setError(err.message || 'Credenciales incorrectas. Intente nuevamente.');
     } finally {
@@ -33,33 +34,11 @@ export default function Login() {
     }
   };
 
-  const handleGetSecurityQuestion = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setForgotError('');
-    try {
-      const q = await useAuth.call(null).getSecurityQuestion(forgotEmail);
-      setSecurityQuestion(q);
-      setForgotStep('answer');
-    } catch (err: any) {
-      setForgotError(err.message || 'No se encontró una cuenta con ese correo.');
-    }
-  };
 
-  const handleResetPassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setForgotError('');
-    try {
-      await useAuth.call(null).resetPassword(forgotEmail, securityAnswer, newPassword);
-      setForgotSuccess('Contraseña restablecida exitosamente. Puede iniciar sesión.');
-      setForgotStep('email');
-    } catch (err: any) {
-      setForgotError(err.message || 'Respuesta incorrecta. Contacte al administrador.');
-    }
-  };
 
-  const { getSecurityQuestion: getSecQ, resetPassword: resetPw } = useAuth();
 
-  // Override the handlers with the context methods
+
+  // Auth methods for password recovery
   const handleGetQuestion = async (e: React.FormEvent) => {
     e.preventDefault();
     setForgotError('');

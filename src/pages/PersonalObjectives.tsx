@@ -6,7 +6,11 @@ import {
   AdminObjective, LegalObjective, PersonalObjectives as POType, User,
 } from '@/types';
 import { Target, ChevronDown, ChevronRight, Save, Plus, Trash2, Upload, Download } from 'lucide-react';
-import * as XLSX from 'xlsx';
+
+// Dynamic import for xlsx to avoid "require is not defined" in browser
+let _xlsx: any = null;
+async function getXLSX() { if (!_xlsx) _xlsx = await import("xlsx"); return _xlsx; }
+
 import { toast } from 'sonner';
 
 const emptyLegalObj = (): LegalObjective => ({
@@ -97,7 +101,7 @@ export default function PersonalObjectivesPage() {
   };
 
   const handleSaveAdmin = (userId: string) => {
-    addOrUpdateObjectives({
+    createObjectives({
       userId,
       period,
       type: 'admin',
@@ -107,7 +111,7 @@ export default function PersonalObjectivesPage() {
   };
 
   const handleSaveLegal = (userId: string) => {
-    addOrUpdateObjectives({
+    createObjectives({
       userId,
       period,
       type: 'legal',
@@ -124,19 +128,21 @@ export default function PersonalObjectivesPage() {
     'resultadoArea', 'resultadoFirma', 'porcentajeTotalBono',
   ];
 
-  const downloadAdminTemplate = () => {
-    const wb = XLSX.utils.book_new();
+  const downloadAdminTemplate = async () => {
+    const X = await getXLSX();
+    const wb = X.utils.book_new();
     const sample = [Object.fromEntries(adminHeaders.map(h => [h, h === 'type' ? 'admin' : h === 'email' ? 'usuario@smps.com' : '']))];
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(sample, { header: adminHeaders }), 'Administrativo');
-    XLSX.writeFile(wb, `plantilla-administrativo-${period}.xlsx`);
+    X.utils.book_append_sheet(wb, X.utils.json_to_sheet(sample, { header: adminHeaders }), 'Administrativo');
+    X.writeFile(wb, `plantilla-administrativo-${period}.xlsx`);
     toast.success('Plantilla Administrativo descargada');
   };
 
-  const downloadLegalTemplate = () => {
-    const wb = XLSX.utils.book_new();
+  const downloadLegalTemplate = async () => {
+    const X = await getXLSX();
+    const wb = X.utils.book_new();
     const sample = [Object.fromEntries(legalHeaders.map(h => [h, h === 'type' ? 'legal' : h === 'email' ? 'usuario@smps.com' : 0]))];
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(sample, { header: legalHeaders }), 'Legal');
-    XLSX.writeFile(wb, `plantilla-legal-${period}.xlsx`);
+    X.utils.book_append_sheet(wb, X.utils.json_to_sheet(sample, { header: legalHeaders }), 'Legal');
+    X.writeFile(wb, `plantilla-legal-${period}.xlsx`);
     toast.success('Plantilla Legal descargada');
   };
 
@@ -145,13 +151,14 @@ export default function PersonalObjectivesPage() {
     if (!file) return;
     try {
       const data = await file.arrayBuffer();
-      const wb = XLSX.read(data);
+      const X = await getXLSX();
+      const wb = X.read(data);
       let imported = 0;
       let skipped = 0;
       const userByEmail = new Map(users.map(u => [u.email.toLowerCase().trim(), u]));
 
       for (const sheetName of wb.SheetNames) {
-        const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(wb.Sheets[sheetName]);
+        const rows: Record<string, unknown>[] = (X.utils.sheet_to_json as any)(wb.Sheets[sheetName]);
         for (const row of rows) {
           const email = String(row.email || '').toLowerCase().trim();
           const type = String(row.type || '').toLowerCase().trim();
@@ -171,7 +178,7 @@ export default function PersonalObjectivesPage() {
             };
             const existing = personalObjectives.find(o => o.userId === user.id && o.period === period);
             const merged = existing?.adminObjectives ? [...existing.adminObjectives, adminObj].slice(0, 5) : [adminObj];
-            addOrUpdateObjectives({ userId: user.id, period, type: 'admin', adminObjectives: merged });
+            createObjectives({ userId: user.id, period, type: 'admin', adminObjectives: merged });
           } else {
             const legalObj: LegalObjective = {
               id: `lo-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
@@ -191,7 +198,7 @@ export default function PersonalObjectivesPage() {
               resultadoFirma: Number(row.resultadoFirma) || 0,
               porcentajeTotalBono: Number(row.porcentajeTotalBono) || 0,
             };
-            addOrUpdateObjectives({ userId: user.id, period, type: 'legal', legalObjective: legalObj });
+            createObjectives({ userId: user.id, period, type: 'legal', legalObjective: legalObj });
           }
           imported++;
         }
@@ -237,7 +244,7 @@ export default function PersonalObjectivesPage() {
               <span onClick={e => { e.stopPropagation(); startEditing(user); }} className="text-xs px-3 py-1 rounded-lg bg-accent text-accent-foreground hover:opacity-90 cursor-pointer">Editar</span>
             )}
             {user.id === currentUser.id && !isEditing && objs.some(o => !o.status || o.status === 'draft' || o.status === 'rejected') && (
-              <span onClick={e => { e.stopPropagation(); submitAdminObjectives(user.id, period); toast.success('Objetivos enviados a revisión'); }}
+              <span onClick={e => { e.stopPropagation(); const obj = personalObjectives.find((o: any) => o.userId === user.id && o.period === period); if (obj) { submitObjectives(obj.id); toast.success('Objetivos enviados a revisión'); } }}
                 className="text-xs px-3 py-1 rounded-lg border border-accent text-accent hover:bg-accent/10 cursor-pointer">Enviar a revisión</span>
             )}
             {isOpen ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
@@ -491,7 +498,7 @@ export default function PersonalObjectivesPage() {
               <button onClick={() => setReviewing(null)} className="flex-1 py-2 rounded-lg border text-sm font-medium hover:bg-muted">Cancelar</button>
               <button onClick={() => {
                 if (reviewing.status === 'rejected' && !reviewComment.trim()) { toast.error('El comentario es obligatorio al rechazar'); return; }
-                reviewAdminObjective(reviewing.userId, period, reviewing.objectiveId, reviewing.status, reviewComment.trim(), currentUser.id);
+                const pObj = personalObjectives.find((o: any) => o.userId === reviewing.userId && o.period === period); if (pObj) { reviewObjective({ id: pObj.id, objectiveId: reviewing.objectiveId, status: reviewing.status, comment: reviewComment.trim() }); }
                 toast.success(reviewing.status === 'approved' ? 'Objetivo aprobado' : 'Objetivo rechazado');
                 setReviewing(null);
               }} className={`flex-1 py-2 rounded-lg text-sm font-medium text-white ${reviewing.status === 'approved' ? 'bg-smps-success' : 'bg-destructive'} hover:opacity-90`}>

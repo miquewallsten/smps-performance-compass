@@ -316,3 +316,38 @@ export const activationHistory = sqliteTable('activation_history', {
   date: text('date').notNull(),
   by: text('by').references(() => users.id),
 });
+
+// ─── Copilot Conversations ──────────────────────────────────────────────────
+
+export const copilotConversations = sqliteTable('copilot_conversations', {
+  id: text('id').primaryKey(),
+  userId: text('user_id').notNull().references(() => users.id),
+  title: text('title').notNull().default('Nueva conversación'),
+  createdAt: text('created_at').notNull().$defaultFn(() => new Date().toISOString()),
+  updatedAt: text('updated_at').notNull().$defaultFn(() => new Date().toISOString()),
+});
+
+export const copilotMessages = sqliteTable('copilot_messages', {
+  id: text('id').primaryKey(),
+  conversationId: text('conversation_id').notNull().references(() => copilotConversations.id, { onDelete: 'cascade' }),
+  role: text('role').notNull(),
+  content: text('content').notNull(),
+  toolCalls: text('tool_calls'),
+  toolResults: text('tool_results'),
+  createdAt: text('created_at').notNull().$defaultFn(() => new Date().toISOString()),
+});
+
+export const copilotConfig = sqliteTable('copilot_config', {
+  id: integer('id').primaryKey().default(1),
+  model: text('model').notNull().default('llama-3.3-70b-versatile'),
+  apiProvider: text('api_provider').notNull().default('groq'),
+  canManageUsers: integer('can_manage_users', { mode: 'boolean' }).notNull().default(true),
+  canManageEvaluations: integer('can_manage_evaluations', { mode: 'boolean' }).notNull().default(true),
+  canManageVacations: integer('can_manage_vacations', { mode: 'boolean' }).notNull().default(true),
+  canManageAnnouncements: integer('can_manage_announcements', { mode: 'boolean' }).notNull().default(true),
+  canManagePeriods: integer('can_manage_periods', { mode: 'boolean' }).notNull().default(false),
+  canManageSystem: integer('can_manage_system', { mode: 'boolean' }).notNull().default(false),
+  canViewReports: integer('can_view_reports', { mode: 'boolean' }).notNull().default(true),
+  maxTokens: integer('max_tokens').notNull().default(2048),
+  temperature: real('temperature').notNull().default(0.3),
+});

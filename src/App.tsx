@@ -22,15 +22,49 @@ import Help from "./pages/Help";
 import QuestionLibrary from "./pages/QuestionLibrary";
 import MyActionPlan from "./pages/MyActionPlan";
 import MyProfile from "./pages/MyProfile";
+import CopilotChat from "./pages/CopilotChat";
 import NotFound from "./pages/NotFound";
 import SetupPage from "./pages/Setup";
 import Login from "./pages/Login";
+import ChangePassword from "./pages/ChangePassword";
+
+import { Component, ReactNode } from 'react';
+
+class ErrorBoundary extends Component<{children: ReactNode}, {hasError: boolean, error: Error | null}> {
+  constructor(props: {children: ReactNode}) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-background p-8">
+          <div className="bg-card rounded-xl border p-8 max-w-lg text-center">
+            <h1 className="text-2xl font-bold text-destructive mb-4">Algo salió mal</h1>
+            <p className="text-sm text-muted-foreground mb-4">Ocurrió un error al renderizar esta página.</p>
+            <pre className="text-xs bg-muted p-4 rounded-lg text-left overflow-auto max-h-60 mb-4">{this.state.error?.message}</pre>
+            <button onClick={() => { this.setState({ hasError: false, error: null }); window.location.href = '/login'; }}
+              className="px-6 py-2 rounded-lg bg-accent text-accent-foreground text-sm font-medium hover:opacity-90">
+              Volver al Inicio
+            </button>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 function AppRoutes() {
   const { user, loading, systemInitialized } = useAuth();
 
   if (loading) {
-    return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
+    return <div className="flex items-center justify-center min-h-screen">Cargando...</div>;
   }
 
   if (systemInitialized === false) {
@@ -42,7 +76,7 @@ function AppRoutes() {
   }
 
   if (user.mustChangePassword) {
-    return <Login />;
+    return <ChangePassword />;
   }
 
   return (
@@ -67,6 +101,7 @@ function AppRoutes() {
         <Route path="question-library" element={<QuestionLibrary />} />
         <Route path="my-action-plan" element={<MyActionPlan />} />
         <Route path="my-profile" element={<MyProfile />} />
+        <Route path="copilot" element={<CopilotChat />} />
       </Route>
       <Route path="/help" element={<Help />} />
       <Route path="*" element={<NotFound />} />
@@ -76,11 +111,13 @@ function AppRoutes() {
 
 const App = () => (
   <BrowserRouter>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <AppRoutes />
-    </TooltipProvider>
+    <ErrorBoundary>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <AppRoutes />
+      </TooltipProvider>
+    </ErrorBoundary>
   </BrowserRouter>
 );
 

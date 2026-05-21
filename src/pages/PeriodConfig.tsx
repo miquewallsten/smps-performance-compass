@@ -60,7 +60,7 @@ export default function PeriodConfigPage() {
   useEffect(() => {
     PERIODS.forEach(p => {
       if (!periodConfigs.find(c => c.period === p)) {
-        setPeriodConfig(defaultsFor(p));
+        createPeriod(defaultsFor(p));
       }
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -77,7 +77,7 @@ export default function PeriodConfigPage() {
   };
 
   const handleSave = () => {
-    setPeriodConfig(cfg);
+    createPeriod(cfg);
     toast.success(`Configuración del periodo ${cfg.period} guardada`);
   };
 

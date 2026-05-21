@@ -223,3 +223,36 @@ export function useUpdateSystemModules() {
 export function useActivationHistory() {
   return useQuery({ queryKey: ['activationHistory'], queryFn: () => api.get<any[]>('/api/system/activation-history') });
 }
+
+// ── Copilot ──
+export function useCopilotConfig() {
+  return useQuery({ queryKey: ['copilotConfig'], queryFn: () => api.get<any>('/api/copilot/config') });
+}
+export function useUpdateCopilotConfig() {
+  const qc = useQueryClient();
+  return useMutation({ mutationFn: (data: any) => api.patch('/api/copilot/config', data), onSuccess: () => qc.invalidateQueries({ queryKey: ['copilotConfig'] }) });
+}
+export function useCopilotConversations() {
+  return useQuery({ queryKey: ['copilotConversations'], queryFn: () => api.get<any[]>('/api/copilot/conversations') });
+}
+export function useCopilotConversation(id: string) {
+  return useQuery({ queryKey: ['copilotConversation', id], queryFn: () => api.get<any>(`/api/copilot/conversations/${id}`), enabled: !!id });
+}
+export function useCreateCopilotConversation() {
+  const qc = useQueryClient();
+  return useMutation({ mutationFn: (data?: { title?: string }) => api.post<any>('/api/copilot/conversations', data || {}), onSuccess: () => qc.invalidateQueries({ queryKey: ['copilotConversations'] }) });
+}
+export function useDeleteCopilotConversation() {
+  const qc = useQueryClient();
+  return useMutation({ mutationFn: (id: string) => api.delete(`/api/copilot/conversations/${id}`), onSuccess: () => qc.invalidateQueries({ queryKey: ['copilotConversations'] }) });
+}
+export function useCopilotChat() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: { conversationId?: string; message: string }) => api.post<any>('/api/copilot/chat', data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['copilotConversations'] });
+      qc.invalidateQueries({ queryKey: ['copilotConversation'] });
+    },
+  });
+}

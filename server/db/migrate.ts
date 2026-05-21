@@ -1,9 +1,12 @@
 import Database from 'better-sqlite3';
 import path from 'path';
+import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
 
 dotenv.config();
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 const DB_PATH = process.env.DATABASE_URL || path.resolve(__dirname, 'smps.db');
 
 const db = new Database(DB_PATH);
@@ -353,6 +356,56 @@ const migrate = db.transaction(() => {
       action TEXT NOT NULL,
       date TEXT NOT NULL,
       by TEXT REFERENCES users(id)
+    );
+  `);
+
+
+  // ─── copilot_conversations ──────────────────────────────────────────────────
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS copilot_conversations (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL REFERENCES users(id),
+      title TEXT NOT NULL DEFAULT 'Nueva conversación',
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+  `);
+
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS copilot_messages (
+      id TEXT PRIMARY KEY,
+      conversation_id TEXT NOT NULL REFERENCES copilot_conversations(id) ON DELETE CASCADE,
+      role TEXT NOT NULL,
+      content TEXT NOT NULL,
+      tool_calls TEXT,
+      tool_results TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+  `);
+
+  db.exec(`
+    CREATE INDEX IF NOT EXISTS idx_copilot_messages_conversation ON copilot_messages(conversation_id);
+  `);
+
+  db.exec(`
+    CREATE INDEX IF NOT EXISTS idx_copilot_conversations_user ON copilot_conversations(user_id);
+  `);
+
+  // ─── copilot_config ──────────────────────────────────────────────────────────
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS copilot_config (
+      id INTEGER PRIMARY KEY DEFAULT 1 CHECK (id = 1),
+      model TEXT NOT NULL DEFAULT 'llama-3.3-70b-versatile',
+      api_provider TEXT NOT NULL DEFAULT 'groq',
+      can_manage_users INTEGER NOT NULL DEFAULT 1,
+      can_manage_evaluations INTEGER NOT NULL DEFAULT 1,
+      can_manage_vacations INTEGER NOT NULL DEFAULT 1,
+      can_manage_announcements INTEGER NOT NULL DEFAULT 1,
+      can_manage_periods INTEGER NOT NULL DEFAULT 0,
+      can_manage_system INTEGER NOT NULL DEFAULT 0,
+      can_view_reports INTEGER NOT NULL DEFAULT 1,
+      max_tokens INTEGER NOT NULL DEFAULT 2048,
+      temperature REAL NOT NULL DEFAULT 0.3
     );
   `);
 

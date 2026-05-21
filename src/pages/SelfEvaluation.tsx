@@ -23,7 +23,8 @@ export default function SelfEvaluation() {
   const { data: assignments = [] } = useAssignments();
   const { data: actionPlans = [] } = useActionPlans();
   const addEvaluation = useCreateEvaluation().mutate;
-  const { data: customQuestions = [] } = useCustomQuestions();
+  const { data: customQuestionsData = [] } = useCustomQuestions();
+  const customQuestions = Array.isArray(customQuestionsData) ? {} : customQuestionsData;
   const navigate = useNavigate();
   const [responses, setResponses] = useState<Record<string, number>>({});
   const [naQuestions, setNaQuestions] = useState<Record<string, boolean>>({});
@@ -34,7 +35,7 @@ export default function SelfEvaluation() {
   if (!currentUser) return null;
 
   const existing = evaluations.find(e => e.type === 'self' && e.evaluatorId === currentUser.id && e.period === CURRENT_PERIOD);
-  const questions = getQuestionsForUser(currentUser, customQuestions);
+  const questions = getQuestionsForUser(currentUser as any, customQuestions);
 
   const selfDone = !!existing || submitted;
   const mySupAssignments = assignments.filter(a => a.employeeId === currentUser.id && a.period === CURRENT_PERIOD);

@@ -55,7 +55,7 @@ export default function EvaluationTemplates() {
 
   const handleSave = () => {
     if (!editingPosition || !isValid) return;
-    setCustomQuestions(editingPosition, editQuestions);
+    setCustomQuestions({ position: editingPosition, questions: editQuestions });
     setEditingPosition(null);
     setEditQuestions([]);
   };

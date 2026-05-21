@@ -29,7 +29,7 @@ export default function Reports() {
 
   const baseUsers = users
     .filter(u => u.isActive && !u.isSuperUser && !u.isDummy && relevantUserIds.includes(u.id))
-    .filter(u => canViewUserEvaluations(currentUser, u));
+    .filter(u => canViewUserEvaluations(currentUser as any, u));
 
   // Apply area filter
   const activeUsers = baseUsers.filter(u => {

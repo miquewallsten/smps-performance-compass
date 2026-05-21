@@ -3,10 +3,10 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useUsers, useEvaluations, useAssignments, useActionPlans } from "@/api/queries";
 import { POSITION_LABELS, SCORE_LABELS, PERIODS, CURRENT_PERIOD, Evaluation } from '@/types';
 import { QUESTIONS_BY_POSITION } from '@/data/questions';
-import { Eye, FileText, ChevronDown, ChevronUp } from 'lucide-react';
+import { Eye, FileText, ChevronDown, ChevronUp, Lock, Key } from 'lucide-react';
 
 export default function SettingsPage() {
-  const { user: currentUser } = useAuth();
+  const { user: currentUser, changePassword } = useAuth();
   const { data: users = [] } = useUsers();
   const { data: evaluations = [] } = useEvaluations();
   const { data: assignments = [] } = useAssignments();
@@ -14,18 +14,46 @@ export default function SettingsPage() {
   const [selectedPeriod, setSelectedPeriod] = useState(CURRENT_PERIOD);
   const [expandedEval, setExpandedEval] = useState<string | null>(null);
 
+  // Password change state
+  const [showPasswordForm, setShowPasswordForm] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmNewPassword, setConfirmNewPassword] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+  const [passwordSuccess, setPasswordSuccess] = useState(false);
+  const [passwordLoading, setPasswordLoading] = useState(false);
+
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPasswordError('');
+    setPasswordSuccess(false);
+    if (newPassword.length < 6) { setPasswordError('La nueva contraseña debe tener al menos 6 caracteres.'); return; }
+    if (newPassword !== confirmNewPassword) { setPasswordError('Las contraseñas no coinciden.'); return; }
+    setPasswordLoading(true);
+    try {
+      await changePassword(currentPassword, newPassword);
+      setPasswordSuccess(true);
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmNewPassword('');
+      setTimeout(() => { setShowPasswordForm(false); setPasswordSuccess(false); }, 2000);
+    } catch (err: any) {
+      setPasswordError(err.message || 'Error al cambiar la contraseña.');
+    } finally {
+      setPasswordLoading(false);
+    }
+  };
+
   if (!currentUser) return null;
 
   const myEvals = evaluations.filter(e => e.evaluatedId === currentUser.id && e.period === selectedPeriod);
   const selfEval = myEvals.find(e => e.type === 'self');
   const supervisorEvals = myEvals.filter(e => e.type === 'supervisor');
 
-  // Average score from all evaluators
   const supervisorAvgScore = supervisorEvals.length > 0
     ? Math.round(supervisorEvals.reduce((s, e) => s + e.totalScore, 0) / supervisorEvals.length)
     : null;
 
-  // All action plans for this user/period (one per evaluator)
   const myPlans = actionPlans.filter(p => p.employeeId === currentUser.id && p.period === selectedPeriod);
 
   const renderEvalDetail = (ev: Evaluation) => {
@@ -65,14 +93,12 @@ export default function SettingsPage() {
             </div>
           );
         })}
-
         {ev.comments && (
           <div>
             <p className="text-xs font-semibold mb-1">Comentarios del evaluado</p>
             <p className="text-xs text-muted-foreground bg-muted/50 rounded-lg p-3">{ev.comments}</p>
           </div>
         )}
-
         {ev.supervisorComments && (
           <div>
             <p className="text-xs font-semibold mb-1 text-accent">Comentarios del Evaluador</p>
@@ -102,9 +128,66 @@ export default function SettingsPage() {
         <div className="space-y-3 text-sm">
           <div className="flex justify-between"><span className="text-muted-foreground">Nombre:</span><span className="font-medium">{currentUser.name}</span></div>
           <div className="flex justify-between"><span className="text-muted-foreground">Email:</span><span>{currentUser.email}</span></div>
-          <div className="flex justify-between"><span className="text-muted-foreground">Posición:</span><span>{POSITION_LABELS[currentUser.position]}</span></div>
-          <div className="flex justify-between"><span className="text-muted-foreground">Rol:</span><span>{currentUser.isAdmin ? 'Administrador' : 'Usuario'}</span></div>
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">Posición:</span>
+            <span>{POSITION_LABELS[currentUser.position as keyof typeof POSITION_LABELS] || currentUser.position}</span>
+          </div>
+          {currentUser.isAdmin && <div className="flex justify-between"><span className="text-muted-foreground">Rol:</span><span className="font-medium text-accent">Administrador</span></div>}
+          {currentUser.isSuperUser && <div className="flex justify-between"><span className="text-muted-foreground">Rol:</span><span className="font-medium text-yellow-500">Super Administrador</span></div>}
         </div>
+      </div>
+
+      {/* Password Change Card */}
+      <div className="bg-card rounded-xl border p-6">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <Lock className="h-5 w-5 text-accent" />
+            <h3 className="font-display text-lg font-semibold">Cambiar Contraseña</h3>
+          </div>
+          {!showPasswordForm && (
+            <button onClick={() => setShowPasswordForm(true)}
+              className="text-sm text-accent hover:underline flex items-center gap-1">
+              <Key className="h-4 w-4" /> Cambiar
+            </button>
+          )}
+        </div>
+        {passwordSuccess && (
+          <div className="text-sm text-green-600 bg-green-50 dark:bg-green-900/20 rounded-lg px-4 py-2.5 mb-4">
+            Contraseña actualizada exitosamente.
+          </div>
+        )}
+        {showPasswordForm ? (
+          <form onSubmit={handleChangePassword} className="space-y-3">
+            {passwordError && <div className="text-sm text-destructive bg-destructive/10 rounded-lg px-4 py-2.5">{passwordError}</div>}
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-1.5">Contraseña actual</label>
+              <input type="password" value={currentPassword} onChange={e => setCurrentPassword(e.target.value)} required
+                className="w-full px-4 py-2.5 rounded-lg border border-input bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent" placeholder="••••••••" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-1.5">Nueva contraseña</label>
+              <input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} required minLength={6}
+                className="w-full px-4 py-2.5 rounded-lg border border-input bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent" placeholder="Mínimo 6 caracteres" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-1.5">Confirmar nueva contraseña</label>
+              <input type="password" value={confirmNewPassword} onChange={e => setConfirmNewPassword(e.target.value)} required minLength={6}
+                className="w-full px-4 py-2.5 rounded-lg border border-input bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent" placeholder="Repita la nueva contraseña" />
+            </div>
+            <div className="flex gap-3 pt-1">
+              <button type="submit" disabled={passwordLoading}
+                className="px-6 py-2.5 rounded-lg bg-accent text-accent-foreground font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 text-sm">
+                {passwordLoading ? 'Guardando...' : 'Guardar Contraseña'}
+              </button>
+              <button type="button" onClick={() => { setShowPasswordForm(false); setPasswordError(''); setCurrentPassword(''); setNewPassword(''); setConfirmNewPassword(''); }}
+                className="px-6 py-2.5 rounded-lg border border-input text-muted-foreground hover:text-foreground text-sm transition-colors">
+                Cancelar
+              </button>
+            </div>
+          </form>
+        ) : (
+          <p className="text-sm text-muted-foreground">Puede cambiar su contraseña en cualquier momento.</p>
+        )}
       </div>
 
       {/* Self Evaluation */}
@@ -200,12 +283,6 @@ export default function SettingsPage() {
             Aún no se han registrado planes de acción para este periodo. Los evaluadores los completarán tras la sesión de feedback.
           </p>
         )}
-      </div>
-
-      <div className="bg-card rounded-xl border p-6">
-        <p className="text-sm text-muted-foreground">
-          Para cambios de contraseña, contacte al administrador del sistema.
-        </p>
       </div>
     </div>
   );
