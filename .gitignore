@@ -28,3 +28,6 @@ dist-ssr
 data/*.db
 server/db/*.db
 !server/db/.gitkeep
+
+# Database
+*.db
