@@ -5,6 +5,9 @@ import authRoutes from './routes/auth.js';
 import userRoutes from './routes/users.js';
 import assignmentRoutes from './routes/assignments.js';
 import systemRoutes from './routes/system.js';
+import evaluationRoutes from './routes/evaluations.js';
+import actionPlanRoutes from './routes/action-plans.js';
+import objectiveRoutes from './routes/objectives.js';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -25,6 +28,9 @@ app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/assignments', assignmentRoutes);
 app.use('/api/system', systemRoutes);
+app.use('/api/evaluations', evaluationRoutes);
+app.use('/api/action-plans', actionPlanRoutes);
+app.use('/api/objectives', objectiveRoutes);
 
 // Serve static files in production
 if (process.env.NODE_ENV === 'production') {
