@@ -9,7 +9,8 @@ import {
   useDeleteCopilotConversation,
   useCopilotChat,
 } from '@/api/queries';
-import { Bot, Send, Plus, Trash2, Settings, MessageSquare, Loader2, Sparkles, X, Check, Shield, Users, ClipboardList, Megaphone, Palmtree, BarChart3, Wrench, ChevronDown, AlertTriangle } from 'lucide-react';
+import { api } from '@/api/client';
+import { Bot, Send, Plus, Trash2, Settings, MessageSquare, Loader2, Sparkles, X, Check, Shield, Users, ClipboardList, Megaphone, Palmtree, BarChart3, Wrench, ChevronDown, AlertTriangle, Paperclip, FileText, Brain } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -32,6 +33,8 @@ interface Message {
   content: string;
   toolCalls?: ToolCall[];
   toolResults?: ToolResult[];
+  hasFile?: boolean;
+  fileName?: string;
   createdAt: string;
 }
 
@@ -57,16 +60,6 @@ interface Conversation {
   updatedAt: string;
 }
 
-const PERMISSION_ICONS: Record<string, React.ReactNode> = {
-  canManageUsers: <Users className="h-4 w-4" />,
-  canManageEvaluations: <ClipboardList className="h-4 w-4" />,
-  canManageVacations: <Palmtree className="h-4 w-4" />,
-  canManageAnnouncements: <Megaphone className="h-4 w-4" />,
-  canManagePeriods: <BarChart3 className="h-4 w-4" />,
-  canManageSystem: <Shield className="h-4 w-4" />,
-  canViewReports: <BarChart3 className="h-4 w-4" />,
-};
-
 const PERMISSION_LABELS: Record<string, string> = {
   canManageUsers: 'Gestionar Usuarios',
   canManageEvaluations: 'Gestionar Evaluaciones',
@@ -77,50 +70,57 @@ const PERMISSION_LABELS: Record<string, string> = {
   canViewReports: 'Ver Reportes',
 };
 
+const TOOL_NAMES: Record<string, string> = {
+  list_users: '👥 Listar Usuarios',
+  get_user: '👤 Obtener Usuario',
+  search_users: '🔍 Buscar Usuarios',
+  create_user: '➕ Crear Usuario',
+  create_users_batch: '📋 Crear Usuarios en Lote',
+  update_user_role: '✏️ Actualizar Rol',
+  deactivate_user: '🚫 Desactivar Usuario',
+  activate_user: '✅ Activar Usuario',
+  get_supervisor_assignments: '📋 Asignaciones de Supervisor',
+  assign_supervisor: '🔗 Asignar Supervisor',
+  get_evaluation_summary: '📊 Resumen de Evaluaciones',
+  get_user_evaluations: '📝 Evaluaciones de Usuario',
+  get_user_improvement_suggestions: '💡 Sugerencias de Mejora',
+  get_period_config: '📅 Configuración de Periodos',
+  get_evaluation_questions: '❓ Preguntas de Evaluación',
+  create_library_question: '➕ Crear Pregunta',
+  create_questions_batch: '📋 Crear Preguntas en Lote',
+  list_vacation_requests: '🏖️ Solicitudes de Vacaciones',
+  approve_vacation: '✅ Aprobar Vacaciones',
+  list_announcements: '📢 Listar Anuncios',
+  create_announcement: '📢 Crear Anuncio',
+  create_period: '📅 Crear Periodo',
+  get_system_status: '⚙️ Estado del Sistema',
+  toggle_system_status: '🔄 Cambiar Estado',
+  toggle_module: '🔧 Cambiar Módulo',
+  get_dashboard_stats: '📊 Estadísticas',
+};
+
 function ToolCallBadge({ name, result }: { name: string; result?: string }) {
   const [expanded, setExpanded] = useState(false);
-
-  const formatToolName = (n: string) => {
-    const names: Record<string, string> = {
-      list_users: '👥 Listar Usuarios',
-      get_user: '👤 Obtener Usuario',
-      search_users: '🔍 Buscar Usuarios',
-      update_user_role: '✏️ Actualizar Rol',
-      deactivate_user: '🚫 Desactivar Usuario',
-      activate_user: '✅ Activar Usuario',
-      get_supervisor_assignments: '📋 Asignaciones de Supervisor',
-      reset_user_password: '🔑 Resetear Contraseña',
-      get_evaluation_summary: '📊 Resumen de Evaluaciones',
-      get_user_evaluations: '📝 Evaluaciones de Usuario',
-      get_period_config: '📅 Configuración de Periodos',
-      get_evaluation_questions: '❓ Preguntas de Evaluación',
-      list_vacation_requests: '🏖️ Solicitudes de Vacaciones',
-      approve_vacation: '✅ Aprobar Vacaciones',
-      list_announcements: '📢 Listar Anuncios',
-      create_announcement: '📢 Crear Anuncio',
-      get_system_status: '⚙️ Estado del Sistema',
-      toggle_system_status: '🔄 Cambiar Estado del Sistema',
-      toggle_module: '🔧 Cambiar Módulo',
-      get_dashboard_stats: '📊 Estadísticas del Panel',
-    };
-    return names[n] || n;
-  };
 
   return (
     <div className="my-1">
       <button
         onClick={() => setExpanded(!expanded)}
-        className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-accent/10 text-accent text-xs font-medium hover:bg-accent/20 transition-colors"
+        className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-accent/10 text-accent text-xs font-medium hover:bg-accent/20 transition-colors"
       >
         <Wrench className="h-3 w-3" />
-        <span>{formatToolName(name)}</span>
+        <span>{TOOL_NAMES[name] || name}</span>
         {result && <ChevronDown className={`h-3 w-3 transition-transform ${expanded ? 'rotate-180' : ''}`} />}
       </button>
       {expanded && result && (
-        <pre className="mt-1 p-2 rounded-md bg-muted/50 text-xs overflow-x-auto max-h-40 overflow-y-auto">
+        <pre className="mt-1.5 p-3 rounded-lg bg-muted/70 text-xs overflow-x-auto max-h-48 overflow-y-auto border border-border/50">
           {(() => {
-            try { return JSON.stringify(JSON.parse(result), null, 2); }
-            catch { return result; }
+            try {
+              const parsed = JSON.parse(result);
+              return JSON.stringify(parsed, null, 2);
+            } catch {
+              return result;
+            }
           })()}
         </pre>
       )}
@@ -135,8 +135,11 @@ export default function CopilotChat() {
   const [localMessages, setLocalMessages] = useState<Message[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
   const [showConfig, setShowConfig] = useState(false);
+  const [attachedFile, setAttachedFile] = useState<File | null>(null);
+  const [filePreview, setFilePreview] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: config } = useCopilotConfig();
   const { data: conversations = [] } = useCopilotConversations();
@@ -167,26 +170,62 @@ export default function CopilotChat() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [localMessages]);
 
+  const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const maxSize = 10 * 1024 * 1024; // 10MB
+    if (file.size > maxSize) {
+      toast.error('El archivo no puede ser mayor a 10MB');
+      return;
+    }
+    setAttachedFile(file);
+    // Create preview for text files
+    if (file.type.startsWith('text/') || file.name.endsWith('.csv') || file.name.endsWith('.json') || file.name.endsWith('.md')) {
+      const reader = new FileReader();
+      reader.onload = (ev) => setFilePreview(ev.target?.result as string);
+      reader.readAsText(file);
+    } else {
+      setFilePreview(`Archivo binario: ${file.name} (${(file.size / 1024).toFixed(1)} KB)`);
+    }
+  }, []);
+
   const handleSendMessage = useCallback(async () => {
-    if (!messageInput.trim() || isStreaming) return;
+    if ((!messageInput.trim() && !attachedFile) || isStreaming) return;
 
     const userMessage = messageInput.trim();
+    const file = attachedFile;
     setMessageInput('');
+    setAttachedFile(null);
+    setFilePreview(null);
     setIsStreaming(true);
 
     // Add optimistic user message
     const tempUserMsg: Message = {
       id: `temp-${Date.now()}`,
       role: 'user',
-      content: userMessage,
+      content: userMessage + (file ? `\n📎 Archivo: ${file.name}` : ''),
+      hasFile: !!file,
+      fileName: file?.name,
       createdAt: new Date().toISOString(),
     };
     setLocalMessages(prev => [...prev, tempUserMsg]);
 
     try {
+      // If there's a file, upload it first
+      let fileContent: string | null = null;
+      if (file) {
+        const formData = new FormData();
+        formData.append('file', file);
+        const uploadResult = await api.upload<{ filename: string; content: string }>('/api/copilot/upload', formData);
+        fileContent = uploadResult.content;
+      }
+
+      // Send chat message
+      const fullMessage = userMessage + (fileContent ? `\n\n📎 Archivo adjunto: "${file?.name}"\nContenido:\n\`\`\`\n${fileContent}\n\`\`\`` : '');
+
       const result = await chatMutation.mutateAsync({
         conversationId: activeConversationId || undefined,
-        message: userMessage,
+        message: fullMessage,
       });
 
       if (!activeConversationId) {
@@ -205,12 +244,11 @@ export default function CopilotChat() {
       setLocalMessages(prev => [...prev, assistantMsg]);
     } catch (error: any) {
       toast.error(error.message || 'Error al comunicarse con el copiloto');
-      // Remove optimistic message on error
-      setLocalMessages(prev => prev.filter(m => m.id !== `temp-${Date.now()}`));
     } finally {
       setIsStreaming(false);
+      inputRef.current?.focus();
     }
-  }, [messageInput, activeConversationId, isStreaming, chatMutation]);
+  }, [messageInput, attachedFile, activeConversationId, isStreaming, chatMutation]);
 
   const handleNewConversation = () => {
     setActiveConversationId(null);
@@ -245,8 +283,6 @@ export default function CopilotChat() {
       </div>
     );
   }
-
-  const groqKeyConfigured = true; // We'll check this from server response
 
   return (
     <div className="flex h-[calc(100vh-5rem)] gap-4">
@@ -284,10 +320,10 @@ export default function CopilotChat() {
             {config && (
               <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-1">
                 <Badge variant="outline" className="text-[10px] px-1.5 py-0">
-                  {String(config.model || 'llama-3.3-70b-versatile').replace('llama-3.3-70b-', 'Llama 3.3 ')}
+                  {String(config.model || 'llama-3.3-70b-versatile').includes('llama-3.3') ? 'Llama 3.3 70B' : String(config.model)}
                 </Badge>
-                <Badge variant="outline" className="text-[10px] px-1.5 py-0">
-                  {String(config.apiProvider || 'groq').toUpperCase()}
+                <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-green-500/10 text-green-600 border-green-500/20">
+                  ● En línea
                 </Badge>
               </div>
             )}
@@ -315,8 +351,7 @@ export default function CopilotChat() {
               {conversations.length === 0 && (
                 <p className="text-xs text-muted-foreground text-center py-4">
                   No hay conversaciones aún.
-                  <br />
-                  ¡Envía un mensaje para empezar!
+                  <br />¡Envía un mensaje para empezar!
                 </p>
               )}
             </div>
@@ -327,13 +362,15 @@ export default function CopilotChat() {
         {config && (
           <Card className="flex-shrink-0">
             <CardContent className="p-3">
-              <p className="text-xs font-medium text-muted-foreground mb-2">Permisos del Agente</p>
-              <div className="grid grid-cols-2 gap-1">
+              <p className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1.5">
+                <Brain className="h-3.5 w-3.5" /> Permisos del Agente
+              </p>
+              <div className="grid grid-cols-1 gap-1">
                 {Object.entries(PERMISSION_LABELS).map(([key, label]) => {
                   const dbKey = key.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
                   const isEnabled = config[dbKey as keyof typeof config];
                   return (
-                    <div key={key} className="flex items-center gap-1 text-xs">
+                    <div key={key} className="flex items-center gap-1.5 text-xs">
                       {isEnabled ? (
                         <Check className="h-3 w-3 text-green-500" />
                       ) : (
@@ -353,37 +390,35 @@ export default function CopilotChat() {
       <Card className="flex-1 flex flex-col">
         {!activeConversationId && localMessages.length === 0 ? (
           <div className="flex-1 flex items-center justify-center">
-            <div className="text-center max-w-md">
-              <div className="w-16 h-16 rounded-2xl bg-accent/10 flex items-center justify-center mx-auto mb-4">
-                <Bot className="h-8 w-8 text-accent" />
+            <div className="text-center max-w-lg">
+              <div className="w-20 h-20 rounded-2xl bg-accent/10 flex items-center justify-center mx-auto mb-6">
+                <Bot className="h-10 w-10 text-accent" />
               </div>
               <h2 className="text-2xl font-bold font-display mb-2">Copiloto SMPS</h2>
               <p className="text-muted-foreground text-sm mb-6">
-                Tu asistente de IA para gestionar el sistema de desempeño. Puedo ayudarte con:
+                Tu asistente de IA con memoria. Puedo gestionar todo el sistema y entender archivos.
               </p>
-              <div className="grid grid-cols-2 gap-2 text-sm">
-                <div className="p-3 rounded-lg bg-muted/50">
-                  <Users className="h-4 w-4 mb-1 text-accent" />
-                  <p>Gestionar usuarios</p>
-                </div>
-                <div className="p-3 rounded-lg bg-muted/50">
-                  <ClipboardList className="h-4 w-4 mb-1 text-accent" />
-                  <p>Ver evaluaciones</p>
-                </div>
-                <div className="p-3 rounded-lg bg-muted/50">
-                  <Palmtree className="h-4 w-4 mb-1 text-accent" />
-                  <p>Aprobar vacaciones</p>
-                </div>
-                <div className="p-3 rounded-lg bg-muted/50">
-                  <Megaphone className="h-4 w-4 mb-1 text-accent" />
-                  <p>Crear anuncios</p>
-                </div>
+              <div className="grid grid-cols-2 gap-2 text-sm mb-4">
+                {[
+                  { icon: Users, label: 'Gestionar usuarios', desc: 'Crear, buscar, cambiar roles' },
+                  { icon: ClipboardList, label: 'Evaluaciones', desc: 'Ver resultados y sugerir mejoras' },
+                  { icon: Palmtree, label: 'Vacaciones', desc: 'Aprobar solicitudes' },
+                  { icon: Megaphone, label: 'Comunicados', desc: 'Crear anuncios' },
+                  { icon: FileText, label: 'Subir archivos', desc: 'CSV, Excel, JSON, TXT' },
+                  { icon: Brain, label: 'Memoria', desc: 'Recuerdo conversaciones previas' },
+                ].map(({ icon: Icon, label, desc }) => (
+                  <div key={label} className="p-3 rounded-lg bg-muted/50 text-left">
+                    <Icon className="h-4 w-4 mb-1 text-accent" />
+                    <p className="font-medium text-xs">{label}</p>
+                    <p className="text-[10px] text-muted-foreground">{desc}</p>
+                  </div>
+                ))}
               </div>
-              <div className="mt-4 p-3 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-xs flex items-start gap-2">
+              <div className="p-3 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-xs flex items-start gap-2">
                 <AlertTriangle className="h-4 w-4 flex-shrink-0 mt-0.5" />
                 <div>
                   <p className="font-medium">Nota importante</p>
-                  <p>El agente ejecuta acciones reales en el sistema. Los permisos están configurados por el SuperUsuario.</p>
+                  <p>El agente ejecuta acciones reales en el sistema según los permisos configurados. Para acciones destructivas, pedirá confirmación.</p>
                 </div>
               </div>
             </div>
@@ -393,7 +428,7 @@ export default function CopilotChat() {
             <div className="space-y-4 max-w-3xl mx-auto">
               {localMessages.map((msg) => (
                 <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                  <div className={`max-w-[80%] ${msg.role === 'user' ? '' : ''}`}>
+                  <div className={`max-w-[85%] ${msg.role === 'user' ? '' : ''}`}>
                     {msg.role === 'assistant' && (
                       <div className="flex items-center gap-1.5 mb-1">
                         <div className="w-5 h-5 rounded-full bg-accent/10 flex items-center justify-center">
@@ -421,6 +456,12 @@ export default function CopilotChat() {
                     }`}>
                       {msg.content}
                     </div>
+                    {msg.hasFile && (
+                      <div className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
+                        <Paperclip className="h-3 w-3" />
+                        <span>{msg.fileName}</span>
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}
@@ -442,26 +483,53 @@ export default function CopilotChat() {
 
         {/* Input Area */}
         <div className="p-4">
+          {/* File attachment preview */}
+          {attachedFile && (
+            <div className="flex items-center gap-2 p-2 mb-2 rounded-lg bg-muted/50 border border-border">
+              <Paperclip className="h-4 w-4 text-accent" />
+              <span className="text-sm flex-1 truncate">{attachedFile.name}</span>
+              <span className="text-xs text-muted-foreground">({(attachedFile.size / 1024).toFixed(1)} KB)</span>
+              <button onClick={() => { setAttachedFile(null); setFilePreview(null); }} className="p-1 hover:text-destructive">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          )}
           <div className="flex gap-2 max-w-3xl mx-auto">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".csv,.xlsx,.xls,.json,.txt,.md"
+              className="hidden"
+              onChange={handleFileSelect}
+            />
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isStreaming}
+              title="Adjuntar archivo (CSV, Excel, JSON, TXT)"
+            >
+              <Paperclip className="h-4 w-4" />
+            </Button>
             <Input
               ref={inputRef}
               value={messageInput}
               onChange={(e) => setMessageInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Escribe un mensaje al copiloto..."
+              placeholder={attachedFile ? `Describe qué quieres hacer con "${attachedFile.name}"...` : 'Escribe un mensaje al copiloto...'}
               disabled={isStreaming}
               className="flex-1"
             />
             <Button
               onClick={handleSendMessage}
-              disabled={!messageInput.trim() || isStreaming}
+              disabled={(!messageInput.trim() && !attachedFile) || isStreaming}
               size="icon"
             >
               {isStreaming ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
             </Button>
           </div>
           <p className="text-xs text-muted-foreground text-center mt-2">
-            El copiloto puede ejecutar acciones en el sistema basado en tus permisos configurados.
+            Puedes adjuntar archivos CSV, Excel, JSON o TXT. El copiloto los analizará y te ayudará a procesarlos.
           </p>
         </div>
       </Card>
@@ -479,34 +547,33 @@ function AgentConfigForm({ config, onSave }: { config: any; onSave: (data: any) 
     canManageSystem: false,
     canViewReports: true,
     model: 'llama-3.3-70b-versatile',
-    maxTokens: 2048,
+    maxTokens: 4096,
     temperature: 0.3,
     ...config,
   });
 
   useEffect(() => {
-    if (config) {
-      setForm(prev => ({ ...prev, ...config }));
-    }
+    if (config) setForm(prev => ({ ...prev, ...config }));
   }, [config]);
 
   const handleSave = () => {
     onSave(form);
+    toast.success('Configuración guardada');
   };
 
   const models = [
-    { value: 'llama-3.3-70b-versatile', label: 'Llama 3.3 70B (Recomendado)' },
-    { value: 'llama-3.1-8b-instant', label: 'Llama 3.1 8B (Rápido)' },
-    { value: 'mixtral-8x7b-32768', label: 'Mixtral 8x7B' },
+    { value: 'llama-3.3-70b-versatile', label: 'Llama 3.3 70B (Recomendado — Más inteligente)' },
+    { value: 'llama-3.1-8b-instant', label: 'Llama 3.1 8B (Más rápido)' },
+    { value: 'mixtral-8x7b-32768', label: 'Mixtral 8x7B (32K contexto)' },
     { value: 'gemma2-9b-it', label: 'Gemma 2 9B' },
   ];
 
   const permissions = [
-    { key: 'canManageUsers', label: 'Gestionar Usuarios', icon: Users, desc: 'Listar, buscar, cambiar roles, activar/desactivar usuarios' },
-    { key: 'canManageEvaluations', label: 'Gestionar Evaluaciones', icon: ClipboardList, desc: 'Ver resumen de evaluaciones, preguntas y periodos' },
+    { key: 'canManageUsers', label: 'Gestionar Usuarios', icon: Users, desc: 'Crear, buscar, cambiar roles, activar/desactivar' },
+    { key: 'canManageEvaluations', label: 'Gestionar Evaluaciones', icon: ClipboardList, desc: 'Ver evaluaciones, crear preguntas, sugerencias de mejora' },
     { key: 'canManageVacations', label: 'Gestionar Vacaciones', icon: Palmtree, desc: 'Ver y aprobar solicitudes de vacaciones' },
     { key: 'canManageAnnouncements', label: 'Gestionar Anuncios', icon: Megaphone, desc: 'Crear y listar comunicados' },
-    { key: 'canManagePeriods', label: 'Gestionar Periodos', icon: BarChart3, desc: 'Modificar configuración de periodos de evaluación' },
+    { key: 'canManagePeriods', label: 'Gestionar Periodos', icon: BarChart3, desc: 'Crear periodos de evaluación' },
     { key: 'canManageSystem', label: 'Gestionar Sistema', icon: Shield, desc: 'Activar/desactivar sistema y módulos' },
     { key: 'canViewReports', label: 'Ver Reportes', icon: BarChart3, desc: 'Ver estadísticas generales del sistema' },
   ];
@@ -538,7 +605,7 @@ function AgentConfigForm({ config, onSave }: { config: any; onSave: (data: any) 
               <input
                 type="range"
                 min={512}
-                max={4096}
+                max={8192}
                 step={256}
                 value={form.maxTokens}
                 onChange={(e) => setForm({ ...form, maxTokens: Number(e.target.value) })}
@@ -570,7 +637,7 @@ function AgentConfigForm({ config, onSave }: { config: any; onSave: (data: any) 
           Permisos del Agente IA
         </h3>
         <p className="text-xs text-muted-foreground mb-3">
-          Configura qué acciones puede realizar el agente. El agente solo actuará dentro de los permisos habilitados.
+          Configura qué acciones puede realizar el agente. Solo actuará dentro de los permisos habilitados.
         </p>
         <div className="space-y-3">
           {permissions.map(({ key, label, icon: Icon, desc }) => (

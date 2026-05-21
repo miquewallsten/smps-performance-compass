@@ -53,8 +53,9 @@ function toCamelCase(value: unknown): unknown {
 let isRedirectingToLogin = false;
 
 export async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
+  const isFormData = options?.body instanceof FormData;
   const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
+    ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
     ...(options?.headers as Record<string, string> || {}),
   };
 
@@ -98,4 +99,9 @@ export const api = {
   post: <T>(path: string, body: unknown) => apiFetch<T>(path, { method: 'POST', body: JSON.stringify(body) }),
   patch: <T>(path: string, body: unknown) => apiFetch<T>(path, { method: 'PATCH', body: JSON.stringify(body) }),
   delete: <T>(path: string) => apiFetch<T>(path, { method: 'DELETE' }),
+  upload: <T>(path: string, formData: FormData) => apiFetch<T>(path, {
+    method: 'POST',
+    body: formData,
+    // Don't set Content-Type header - browser will set it with boundary for FormData
+  }),
 };
