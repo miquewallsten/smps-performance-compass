@@ -16,9 +16,9 @@
     "build:server": "tsc -p server/tsconfig.json",
     "db:migrate": "tsx server/db/migrate.ts",
     "db:seed": "tsx server/db/seed.ts",
-    "start": "node dist-server/index.js",
+    "start": "node server.cjs",
     "build:all": "npm run build",
-    "start:tsx": "tsx server/index.ts",
+    "start:tsx": "npx tsx server/index.ts",
     "db:seed-users": "tsx server/db/seed-users.ts"
   },
   "dependencies": {
@@ -114,5 +114,6 @@
     "typescript-eslint": "^8.38.0",
     "vite": "^5.4.19",
     "vitest": "^3.2.4"
-  }
+  },
+  "main": "server.cjs"
 }
