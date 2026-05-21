@@ -1,4 +1,5 @@
-import { useApp } from '@/contexts/AppContext';
+import { useAuth } from '@/contexts/AuthContext';
+import { useAssignments, useEvaluations, useAnnouncements, useVacationRequests, useSystemStatus, useSystemModules } from '@/api/queries';
 import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 import {
   LayoutDashboard, ClipboardCheck, Users, BarChart3, Settings, LogOut,
@@ -11,7 +12,13 @@ import PeriodEndAlert from '@/components/PeriodEndAlert';
 import { CURRENT_PERIOD, POSITION_LEVELS } from '@/types';
 
 export default function Layout() {
-  const { currentUser, logout, assignments, systemStatus, evaluations, announcements, vacationRequests, moduleConfig } = useApp();
+  const { user: currentUser, logout } = useAuth();
+  const { data: assignments = [] } = useAssignments(CURRENT_PERIOD);
+  const { data: systemStatus } = useSystemStatus();
+  const { data: evaluations = [] } = useEvaluations({ period: CURRENT_PERIOD });
+  const { data: announcements = [] } = useAnnouncements();
+  const { data: vacationRequests = [] } = useVacationRequests();
+  const { data: moduleConfig } = useSystemModules();
   const navigate = useNavigate();
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
