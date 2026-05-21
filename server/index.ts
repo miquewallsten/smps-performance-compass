@@ -2,6 +2,8 @@ import express from 'express';
 import cors from 'cors';
 import path from 'path';
 import authRoutes from './routes/auth.js';
+import userRoutes from './routes/users.js';
+import assignmentRoutes from './routes/assignments.js';
 import systemRoutes from './routes/system.js';
 import dotenv from 'dotenv';
 
@@ -20,6 +22,8 @@ app.get('/api/health', (_req, res) => {
 
 // API routes
 app.use('/api/auth', authRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/assignments', assignmentRoutes);
 app.use('/api/system', systemRoutes);
 
 // Serve static files in production
