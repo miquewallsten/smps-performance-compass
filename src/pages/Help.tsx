@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { HelpCircle, ClipboardCheck, ClipboardList, FileText, Target, Map, BarChart3, Users, UserCheck, Megaphone, Settings, BookOpen, Calendar, Sparkles } from 'lucide-react';
-import { useApp } from '@/contexts/AppContext';
+import { useAuth } from '@/contexts/AuthContext';
+import { useUsers, useEvaluations, useAssignments, useSystemModules, useSystemStatus, usePeriods, useAnnouncements, useVacationRequests } from '@/api/queries';
+import { CURRENT_PERIOD } from '@/types';
 import { POSITION_LABELS, POSITION_LEVELS, Position, LEGAL_HIERARCHY, ADMIN_HIERARCHY } from '@/types';
 import { COMPETENCIES_BY_POSITION } from '@/data/competencyDictionary';
 
@@ -44,7 +46,9 @@ const sections: Section[] = [
 ];
 
 export default function Help() {
-  const { currentUser, assignments, moduleConfig } = useApp();
+  const { user: currentUser } = useAuth();
+  const { data: assignments = [] } = useAssignments(CURRENT_PERIOD);
+  const { data: moduleConfig } = useSystemModules();
   const [searchParams] = useSearchParams();
   const competenciesRef = useRef<HTMLDivElement | null>(null);
 

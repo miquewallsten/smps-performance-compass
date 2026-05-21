@@ -1,11 +1,16 @@
-import { useApp } from '@/contexts/AppContext';
+import { useAuth } from '@/contexts/AuthContext';
+import { useUsers, useEvaluations, useAssignments, useSystemModules, useSystemStatus, usePeriods, useAnnouncements, useVacationRequests } from '@/api/queries';
+import { CURRENT_PERIOD } from '@/types';
 import { POSITION_LABELS, CURRENT_PERIOD, Position, LEGAL_HIERARCHY, ADMIN_HIERARCHY, POSITION_HIERARCHY } from '@/types';
 import { Users, CheckCircle, Clock, TrendingUp, ChevronDown } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 export default function Dashboard() {
-  const { currentUser, users, evaluations, assignments } = useApp();
+  const { user: currentUser } = useAuth();
+  const { data: users = [] } = useUsers();
+  const { data: evaluations = [] } = useEvaluations({ period: CURRENT_PERIOD });
+  const { data: assignments = [] } = useAssignments(CURRENT_PERIOD);
   const navigate = useNavigate();
   const [expandedCard, setExpandedCard] = useState<string | null>(null);
   const [selectedLevel, setSelectedLevel] = useState<string>('all');

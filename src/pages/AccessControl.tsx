@@ -1,12 +1,19 @@
 import { useState } from 'react';
-import { useApp } from '@/contexts/AppContext';
+import { useAuth } from '@/contexts/AuthContext';
+import { useUsers, useSystemStatus, useUpdateSystemStatus, useSystemModules, useUpdateSystemModules, useActivationHistory } from "@/api/queries";
 import { Shield, Calendar, CreditCard, Power, Users, Ticket, Clock, ToggleLeft, ToggleRight, History } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 
 export default function AccessControl() {
-  const { currentUser, users, systemStatus, updateSystemStatus, moduleConfig, updateModuleConfig, activationHistory } = useApp();
+  const { user: currentUser } = useAuth();
+  const { data: users = [] } = useUsers();
+  const { data: systemStatus } = useSystemStatus();
+  const updateSystemStatus = useUpdateSystemStatus().mutate;
+  const { data: moduleConfig } = useSystemModules();
+  const updateModuleConfig = useUpdateSystemModules().mutate;
+  const { data: activationHistory = [] } = useActivationHistory();
   const status = systemStatus || { status: 'active' as const, activationDate: '', paymentPlan: 'monthly' as const, maxUsers: 50, tickets: 0 };
 
   const [activationDate, setActivationDate] = useState(status.activationDate || '');

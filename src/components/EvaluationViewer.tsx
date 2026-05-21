@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { useApp } from '@/contexts/AppContext';
+import { useAuth } from '@/contexts/AuthContext';
+import { useUsers, useAssignments, useUpdateEvaluation, useActionPlans, useCustomQuestions } from '@/api/queries';
 import { QUESTIONS_BY_POSITION, getQuestionsForUser } from '@/data/questions';
 import { SCORE_LABELS, POSITION_LABELS, Evaluation } from '@/types';
 import { Ban, ShieldCheck, ShieldX, MinusCircle, FileText } from 'lucide-react';
@@ -11,7 +12,12 @@ interface Props {
 }
 
 export default function EvaluationViewer({ evaluation, onClose }: Props) {
-  const { currentUser, users, assignments, updateEvaluation, actionPlans, customQuestions } = useApp();
+  const { user: currentUser } = useAuth();
+  const { data: users = [] } = useUsers();
+  const { data: assignments = [] } = useAssignments();
+  const updateEvaluation = useUpdateEvaluation().mutate;
+  const { data: actionPlans = [] } = useActionPlans();
+  const { data: customQuestions = [] } = useCustomQuestions();
   const [supComments, setSupComments] = useState(evaluation.supervisorComments || '');
   const [saved, setSaved] = useState(false);
 

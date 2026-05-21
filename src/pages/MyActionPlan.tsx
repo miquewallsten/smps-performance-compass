@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
-import { useApp } from '@/contexts/AppContext';
+import { useAuth } from '@/contexts/AuthContext';
+import { useUsers, useEvaluations, useAssignments, useActionPlans, useCreateActionPlan, useApproveActionPlan } from '@/api/queries';
 import { CURRENT_PERIOD, PERIODS, ActionPlan, POSITION_LABELS, POSITION_RANK, SmartActionItem } from '@/types';
 import { FileText, Save, ShieldCheck, ShieldX, Clock, Plus, Trash2, Target } from 'lucide-react';
 import { toast } from 'sonner';
@@ -37,7 +38,13 @@ function PlanItemsView({ items, content }: { items?: SmartActionItem[]; content?
 }
 
 export default function MyActionPlan() {
-  const { currentUser, users, evaluations, assignments, actionPlans, addOrUpdateActionPlan, approveActionPlan } = useApp();
+  const { user: currentUser } = useAuth();
+  const { data: users = [] } = useUsers();
+  const { data: evaluations = [] } = useEvaluations();
+  const { data: assignments = [] } = useAssignments();
+  const { data: actionPlans = [] } = useActionPlans();
+  const addOrUpdateActionPlan = useCreateActionPlan().mutate;
+  const approveActionPlan = useApproveActionPlan().mutate;
   const [period, setPeriod] = useState(CURRENT_PERIOD);
   const [items, setItems] = useState<SmartActionItem[]>([emptyItem()]);
   const [approvalComments, setApprovalComments] = useState('');

@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { useApp } from '@/contexts/AppContext';
+import { useAuth } from '@/contexts/AuthContext';
+import { useUsers, useAnnouncements, useCreateAnnouncement, useMarkAnnouncementRead, useUpdateAnnouncement } from '@/api/queries';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -12,7 +13,12 @@ import { MessageSquare, Plus, Eye, Users, Megaphone, CheckCircle2, Clock, Archiv
 import { POSITION_LABELS, POSITION_LEVELS } from '@/types';
 
 export default function Communications() {
-  const { currentUser, users, announcements, addAnnouncement, markAnnouncementRead, updateAnnouncement } = useApp();
+  const { user: currentUser } = useAuth();
+  const { data: users = [] } = useUsers();
+  const { data: announcements = [] } = useAnnouncements();
+  const addAnnouncement = useCreateAnnouncement().mutate;
+  const markAnnouncementRead = useMarkAnnouncementRead().mutate;
+  const updateAnnouncement = useUpdateAnnouncement().mutate;
   const [showNew, setShowNew] = useState(false);
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useApp } from '@/contexts/AppContext';
+import { useAuth } from '@/contexts/AuthContext';
+import { useUsers, useEvaluations, useAssignments, useObjectives } from '@/api/queries';
 import { CURRENT_PERIOD, PERIODS, POSITION_LABELS, POSITION_LEVELS, LEVEL_LABELS } from '@/types';
 import { User as UserIcon, Target, TrendingUp, Sparkles } from 'lucide-react';
 
@@ -17,7 +18,11 @@ function TrafficLight({ value }: { value: number }) {
 }
 
 export default function MyProfile() {
-  const { currentUser, personalObjectives, evaluations, assignments, users } = useApp();
+  const { user: currentUser } = useAuth();
+  const { data: personalObjectives = [] } = useObjectives();
+  const { data: evaluations = [] } = useEvaluations();
+  const { data: assignments = [] } = useAssignments();
+  const { data: users = [] } = useUsers();
   const [period, setPeriod] = useState(CURRENT_PERIOD);
 
   if (!currentUser) return null;

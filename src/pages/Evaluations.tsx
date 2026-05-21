@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { useApp } from '@/contexts/AppContext';
+import { useAuth } from '@/contexts/AuthContext';
+import { useUsers, useEvaluations, useAssignments, useCreateEvaluation, useUpdateEvaluation, useActionPlans, useCreateActionPlan, useCustomQuestions } from '@/api/queries';
 import { QUESTIONS_BY_POSITION, getQuestionsForUser, calculateScore, getSectionForQuestion, SECTION_LABELS, SECTION_ORDER } from '@/data/questions';
 import { getSectionWeights } from '@/data/sectionWeights';
 
@@ -11,7 +12,15 @@ import HierarchyFilters, { filterByHierarchy } from '@/components/HierarchyFilte
 import { canViewUserEvaluations } from '@/lib/visibility';
 
 export default function Evaluations() {
-  const { currentUser, users, evaluations, assignments, addEvaluation, updateEvaluation, actionPlans, addOrUpdateActionPlan, customQuestions } = useApp();
+  const { user: currentUser } = useAuth();
+  const { data: users = [] } = useUsers();
+  const { data: evaluations = [] } = useEvaluations();
+  const { data: assignments = [] } = useAssignments();
+  const addEvaluation = useCreateEvaluation().mutate;
+  const updateEvaluation = useUpdateEvaluation().mutate;
+  const { data: actionPlans = [] } = useActionPlans();
+  const addOrUpdateActionPlan = useCreateActionPlan().mutate;
+  const { data: customQuestions = [] } = useCustomQuestions();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [selectedEmployee, setSelectedEmployee] = useState<string | null>(searchParams.get('evaluate'));

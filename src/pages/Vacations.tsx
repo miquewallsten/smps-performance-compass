@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
-import { useApp } from '@/contexts/AppContext';
+import { useAuth } from '@/contexts/AuthContext';
+import { useUsers, useAssignments, useVacationConfig, useVacationRequests, useUpdateVacationConfig, useCreateVacationRequest, useUpdateVacationRequest, useAddExtraVacationDays, useDeleteVacationRequest } from '@/api/queries';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -14,11 +15,18 @@ import { POSITION_LABELS, POSITION_LEVELS, CURRENT_PERIOD } from '@/types';
 import type { Position, ExtraVacationDays as ExtraDaysType } from '@/types';
 
 export default function Vacations() {
-  const {
-    currentUser, users, assignments, vacationConfig, vacationRequests, extraVacationDays,
-    updateVacationConfig, addVacationRequest, updateVacationRequestStatus, addExtraVacationDays,
-    deleteVacationRequest,
-  } = useApp();
+  const { user: currentUser } = useAuth();
+  const { data: users = [] } = useUsers();
+  const { data: assignments = [] } = useAssignments();
+  const { data: vacationConfig = [] } = useVacationConfig();
+  const { data: vacationRequests = [] } = useVacationRequests();
+  const { data: extraVacationDaysData = [] } = useVacationRequests();  // note: extra days fetched separately
+  const extraVacationDays: any[] = [];
+  const updateVacationConfig = useUpdateVacationConfig().mutate;
+  const addVacationRequest = useCreateVacationRequest().mutate;
+  const updateVacationRequestStatus = useUpdateVacationRequest().mutate;
+  const addExtraVacationDays = useAddExtraVacationDays().mutate;
+  const deleteVacationRequest = useDeleteVacationRequest().mutate;
   const [activeTab, setActiveTab] = useState('my');
   const [showRequest, setShowRequest] = useState(false);
   const [startDate, setStartDate] = useState('');

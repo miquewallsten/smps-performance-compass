@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
-import { useApp } from '@/contexts/AppContext';
+import { useAuth } from '@/contexts/AuthContext';
+import { useCustomQuestions, useLibraryQuestions, useCreateLibraryQuestion, useUpdateLibraryQuestion, useDeleteLibraryQuestion, useSeedOverrides, useUpdateSeedOverride } from '@/api/queries';
 import { QUESTIONS_BY_POSITION, getSectionByCategory, SECTION_LABELS } from '@/data/questions';
 import { POSITION_LABELS, QuestionCategory, EvalQuestion, LibraryQuestion, EvalSection } from '@/types';
 import { BookOpen, Search, Plus, Pencil, Trash2, Save, X, Download } from 'lucide-react';
@@ -14,11 +15,15 @@ type SeedItem = EvalQuestion & { positions: string[]; isSeed: true; section: Eva
 type CustomItem = LibraryQuestion & { isSeed: false };
 
 export default function QuestionLibrary() {
-  const {
-    currentUser, customQuestions, libraryQuestions,
-    addLibraryQuestion, updateLibraryQuestion, deleteLibraryQuestion,
-    seedOverrides, updateSeedQuestion, hideSeedQuestion,
-  } = useApp();
+  const { user: currentUser } = useAuth();
+  const { data: customQuestions = [] } = useCustomQuestions();
+  const { data: libraryQuestions = [] } = useLibraryQuestions();
+  const addLibraryQuestion = useCreateLibraryQuestion().mutate;
+  const updateLibraryQuestion = useUpdateLibraryQuestion().mutate;
+  const deleteLibraryQuestion = useDeleteLibraryQuestion().mutate;
+  const { data: seedOverrides = [] } = useSeedOverrides();
+  const updateSeedQuestion = useUpdateSeedOverride().mutate;
+  const hideSeedQuestion = (id: string) => updateSeedQuestion({ id, hidden: true });
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [sectionFilter, setSectionFilter] = useState<string>('all');

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { QUESTIONS_BY_POSITION } from '@/data/questions';
-import { useApp } from '@/contexts/AppContext';
+import { useAuth } from '@/contexts/AuthContext';
+import { useCustomQuestions, useSetCustomQuestions, useLibraryQuestions } from '@/api/queries';
 import {
   POSITION_LABELS, LEGAL_HIERARCHY, ADMIN_HIERARCHY, Position, SCORE_LABELS,
   EvalQuestion, QuestionCategory,
@@ -15,7 +16,10 @@ const ALL_CATEGORIES: QuestionCategory[] = [
 const MAX_QUESTIONS = 20;
 
 export default function EvaluationTemplates() {
-  const { currentUser, customQuestions, setCustomQuestions, libraryQuestions } = useApp();
+  const { user: currentUser } = useAuth();
+  const { data: customQuestions = [] } = useCustomQuestions();
+  const setCustomQuestions = useSetCustomQuestions().mutate;
+  const { data: libraryQuestions = [] } = useLibraryQuestions();
   const [expandedPosition, setExpandedPosition] = useState<Position | null>(null);
   const [editingPosition, setEditingPosition] = useState<Position | null>(null);
   const [editQuestions, setEditQuestions] = useState<EvalQuestion[]>([]);

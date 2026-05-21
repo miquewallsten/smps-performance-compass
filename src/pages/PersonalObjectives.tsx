@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react';
-import { useApp } from '@/contexts/AppContext';
+import { useAuth } from '@/contexts/AuthContext';
+import { useUsers, useObjectives, useCreateObjectives, useAssignments, useSubmitObjectives, useReviewObjective } from '@/api/queries';
 import {
   POSITION_LABELS, POSITION_LEVELS, CURRENT_PERIOD, PERIODS,
   AdminObjective, LegalObjective, PersonalObjectives as POType, User,
@@ -46,7 +47,13 @@ function TrafficLight({ value }: { value: number }) {
 }
 
 export default function PersonalObjectivesPage() {
-  const { currentUser, users, personalObjectives, addOrUpdateObjectives, assignments, submitAdminObjectives, reviewAdminObjective } = useApp();
+  const { user: currentUser } = useAuth();
+  const { data: users = [] } = useUsers();
+  const { data: personalObjectives = [] } = useObjectives();
+  const createObjectives = useCreateObjectives().mutate;
+  const { data: assignments = [] } = useAssignments();
+  const submitObjectives = useSubmitObjectives().mutate;
+  const reviewObjective = useReviewObjective().mutate;
   const [expandedUser, setExpandedUser] = useState<string | null>(null);
   const [period, setPeriod] = useState(CURRENT_PERIOD);
   const [editingUser, setEditingUser] = useState<string | null>(null);

@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { useApp } from '@/contexts/AppContext';
+import { useAuth } from '@/contexts/AuthContext';
+import { useEvaluations, useAssignments, useActionPlans, useCreateEvaluation, useCustomQuestions } from '@/api/queries';
 import { QUESTIONS_BY_POSITION, getQuestionsForUser, calculateScore, getSectionForQuestion, SECTION_LABELS, SECTION_ORDER } from '@/data/questions';
 import { getSectionWeights } from '@/data/sectionWeights';
 
@@ -17,7 +18,12 @@ const STAGES: { key: EvalStage; label: string; icon: React.ElementType }[] = [
 ];
 
 export default function SelfEvaluation() {
-  const { currentUser, evaluations, assignments, actionPlans, addEvaluation, customQuestions } = useApp();
+  const { user: currentUser } = useAuth();
+  const { data: evaluations = [] } = useEvaluations();
+  const { data: assignments = [] } = useAssignments();
+  const { data: actionPlans = [] } = useActionPlans();
+  const addEvaluation = useCreateEvaluation().mutate;
+  const { data: customQuestions = [] } = useCustomQuestions();
   const navigate = useNavigate();
   const [responses, setResponses] = useState<Record<string, number>>({});
   const [naQuestions, setNaQuestions] = useState<Record<string, boolean>>({});

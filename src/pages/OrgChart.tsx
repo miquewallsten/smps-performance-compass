@@ -1,11 +1,15 @@
-import { useApp } from '@/contexts/AppContext';
+import { useAuth } from '@/contexts/AuthContext';
+import { useUsers, useEvaluations, useAssignments, useSystemModules, useSystemStatus, usePeriods, useAnnouncements, useVacationRequests } from '@/api/queries';
+import { CURRENT_PERIOD } from '@/types';
 import { POSITION_LABELS, CURRENT_PERIOD, LEGAL_HIERARCHY, ADMIN_HIERARCHY } from '@/types';
 import { Users, ChevronDown, ChevronRight } from 'lucide-react';
 import { useState } from 'react';
 import HierarchyFilters, { filterByHierarchy } from '@/components/HierarchyFilters';
 
 export default function OrgChart() {
-  const { currentUser, users, assignments } = useApp();
+  const { user: currentUser } = useAuth();
+  const { data: users = [] } = useUsers();
+  const { data: assignments = [] } = useAssignments(CURRENT_PERIOD);
   const [levelFilter, setLevelFilter] = useState('all');
   const [positionFilter, setPositionFilter] = useState('all');
 

@@ -1,4 +1,6 @@
-import { useApp } from '@/contexts/AppContext';
+import { useAuth } from '@/contexts/AuthContext';
+import { useUsers, useEvaluations, useAssignments, useSystemModules, useSystemStatus, usePeriods, useAnnouncements, useVacationRequests } from '@/api/queries';
+import { CURRENT_PERIOD } from '@/types';
 import { CURRENT_PERIOD } from '@/types';
 import { AlertTriangle, X } from 'lucide-react';
 import { useState } from 'react';
@@ -8,7 +10,8 @@ import { useState } from 'react';
  * is less than ~2 months away.
  */
 export default function PeriodEndAlert() {
-  const { periodConfigs, currentUser } = useApp();
+  const { user: currentUser } = useAuth();
+  const { data: periodConfigs = [] } = usePeriods();
   const [dismissed, setDismissed] = useState(false);
 
   if (!currentUser || dismissed) return null;

@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { useApp } from '@/contexts/AppContext';
+import { useAuth } from '@/contexts/AuthContext';
+import { useUsers, useEvaluations, useUpdateUser, useResetUserPassword, useCreateUser, useDeleteUser, useSystemStatus, useUpdateUserRole, usePositions } from '@/api/queries';
 import { POSITION_LABELS, PERIODS, Position, LEGAL_HIERARCHY, ADMIN_HIERARCHY, PracticeArea, PRACTICE_AREA_LABELS } from '@/types';
 import { Eye, Key, UserCheck, UserX, Search, Plus, Trash2, Bot, Star, Shield } from 'lucide-react';
 import EvaluationViewer from '@/components/EvaluationViewer';
@@ -7,7 +8,16 @@ import { toast } from 'sonner';
 import { POSITION_CATALOG, resolvePositionLabel } from '@/data/positionCatalog';
 
 export default function UserManagement() {
-  const { currentUser, users, evaluations, updateUser, changePassword, addUser, deleteUser, systemStatus, setManagingPartner, customPositions } = useApp();
+  const { user: currentUser } = useAuth();
+  const { data: users = [] } = useUsers();
+  const { data: evaluations = [] } = useEvaluations();
+  const updateUser = useUpdateUser().mutate;
+  const changePassword = useResetUserPassword().mutate;
+  const addUser = useCreateUser().mutate;
+  const deleteUser = useDeleteUser().mutate;
+  const { data: systemStatus } = useSystemStatus();
+  const setManagingPartner = useUpdateUserRole().mutate;
+  const { data: customPositions = [] } = usePositions();
 
   const [search, setSearch] = useState('');
   const [showPasswordModal, setShowPasswordModal] = useState<string | null>(null);

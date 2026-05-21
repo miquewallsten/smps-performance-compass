@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { useApp } from '@/contexts/AppContext';
+import { useAuth } from '@/contexts/AuthContext';
+import { usePeriods, useCreatePeriod } from '@/api/queries';
 import { PERIODS, PeriodConfig } from '@/types';
 import { Calendar, Save } from 'lucide-react';
 import { toast } from 'sonner';
@@ -48,7 +49,9 @@ function defaultsFor(period: string): PeriodConfig {
 }
 
 export default function PeriodConfigPage() {
-  const { currentUser, periodConfigs, setPeriodConfig } = useApp();
+  const { user: currentUser } = useAuth();
+  const { data: periodConfigs = [] } = usePeriods();
+  const createPeriod = useCreatePeriod().mutate;
   const [selectedPeriod, setSelectedPeriod] = useState(PERIODS[0]);
   const existing = periodConfigs.find(c => c.period === selectedPeriod);
   const [cfg, setCfg] = useState<PeriodConfig>(existing || defaultsFor(selectedPeriod));

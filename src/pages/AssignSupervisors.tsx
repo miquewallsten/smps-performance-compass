@@ -1,11 +1,17 @@
 import { useState } from 'react';
-import { useApp } from '@/contexts/AppContext';
+import { useAuth } from '@/contexts/AuthContext';
+import { useUsers, useAssignments, useCreateAssignment, useDeleteAssignment, useEvaluations } from '@/api/queries';
 import { POSITION_LABELS, CURRENT_PERIOD, PERIODS, Position, LEGAL_HIERARCHY, ADMIN_HIERARCHY } from '@/types';
 import { Plus, X, AlertTriangle } from 'lucide-react';
 import HierarchyFilters, { filterByHierarchy } from '@/components/HierarchyFilters';
 
 export default function AssignSupervisors() {
-  const { currentUser, users, assignments, addAssignment, removeAssignment, evaluations } = useApp();
+  const { user: currentUser } = useAuth();
+  const { data: users = [] } = useUsers();
+  const { data: assignments = [] } = useAssignments();
+  const addAssignment = useCreateAssignment().mutate;
+  const removeAssignment = useDeleteAssignment().mutate;
+  const { data: evaluations = [] } = useEvaluations();
   const [selectedPeriod, setSelectedPeriod] = useState(CURRENT_PERIOD);
   const [selectedEmployee, setSelectedEmployee] = useState<string | null>(null);
 

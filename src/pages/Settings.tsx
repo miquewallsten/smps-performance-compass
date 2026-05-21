@@ -1,11 +1,16 @@
 import { useState } from 'react';
-import { useApp } from '@/contexts/AppContext';
+import { useAuth } from '@/contexts/AuthContext';
+import { useUsers, useEvaluations, useAssignments, useActionPlans } from "@/api/queries";
 import { POSITION_LABELS, SCORE_LABELS, PERIODS, CURRENT_PERIOD, Evaluation } from '@/types';
 import { QUESTIONS_BY_POSITION } from '@/data/questions';
 import { Eye, FileText, ChevronDown, ChevronUp } from 'lucide-react';
 
 export default function SettingsPage() {
-  const { currentUser, users, evaluations, assignments, actionPlans } = useApp();
+  const { user: currentUser } = useAuth();
+  const { data: users = [] } = useUsers();
+  const { data: evaluations = [] } = useEvaluations();
+  const { data: assignments = [] } = useAssignments();
+  const { data: actionPlans = [] } = useActionPlans();
   const [selectedPeriod, setSelectedPeriod] = useState(CURRENT_PERIOD);
   const [expandedEval, setExpandedEval] = useState<string | null>(null);
 
