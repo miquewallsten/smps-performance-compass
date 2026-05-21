@@ -295,7 +295,6 @@ export const moduleConfig = sqliteTable('module_config', {
   evaluations: integer('evaluations', { mode: 'boolean' }).notNull().default(true),
   communications: integer('communications', { mode: 'boolean' }).notNull().default(true),
   vacations: integer('vacations', { mode: 'boolean' }).notNull().default(true),
-  copilot: integer('copilot', { mode: 'boolean' }).notNull().default(true),
 });
 
 // ─── System Status ───────────────────────────────────────────────────────────

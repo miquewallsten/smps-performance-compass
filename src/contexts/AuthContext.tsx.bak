@@ -15,18 +15,10 @@ interface AuthUser {
   mustChangePassword: boolean;
 }
 
-interface ModuleConfig {
-  evaluations: boolean;
-  communications: boolean;
-  vacations: boolean;
-  copilot: boolean;
-}
-
 interface AuthContextType {
   user: AuthUser | null;
   loading: boolean;
   systemInitialized: boolean | null;
-  moduleConfig: ModuleConfig | null;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   changePassword: (currentPassword: string, newPassword: string, securityQuestion?: string, securityAnswer?: string) => Promise<void>;
@@ -42,7 +34,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [systemInitialized, setSystemInitialized] = useState<boolean | null>(null);
-  const [moduleConfig, setModuleConfig] = useState<ModuleConfig | null>(null);
 
   const refreshUser = useCallback(async () => {
     try {
@@ -64,12 +55,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       if (getToken()) {
         await refreshUser();
-        try {
-          const modCfg = await api.get<ModuleConfig>('/api/system/modules');
-          setModuleConfig(modCfg);
-        } catch {
-          setModuleConfig(null);
-        }
       }
       setLoading(false);
     };
@@ -80,12 +65,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const result = await api.post<{ token: string; user: AuthUser }>('/api/auth/login', { email, password });
     setToken(result.token);
     setUser(result.user);
-    try {
-      const modCfg = await api.get<ModuleConfig>('/api/system/modules');
-      setModuleConfig(modCfg);
-    } catch {
-      setModuleConfig(null);
-    }
   }, []);
 
   const logout = useCallback(async () => {
@@ -117,7 +96,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <AuthContext.Provider value={{
-      user, loading, systemInitialized, moduleConfig,
+      user, loading, systemInitialized,
       login, logout, changePassword, resetPassword, getSecurityQuestion,
       refreshUser, initializeSystem,
     }}>

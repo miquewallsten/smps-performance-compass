@@ -19,7 +19,7 @@ export default function Layout() {
   const { data: announcements = [] } = useAnnouncements();
   const { data: vacationRequests = [] } = useVacationRequests();
   const { data: moduleConfig } = useSystemModules();
-  const modules = moduleConfig || { evaluations: true, communications: true, vacations: true, copilot: true };
+  const modules = moduleConfig || { evaluations: true, communications: true, vacations: true };
   const navigate = useNavigate();
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
@@ -115,7 +115,7 @@ export default function Layout() {
     { to: '/vacations', icon: Palmtree, label: 'Vacaciones', show: showVacModule, badge: pendingVacationCount },
     { to: '/settings', icon: Settings, label: 'Mi Perfil', show: true, badge: 0 },
     { to: '/access', icon: Shield, label: 'Acceso', show: !!isSuperUser, badge: 0 },
-    { to: '/copilot', icon: Bot, label: 'Copiloto IA', show: !!(isAdminOrSuper && modules.copilot), badge: 0 },
+    { to: '/copilot', icon: Bot, label: 'Copiloto IA', show: !!isAdminOrSuper, badge: 0 },
   ].filter(i => i.show);
 
   const Badge = ({ count }: { count: number }) => {

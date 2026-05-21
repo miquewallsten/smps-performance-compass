@@ -30,7 +30,7 @@ function toCamelCase(value: unknown): unknown {
   // Known boolean fields that should be converted from 0/1 to true/false
   const booleanFields = new Set([
     'isAdmin', 'isSuperUser', 'isManagingPartner', 'isActive', 'mustChangePassword',
-    'evaluations', 'communications', 'vacations', 'copilot',
+    'evaluations', 'communications', 'vacations',
     'notApplicable', 'noElements', 'feedbackCompleted', 'archived', 'hidden',
   ]);
 

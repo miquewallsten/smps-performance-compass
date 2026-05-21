@@ -109,7 +109,7 @@ router.post('/init', async (req: Request, res: Response) => {
 
       // 4. Seed module config (all enabled)
       db.prepare(
-        `INSERT INTO module_config (id, evaluations, communications, vacations, copilot) VALUES (1, 1, 1, 1, 1)`
+        `INSERT INTO module_config (id, evaluations, communications, vacations) VALUES (1, 1, 1, 1)`
       ).run();
 
       // 5. Seed system status
@@ -201,11 +201,10 @@ router.get('/modules', authMiddleware, (_req: Request, res: Response) => {
 // ─── PATCH /api/system/modules ───────────────────────────────────────────────
 router.patch('/modules', authMiddleware, requireSuperUser, (req: Request, res: Response) => {
   try {
-    const { evaluations, communications, vacations, copilot } = req.body as {
+    const { evaluations, communications, vacations } = req.body as {
       evaluations?: boolean;
       communications?: boolean;
       vacations?: boolean;
-      copilot?: boolean;
     };
 
     // Build dynamic SET clause
@@ -223,10 +222,6 @@ router.patch('/modules', authMiddleware, requireSuperUser, (req: Request, res: R
     if (vacations !== undefined) {
       updates.push('vacations = ?');
       values.push(vacations ? 1 : 0);
-    }
-    if (copilot !== undefined) {
-      updates.push('copilot = ?');
-      values.push(copilot ? 1 : 0);
     }
 
     if (updates.length === 0) {

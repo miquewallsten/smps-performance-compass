@@ -18,15 +18,6 @@ const upload = multer({
 });
 router.use(authMiddleware, requireAdmin);
 
-// Check if copilot module is enabled
-router.use((_req: Request, res: Response, next: NextFunction) => {
-  const moduleConfig = db.prepare('SELECT copilot FROM module_config WHERE id=1').get() as any;
-  if (!moduleConfig?.copilot) {
-    return res.status(403).json({ error: 'Módulo Copiloto IA está desactivado. Actívalo en Configuración del Sistema.' });
-  }
-  next();
-});
-
 const GROQ = 'https://api.groq.com/openai/v1/chat/completions';
 
 interface Tool {
@@ -228,7 +219,7 @@ function getTools(cfg: Record<string, unknown>): Tool[] {
         const act = args.action as string;
         if (act === 'status') return JSON.stringify({ status: db.prepare('SELECT * FROM system_status WHERE id=1').get(), modules: db.prepare('SELECT * FROM module_config WHERE id=1').get() });
         if (act === 'toggle_system') { if (!['active','inactive'].includes(args.status as string)) return JSON.stringify({ error: 'Inválido' }); db.prepare('UPDATE system_status SET status=? WHERE id=1').run(args.status); db.prepare('INSERT INTO activation_history (id,action,date,by) VALUES(?,?,?,?)').run(uuidv4(), args.status === 'active' ? 'activated' : 'deactivated', new Date().toISOString(), uid); return JSON.stringify({ ok: true, msg: `Sistema ${args.status}` }); }
-        if (act === 'toggle_module') { if (!['evaluations','communications','vacations','copilot'].includes(args.module as string)) return JSON.stringify({ error: 'Inválido' }); db.prepare(`UPDATE module_config SET ${args.module}=? WHERE id=1`).run(args.enabled ? 1 : 0); return JSON.stringify({ ok: true, msg: `${args.module} ${args.enabled ? 'activado' : 'desactivado'}` }); }
+        if (act === 'toggle_module') { if (!['evaluations','communications','vacations'].includes(args.module as string)) return JSON.stringify({ error: 'Inválido' }); db.prepare(`UPDATE module_config SET ${args.module}=? WHERE id=1`).run(args.enabled ? 1 : 0); return JSON.stringify({ ok: true, msg: `${args.module} ${args.enabled ? 'activado' : 'desactivado'}` }); }
         return JSON.stringify({ error: 'Acción desconocida' });
       },
     });
@@ -253,10 +244,10 @@ function toFunctions(tools: Tool[]) {
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────────
 router.get('/config', (_req: Request, res: Response) => {
-  try { let cfg = db.prepare('SELECT * FROM copilot_config WHERE id=1').get() as Record<string, unknown> | undefined; if (!cfg) { db.prepare("INSERT INTO copilot_config VALUES(1,'llama-3.1-8b-instant','groq',1,1,1,1,1,0,0,1,1024,0.3,'')").run(); cfg = db.prepare('SELECT * FROM copilot_config WHERE id=1').get() as Record<string, unknown>; } if (cfg.api_key && typeof cfg.api_key === 'string' && cfg.api_key.length > 8) { cfg = { ...cfg, api_key: '••••••••' + cfg.api_key.slice(-8) }; } return res.json(cfg); } catch (e) { console.error(e); return res.status(500).json({ error: 'Internal server error' }); }
+  try { let cfg = db.prepare('SELECT * FROM copilot_config WHERE id=1').get() as Record<string, unknown> | undefined; if (!cfg) { db.prepare("INSERT INTO copilot_config VALUES(1,'llama-3.1-8b-instant','groq',1,1,1,1,1,0,0,1,1024,0.3)").run(); cfg = db.prepare('SELECT * FROM copilot_config WHERE id=1').get() as Record<string, unknown>; } return res.json(cfg); } catch (e) { console.error(e); return res.status(500).json({ error: 'Internal server error' }); }
 });
 router.patch('/config', (req: Request, res: Response) => {
-  try { const allowed = ['model','apiProvider','canManageUsers','canManageEvaluations','canManageVacations','canManageAnnouncements','canManagePeriods','canManageSystem','canViewReports','maxTokens','temperature','apiKey']; const s: string[] = [], v: unknown[] = []; for (const [k, val] of Object.entries(req.body)) { if (!allowed.includes(k)) continue; const dk = k.replace(/[A-Z]/g, l => `_${l.toLowerCase()}`); s.push(`${dk}=?`); v.push(typeof val === 'boolean' ? (val ? 1 : 0) : typeof val === 'string' ? val : ''); } if (!s.length) return res.status(400).json({ error: 'No fields' }); v.push(1); db.prepare(`UPDATE copilot_config SET ${s.join(',')} WHERE id=?`).run(...v); const updated = db.prepare('SELECT * FROM copilot_config WHERE id=1').get() as Record<string, unknown>; if (updated.api_key && typeof updated.api_key === 'string' && updated.api_key.length > 8) { updated.api_key = '••••••••' + updated.api_key.slice(-8); } return res.json(updated); } catch (e) { console.error(e); return res.status(500).json({ error: 'Internal server error' }); }
+  try { const allowed = ['model','apiProvider','canManageUsers','canManageEvaluations','canManageVacations','canManageAnnouncements','canManagePeriods','canManageSystem','canViewReports','maxTokens','temperature']; const s: string[] = [], v: unknown[] = []; for (const [k, val] of Object.entries(req.body)) { if (!allowed.includes(k)) continue; const dk = k.replace(/[A-Z]/g, l => `_${l.toLowerCase()}`); s.push(`${dk}=?`); v.push(typeof val === 'boolean' ? (val ? 1 : 0) : val); } if (!s.length) return res.status(400).json({ error: 'No fields' }); v.push(1); db.prepare(`UPDATE copilot_config SET ${s.join(',')} WHERE id=?`).run(...v); return res.json(db.prepare('SELECT * FROM copilot_config WHERE id=1').get()); } catch (e) { console.error(e); return res.status(500).json({ error: 'Internal server error' }); }
 });
 
 // ─── CONVERSATIONS ───────────────────────────────────────────────────────────
@@ -281,13 +272,10 @@ router.post('/chat', (req: Request, res: Response, next: NextFunction) => {
     if (fileContent) fullMessage += `\n📎 Archivo: "${req.file!.originalname}" (${(req.file!.size / 1024).toFixed(1)}KB)\nContenido:\n${fileContent}`;
 
     let cfg = db.prepare('SELECT * FROM copilot_config WHERE id=1').get() as Record<string, unknown> | undefined;
-    if (!cfg) { db.prepare("INSERT INTO copilot_config VALUES(1,'llama-3.1-8b-instant','groq',1,1,1,1,1,0,0,1,1024,0.3,'')").run(); cfg = db.prepare('SELECT * FROM copilot_config WHERE id=1').get() as Record<string, unknown>; }
+    if (!cfg) { db.prepare("INSERT INTO copilot_config VALUES(1,'llama-3.1-8b-instant','groq',1,1,1,1,1,0,0,1,1024,0.3)").run(); cfg = db.prepare('SELECT * FROM copilot_config WHERE id=1').get() as Record<string, unknown>; }
 
-    const apiKey = (() => {
-      const cfgKey = db.prepare('SELECT api_key FROM copilot_config WHERE id=1').get() as any;
-      return cfgKey?.api_key || process.env.GROQ_API_KEY;
-    })();
-    if (!apiKey) return res.status(500).json({ error: 'API key no configurada. Configúrala en la sección de IA.' });
+    const apiKey = process.env.GROQ_API_KEY;
+    if (!apiKey) return res.status(500).json({ error: 'GROQ_API_KEY not configured' });
 
     const currentUser = db.prepare('SELECT name FROM users WHERE id=?').get(req.user!.id) as any;
     const userName = currentUser?.name || 'Admin';
@@ -312,7 +300,7 @@ router.post('/chat', (req: Request, res: Response, next: NextFunction) => {
     let toolCallsData: string | null = null;
     let toolResultsData: string | null = null;
 
-    const callGroq = async (msgs: Record<string, unknown>[]): Promise<globalThis.Response> => {
+    const callGroq = async (msgs: Record<string, unknown>[]): Promise<Response> => {
       const body = JSON.stringify({
         model: cfg.model || 'llama-3.1-8b-instant', messages: msgs,
         temperature: Number(cfg.temperature) || 0.3,
