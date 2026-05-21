@@ -1,0 +1,141 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Source+Sans+3:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 210 20% 98%;
+    --foreground: 215 50% 15%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 215 50% 15%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 215 50% 15%;
+
+    --primary: 215 50% 15%;
+    --primary-foreground: 0 0% 98%;
+
+    --secondary: 210 15% 93%;
+    --secondary-foreground: 215 50% 15%;
+
+    --muted: 210 15% 95%;
+    --muted-foreground: 215 15% 45%;
+
+    --accent: 350 80% 42%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 214 20% 88%;
+    --input: 214 20% 88%;
+    --ring: 215 50% 15%;
+
+    --radius: 0.5rem;
+
+    --sidebar-background: 215 50% 12%;
+    --sidebar-foreground: 210 20% 90%;
+    --sidebar-primary: 350 80% 50%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 215 45% 20%;
+    --sidebar-accent-foreground: 210 20% 90%;
+    --sidebar-border: 215 40% 22%;
+    --sidebar-ring: 350 80% 50%;
+
+    /* Custom tokens */
+    --smps-navy: 215 50% 15%;
+    --smps-navy-light: 215 40% 25%;
+    --smps-red: 350 80% 42%;
+    --smps-red-light: 350 70% 55%;
+    --smps-gold: 40 60% 50%;
+    --smps-success: 145 60% 40%;
+    --smps-warning: 35 90% 55%;
+
+    --font-display: 'Playfair Display', Georgia, serif;
+    --font-body: 'Source Sans 3', system-ui, sans-serif;
+  }
+
+  .dark {
+    --background: 215 50% 8%;
+    --foreground: 210 20% 90%;
+    --card: 215 45% 12%;
+    --card-foreground: 210 20% 90%;
+    --popover: 215 45% 12%;
+    --popover-foreground: 210 20% 90%;
+    --primary: 210 20% 90%;
+    --primary-foreground: 215 50% 15%;
+    --secondary: 215 40% 18%;
+    --secondary-foreground: 210 20% 90%;
+    --muted: 215 40% 18%;
+    --muted-foreground: 215 15% 55%;
+    --accent: 350 80% 50%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 62% 30%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 215 35% 22%;
+    --input: 215 35% 22%;
+    --ring: 350 80% 50%;
+    --sidebar-background: 215 55% 8%;
+    --sidebar-foreground: 210 20% 85%;
+    --sidebar-primary: 350 80% 50%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 215 45% 15%;
+    --sidebar-accent-foreground: 210 20% 85%;
+    --sidebar-border: 215 40% 15%;
+    --sidebar-ring: 350 80% 50%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: var(--font-body);
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-display);
+  }
+}
+
+@layer components {
+  .smps-gradient-header {
+    background: linear-gradient(135deg, hsl(215 50% 15%), hsl(215 40% 25%));
+  }
+
+  .smps-card-hover {
+    @apply transition-all duration-300;
+  }
+  .smps-card-hover:hover {
+    box-shadow: 0 8px 30px -8px hsl(215 50% 15% / 0.15);
+    transform: translateY(-2px);
+  }
+
+  .smps-stat-card {
+    @apply rounded-lg border bg-card p-6 cursor-pointer;
+    transition: all 0.3s ease;
+  }
+  .smps-stat-card:hover {
+    box-shadow: 0 4px 20px -4px hsl(215 50% 15% / 0.12);
+    border-color: hsl(var(--accent));
+  }
+
+  .smps-badge {
+    @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium;
+  }
+
+  .smps-progress-bar {
+    @apply h-2 rounded-full overflow-hidden;
+    background: hsl(var(--muted));
+  }
+  .smps-progress-bar .fill {
+    @apply h-full rounded-full transition-all duration-500;
+    background: linear-gradient(90deg, hsl(var(--accent)), hsl(var(--smps-red-light)));
+  }
+}
