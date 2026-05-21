@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import path from 'path';
+import authRoutes from './routes/auth.js';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -16,10 +17,8 @@ app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-// API routes will be mounted here
-// app.use('/api/auth', authRoutes);
-// app.use('/api/users', userRoutes);
-// etc.
+// API routes
+app.use('/api/auth', authRoutes);
 
 // Serve static files in production
 if (process.env.NODE_ENV === 'production') {
