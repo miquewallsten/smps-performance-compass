@@ -109,7 +109,7 @@ export default function AssignSupervisors() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-1">
-          <h3 className="font-display text-lg font-semibold mb-3">Seleccionar Empleado</h3>
+          <h3 className="smps-section-title font-display text-base font-semibold mb-3">Seleccionar Empleado</h3>
           <HierarchyFilters levelFilter={empLevelFilter} setLevelFilter={setEmpLevelFilter} positionFilter={empPosFilter} setPositionFilter={setEmpPosFilter} className="mb-3" />
           <div className="space-y-1 max-h-[60vh] overflow-y-auto">
             {renderHierarchyList(LEGAL_HIERARCHY, 'LEGAL')}
@@ -135,7 +135,7 @@ export default function AssignSupervisors() {
         <div className="lg:col-span-2">
           {selectedEmp ? (
             <div className="space-y-6">
-              <div className="bg-card rounded-xl border p-6">
+              <div className="smps-surface-elevated">
                 <h3 className="font-display text-lg font-semibold mb-1">{selectedEmp.name}</h3>
                 <p className="text-sm text-muted-foreground mb-4">{POSITION_LABELS[selectedEmp.position]}</p>
 
@@ -199,7 +199,7 @@ export default function AssignSupervisors() {
                 })()}
               </div>
 
-              <div className="bg-card rounded-xl border p-6">
+              <div className="smps-surface-elevated">
                 <div className="flex items-center justify-between mb-3">
                   <h4 className="text-sm font-semibold">Historial de Evaluaciones - {selectedPeriod}</h4>
                   <HierarchyFilters levelFilter={histLevelFilter} setLevelFilter={setHistLevelFilter} positionFilter={histPosFilter} setPositionFilter={setHistPosFilter} />

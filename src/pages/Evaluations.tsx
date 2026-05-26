@@ -167,7 +167,7 @@ export default function Evaluations() {
           <p className="text-muted-foreground text-sm mt-1">Periodo {CURRENT_PERIOD}</p>
         </div>
 
-        <div className="bg-card rounded-xl border p-4 mb-6 sticky top-14 z-40">
+        <div className="smps-surface-card mb-6 sticky top-14 z-40">
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm font-medium">Progreso: {totalResponded}/{questions.length}</span>
             <span className="text-sm text-muted-foreground">{Math.round((totalResponded / questions.length) * 100)}%</span>
@@ -181,7 +181,7 @@ export default function Evaluations() {
             const sectionGlobalWeight = getSectionWeights(emp.position)[section];
             const cats: string[] = [...new Set(sectionQs.map(q => q.category as string))];
             return (
-              <section key={section} className="border-l-4 border-accent/40 pl-4">
+              <section key={section} className="smps-accent-bar pl-5">
                 <div className="flex items-baseline justify-between mb-3">
                   <h2 className="font-display text-xl font-bold text-primary">{SECTION_LABELS[section]}</h2>
                   <span className="text-xs font-medium bg-accent/10 text-accent px-2.5 py-1 rounded-full">Peso de sección: {sectionGlobalWeight}%</span>
@@ -196,7 +196,7 @@ export default function Evaluations() {
                           const isNA = naQuestions[q.id];
                           const isNE = noElementsQuestions[q.id];
                           return (
-                            <div key={q.id} className="bg-card rounded-lg border p-4">
+                            <div key={q.id} className="smps-surface-card">
                               <div className="flex items-start justify-between mb-3">
                                 <p className="text-sm font-medium text-foreground pr-4">{q.text}</p>
                                 <span className="smps-badge bg-muted text-muted-foreground whitespace-nowrap">Peso: {q.weight}%</span>
@@ -231,8 +231,8 @@ export default function Evaluations() {
           })}
         </div>
 
-        <div className="mt-6 bg-card rounded-xl border p-6">
-          <h3 className="font-display text-lg font-semibold mb-3">Comentarios <span className="text-accent text-sm font-normal">(requerido)</span></h3>
+        <div className="mt-6 smps-surface-elevated">
+          <h3 className="smps-section-title font-display text-base font-semibold mb-3">Comentarios <span className="text-accent text-sm font-normal">(requerido)</span></h3>
           <textarea value={comments} onChange={e => setComments(e.target.value)}
             placeholder="Observaciones sobre el desempeño del colaborador..."
             className="w-full h-32 px-4 py-3 rounded-lg border border-input bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent resize-none text-sm"
@@ -242,8 +242,8 @@ export default function Evaluations() {
         </div>
 
         {(isSocio || isSupervisor(selectedEmployee)) && (
-          <div className="mt-4 bg-card rounded-xl border p-6 border-accent/30">
-            <h3 className="font-display text-lg font-semibold mb-3 text-accent">Comentarios del Evaluador</h3>
+          <div className="mt-4 smps-surface-elevated border-accent/30">
+            <h3 className="smps-section-title font-display text-base font-semibold mb-3 text-accent">Comentarios del Evaluador</h3>
             <p className="text-xs text-muted-foreground mb-2">Visible y editable únicamente para socios y evaluadores asignados.</p>
             <textarea value={supervisorComments} onChange={e => setSupervisorComments(e.target.value)}
               placeholder="Comentarios confidenciales del evaluador..."
@@ -263,12 +263,12 @@ export default function Evaluations() {
 
         {showConfirm && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/20 backdrop-blur-sm" onClick={() => setShowConfirm(false)}>
-            <div className="bg-card rounded-xl border p-6 w-full max-w-sm shadow-xl" onClick={e => e.stopPropagation()}>
-              <h3 className="font-display text-lg font-semibold mb-2">Confirmar Envío</h3>
+            <div className="smps-surface-elevated w-full max-w-sm shadow-xl" onClick={e => e.stopPropagation()}>
+              <h3 className="smps-section-title font-display text-base font-semibold mb-2">Confirmar Envío</h3>
               <p className="text-sm text-muted-foreground mb-4">Una vez enviada la evaluación, <strong>no será posible modificarla</strong>. ¿Desea continuar?</p>
               <div className="flex gap-3">
                 <button onClick={() => setShowConfirm(false)} className="flex-1 py-2 rounded-lg border text-sm font-medium hover:bg-muted transition-colors">Cancelar</button>
-                <button onClick={handleSubmit} className="flex-1 py-2 rounded-lg bg-accent text-accent-foreground text-sm font-medium hover:opacity-90 transition-opacity">Confirmar</button>
+                <button onClick={handleSubmit} className="flex-1 py-2 rounded-md bg-accent text-accent-foreground text-sm font-medium hover:opacity-90 transition-all duration-150 active:scale-[0.98]">Confirmar</button>
               </div>
             </div>
           </div>
@@ -313,7 +313,7 @@ export default function Evaluations() {
 
       {pendingEmployees.length > 0 && (
         <div className="mb-6">
-          <h3 className="font-display text-lg font-semibold mb-3 text-smps-warning">Pendientes ({pendingEmployees.length})</h3>
+          <h3 className="smps-section-title font-display text-base font-semibold mb-3 text-smps-warning">Pendientes ({pendingEmployees.length})</h3>
           <div className="space-y-2">
             {pendingEmployees.map(emp => (
               <div key={emp.id} className="flex items-center justify-between py-3 px-4 rounded-lg bg-card border">
@@ -333,7 +333,7 @@ export default function Evaluations() {
 
       {completedEmployees.length > 0 && (
         <div className="mb-6">
-          <h3 className="font-display text-lg font-semibold mb-3 text-smps-success">Completadas ({completedEmployees.length})</h3>
+          <h3 className="smps-section-title font-display text-base font-semibold mb-3 text-smps-success">Completadas ({completedEmployees.length})</h3>
           <div className="space-y-2">
             {completedEmployees.map(({ user: emp, eval: ev }) => {
               const hasActionPlan = actionPlans.some(p => p.employeeId === emp.id && p.period === CURRENT_PERIOD && p.supervisorId === currentUser.id);
@@ -380,14 +380,14 @@ export default function Evaluations() {
         if (evalsWithPendingNA.length === 0) return null;
         return (
           <div className="mb-6">
-            <h3 className="font-display text-lg font-semibold mb-3 text-smps-warning">Aprobaciones "No Aplica" Pendientes</h3>
+            <h3 className="smps-section-title font-display text-base font-semibold mb-3 text-smps-warning">Aprobaciones "No Aplica" Pendientes</h3>
             <div className="space-y-3">
               {evalsWithPendingNA.map(ev => {
                 const evaluated = users.find(u => u.id === ev.evaluatedId);
                 const questions = evaluated ? getQuestionsForUser(evaluated, Array.isArray(customQuestions) ? {} : customQuestions) : [];
                 const pendingNAResponses = (ev.responses || []).filter(r => r.notApplicable && !ev.naApprovals?.[r.questionId]);
                 return (
-                  <div key={ev.id} className="bg-card rounded-xl border p-4">
+                  <div key={ev.id} className="smps-surface-card">
                     <p className="text-sm font-medium mb-1">{evaluated?.name} <span className="text-xs text-muted-foreground">({evaluated ? POSITION_LABELS[evaluated.position] : ''})</span></p>
                     <p className="text-xs text-muted-foreground mb-3">Autoevaluación</p>
                     {pendingNAResponses.map(r => {

@@ -272,7 +272,7 @@ export default function EvaluationTemplates() {
 
       <div className="space-y-8">
         <div>
-          <h2 className="font-display text-lg font-semibold mb-3 flex items-center gap-2">
+          <h2 className="smps-section-title font-display text-base font-semibold mb-3 flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-accent" />
             Nivel Legal
           </h2>
@@ -282,7 +282,7 @@ export default function EvaluationTemplates() {
         </div>
 
         <div>
-          <h2 className="font-display text-lg font-semibold mb-3 flex items-center gap-2">
+          <h2 className="smps-section-title font-display text-base font-semibold mb-3 flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-primary" />
             Nivel Administrativo
           </h2>

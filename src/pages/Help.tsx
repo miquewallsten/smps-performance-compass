@@ -109,7 +109,7 @@ export default function Help() {
         </div>
 
         {/* Diccionario de Competencias */}
-        <section ref={competenciesRef} className={`bg-card rounded-xl border p-5 ${autoOpenComp ? 'ring-2 ring-accent' : ''}`}>
+        <section ref={competenciesRef} className={`smps-surface-card ${autoOpenComp ? 'ring-2 ring-accent' : ''}`}>
           <div className="flex items-start gap-4 mb-4">
             <div className="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center flex-shrink-0">
               <Sparkles className="h-5 w-5 text-accent" />
@@ -148,7 +148,7 @@ export default function Help() {
         </section>
 
         {visible.map((s, i) => (
-          <section key={i} className="bg-card rounded-xl border p-5 hover:shadow-sm transition-shadow">
+          <section key={i} className="smps-surface-card hover:shadow-sm transition-shadow">
             <div className="flex items-start gap-4">
               <div className="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center flex-shrink-0">
                 <s.icon className="h-5 w-5 text-accent" />

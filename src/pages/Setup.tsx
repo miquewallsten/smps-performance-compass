@@ -32,7 +32,7 @@ export default function SetupPage() {
     <div className="min-h-screen flex items-center justify-center bg-background">
       <div className="absolute inset-0 smps-gradient-header opacity-95" />
       <div className="relative z-10 w-full max-w-md px-6">
-        <div className="bg-card rounded-xl shadow-2xl p-8 animate-fade-in">
+        <div className="bg-card rounded-xl shadow-2xl p-8 smps-fade-in">
           <div className="text-center mb-8">
             <div className="inline-flex items-center justify-center w-16 h-16 rounded-lg bg-primary mb-4">
               <span className="text-primary-foreground font-display text-xl font-bold">SM<br/>PS</span>
@@ -75,7 +75,7 @@ export default function SetupPage() {
             </div>
             {error && <div className="text-sm text-destructive bg-destructive/10 rounded-lg px-4 py-2.5">{error}</div>}
             <button type="submit" disabled={loading}
-              className="w-full py-2.5 rounded-lg bg-accent text-accent-foreground font-semibold hover:opacity-90 transition-opacity disabled:opacity-50">
+              className="w-full py-2.5 rounded-md bg-accent text-accent-foreground font-semibold hover:opacity-90 transition-all duration-150 active:scale-[0.98] disabled:opacity-50">
               {loading ? 'Configurando...' : 'Crear Super Administrador'}
             </button>
           </form>

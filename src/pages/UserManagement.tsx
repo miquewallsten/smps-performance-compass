@@ -197,7 +197,7 @@ export default function UserManagement() {
     if (userList.length === 0) return null;
     return (
       <div className="mb-6">
-        <h3 className="font-display text-lg font-semibold mb-3 text-accent">{groupLabel}</h3>
+        <h3 className="smps-section-title font-display text-base font-semibold mb-3 text-accent">{groupLabel}</h3>
         <div className="bg-card rounded-xl border overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
@@ -324,7 +324,7 @@ export default function UserManagement() {
           <p className="text-muted-foreground text-sm mt-1">{visibleUsers.length} usuarios registrados</p>
         </div>
         <div className="flex items-center gap-2">
-          <button onClick={() => setShowAddUser(true)} className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-accent text-accent-foreground text-sm font-medium hover:opacity-90 transition-opacity">
+          <button onClick={() => setShowAddUser(true)} className="flex items-center gap-2 px-4 py-2.5 rounded-md bg-accent text-accent-foreground text-sm font-medium hover:opacity-90 transition-all duration-150 active:scale-[0.98]">
             <Plus className="h-4 w-4" /> Nuevo Usuario
           </button>
         </div>
@@ -342,8 +342,8 @@ export default function UserManagement() {
       {/* Delete Confirmation */}
       {deleteConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/20 backdrop-blur-sm" onClick={() => setDeleteConfirm(null)}>
-          <div className="bg-card rounded-xl border p-6 w-full max-w-sm shadow-xl" onClick={e => e.stopPropagation()}>
-            <h3 className="font-display text-lg font-semibold mb-2 text-destructive">Eliminar Usuario</h3>
+          <div className="smps-surface-elevated w-full max-w-sm shadow-xl" onClick={e => e.stopPropagation()}>
+            <h3 className="smps-section-title font-display text-base font-semibold mb-2 text-destructive">Eliminar Usuario</h3>
             <p className="text-sm text-muted-foreground mb-1">¿Está seguro de que desea eliminar a:</p>
             <p className="text-sm font-semibold mb-4">{users.find(u => u.id === deleteConfirm)?.name}?</p>
             <p className="text-xs text-destructive/70 mb-4">Esta acción no se puede deshacer. Se eliminarán todas las asignaciones relacionadas.</p>
@@ -358,8 +358,8 @@ export default function UserManagement() {
       {/* Change Password Modal */}
       {showPasswordModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/20 backdrop-blur-sm" onClick={() => setShowPasswordModal(null)}>
-          <div className="bg-card rounded-xl border p-6 w-full max-w-sm shadow-xl" onClick={e => e.stopPropagation()}>
-            <h3 className="font-display text-lg font-semibold mb-4">Cambiar Contraseña</h3>
+          <div className="smps-surface-elevated w-full max-w-sm shadow-xl" onClick={e => e.stopPropagation()}>
+            <h3 className="smps-section-title font-display text-base font-semibold mb-3">Cambiar Contraseña</h3>
             <p className="text-sm text-muted-foreground mb-3">{users.find(u => u.id === showPasswordModal)?.name}</p>
             <input type="text" value={newPassword} onChange={e => setNewPassword(e.target.value)} placeholder="Nueva contraseña"
               className="w-full px-4 py-2.5 rounded-lg border border-input bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent text-sm" />
@@ -374,7 +374,7 @@ export default function UserManagement() {
       {/* View Evaluations Modal */}
       {selectedUser && selectedUserData && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/20 backdrop-blur-sm" onClick={() => setSelectedUser(null)}>
-          <div className="bg-card rounded-xl border p-6 w-full max-w-lg shadow-xl max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+          <div className="smps-surface-elevated w-full max-w-lg shadow-xl max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             <h3 className="font-display text-lg font-semibold mb-1">{selectedUserData.name}</h3>
             <p className="text-sm text-muted-foreground mb-4">{POSITION_LABELS[selectedUserData.position]}</p>
             {userEvals.length === 0 ? (
@@ -423,8 +423,8 @@ export default function UserManagement() {
       {/* Add User Modal */}
       {showAddUser && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/20 backdrop-blur-sm" onClick={() => setShowAddUser(false)}>
-          <div className="bg-card rounded-xl border p-6 w-full max-w-md shadow-xl" onClick={e => e.stopPropagation()}>
-            <h3 className="font-display text-lg font-semibold mb-4">Nuevo Usuario</h3>
+          <div className="smps-surface-elevated w-full max-w-md shadow-xl" onClick={e => e.stopPropagation()}>
+            <h3 className="smps-section-title font-display text-base font-semibold mb-3">Nuevo Usuario</h3>
             <div className="space-y-3">
               <div>
                 <label className="text-sm font-medium text-foreground">Nombre completo</label>

@@ -88,10 +88,10 @@ export default function PeriodConfigPage() {
   };
 
   const stages: { startKey: keyof PeriodConfig; endKey: keyof PeriodConfig; label: string; color: string }[] = [
-    { startKey: 'selfStart', endKey: 'selfEnd', label: 'Autoevaluación', color: 'border-l-blue-500' },
-    { startKey: 'supervisorStart', endKey: 'supervisorEnd', label: 'Evaluación de Evaluadores', color: 'border-l-purple-500' },
-    { startKey: 'feedbackStart', endKey: 'feedbackEnd', label: 'Sesión de Feedback', color: 'border-l-amber-500' },
-    { startKey: 'actionPlanStart', endKey: 'actionPlanEnd', label: 'Plan de Acción', color: 'border-l-green-500' },
+    { startKey: 'selfStart', endKey: 'selfEnd', label: 'Autoevaluación', color: '#3b82f6' },
+    { startKey: 'supervisorStart', endKey: 'supervisorEnd', label: 'Evaluación de Evaluadores', color: '#a855f7' },
+    { startKey: 'feedbackStart', endKey: 'feedbackEnd', label: 'Sesión de Feedback', color: '#f59e0b' },
+    { startKey: 'actionPlanStart', endKey: 'actionPlanEnd', label: 'Plan de Acción', color: '#22c55e' },
   ];
 
   return (
@@ -123,7 +123,7 @@ export default function PeriodConfigPage() {
 
         <div className="space-y-4">
           {stages.map(stage => (
-            <div key={stage.label} className={`pl-4 border-l-4 ${stage.color}`}>
+            <div key={stage.label} className="pl-5 smps-accent-bar" style={{"--bar-color": stage.color} as React.CSSProperties}>
               <p className="text-sm font-semibold mb-2">{stage.label}</p>
               <div className="grid grid-cols-2 gap-3">
                 <div>

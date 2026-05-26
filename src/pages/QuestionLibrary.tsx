@@ -262,7 +262,7 @@ export default function QuestionLibrary() {
 
       {showForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/20 backdrop-blur-sm" onClick={() => setShowForm(false)}>
-          <div className="bg-card rounded-xl border p-6 w-full max-w-lg shadow-xl" onClick={e => e.stopPropagation()}>
+          <div className="smps-surface-elevated w-full max-w-lg shadow-xl" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-display text-lg font-semibold">
                 {editing ? (editing.kind === 'seed' ? 'Editar Pregunta Base' : 'Editar Pregunta') : 'Nueva Pregunta'}

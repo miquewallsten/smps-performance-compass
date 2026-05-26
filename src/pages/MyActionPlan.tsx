@@ -169,7 +169,7 @@ export default function MyActionPlan() {
 
       {/* Visor (plan ya aprobado o bloqueado) */}
       {planLocked && myPlan && (
-        <div className="bg-card rounded-xl border p-6">
+        <div className="smps-surface-elevated">
           <div className="flex items-center justify-between mb-3">
             <h3 className="font-display text-lg font-semibold">Plan de Acción — {period}</h3>
             {statusBadge(myPlan.approvalStatus)}
@@ -180,7 +180,7 @@ export default function MyActionPlan() {
 
       {/* Editor SMART */}
       {canFillPlan && !planLocked && (
-        <div className="bg-card rounded-xl border p-6">
+        <div className="smps-surface-elevated">
           <div className="flex items-center justify-between mb-3">
             <h3 className="font-display text-lg font-semibold">Plan de Acción — {period}</h3>
             {myPlan && statusBadge(myPlan.approvalStatus)}
@@ -263,7 +263,7 @@ export default function MyActionPlan() {
       {/* Planes pendientes de mi aprobación */}
       {pendingForMyApproval.length > 0 && (
         <div className="bg-card rounded-xl border border-accent/30 p-6">
-          <h3 className="font-display text-lg font-semibold mb-3 text-accent">
+          <h3 className="smps-section-title font-display text-base font-semibold mb-3 text-accent">
             Planes pendientes de tu autorización ({pendingForMyApproval.length})
           </h3>
           <div className="space-y-4">

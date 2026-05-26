@@ -77,7 +77,7 @@ export default function MyProfile() {
       </div>
 
       {/* Datos del usuario */}
-      <div className="bg-card rounded-xl border p-6">
+      <div className="smps-surface-elevated">
         <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
           <h3 className="font-display text-lg font-semibold">Información Personal</h3>
           <Link to={`/help?position=${currentUser.position}&open=competencias`}
@@ -94,8 +94,8 @@ export default function MyProfile() {
       </div>
 
       {/* Resumen de evaluaciones */}
-      <div className="bg-card rounded-xl border p-6">
-        <h3 className="font-display text-lg font-semibold mb-4 flex items-center gap-2">
+      <div className="smps-surface-elevated">
+        <h3 className="smps-section-title font-display text-base font-semibold mb-3 flex items-center gap-2">
           <TrendingUp className="h-5 w-5 text-accent" /> Resumen de Evaluación — {period}
         </h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -130,8 +130,8 @@ export default function MyProfile() {
 
       {/* Resumen del Equipo */}
       {teamSummary.length > 0 && (
-        <div className="bg-card rounded-xl border p-6">
-          <h3 className="font-display text-lg font-semibold mb-4 flex items-center gap-2">
+        <div className="smps-surface-elevated">
+          <h3 className="smps-section-title font-display text-base font-semibold mb-3 flex items-center gap-2">
             <UserIcon className="h-5 w-5 text-accent" /> Mi Equipo — {period}
           </h3>
           <div className="overflow-x-auto">
@@ -160,8 +160,8 @@ export default function MyProfile() {
       )}
 
       {/* Objetivos / Cumplimiento */}
-      <div className="bg-card rounded-xl border p-6">
-        <h3 className="font-display text-lg font-semibold mb-4 flex items-center gap-2">
+      <div className="smps-surface-elevated">
+        <h3 className="smps-section-title font-display text-base font-semibold mb-3 flex items-center gap-2">
           <Target className="h-5 w-5 text-accent" /> Objetivos y Cumplimiento — {period}
         </h3>
         {!obj && (

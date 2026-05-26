@@ -102,7 +102,7 @@ export default function SettingsPage() {
         {ev.supervisorComments && (
           <div>
             <p className="text-xs font-semibold mb-1 text-accent">Comentarios del Evaluador</p>
-            <p className="text-xs text-muted-foreground bg-muted/50 rounded-lg p-3 border-l-2 border-accent">{ev.supervisorComments}</p>
+            <p className="text-xs text-muted-foreground bg-muted/50 rounded-lg p-3 bg-muted/50 rounded-lg p-3 italic">{ev.supervisorComments}</p>
           </div>
         )}
       </div>
@@ -123,8 +123,8 @@ export default function SettingsPage() {
       </div>
 
       {/* Profile Card */}
-      <div className="bg-card rounded-xl border p-6">
-        <h3 className="font-display text-lg font-semibold mb-4">Datos Personales</h3>
+      <div className="smps-surface-elevated">
+        <h3 className="smps-section-title font-display text-base font-semibold mb-3">Datos Personales</h3>
         <div className="space-y-3 text-sm">
           <div className="flex justify-between"><span className="text-muted-foreground">Nombre:</span><span className="font-medium">{currentUser.name}</span></div>
           <div className="flex justify-between"><span className="text-muted-foreground">Email:</span><span>{currentUser.email}</span></div>
@@ -138,7 +138,7 @@ export default function SettingsPage() {
       </div>
 
       {/* Password Change Card */}
-      <div className="bg-card rounded-xl border p-6">
+      <div className="smps-surface-elevated">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <Lock className="h-5 w-5 text-accent" />
@@ -176,7 +176,7 @@ export default function SettingsPage() {
             </div>
             <div className="flex gap-3 pt-1">
               <button type="submit" disabled={passwordLoading}
-                className="px-6 py-2.5 rounded-lg bg-accent text-accent-foreground font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 text-sm">
+                className="px-6 py-2.5 rounded-md bg-accent text-accent-foreground font-semibold hover:opacity-90 transition-all duration-150 active:scale-[0.98] disabled:opacity-50 text-sm">
                 {passwordLoading ? 'Guardando...' : 'Guardar Contraseña'}
               </button>
               <button type="button" onClick={() => { setShowPasswordForm(false); setPasswordError(''); setCurrentPassword(''); setNewPassword(''); setConfirmNewPassword(''); }}
@@ -191,7 +191,7 @@ export default function SettingsPage() {
       </div>
 
       {/* Self Evaluation */}
-      <div className="bg-card rounded-xl border p-6">
+      <div className="smps-surface-elevated">
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-display text-lg font-semibold">Autoevaluación — {selectedPeriod}</h3>
           {selfEval && <span className="text-2xl font-bold font-display text-accent">{selfEval.totalScore}%</span>}
@@ -212,7 +212,7 @@ export default function SettingsPage() {
       </div>
 
       {/* Evaluator Evaluations */}
-      <div className="bg-card rounded-xl border p-6">
+      <div className="smps-surface-elevated">
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-display text-lg font-semibold">Evaluaciones de Evaluadores — {selectedPeriod}</h3>
           {supervisorAvgScore !== null && supervisorEvals.length > 1 && (
@@ -252,7 +252,7 @@ export default function SettingsPage() {
       </div>
 
       {/* Action Plans - one per evaluator */}
-      <div className="bg-card rounded-xl border p-6 border-accent/30">
+      <div className="smps-surface-elevated border-accent/30">
         <div className="flex items-center gap-2 mb-4">
           <FileText className="h-5 w-5 text-accent" />
           <h3 className="font-display text-lg font-semibold">Planes de Acción — {selectedPeriod}</h3>

@@ -91,7 +91,7 @@ export default function AccessControl() {
       </div>
 
       {/* Status Card */}
-      <div className="bg-card rounded-xl border p-6">
+      <div className="smps-surface-elevated">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
             <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${status.status === 'active' ? 'bg-smps-success/10' : 'bg-destructive/10'}`}>
@@ -126,8 +126,8 @@ export default function AccessControl() {
       </div>
 
       {/* Module Toggles */}
-      <div className="bg-card rounded-xl border p-6">
-        <h3 className="font-display text-lg font-semibold mb-4 flex items-center gap-2">
+      <div className="smps-surface-elevated">
+        <h3 className="smps-section-title font-display text-base font-semibold mb-3 flex items-center gap-2">
           <ToggleLeft className="h-5 w-5 text-accent" /> Módulos del Sistema
         </h3>
         <div className="space-y-3">
@@ -158,7 +158,7 @@ export default function AccessControl() {
       </div>
 
       {/* Active Users & Limit */}
-      <div className="bg-card rounded-xl border p-6">
+      <div className="smps-surface-elevated">
         <div className="flex items-center gap-3 mb-4">
           <Users className="h-5 w-5 text-accent" />
           <h3 className="font-display text-lg font-semibold">Usuarios Activos</h3>
@@ -188,7 +188,7 @@ export default function AccessControl() {
       </div>
 
       {/* Tickets */}
-      <div className="bg-card rounded-xl border p-6">
+      <div className="smps-surface-elevated">
         <div className="flex items-center gap-3 mb-4">
           <Ticket className="h-5 w-5 text-accent" />
           <h3 className="font-display text-lg font-semibold">Tickets</h3>
@@ -211,7 +211,7 @@ export default function AccessControl() {
       </div>
 
       {/* Activation Date */}
-      <div className="bg-card rounded-xl border p-6">
+      <div className="smps-surface-elevated">
         <div className="flex items-center gap-3 mb-4">
           <Calendar className="h-5 w-5 text-accent" />
           <h3 className="font-display text-lg font-semibold">Activación</h3>
@@ -233,7 +233,7 @@ export default function AccessControl() {
       </div>
 
       {/* Payment Plan */}
-      <div className="bg-card rounded-xl border p-6">
+      <div className="smps-surface-elevated">
         <div className="flex items-center gap-3 mb-4">
           <CreditCard className="h-5 w-5 text-accent" />
           <h3 className="font-display text-lg font-semibold">Forma de Pago</h3>
@@ -256,8 +256,8 @@ export default function AccessControl() {
 
       {/* AI Configuration - SuperAdmin Only */}
       {modules?.copilot && (
-        <div className="bg-card rounded-xl border p-6">
-          <h3 className="font-display text-lg font-semibold mb-4 flex items-center gap-2">
+        <div className="smps-surface-elevated">
+          <h3 className="smps-section-title font-display text-base font-semibold mb-3 flex items-center gap-2">
             <Bot className="h-5 w-5 text-accent" /> Configuración de IA
           </h3>
           <div className="space-y-4">
@@ -329,7 +329,7 @@ export default function AccessControl() {
 
       {/* Activation History */}
       {activationHistory.length > 0 && (
-        <div className="bg-card rounded-xl border p-6">
+        <div className="smps-surface-elevated">
           <div className="flex items-center gap-3 mb-4">
             <History className="h-5 w-5 text-accent" />
             <h3 className="font-display text-lg font-semibold">Histórico de Activación</h3>
