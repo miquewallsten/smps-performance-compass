@@ -116200,8 +116200,8 @@ router5.post("/", authMiddleware, async (req, res) => {
       for (const r of respArr) {
         await tx.run(
           conn,
-          `INSERT INTO evaluation_responses (id, evaluation_id, question_id, score, not_applicable, no_elements) VALUES (?, ?, ?, ?, ?, ?)`,
-          [v4_default(), id, r.questionId, r.score, r.notApplicable ? 1 : 0, r.noElements ? 1 : 0]
+          `INSERT INTO evaluation_responses (id, evaluation_id, question_id, score, not_applicable, no_elements, weight) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+          [v4_default(), id, r.questionId, r.score, r.notApplicable ? 1 : 0, r.noElements ? 1 : 0, r.weight || 1]
         );
       }
     });
@@ -116247,8 +116247,8 @@ router5.patch("/:id", authMiddleware, async (req, res) => {
         for (const r of responses) {
           await tx.run(
             conn,
-            `INSERT INTO evaluation_responses (id, evaluation_id, question_id, score, not_applicable, no_elements) VALUES (?, ?, ?, ?, ?, ?)`,
-            [v4_default(), req.params.id, r.questionId, r.score, r.notApplicable ? 1 : 0, r.noElements ? 1 : 0]
+            `INSERT INTO evaluation_responses (id, evaluation_id, question_id, score, not_applicable, no_elements, weight) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+            [v4_default(), req.params.id, r.questionId, r.score, r.notApplicable ? 1 : 0, r.noElements ? 1 : 0, r.weight || 1]
           );
         }
       });

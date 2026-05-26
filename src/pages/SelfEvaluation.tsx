@@ -79,8 +79,8 @@ export default function SelfEvaluation() {
   const handleSubmit = () => {
     if (!canSubmit) return;
     const evalResponses = [
-      ...Object.entries(responses).map(([questionId, score]) => ({ questionId, score, notApplicable: false })),
-      ...Object.keys(naQuestions).map(questionId => ({ questionId, score: 0, notApplicable: true })),
+      ...Object.entries(responses).map(([questionId, score]) => ({ questionId, score, notApplicable: false, weight: questions.find(q => q.id === questionId)?.weight || 1 })),
+      ...Object.keys(naQuestions).map(questionId => ({ questionId, score: 0, notApplicable: true, weight: questions.find(q => q.id === questionId)?.weight || 1 })),
     ];
     const totalScore = calculateScore(questions, evalResponses);
     addEvaluation({
@@ -139,8 +139,8 @@ export default function SelfEvaluation() {
 
   if (existing || submitted) {
     const score = existing?.totalScore ?? calculateScore(questions, [
-      ...Object.entries(responses).map(([q, s]) => ({ questionId: q, score: s, notApplicable: false })),
-      ...Object.keys(naQuestions).map(q => ({ questionId: q, score: 0, notApplicable: true })),
+      ...Object.entries(responses).map(([q, s]) => ({ questionId: q, score: s, notApplicable: false, weight: questions.find(qr => qr.id === q)?.weight || 1 })),
+      ...Object.keys(naQuestions).map(q => ({ questionId: q, score: 0, notApplicable: true, weight: questions.find(qr => qr.id === q)?.weight || 1 })),
     ]);
     return (
       <div className="max-w-3xl mx-auto">

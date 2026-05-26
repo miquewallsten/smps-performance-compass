@@ -136,9 +136,9 @@ export default function Evaluations() {
     const handleSubmit = () => {
       if (!canSubmit) return;
       const evalResponses = [
-        ...Object.entries(responses).map(([questionId, score]) => ({ questionId, score, notApplicable: false, noElements: false })),
-        ...Object.keys(naQuestions).map(questionId => ({ questionId, score: 0, notApplicable: true, noElements: false })),
-        ...Object.keys(noElementsQuestions).map(questionId => ({ questionId, score: 0, notApplicable: false, noElements: true })),
+        ...Object.entries(responses).map(([questionId, score]) => ({ questionId, score, notApplicable: false, noElements: false, weight: questions.find(q => q.id === questionId)?.weight || 1 })),
+        ...Object.keys(naQuestions).map(questionId => ({ questionId, score: 0, notApplicable: true, noElements: false, weight: questions.find(q => q.id === questionId)?.weight || 1 })),
+        ...Object.keys(noElementsQuestions).map(questionId => ({ questionId, score: 0, notApplicable: false, noElements: true, weight: questions.find(q => q.id === questionId)?.weight || 1 })),
       ];
       const totalScore = calculateScore(questions, evalResponses);
       addEvaluation({
