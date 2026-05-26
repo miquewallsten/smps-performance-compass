@@ -90,7 +90,9 @@ MYSQL_PASSWORD=YOUR_ACTUAL_PASSWORD_HERE
 MYSQL_DATABASE=u906489923_smPS
 JWT_SECRET=791794abc42eb8c7eeae01385d9b45943ded236691169c081f86970f64dc08e289d99a6becbc7ec6b25047e124f5053a3dc39d41af3ea5ae02e8c53840d17cca
 PORT=3000
-GROQ_API_KEY=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
+OLLAMA_API_KEY=42861d8c531d4528a77137876e6e7ec3.vW97sgyFn2wAoPoeFAwhwA7f
+OLLAMA_BASE_URL=https://ollama.com/v1
+OLLAMA_MODEL=qwen3.5:397b
 NODE_ENV=production
 ```
 
@@ -136,7 +138,9 @@ curl -X POST http://localhost:3000/api/auth/login \
 | `MYSQL_PASSWORD` | (your MySQL password from Step 1) |
 | `MYSQL_DATABASE` | `u906489923_smPS` |
 | `JWT_SECRET` | `791794abc42eb8c7eeae01385d9b45943ded236691169c081f86970f64dc08e289d99a6becbc7ec6b25047e124f5053a3dc39d41af3ea5ae02e8c53840d17cca` |
-| `GROQ_API_KEY` | `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` |
+| `OLLAMA_API_KEY` | `4286...wA7f` |
+| `OLLAMA_BASE_URL` | `https://ollama.com/v1` |
+| `OLLAMA_MODEL` | `qwen3.5:397b` |
 | `NODE_ENV` | `production` |
 | `PORT` | `3000` |
 
@@ -190,4 +194,4 @@ Hostinger may assign a specific port. Check the Node.js panel for the assigned p
 | **Regular user password** | `1234` (forced change on first login) |
 | **Database** | MySQL (auto-created tables + seed on startup) |
 | **Server port** | 3000 |
-| **Copilot model** | llama-3.3-70b-versatile (via Groq) |
+| **Copilot model** | qwen3.5:397b (via Ollama Cloud) |
