@@ -39,32 +39,33 @@ jobs:
           SCP="scp -i ~/.ssh/deploy_key -P ${{ secrets.HOSTINGER_PORT }} -o StrictHostKeyChecking=no"
           REMOTE="${{ secrets.HOSTINGER_USER }}@${{ secrets.HOSTINGER_HOST }}:${{ secrets.HOSTINGER_PATH }}"
           
-          echo "Uploading server.cjs..."
           $SCP server.cjs $REMOTE/server.cjs
-          
-          echo "Uploading dist/..."
           $SCP dist/index.html $REMOTE/dist/index.html
           $SCP dist/assets/index-*.js $REMOTE/dist/assets/
           $SCP dist/assets/index-*.css $REMOTE/dist/assets/
           $SCP dist/assets/xlsx-*.js $REMOTE/dist/assets/ 2>/dev/null || true
-          
-          echo "Uploading source files..."
           $SCP -r server/ $REMOTE/server/
           $SCP -r src/ $REMOTE/src/
           $SCP start.sh $REMOTE/start.sh
 
-      - name: Deploy (restart server)
+      - name: Trigger server restart
         run: |
+          # Run ci-deploy.sh in background via nohup so SSH can close quickly
           ssh -i ~/.ssh/deploy_key -p ${{ secrets.HOSTINGER_PORT }} -o StrictHostKeyChecking=no \
             ${{ secrets.HOSTINGER_USER }}@${{ secrets.HOSTINGER_HOST }} \
-            "bash ${{ secrets.HOSTINGER_PATH }}/ci-deploy.sh"
+            "nohup bash ${{ secrets.HOSTINGER_PATH }}/ci-deploy.sh > /dev/null 2>&1 &"
 
       - name: Verify deployment
         run: |
-          sleep 3
-          HEALTH=$(curl -s https://bowdot.online/api/health 2>/dev/null)
-          if echo "$HEALTH" | grep -q '"ok"'; then
-            echo "✅ Deployment verified! Health: $HEALTH"
-          else
-            echo "⚠️ Could not verify via HTTPS, but server restart reported success"
-          fi
+          echo "Waiting for server to come back up..."
+          for i in 1 2 3 4 5 6 7 8 9 10; do
+            sleep 5
+            HEALTH=$(curl -s https://bowdot.online/api/health 2>/dev/null)
+            if echo "$HEALTH" | grep -q '"ok"'; then
+              echo "✅ Deployment successful! Health: $HEALTH"
+              exit 0
+            fi
+            echo "Attempt $i: server not ready yet..."
+          done
+          echo "❌ Deployment verification failed"
+          exit 1
