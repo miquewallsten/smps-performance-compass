@@ -3,7 +3,7 @@ name: Deploy to Production
 on:
   push:
     branches: [main]
-  workflow_dispatch:  # Manual trigger from GitHub UI
+  workflow_dispatch:
 
 jobs:
   deploy:
@@ -24,41 +24,54 @@ jobs:
       - name: Build app
         run: npm run build
 
-      - name: Setup SSH key
+      - name: Setup SSH
         run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.HOSTINGER_SSH_KEY }}" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
-          ssh-keyscan -p ${{ secrets.HOSTINGER_PORT }} ${{ secrets.HOSTINGER_HOST }} >> ~/.ssh/known_hosts 2>/dev/null
+          # Add host key to known_hosts
+          ssh-keyscan -p ${{ secrets.HOSTINGER_PORT }} ${{ secrets.HOSTINGER_HOST }} >> ~/.ssh/known_hosts 2>/dev/null || true
+          # Test SSH connection
+          ssh -i ~/.ssh/deploy_key -p ${{ secrets.HOSTINGER_PORT }} -o StrictHostKeyChecking=no \
+            ${{ secrets.HOSTINGER_USER }}@${{ secrets.HOSTINGER_HOST }} "echo SSH OK"
 
       - name: Upload built files
         run: |
-          SSH="ssh -i ~/.ssh/deploy_key -p ${{ secrets.HOSTINGER_PORT }} -o StrictHostKeyChecking=no ${{ secrets.HOSTINGER_USER }}@${{ secrets.HOSTINGER_HOST }}"
-          SCP="scp -i ~/.ssh/deploy_key -P ${{ secrets.HOSTINGER_PORT }} -o StrictHostKeyChecking=no"
-          REMOTE="${{ secrets.HOSTINGER_USER }}@${{ secrets.HOSTINGER_HOST }}:${{ secrets.HOSTINGER_PATH }}"
+          SSH_OPTS="-i ~/.ssh/deploy_key -p ${{ secrets.HOSTINGER_PORT }} -o StrictHostKeyChecking=no"
+          SCP_OPTS="-i ~/.ssh/deploy_key -P ${{ secrets.HOSTINGER_PORT }} -o StrictHostKeyChecking=no"
+          REMOTE="${{ secrets.HOSTINGER_USER }}@${{ secrets.HOSTINGER_HOST }}"
+          PATH="${{ secrets.HOSTINGER_PATH }}"
           
           echo "Uploading server.cjs..."
-          $SCP server.cjs $REMOTE/server.cjs
+          scp $SCP_OPTS server.cjs $REMOTE:$PATH/server.cjs
           
           echo "Uploading dist/..."
-          $SCP dist/index.html $REMOTE/dist/index.html
-          $SCP dist/assets/index-*.js $REMOTE/dist/assets/
-          $SCP dist/assets/index-*.css $REMOTE/dist/assets/
-          $SCP dist/assets/xlsx-*.js $REMOTE/dist/assets/ 2>/dev/null || true
+          scp $SCP_OPTS dist/index.html $REMOTE:$PATH/dist/index.html
+          scp $SCP_OPTS dist/assets/index-*.js $REMOTE:$PATH/dist/assets/
+          scp $SCP_OPTS dist/assets/index-*.css $REMOTE:$PATH/dist/assets/
+          scp $SCP_OPTS dist/assets/xlsx-*.js $REMOTE:$PATH/dist/assets/ 2>/dev/null || true
           
           echo "Uploading source files..."
-          $SCP -r server/ $REMOTE/server/
-          $SCP -r src/ $REMOTE/src/
+          scp $SCP_OPTS -r server/ $REMOTE:$PATH/server/
+          scp $SCP_OPTS -r src/ $REMOTE:$PATH/src/
 
       - name: Restart server
         run: |
           ssh -i ~/.ssh/deploy_key -p ${{ secrets.HOSTINGER_PORT }} -o StrictHostKeyChecking=no \
             ${{ secrets.HOSTINGER_USER }}@${{ secrets.HOSTINGER_HOST }} \
-            "cd ${{ secrets.HOSTINGER_PATH }} && pkill -f 'node.*server' 2>/dev/null; sleep 2; nohup bash start.sh > console.log 2>&1 & sleep 3; curl -s http://localhost:3000/api/health"
+            "cd ${{ secrets.HOSTINGER_PATH }} && pkill -f 'node.*server.cjs' 2>/dev/null; sleep 2; nohup bash start.sh > console.log 2>&1 &"
 
-      - name: Verify deployment
+      - name: Wait and verify
         run: |
-          sleep 2
-          HEALTH=$(curl -s https://bowdot.online/api/health)
-          echo "Health check: $HEALTH"
-          echo "$HEALTH" | grep -q '"status":"ok"' && echo "✅ Deployment successful!" || echo "❌ Deployment may have issues"
+          sleep 5
+          for i in 1 2 3; do
+            HEALTH=$(curl -s https://bowdot.online/api/health 2>/dev/null)
+            if echo "$HEALTH" | grep -q '"ok"'; then
+              echo "✅ Deployment successful! Health: $HEALTH"
+              exit 0
+            fi
+            echo "Attempt $i: waiting for server..."
+            sleep 5
+          done
+          echo "❌ Deployment may have issues"
+          exit 1
