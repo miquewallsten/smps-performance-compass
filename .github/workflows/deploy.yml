@@ -24,36 +24,38 @@ jobs:
       - name: Build app
         run: npm run build
 
-      - name: Setup SSH
+      - name: Install SSH client
+        run: sudo apt-get update && sudo apt-get install -y openssh-client
+
+      - name: Setup SSH key
         run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.HOSTINGER_SSH_KEY }}" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
-          # Add host key to known_hosts
           ssh-keyscan -p ${{ secrets.HOSTINGER_PORT }} ${{ secrets.HOSTINGER_HOST }} >> ~/.ssh/known_hosts 2>/dev/null || true
-          # Test SSH connection
+
+      - name: Test SSH connection
+        run: |
           ssh -i ~/.ssh/deploy_key -p ${{ secrets.HOSTINGER_PORT }} -o StrictHostKeyChecking=no \
-            ${{ secrets.HOSTINGER_USER }}@${{ secrets.HOSTINGER_HOST }} "echo SSH OK"
+            ${{ secrets.HOSTINGER_USER }}@${{ secrets.HOSTINGER_HOST }} "echo 'SSH connection OK'"
 
       - name: Upload built files
         run: |
-          SSH_OPTS="-i ~/.ssh/deploy_key -p ${{ secrets.HOSTINGER_PORT }} -o StrictHostKeyChecking=no"
-          SCP_OPTS="-i ~/.ssh/deploy_key -P ${{ secrets.HOSTINGER_PORT }} -o StrictHostKeyChecking=no"
-          REMOTE="${{ secrets.HOSTINGER_USER }}@${{ secrets.HOSTINGER_HOST }}"
-          PATH="${{ secrets.HOSTINGER_PATH }}"
+          SCP="scp -i ~/.ssh/deploy_key -P ${{ secrets.HOSTINGER_PORT }} -o StrictHostKeyChecking=no"
+          REMOTE="${{ secrets.HOSTINGER_USER }}@${{ secrets.HOSTINGER_HOST }}:${{ secrets.HOSTINGER_PATH }}"
           
           echo "Uploading server.cjs..."
-          scp $SCP_OPTS server.cjs $REMOTE:$PATH/server.cjs
+          $SCP server.cjs $REMOTE/server.cjs
           
           echo "Uploading dist/..."
-          scp $SCP_OPTS dist/index.html $REMOTE:$PATH/dist/index.html
-          scp $SCP_OPTS dist/assets/index-*.js $REMOTE:$PATH/dist/assets/
-          scp $SCP_OPTS dist/assets/index-*.css $REMOTE:$PATH/dist/assets/
-          scp $SCP_OPTS dist/assets/xlsx-*.js $REMOTE:$PATH/dist/assets/ 2>/dev/null || true
+          $SCP dist/index.html $REMOTE/dist/index.html
+          $SCP dist/assets/index-*.js $REMOTE/dist/assets/
+          $SCP dist/assets/index-*.css $REMOTE/dist/assets/
+          $SCP dist/assets/xlsx-*.js $REMOTE/dist/assets/ 2>/dev/null || true
           
           echo "Uploading source files..."
-          scp $SCP_OPTS -r server/ $REMOTE:$PATH/server/
-          scp $SCP_OPTS -r src/ $REMOTE:$PATH/src/
+          $SCP -r server/ $REMOTE/server/
+          $SCP -r src/ $REMOTE/src/
 
       - name: Restart server
         run: |
@@ -63,8 +65,8 @@ jobs:
 
       - name: Wait and verify
         run: |
-          sleep 5
-          for i in 1 2 3; do
+          sleep 8
+          for i in 1 2 3 4 5; do
             HEALTH=$(curl -s https://bowdot.online/api/health 2>/dev/null)
             if echo "$HEALTH" | grep -q '"ok"'; then
               echo "✅ Deployment successful! Health: $HEALTH"
@@ -74,4 +76,5 @@ jobs:
             sleep 5
           done
           echo "❌ Deployment may have issues"
+          curl -s https://bowdot.online/api/health || echo "Server not responding"
           exit 1
