@@ -117116,6 +117116,7 @@ var periods_default = router12;
 var import_express13 = __toESM(require_express2(), 1);
 var import_multer = __toESM(require("multer"), 1);
 var XLSX = __toESM(require_xlsx(), 1);
+var import_crypto3 = require("crypto");
 var router13 = (0, import_express13.Router)();
 var upload = (0, import_multer.default)({
   storage: import_multer.default.memoryStorage(),
@@ -117138,6 +117139,14 @@ router13.use(async (_req, res, next) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
+function generateZhipuJWT(apiKey) {
+  const [id, secret] = apiKey.split(".");
+  const now = Math.floor(Date.now() / 1e3);
+  const header = Buffer.from(JSON.stringify({ alg: "HS256", sign_type: "SIGN" })).toString("base64url");
+  const payload = Buffer.from(JSON.stringify({ api_key: id, exp: now + 3600, timestamp: now })).toString("base64url");
+  const signature = (0, import_crypto3.createHmac)("sha256", secret).update(`${header}.${payload}`).digest("base64url");
+  return `${header}.${payload}.${signature}`;
+}
 function getApiEndpoint(provider, baseUrl) {
   switch (provider) {
     case "groq":
@@ -117148,6 +117157,8 @@ function getApiEndpoint(provider, baseUrl) {
       return baseUrl || "https://api.anthropic.com/v1/messages";
     case "openrouter":
       return "https://openrouter.ai/api/v1/chat/completions";
+    case "zhipu":
+      return "https://open.bigmodel.cn/api/paas/v4/chat/completions";
     case "ollama":
       return baseUrl || "http://localhost:11434/v1/chat/completions";
     case "custom":
@@ -117930,11 +117941,12 @@ router13.post("/chat", upload.single("file"), async (req, res) => {
     const fileName = req.file?.originalname || "";
     if (!fullMessage && !fileContent) return res.status(400).json({ error: "Mensaje vac\xEDo" });
     const cfg = await db.get("SELECT * FROM copilot_config WHERE id=1");
-    const apiKey = cfg.api_key;
+    const apiKey = cfg.api_key || process.env.GROQ_API_KEY;
     const provider = cfg.api_provider || "groq";
     const endpoint = getApiEndpoint(provider, cfg.api_base_url);
     if (!apiKey) return res.status(403).json({ error: "API key no configurada. Config\xFArala en Ajustes del Copiloto." });
-    const headers = { "Authorization": `Bearer ${apiKey}`, "Content-Type": "application/json" };
+    const authToken = provider === "zhipu" ? generateZhipuJWT(apiKey) : apiKey;
+    const headers = { "Authorization": `Bearer ${authToken}`, "Content-Type": "application/json" };
     if (provider === "openrouter") headers["HTTP-Referer"] = "https://bowdot.online";
     const userName = req.user?.name || "Admin";
     let convId = conversationId;

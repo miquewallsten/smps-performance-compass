@@ -3,6 +3,7 @@ import { v4 as uuidv4 } from 'uuid';
 import multer from 'multer';
 import * as XLSX from 'xlsx';
 import { db } from '../db/connection.js';
+import { createHmac } from 'crypto';
 import { authMiddleware } from '../middleware/auth.js';
 import { requireAdmin } from '../middleware/rbac.js';
 import { hashPassword } from '../auth/security.js';
@@ -33,12 +34,23 @@ router.use(async (_req: Request, res: Response, next: NextFunction) => {
 });
 
 // ─── LLM Provider Endpoints ────────────────────────────────────────────────────
+// ─── Zhipu AI JWT Generation ────────────────────────────────────────────────
+function generateZhipuJWT(apiKey: string): string {
+  const [id, secret] = apiKey.split('.');
+  const now = Math.floor(Date.now() / 1000);
+  const header = Buffer.from(JSON.stringify({ alg: 'HS256', sign_type: 'SIGN' })).toString('base64url');
+  const payload = Buffer.from(JSON.stringify({ api_key: id, exp: now + 3600, timestamp: now })).toString('base64url');
+  const signature = createHmac('sha256', secret).update(`${header}.${payload}`).digest('base64url');
+  return `${header}.${payload}.${signature}`;
+}
+
 function getApiEndpoint(provider: string, baseUrl?: string): string {
   switch (provider) {
     case 'groq': return 'https://api.groq.com/openai/v1/chat/completions';
     case 'openai': return 'https://api.openai.com/v1/chat/completions';
     case 'anthropic': return baseUrl || 'https://api.anthropic.com/v1/messages';
     case 'openrouter': return 'https://openrouter.ai/api/v1/chat/completions';
+    case 'zhipu': return 'https://open.bigmodel.cn/api/paas/v4/chat/completions';
     case 'ollama': return baseUrl || 'http://localhost:11434/v1/chat/completions';
     case 'custom': return baseUrl || 'https://api.groq.com/openai/v1/chat/completions';
     default: return 'https://api.groq.com/openai/v1/chat/completions';
@@ -741,13 +753,14 @@ router.post('/chat', upload.single('file'), async (req: Request, res: Response) 
     if (!fullMessage && !fileContent) return res.status(400).json({ error: 'Mensaje vacío' });
 
     const cfg = await db.get('SELECT * FROM copilot_config WHERE id=1') as Record<string, unknown>;
-    const apiKey = cfg.api_key as string;
+    const apiKey = (cfg.api_key as string) || process.env.GROQ_API_KEY;
     const provider = (cfg.api_provider as string) || 'groq';
     const endpoint = getApiEndpoint(provider, cfg.api_base_url as string);
 
     if (!apiKey) return res.status(403).json({ error: 'API key no configurada. Configúrala en Ajustes del Copiloto.' });
 
-    const headers: Record<string, string> = { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' };
+    const authToken = provider === 'zhipu' ? generateZhipuJWT(apiKey) : apiKey;
+    const headers: Record<string, string> = { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' };
     if (provider === 'openrouter') headers['HTTP-Referer'] = 'https://bowdot.online';
 
     const userName = (req.user as any)?.name || 'Admin';

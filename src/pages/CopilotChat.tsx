@@ -89,6 +89,12 @@ function CopilotConfigPanel({ config, onSave }: { config: any; onSave: (data: an
       { value: 'openai/gpt-4o', label: 'GPT-4o' },
       { value: 'deepseek/deepseek-chat', label: 'DeepSeek V3 ⭐ Gratuito' },
     ]},
+    { value: 'zhipu', label: 'Zhipu AI (智谱/GLM)', models: [
+      { value: 'glm-4-flash', label: 'GLM-4 Flash ⭐ Rápido y gratuito' },
+      { value: 'glm-4-plus', label: 'GLM-4 Plus (Mejor razonamiento)' },
+      { value: 'glm-4-air', label: 'GLM-4 Air (Balanceado)' },
+      { value: 'glm-4-long', label: 'GLM-4 Long (Contexto largo)' },
+    ]},
     { value: 'ollama', label: 'Ollama (Self-hosted)', models: [
       { value: 'llama3.3:70b', label: 'Llama 3.3 70B' },
       { value: 'qwen2.5:72b', label: 'Qwen 2.5 72B' },

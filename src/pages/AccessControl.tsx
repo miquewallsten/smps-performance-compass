@@ -266,12 +266,13 @@ export default function AccessControl() {
           <div className="space-y-4">
             <div>
               <label className="text-sm text-muted-foreground block mb-1">Proveedor de API</label>
-              <select value={aiProvider} onChange={e => { setAiProvider(e.target.value); setAiModel(e.target.value === 'groq' ? 'llama-3.3-70b-versatile' : e.target.value === 'openai' ? 'gpt-4o-mini' : e.target.value === 'openrouter' ? 'deepseek/deepseek-chat' : e.target.value === 'anthropic' ? 'claude-3-5-sonnet-20241022' : e.target.value === 'ollama' ? 'llama3.3:70b' : 'gpt-4o'); }}
+              <select value={aiProvider} onChange={e => { setAiProvider(e.target.value); setAiModel(e.target.value === 'groq' ? 'llama-3.3-70b-versatile' : e.target.value === 'zhipu' ? 'glm-4-flash' : e.target.value === 'openai' ? 'gpt-4o-mini' : e.target.value === 'openrouter' ? 'deepseek/deepseek-chat' : e.target.value === 'anthropic' ? 'claude-3-5-sonnet-20241022' : e.target.value === 'ollama' ? 'llama3.3:70b' : 'gpt-4o'); }}
                 className="w-full px-4 py-2.5 rounded-lg border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-accent">
                 <option value="groq">Groq (Gratis/Bajo costo)</option>
                 <option value="openai">OpenAI</option>
                 <option value="openrouter">OpenRouter (Multi-proveedor)</option>
                 <option value="anthropic">Anthropic</option>
+                <option value="zhipu">Zhipu AI (智谱/GLM)</option>
                 <option value="ollama">Ollama (Self-hosted)</option>
                 <option value="custom">Personalizado (OpenAI-compatible)</option>
               </select>
@@ -330,6 +331,14 @@ export default function AccessControl() {
                   <>
                     <option value="claude-3-haiku-20240307">Claude 3 Haiku</option>
                     <option value="claude-3-5-sonnet-20241022">Claude 3.5 Sonnet</option>
+                  </>
+                )}
+                {aiProvider === 'zhipu' && (
+                  <>
+                    <option value="glm-4-flash">GLM-4 Flash (Rapido y gratuito)</option>
+                    <option value="glm-4-plus">GLM-4 Plus (Mejor razonamiento)</option>
+                    <option value="glm-4-air">GLM-4 Air (Balanceado)</option>
+                    <option value="glm-4-long">GLM-4 Long (Contexto largo)</option>
                   </>
                 )}
                 {aiProvider === 'ollama' && (
