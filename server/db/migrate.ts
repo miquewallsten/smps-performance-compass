@@ -329,6 +329,7 @@ export async function migrate(): Promise<void> {
       id INT PRIMARY KEY DEFAULT 1,
       model VARCHAR(255) NOT NULL DEFAULT 'llama-3.3-70b-versatile',
       api_provider VARCHAR(50) NOT NULL DEFAULT 'groq',
+      api_base_url VARCHAR(500) DEFAULT NULL,
       api_key TEXT,
       can_manage_users TINYINT(1) NOT NULL DEFAULT 1,
       can_manage_evaluations TINYINT(1) NOT NULL DEFAULT 1,

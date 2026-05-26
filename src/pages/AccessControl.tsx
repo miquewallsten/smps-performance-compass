@@ -29,17 +29,20 @@ export default function AccessControl() {
   const [aiApiKey, setAiApiKey] = useState('');
   const [aiModel, setAiModel] = useState(copilotConfig?.model || 'llama-3.3-70b-versatile');
   const [showApiKey, setShowApiKey] = useState(false);
+  const [aiBaseUrl, setAiBaseUrl] = useState(copilotConfig?.apiBaseUrl || '');
 
   useEffect(() => {
     if (copilotConfig) {
       setAiProvider(copilotConfig.apiProvider || 'groq');
       setAiModel(copilotConfig.model || 'llama-3.3-70b-versatile');
+      setAiBaseUrl(copilotConfig.apiBaseUrl || '');
     }
   }, [copilotConfig]);
 
   const handleSaveAiConfig = () => {
     const updates: Record<string, unknown> = { apiProvider: aiProvider, model: aiModel };
     if (aiApiKey) updates.apiKey = aiApiKey;
+    if (aiBaseUrl) updates.apiBaseUrl = aiBaseUrl;
     updateCopilotConfig(updates);
     setAiApiKey('');
     toast.success('Configuración de IA guardada correctamente');
@@ -263,11 +266,14 @@ export default function AccessControl() {
           <div className="space-y-4">
             <div>
               <label className="text-sm text-muted-foreground block mb-1">Proveedor de API</label>
-              <select value={aiProvider} onChange={e => setAiProvider(e.target.value)}
+              <select value={aiProvider} onChange={e => { setAiProvider(e.target.value); setAiModel(e.target.value === 'groq' ? 'llama-3.3-70b-versatile' : e.target.value === 'openai' ? 'gpt-4o-mini' : e.target.value === 'openrouter' ? 'deepseek/deepseek-chat' : e.target.value === 'anthropic' ? 'claude-3-5-sonnet-20241022' : e.target.value === 'ollama' ? 'llama3.3:70b' : 'gpt-4o'); }}
                 className="w-full px-4 py-2.5 rounded-lg border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-accent">
-                <option value="groq">Groq</option>
+                <option value="groq">Groq (Gratis/Bajo costo)</option>
                 <option value="openai">OpenAI</option>
+                <option value="openrouter">OpenRouter (Multi-proveedor)</option>
                 <option value="anthropic">Anthropic</option>
+                <option value="ollama">Ollama (Self-hosted)</option>
+                <option value="custom">Personalizado (OpenAI-compatible)</option>
               </select>
             </div>
             <div>
@@ -300,8 +306,8 @@ export default function AccessControl() {
                 className="w-full px-4 py-2.5 rounded-lg border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-accent">
                 {aiProvider === 'groq' && (
                   <>
-                    <option value="llama-3.3-70b-versatile">Llama 3.3 70B (Versatile)</option>
-                    <option value="llama-3.1-8b-instant">Llama 3.1 8B (Instant)</option>
+                    <option value="llama-3.3-70b-versatile">Llama 3.3 70B Versatile</option>
+                    <option value="llama-3.1-8b-instant">Llama 3.1 8B (Rapido)</option>
                     <option value="mixtral-8x7b-32768">Mixtral 8x7B</option>
                   </>
                 )}
@@ -311,14 +317,46 @@ export default function AccessControl() {
                     <option value="gpt-4o">GPT-4o</option>
                   </>
                 )}
+                {aiProvider === 'openrouter' && (
+                  <>
+                    <option value="deepseek/deepseek-chat">DeepSeek V3 (Gratis)</option>
+                    <option value="anthropic/claude-3.5-sonnet">Claude 3.5 Sonnet</option>
+                    <option value="google/gemini-2.0-flash-001">Gemini 2.0 Flash</option>
+                    <option value="meta-llama/llama-3.3-70b-instruct">Llama 3.3 70B</option>
+                    <option value="openai/gpt-4o">GPT-4o</option>
+                  </>
+                )}
                 {aiProvider === 'anthropic' && (
                   <>
                     <option value="claude-3-haiku-20240307">Claude 3 Haiku</option>
                     <option value="claude-3-5-sonnet-20241022">Claude 3.5 Sonnet</option>
                   </>
                 )}
+                {aiProvider === 'ollama' && (
+                  <>
+                    <option value="llama3.3:70b">Llama 3.3 70B</option>
+                    <option value="qwen2.5:72b">Qwen 2.5 72B</option>
+                    <option value="mistral:7b">Mistral 7B</option>
+                  </>
+                )}
+                {aiProvider === 'custom' && (
+                  <option value={aiModel}>Modelo personalizado</option>
+                )}
               </select>
             </div>
+            {(aiProvider === 'ollama' || aiProvider === 'custom') && (
+              <div>
+                <label className="text-sm text-muted-foreground block mb-1">URL base de API</label>
+                <input
+                  type="text"
+                  value={aiBaseUrl}
+                  onChange={e => setAiBaseUrl(e.target.value)}
+                  placeholder={aiProvider === 'ollama' ? 'http://localhost:11434/v1/chat/completions' : 'https://api.example.com/v1/chat/completions'}
+                  className="w-full px-4 py-2.5 rounded-lg border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-accent"
+                />
+                <p className="text-xs text-muted-foreground mt-1">URL del endpoint compatible con OpenAI Chat Completions API.</p>
+              </div>
+            )}
             <button onClick={handleSaveAiConfig}
               className="w-full py-2.5 rounded-lg bg-accent text-accent-foreground text-sm font-semibold hover:opacity-90 transition-opacity flex items-center justify-center gap-2">
               <Save className="h-4 w-4" /> Guardar Configuración de IA

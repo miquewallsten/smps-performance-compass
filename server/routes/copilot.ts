@@ -37,8 +37,9 @@ function getApiEndpoint(provider: string, baseUrl?: string): string {
   switch (provider) {
     case 'groq': return 'https://api.groq.com/openai/v1/chat/completions';
     case 'openai': return 'https://api.openai.com/v1/chat/completions';
+    case 'anthropic': return baseUrl || 'https://api.anthropic.com/v1/messages';
     case 'openrouter': return 'https://openrouter.ai/api/v1/chat/completions';
-    case 'ollama': return baseUrl || 'http://localhost:11434/api/chat/completions';
+    case 'ollama': return baseUrl || 'http://localhost:11434/v1/chat/completions';
     case 'custom': return baseUrl || 'https://api.groq.com/openai/v1/chat/completions';
     default: return 'https://api.groq.com/openai/v1/chat/completions';
   }
@@ -626,7 +627,7 @@ router.get('/config', async (_req: Request, res: Response) => {
   try {
     let cfg = await db.get('SELECT * FROM copilot_config WHERE id=1') as Record<string, unknown> | undefined;
     if (!cfg) {
-      await db.run("INSERT INTO copilot_config (id,model,api_provider,api_key,can_manage_users,can_manage_evaluations,can_manage_vacations,can_manage_announcements,can_manage_periods,can_manage_system,can_view_reports,max_tokens,temperature) VALUES(1,'llama-3.3-70b-versatile','groq',NULL,1,1,1,1,1,1,1,4096,0.3)");
+      await db.run("INSERT INTO copilot_config (id,model,api_provider,api_base_url,api_key,can_manage_users,can_manage_evaluations,can_manage_vacations,can_manage_announcements,can_manage_periods,can_manage_system,can_view_reports,max_tokens,temperature) VALUES(1,'llama-3.3-70b-versatile','groq',NULL,NULL,1,1,1,1,1,1,1,4096,0.3)");
       cfg = await db.get('SELECT * FROM copilot_config WHERE id=1') as Record<string, unknown>;
     }
     if (cfg?.api_key && typeof cfg.api_key === 'string' && cfg.api_key.length > 8) {
@@ -636,15 +637,70 @@ router.get('/config', async (_req: Request, res: Response) => {
   } catch (e) { console.error('Config error:', e); res.status(500).json({ error: 'Internal server error' }); }
 });
 
+router.patch('/config', async (req: Request, res: Response) => {
+  try {
+    const fieldMap: Record<string, string> = {
+      model: 'model',
+      apiProvider: 'api_provider',
+      api_provider: 'api_provider',
+      apiBaseUrl: 'api_base_url',
+      api_base_url: 'api_base_url',
+      apiKey: 'api_key',
+      api_key: 'api_key',
+      canManageUsers: 'can_manage_users',
+      canManageEvaluations: 'can_manage_evaluations',
+      canManageVacations: 'can_manage_vacations',
+      canManageAnnouncements: 'can_manage_announcements',
+      canManagePeriods: 'can_manage_periods',
+      canManageSystem: 'can_manage_system',
+      canViewReports: 'can_view_reports',
+      maxTokens: 'max_tokens',
+      temperature: 'temperature',
+    };
+    const booleanFields = new Set(['can_manage_users','can_manage_evaluations','can_manage_vacations','can_manage_announcements','can_manage_periods','can_manage_system','can_view_reports']);
+    const updates: string[] = [];
+    const values: unknown[] = [];
+
+    for (const [key, value] of Object.entries(req.body)) {
+      const col = fieldMap[key] || (key.includes('_') ? key : null);
+      if (!col) continue;
+      if (col === 'api_key') {
+        if (!value || (typeof value === 'string' && value.includes('•'))) continue;
+        updates.push('api_key=?');
+        values.push(value);
+      } else if (booleanFields.has(col)) {
+        updates.push(`${col}=?`);
+        values.push(value ? 1 : 0);
+      } else {
+        updates.push(`${col}=?`);
+        values.push(value);
+      }
+    }
+    if (updates.length > 0) {
+      values.push(1);
+      await db.run(`UPDATE copilot_config SET ${updates.join(', ')} WHERE id=?`, values);
+    }
+    const cfg = await db.get('SELECT * FROM copilot_config WHERE id=1') as Record<string, unknown>;
+    if (cfg?.api_key && typeof cfg.api_key === 'string' && cfg.api_key.length > 8) {
+      return res.json({ ...cfg, api_key: (cfg.api_key as string).slice(0, 4) + '••••' + (cfg.api_key as string).slice(-4) });
+    }
+    return res.json(cfg);
+  } catch (e) { console.error('Config update error:', e); return res.status(500).json({ error: 'Internal server error' }); }
+});
+
 router.put('/config', async (req: Request, res: Response) => {
   try {
-    const { model, api_provider, api_key, can_manage_users, can_manage_evaluations, can_manage_vacations, can_manage_announcements, can_manage_periods, can_manage_system, can_view_reports, max_tokens, temperature } = req.body;
+    const { model, api_provider, api_base_url, api_key, can_manage_users, can_manage_evaluations, can_manage_vacations, can_manage_announcements, can_manage_periods, can_manage_system, can_view_reports, max_tokens, temperature } = req.body;
     const current = await db.get('SELECT api_key FROM copilot_config WHERE id=1') as any;
     const apiKey = (api_key && !api_key.includes('••••')) ? api_key : current?.api_key;
-    await db.run('UPDATE copilot_config SET model=?,api_provider=?,api_key=?,can_manage_users=?,can_manage_evaluations=?,can_manage_vacations=?,can_manage_announcements=?,can_manage_periods=?,can_manage_system=?,can_view_reports=?,max_tokens=?,temperature=? WHERE id=1',
-      [model, api_provider, apiKey, can_manage_users ? 1 : 0, can_manage_evaluations ? 1 : 0, can_manage_vacations ? 1 : 0, can_manage_announcements ? 1 : 0, can_manage_periods ? 1 : 0, can_manage_system ? 1 : 0, can_view_reports ? 1 : 0, max_tokens, temperature]);
-    res.json({ ok: true });
-  } catch (e) { console.error('Config update error:', e); res.status(500).json({ error: 'Internal server error' }); }
+    await db.run('UPDATE copilot_config SET model=?,api_provider=?,api_base_url=?,api_key=?,can_manage_users=?,can_manage_evaluations=?,can_manage_vacations=?,can_manage_announcements=?,can_manage_periods=?,can_manage_system=?,can_view_reports=?,max_tokens=?,temperature=? WHERE id=1',
+      [model || 'llama-3.3-70b-versatile', api_provider || 'groq', api_base_url || null, apiKey, can_manage_users ? 1 : 0, can_manage_evaluations ? 1 : 0, can_manage_vacations ? 1 : 0, can_manage_announcements ? 1 : 0, can_manage_periods ? 1 : 0, can_manage_system ? 1 : 0, can_view_reports ? 1 : 0, max_tokens || 4096, temperature ?? 0.3]);
+    const cfg = await db.get('SELECT * FROM copilot_config WHERE id=1') as Record<string, unknown>;
+    if (cfg?.api_key && typeof cfg.api_key === 'string' && cfg.api_key.length > 8) {
+      return res.json({ ...cfg, api_key: (cfg.api_key as string).slice(0, 4) + '••••' + (cfg.api_key as string).slice(-4) });
+    }
+    return res.json(cfg);
+  } catch (e) { console.error('Config update error:', e); return res.status(500).json({ error: 'Internal server error' }); }
 });
 
 // ─── CONVERSATIONS ───────────────────────────────────────────────────────────

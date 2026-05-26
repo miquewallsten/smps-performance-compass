@@ -9,7 +9,7 @@ import {
   useCopilotChat,
 } from '@/api/queries';
 import { api } from '@/api/client';
-import { Bot, Send, Plus, Trash2, Settings, MessageSquare, Loader2, Sparkles, X, Check, Shield, Users, ClipboardList, Megaphone, Palmtree, BarChart3, Wrench, AlertTriangle, Paperclip, FileText, Brain, Zap, Target } from 'lucide-react';
+import { Bot, Send, Plus, Trash2, Settings, MessageSquare, Loader2, Sparkles, X, Check, Shield, Users, ClipboardList, Megaphone, Palmtree, BarChart3, Wrench, AlertTriangle, Paperclip, FileText, Brain, Zap, Target, Eye, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -43,30 +43,37 @@ interface Conversation {
 
 // ─── Config Panel ────────────────────────────────────────────────────────────
 function CopilotConfigPanel({ config, onSave }: { config: any; onSave: (data: any) => void }) {
+  const [showApiKey, setShowApiKey] = useState(false);
   const [form, setForm] = useState({
-    apiProvider: config?.apiProvider ?? 'groq',
+    apiProvider: config?.apiProvider ?? config?.api_provider ?? 'groq',
     model: config?.model || 'llama-3.3-70b-versatile',
-    apiBaseUrl: config?.apiBaseUrl ?? '',
-    canManageUsers: config?.canManageUsers ?? true,
-    canManageEvaluations: config?.canManageEvaluations ?? true,
-    canManageVacations: config?.canManageVacations ?? true,
-    canManageAnnouncements: config?.canManageAnnouncements ?? true,
-    canManagePeriods: config?.canManagePeriods ?? false,
-    canManageSystem: config?.canManageSystem ?? false,
-    canViewReports: config?.canViewReports ?? true,
-    maxTokens: config?.maxTokens ?? 4096,
+    apiBaseUrl: config?.apiBaseUrl ?? config?.api_base_url ?? '',
+    apiKey: '',
+    canManageUsers: config?.canManageUsers ?? config?.can_manage_users ?? true,
+    canManageEvaluations: config?.canManageEvaluations ?? config?.can_manage_evaluations ?? true,
+    canManageVacations: config?.canManageVacations ?? config?.can_manage_vacations ?? true,
+    canManageAnnouncements: config?.canManageAnnouncements ?? config?.can_manage_announcements ?? true,
+    canManagePeriods: config?.canManagePeriods ?? config?.can_manage_periods ?? false,
+    canManageSystem: config?.canManageSystem ?? config?.can_manage_system ?? false,
+    canViewReports: config?.canViewReports ?? config?.can_view_reports ?? true,
+    maxTokens: config?.maxTokens ?? config?.max_tokens ?? 4096,
     temperature: config?.temperature ?? 0.3,
   });
 
   const handleSave = () => {
-    onSave(form);
+    const payload: any = { ...form };
+    // Don't send empty apiBaseUrl
+    if (!payload.apiBaseUrl) delete payload.apiBaseUrl;
+    // Don't send empty apiKey (keep existing)
+    if (!payload.apiKey) delete payload.apiKey;
+    onSave(payload);
     toast.success('Configuración guardada');
   };
 
   const providers = [
     { value: 'groq', label: 'Groq (Free/Low Cost)', models: [
-      { value: 'llama-3.3-70b-versatile', label: 'Llama 3.3 70B ⭐ Recomendado' },
-      { value: 'llama-3.1-8b-instant', label: 'Llama 3.1 8B (Más rápido)' },
+      { value: 'llama-3.3-70b-versatile', label: 'Llama 3.3 70B Versatile ⭐' },
+      { value: 'llama-3.1-8b-instant', label: 'Llama 3.1 8B (Rápido)' },
       { value: 'mixtral-8x7b-32768', label: 'Mixtral 8x7B' },
       { value: 'gemma2-9b-it', label: 'Gemma 2 9B' },
     ]},
@@ -80,37 +87,54 @@ function CopilotConfigPanel({ config, onSave }: { config: any; onSave: (data: an
       { value: 'google/gemini-2.0-flash-001', label: 'Gemini 2.0 Flash' },
       { value: 'meta-llama/llama-3.3-70b-instruct', label: 'Llama 3.3 70B' },
       { value: 'openai/gpt-4o', label: 'GPT-4o' },
+      { value: 'deepseek/deepseek-chat', label: 'DeepSeek V3 ⭐ Gratuito' },
     ]},
-    { value: 'ollama', label: 'Ollama (Local/Self-hosted)', models: [
+    { value: 'ollama', label: 'Ollama (Self-hosted)', models: [
       { value: 'llama3.3:70b', label: 'Llama 3.3 70B' },
       { value: 'qwen2.5:72b', label: 'Qwen 2.5 72B' },
       { value: 'mistral:7b', label: 'Mistral 7B' },
     ]},
-    { value: 'custom', label: 'Personalizado (API compatible con OpenAI)', models: [] },
+    { value: 'custom', label: 'Personalizado (OpenAI-compatible)', models: [] },
   ];
 
   const currentProvider = providers.find(p => p.value === form.apiProvider) || providers[0];
   const models = currentProvider.models.length > 0 ? currentProvider.models : [
     { value: form.model, label: 'Modelo personalizado' },
   ];
+  const needsBaseUrl = form.apiProvider === 'ollama' || form.apiProvider === 'custom';
 
   const permissions = [
-    { key: 'canManageUsers', label: 'Gestionar Usuarios', icon: Users, desc: 'Crear, buscar, cambiar roles' },
-    { key: 'canManageEvaluations', label: 'Gestionar Evaluaciones', icon: ClipboardList, desc: 'Ver evaluaciones, preguntas, análisis' },
-    { key: 'canManageVacations', label: 'Gestionar Vacaciones', icon: Palmtree, desc: 'Ver y aprobar solicitudes' },
-    { key: 'canManageAnnouncements', label: 'Gestionar Anuncios', icon: Megaphone, desc: 'Crear y listar comunicados' },
-    { key: 'canManagePeriods', label: 'Gestionar Periodos', icon: BarChart3, desc: 'Crear periodos de evaluación' },
-    { key: 'canManageSystem', label: 'Gestionar Sistema', icon: Shield, desc: 'Activar/desactivar sistema y módulos' },
-    { key: 'canViewReports', label: 'Ver Reportes', icon: BarChart3, desc: 'Ver estadísticas generales' },
+    { key: 'canManageUsers' as const, label: 'Gestionar Usuarios', icon: Users, desc: 'Crear, buscar, cambiar roles' },
+    { key: 'canManageEvaluations' as const, label: 'Gestionar Evaluaciones', icon: ClipboardList, desc: 'Ver evaluaciones, preguntas, análisis' },
+    { key: 'canManageVacations' as const, label: 'Gestionar Vacaciones', icon: Palmtree, desc: 'Ver y aprobar solicitudes' },
+    { key: 'canManageAnnouncements' as const, label: 'Gestionar Anuncios', icon: Megaphone, desc: 'Crear y listar comunicados' },
+    { key: 'canManagePeriods' as const, label: 'Gestionar Periodos', icon: BarChart3, desc: 'Crear periodos de evaluación' },
+    { key: 'canManageSystem' as const, label: 'Gestionar Sistema', icon: Shield, desc: 'Activar/desactivar sistema y módulos' },
+    { key: 'canViewReports' as const, label: 'Ver Reportes', icon: BarChart3, desc: 'Ver estadísticas generales' },
   ];
 
   return (
     <div className="space-y-6">
       <div>
         <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
-          <Sparkles className="h-4 w-4 text-accent" /> Modelo de IA
+          <Sparkles className="h-4 w-4 text-accent" /> Proveedor y Modelo de IA
         </h3>
         <div className="space-y-3">
+          <div>
+            <label className="text-xs text-muted-foreground block mb-1">Proveedor</label>
+            <select
+              value={form.apiProvider}
+              onChange={(e) => {
+                const newProvider = e.target.value;
+                const p = providers.find(pr => pr.value === newProvider);
+                const defaultModel = p?.models?.[0]?.value || form.model;
+                setForm({ ...form, apiProvider: newProvider, model: defaultModel });
+              }}
+              className="w-full px-3 py-2 rounded-lg border border-input bg-background text-foreground text-sm"
+            >
+              {providers.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
+            </select>
+          </div>
           <div>
             <label className="text-xs text-muted-foreground block mb-1">Modelo</label>
             <select
@@ -121,15 +145,52 @@ function CopilotConfigPanel({ config, onSave }: { config: any; onSave: (data: an
               {models.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
             </select>
           </div>
+          <div>
+            <label className="text-xs text-muted-foreground block mb-1">API Key</label>
+            <div className="flex items-center gap-2">
+              <input
+                type={showApiKey ? 'text' : 'password'}
+                value={form.apiKey}
+                onChange={(e) => setForm({ ...form, apiKey: e.target.value })}
+                placeholder={config?.apiKey ? 'Clave configurada (déjalo vacío para mantener)' : 'Ingresa tu API key'}
+                className="flex-1 px-3 py-2 rounded-lg border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-accent"
+              />
+              <button
+                type="button"
+                onClick={() => setShowApiKey(!showApiKey)}
+                className="px-2 py-2 text-muted-foreground hover:text-foreground"
+              >
+                {showApiKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              {config?.apiKey ? 'Ya hay una clave configurada. Déjalo vacío para mantener la actual.' : 'Se requiere una clave de API para el proveedor seleccionado.'}
+            </p>
+          </div>
+          {needsBaseUrl && (
+            <div>
+              <label className="text-xs text-muted-foreground block mb-1">URL base de API</label>
+              <input
+                type="text"
+                value={form.apiBaseUrl}
+                onChange={(e) => setForm({ ...form, apiBaseUrl: e.target.value })}
+                placeholder={form.apiProvider === 'ollama' ? 'http://localhost:11434/v1/chat/completions' : 'https://api.example.com/v1/chat/completions'}
+                className="w-full px-3 py-2 rounded-lg border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-accent"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                URL del endpoint compatible con OpenAI Chat Completions API.
+              </p>
+            </div>
+          )}
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="text-xs text-muted-foreground block mb-1">Max Tokens: {form.maxTokens}</label>
-              <input type="range" min={512} max={4096} step={256} value={form.maxTokens}
+              <input type="range" min={512} max={8192} step={256} value={form.maxTokens}
                 onChange={(e) => setForm({ ...form, maxTokens: Number(e.target.value) })} className="w-full" />
             </div>
             <div>
               <label className="text-xs text-muted-foreground block mb-1">Temperatura: {form.temperature}</label>
-              <input type="range" min={0} max={1} step={0.1} value={form.temperature}
+              <input type="range" min={0} max={1} step={0.05} value={form.temperature}
                 onChange={(e) => setForm({ ...form, temperature: Number(e.target.value) })} className="w-full" />
             </div>
           </div>
@@ -138,7 +199,7 @@ function CopilotConfigPanel({ config, onSave }: { config: any; onSave: (data: an
       <Separator />
       <div>
         <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
-          <Shield className="h-4 w-4 text-accent" /> Permisos
+          <Shield className="h-4 w-4 text-accent" /> Permisos del Copiloto
         </h3>
         <div className="space-y-3">
           {permissions.map(p => (
@@ -150,13 +211,13 @@ function CopilotConfigPanel({ config, onSave }: { config: any; onSave: (data: an
                   <p className="text-xs text-muted-foreground">{p.desc}</p>
                 </div>
               </div>
-              <Switch checked={form[p.key as keyof typeof form] as boolean}
+              <Switch checked={form[p.key] as boolean}
                 onCheckedChange={(v) => setForm({ ...form, [p.key]: v })} />
             </div>
           ))}
         </div>
       </div>
-      <Button onClick={handleSave} className="w-full">Guardar</Button>
+      <Button onClick={handleSave} className="w-full">Guardar Configuración</Button>
     </div>
   );
 }
