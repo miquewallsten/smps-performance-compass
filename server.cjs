@@ -115289,7 +115289,7 @@ function hashToken(token) {
 }
 function getRole(user) {
   if (user.isSuperUser) return "super_user";
-  if (user.isAdmin) return "admin";
+  if (user.isAdmin || user.isManagingPartner) return "admin";
   return "user";
 }
 
@@ -115385,13 +115385,16 @@ router.post("/login", async (req, res) => {
     }
     const role = getRole({
       isAdmin: Boolean(user.is_admin),
-      isSuperUser: Boolean(user.is_super_user)
+      isSuperUser: Boolean(user.is_super_user),
+      isManagingPartner: Boolean(user.is_managing_partner)
     });
     const token = signToken({
       sub: user.id,
       email: user.email,
       role,
-      name: user.name
+      name: user.name,
+      position: user.position,
+      isManagingPartner: Boolean(user.is_managing_partner)
     });
     return res.json({ token, user: sanitizeUser(user) });
   } catch (err) {
@@ -115523,22 +115526,55 @@ function sanitizeUser2(user) {
   return safe;
 }
 var SAFE_USER_COLUMNS = `id, name, email, position, practice_area, custom_position_id, is_admin, is_super_user, is_managing_partner, is_active, must_change_password, created_at, updated_at`;
-router2.get("/", authMiddleware, requireAdmin, async (_req, res) => {
+router2.get("/", authMiddleware, async (req, res) => {
   try {
-    const users = await db.all(`SELECT ${SAFE_USER_COLUMNS} FROM users`);
-    return res.json(users);
+    const allUsers = await db.all(`SELECT ${SAFE_USER_COLUMNS} FROM users WHERE is_active = 1`);
+    const role = req.user.role;
+    if (role === "super_user" || role === "admin") {
+      return res.json(allUsers);
+    }
+    const userId = req.user.id;
+    const assignments = await db.all(
+      "SELECT employee_id, supervisor_id FROM supervisor_assignments WHERE (employee_id = ? OR supervisor_id = ?)",
+      [userId, userId]
+    );
+    const visibleIds = /* @__PURE__ */ new Set([userId]);
+    for (const a of assignments) {
+      visibleIds.add(a.employee_id);
+      visibleIds.add(a.supervisor_id);
+    }
+    const visibleUsers = allUsers.filter((u) => visibleIds.has(u.id));
+    return res.json(visibleUsers);
   } catch (err) {
     console.error("List users error:", err);
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router2.get("/:id", authMiddleware, requireSelfOrAdmin, async (req, res) => {
+router2.get("/:id", authMiddleware, async (req, res) => {
   try {
-    const user = await db.get(`SELECT ${SAFE_USER_COLUMNS} FROM users WHERE id = ?`, [req.params.id]);
-    if (!user) {
-      return res.status(404).json({ error: "User not found" });
+    const targetId = req.params.id;
+    const role = req.user.role;
+    const userId = req.user.id;
+    if (role === "admin" || role === "super_user") {
+      const user = await db.get(`SELECT ${SAFE_USER_COLUMNS} FROM users WHERE id = ?`, [targetId]);
+      if (!user) return res.status(404).json({ error: "User not found" });
+      return res.json(sanitizeUser2(user));
     }
-    return res.json(sanitizeUser2(user));
+    if (userId === targetId) {
+      const user = await db.get(`SELECT ${SAFE_USER_COLUMNS} FROM users WHERE id = ?`, [targetId]);
+      if (!user) return res.status(404).json({ error: "User not found" });
+      return res.json(sanitizeUser2(user));
+    }
+    const assignment = await db.get(
+      "SELECT id FROM supervisor_assignments WHERE (supervisor_id = ? AND employee_id = ?) OR (employee_id = ? AND supervisor_id = ?) LIMIT 1",
+      [userId, targetId, userId, targetId]
+    );
+    if (assignment) {
+      const user = await db.get(`SELECT ${SAFE_USER_COLUMNS} FROM users WHERE id = ?`, [targetId]);
+      if (!user) return res.status(404).json({ error: "User not found" });
+      return res.json(sanitizeUser2(user));
+    }
+    return res.status(403).json({ error: "Access denied" });
   } catch (err) {
     console.error("Get user error:", err);
     return res.status(500).json({ error: "Internal server error" });

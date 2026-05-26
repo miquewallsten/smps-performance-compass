@@ -55,3 +55,4 @@ server/dist-server/
 
 # Lovable
 .lovable/
+.gstack/

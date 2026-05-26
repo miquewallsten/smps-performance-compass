@@ -28,6 +28,14 @@ export function requireAuthenticated(req: Request, res: Response, next: NextFunc
   next();
 }
 
+/**
+ * Check if a user is a managing partner (Socio Administrador).
+ * Used by routes that need to distinguish managing partners from regular socios.
+ */
+export function isManagingPartner(req: Request): boolean {
+  return !!(req.user?.isManagingPartner);
+}
+
 export async function getUserById(id: string) {
   return await db.get('SELECT * FROM users WHERE id = ?', [id]);
 }

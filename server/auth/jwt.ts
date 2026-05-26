@@ -9,6 +9,8 @@ export interface JwtPayload {
   email: string;
   role: 'super_user' | 'admin' | 'user';
   name: string;
+  position: string;
+  isManagingPartner: boolean;
 }
 
 export function signToken(payload: JwtPayload): string {
@@ -33,8 +35,8 @@ export function hashToken(token: string): string {
   return crypto.createHash('sha256').update(token).digest('hex');
 }
 
-export function getRole(user: { isAdmin: boolean; isSuperUser: boolean }): 'super_user' | 'admin' | 'user' {
+export function getRole(user: { isAdmin: boolean; isSuperUser: boolean; isManagingPartner?: boolean }): 'super_user' | 'admin' | 'user' {
   if (user.isSuperUser) return 'super_user';
-  if (user.isAdmin) return 'admin';
+  if (user.isAdmin || user.isManagingPartner) return 'admin';
   return 'user';
 }

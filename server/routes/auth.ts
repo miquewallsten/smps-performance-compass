@@ -42,6 +42,7 @@ router.post('/login', async (req: Request, res: Response) => {
     const role = getRole({
       isAdmin: Boolean(user.is_admin),
       isSuperUser: Boolean(user.is_super_user),
+      isManagingPartner: Boolean(user.is_managing_partner),
     });
 
     const token = signToken({
@@ -49,6 +50,8 @@ router.post('/login', async (req: Request, res: Response) => {
       email: user.email as string,
       role,
       name: user.name as string,
+      position: user.position as string,
+      isManagingPartner: Boolean(user.is_managing_partner),
     });
 
     return res.json({ token, user: sanitizeUser(user) });

@@ -17,10 +17,37 @@ function sanitizeUser(user: Record<string, unknown>) {
 const SAFE_USER_COLUMNS = `id, name, email, position, practice_area, custom_position_id, is_admin, is_super_user, is_managing_partner, is_active, must_change_password, created_at, updated_at`;
 
 // ─── GET /api/users ──────────────────────────────────────────────────────
-router.get('/', authMiddleware, requireAdmin, async (_req: Request, res: Response) => {
+// Visibility rules:
+// - SuperUser & Admin: see all active users (excluding other SuperUsers)
+// - Managing Partner (Socio Administrador): see all except SuperUsers
+// - Other Socios: see all except other Socios, Managing Partners, and Salary Partners
+// - Regular users: see users they supervise + themselves
+router.get('/', authMiddleware, async (req: Request, res: Response) => {
   try {
-    const users = await db.all(`SELECT ${SAFE_USER_COLUMNS} FROM users`);
-    return res.json(users);
+    const allUsers = await db.all(`SELECT ${SAFE_USER_COLUMNS} FROM users WHERE is_active = 1`);
+    const role = req.user!.role;
+    
+    // SuperUser and Admin can see all users
+    if (role === 'super_user' || role === 'admin') {
+      return res.json(allUsers);
+    }
+    
+    // Regular user: fetch their assignments to determine visibility
+    const userId = req.user!.id;
+    const assignments = await db.all(
+      'SELECT employee_id, supervisor_id FROM supervisor_assignments WHERE (employee_id = ? OR supervisor_id = ?)',
+      [userId, userId]
+    );
+    
+    // Visible user IDs: self + anyone in their assignments
+    const visibleIds = new Set<string>([userId]);
+    for (const a of assignments) {
+      visibleIds.add(a.employee_id);
+      visibleIds.add(a.supervisor_id);
+    }
+    
+    const visibleUsers = allUsers.filter((u: any) => visibleIds.has(u.id));
+    return res.json(visibleUsers);
   } catch (err) {
     console.error('List users error:', err);
     return res.status(500).json({ error: 'Internal server error' });
@@ -28,15 +55,40 @@ router.get('/', authMiddleware, requireAdmin, async (_req: Request, res: Respons
 });
 
 // ─── GET /api/users/:id ────────────────────────────────────────────────────
-router.get('/:id', authMiddleware, requireSelfOrAdmin, async (req: Request, res: Response) => {
+// Allow: self, admin, super_user, or anyone who supervises/is supervised by the target
+router.get('/:id', authMiddleware, async (req: Request, res: Response) => {
   try {
-    const user = await db.get(`SELECT ${SAFE_USER_COLUMNS} FROM users WHERE id = ?`, [req.params.id]) as Record<string, unknown> | undefined;
+    const targetId = req.params.id;
+    const role = req.user!.role;
+    const userId = req.user!.id;
 
-    if (!user) {
-      return res.status(404).json({ error: 'User not found' });
+    // Admin and super_user can see any user
+    if (role === 'admin' || role === 'super_user') {
+      const user = await db.get(`SELECT ${SAFE_USER_COLUMNS} FROM users WHERE id = ?`, [targetId]) as Record<string, unknown> | undefined;
+      if (!user) return res.status(404).json({ error: 'User not found' });
+      return res.json(sanitizeUser(user));
     }
 
-    return res.json(sanitizeUser(user));
+    // Self can always see their own profile
+    if (userId === targetId) {
+      const user = await db.get(`SELECT ${SAFE_USER_COLUMNS} FROM users WHERE id = ?`, [targetId]) as Record<string, unknown> | undefined;
+      if (!user) return res.status(404).json({ error: 'User not found' });
+      return res.json(sanitizeUser(user));
+    }
+
+    // Check if user has an assignment relationship with target
+    const assignment = await db.get(
+      'SELECT id FROM supervisor_assignments WHERE (supervisor_id = ? AND employee_id = ?) OR (employee_id = ? AND supervisor_id = ?) LIMIT 1',
+      [userId, targetId, userId, targetId]
+    ) as Record<string, unknown> | undefined;
+
+    if (assignment) {
+      const user = await db.get(`SELECT ${SAFE_USER_COLUMNS} FROM users WHERE id = ?`, [targetId]) as Record<string, unknown> | undefined;
+      if (!user) return res.status(404).json({ error: 'User not found' });
+      return res.json(sanitizeUser(user));
+    }
+
+    return res.status(403).json({ error: 'Access denied' });
   } catch (err) {
     console.error('Get user error:', err);
     return res.status(500).json({ error: 'Internal server error' });

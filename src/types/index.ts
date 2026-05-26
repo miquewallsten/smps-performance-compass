@@ -165,6 +165,7 @@ export interface EvaluationResponse {
   score: number;
   notApplicable?: boolean;
   noElements?: boolean;
+  weight?: number;
 }
 
 export interface Evaluation {
