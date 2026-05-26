@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import db from '../db/connection.js';
+import { db } from '../db/connection.js';
 
 export function requireAdmin(req: Request, res: Response, next: NextFunction) {
   if (!req.user) return res.status(401).json({ error: 'Not authenticated' });
@@ -29,5 +29,5 @@ export function requireAuthenticated(req: Request, res: Response, next: NextFunc
 }
 
 export async function getUserById(id: string) {
-  return db.prepare('SELECT * FROM users WHERE id = ?').get(id);
+  return await db.get('SELECT * FROM users WHERE id = ?', [id]);
 }

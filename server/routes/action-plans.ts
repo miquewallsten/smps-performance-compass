@@ -1,12 +1,12 @@
 import { Router, Request, Response } from 'express';
 import { v4 as uuidv4 } from 'uuid';
-import db from '../db/connection.js';
+import { db, tx } from '../db/connection.js';
 import { authMiddleware } from '../middleware/auth.js';
 
 const router = Router();
 
 // ─── GET /api/action-plans ────────────────────────────────────────────────
-router.get('/', authMiddleware, (req: Request, res: Response) => {
+router.get('/', authMiddleware, async (req: Request, res: Response) => {
   try {
     const { employeeId, period } = req.query as Record<string, string>;
     let sql = 'SELECT * FROM action_plans WHERE 1=1';
@@ -14,11 +14,12 @@ router.get('/', authMiddleware, (req: Request, res: Response) => {
     if (employeeId) { sql += ' AND employee_id = ?'; params.push(employeeId); }
     if (period) { sql += ' AND period = ?'; params.push(period); }
 
-    const plans = db.prepare(sql).all(...params);
-    const result = plans.map((plan: any) => {
-      const items = db.prepare('SELECT * FROM smart_action_items WHERE action_plan_id = ?').all(plan.id);
-      return { ...plan, items };
-    });
+    const plans = await db.all(sql, params);
+    const result = [];
+    for (const plan of plans) {
+      const items = await db.all('SELECT * FROM smart_action_items WHERE action_plan_id = ?', [plan.id]);
+      result.push({ ...plan, items });
+    }
     return res.json(result);
   } catch (err) {
     console.error('List action plans error:', err);
@@ -27,7 +28,7 @@ router.get('/', authMiddleware, (req: Request, res: Response) => {
 });
 
 // ─── POST /api/action-plans ──────────────────────────────────────────────
-router.post('/', authMiddleware, (req: Request, res: Response) => {
+router.post('/', authMiddleware, async (req: Request, res: Response) => {
   try {
     const { employeeId, supervisorId, period, content, items } = req.body;
     if (!employeeId || !supervisorId || !period) {
@@ -37,31 +38,26 @@ router.post('/', authMiddleware, (req: Request, res: Response) => {
     const id = uuidv4();
     const now = new Date().toISOString();
 
-    const insertPlan = db.prepare(
-      `INSERT INTO action_plans (id, employee_id, supervisor_id, period, content, approval_status, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, 'pending', ?, ?)`
-    );
-    const insertItem = db.prepare(
-      `INSERT INTO smart_action_items (id, action_plan_id, competencia, objetivo, acciones, que_evitar, fecha_revision, apoyos)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
-    );
-
-    const transaction = db.transaction(() => {
-      insertPlan.run(id, employeeId, supervisorId, period, content || '', now, now);
+    await db.transaction(async (conn) => {
+      await tx.run(conn,
+        `INSERT INTO action_plans (id, employee_id, supervisor_id, period, content, approval_status, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, 'pending', ?, ?)`,
+        [id, employeeId, supervisorId, period, content || '', now, now]);
       if (items && Array.isArray(items)) {
         for (const item of items) {
-          insertItem.run(uuidv4(), id, item.competencia || '', item.objetivo || '', item.acciones || '', item.queEvitar || '', item.fechaRevision || '', item.apoyos || '');
+          await tx.run(conn,
+            `INSERT INTO smart_action_items (id, action_plan_id, competencia, objetivo, acciones, que_evitar, fecha_revision, apoyos)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+            [uuidv4(), id, item.competencia || '', item.objetivo || '', item.acciones || '', item.queEvitar || '', item.fechaRevision || '', item.apoyos || '']);
         }
       }
     });
 
-    transaction();
-
-    const plan = db.prepare('SELECT * FROM action_plans WHERE id = ?').get(id);
-    const planItems = db.prepare('SELECT * FROM smart_action_items WHERE action_plan_id = ?').all(id);
+    const plan = await db.get('SELECT * FROM action_plans WHERE id = ?', [id]);
+    const planItems = await db.all('SELECT * FROM smart_action_items WHERE action_plan_id = ?', [id]);
     return res.status(201).json({ ...plan, items: planItems });
   } catch (err: any) {
-    if (err.message?.includes('UNIQUE constraint failed')) {
+    if (err.code === 'ER_DUP_ENTRY') {
       return res.status(409).json({ error: 'Action plan already exists for this employee and period' });
     }
     console.error('Create action plan error:', err);
@@ -70,9 +66,9 @@ router.post('/', authMiddleware, (req: Request, res: Response) => {
 });
 
 // ─── PATCH /api/action-plans/:id ──────────────────────────────────────────
-router.patch('/:id', authMiddleware, (req: Request, res: Response) => {
+router.patch('/:id', authMiddleware, async (req: Request, res: Response) => {
   try {
-    const plan = db.prepare('SELECT * FROM action_plans WHERE id = ?').get(req.params.id);
+    const plan = await db.get('SELECT * FROM action_plans WHERE id = ?', [req.params.id]);
     if (!plan) return res.status(404).json({ error: 'Action plan not found' });
 
     const { content, items } = req.body;
@@ -84,24 +80,21 @@ router.patch('/:id', authMiddleware, (req: Request, res: Response) => {
     updates.push('updated_at = ?'); params.push(now);
 
     if (items && Array.isArray(items)) {
-      const deleteItems = db.prepare('DELETE FROM smart_action_items WHERE action_plan_id = ?');
-      const insertItem = db.prepare(
-        `INSERT INTO smart_action_items (id, action_plan_id, competencia, objetivo, acciones, que_evitar, fecha_revision, apoyos) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
-      );
-      const t = db.transaction(() => {
-        db.prepare(`UPDATE action_plans SET ${updates.join(', ')} WHERE id = ?`).run(...params, req.params.id);
-        deleteItems.run(req.params.id);
+      await db.transaction(async (conn) => {
+        await tx.run(conn, `UPDATE action_plans SET ${updates.join(', ')} WHERE id = ?`, [...params, req.params.id]);
+        await tx.run(conn, 'DELETE FROM smart_action_items WHERE action_plan_id = ?', [req.params.id]);
         for (const item of items) {
-          insertItem.run(uuidv4(), req.params.id, item.competencia || '', item.objetivo || '', item.acciones || '', item.queEvitar || '', item.fechaRevision || '', item.apoyos || '');
+          await tx.run(conn,
+            `INSERT INTO smart_action_items (id, action_plan_id, competencia, objetivo, acciones, que_evitar, fecha_revision, apoyos) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+            [uuidv4(), req.params.id, item.competencia || '', item.objetivo || '', item.acciones || '', item.queEvitar || '', item.fechaRevision || '', item.apoyos || '']);
         }
       });
-      t();
     } else {
-      db.prepare(`UPDATE action_plans SET ${updates.join(', ')} WHERE id = ?`).run(...params, req.params.id);
+      await db.run(`UPDATE action_plans SET ${updates.join(', ')} WHERE id = ?`, [...params, req.params.id]);
     }
 
-    const updated = db.prepare('SELECT * FROM action_plans WHERE id = ?').get(req.params.id);
-    const planItems = db.prepare('SELECT * FROM smart_action_items WHERE action_plan_id = ?').all(req.params.id);
+    const updated = await db.get('SELECT * FROM action_plans WHERE id = ?', [req.params.id]);
+    const planItems = await db.all('SELECT * FROM smart_action_items WHERE action_plan_id = ?', [req.params.id]);
     return res.json({ ...updated, items: planItems });
   } catch (err) {
     console.error('Update action plan error:', err);
@@ -110,9 +103,9 @@ router.patch('/:id', authMiddleware, (req: Request, res: Response) => {
 });
 
 // ─── POST /api/action-plans/:id/approve ────────────────────────────────────
-router.post('/:id/approve', authMiddleware, (req: Request, res: Response) => {
+router.post('/:id/approve', authMiddleware, async (req: Request, res: Response) => {
   try {
-    const plan = db.prepare('SELECT * FROM action_plans WHERE id = ?').get(req.params.id);
+    const plan = await db.get('SELECT * FROM action_plans WHERE id = ?', [req.params.id]);
     if (!plan) return res.status(404).json({ error: 'Action plan not found' });
 
     const { status, comments } = req.body;
@@ -121,11 +114,11 @@ router.post('/:id/approve', authMiddleware, (req: Request, res: Response) => {
     }
 
     const now = new Date().toISOString();
-    db.prepare('UPDATE action_plans SET approval_status = ?, approval_comments = ?, approved_by = ?, approved_at = ?, updated_at = ? WHERE id = ?')
-      .run(status, comments || null, req.user!.id, now, now, req.params.id);
+    await db.run('UPDATE action_plans SET approval_status = ?, approval_comments = ?, approved_by = ?, approved_at = ?, updated_at = ? WHERE id = ?',
+      [status, comments || null, req.user!.id, now, now, req.params.id]);
 
-    const updated = db.prepare('SELECT * FROM action_plans WHERE id = ?').get(req.params.id);
-    const planItems = db.prepare('SELECT * FROM smart_action_items WHERE action_plan_id = ?').all(req.params.id);
+    const updated = await db.get('SELECT * FROM action_plans WHERE id = ?', [req.params.id]);
+    const planItems = await db.all('SELECT * FROM smart_action_items WHERE action_plan_id = ?', [req.params.id]);
     return res.json({ ...updated, items: planItems });
   } catch (err) {
     console.error('Approve action plan error:', err);

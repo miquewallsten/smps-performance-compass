@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "vite build && node build-server.mjs",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
     "preview": "vite preview",
@@ -13,10 +13,10 @@
     "test:watch": "vitest",
     "dev:server": "tsx watch server/index.ts",
     "dev:full": "concurrently \"npm run dev\" \"npm run dev:server\"",
-    "build:server": "tsc -p server/tsconfig.json",
+    "build:server": "node build-server.mjs",
     "db:migrate": "tsx server/db/migrate.ts",
     "db:seed": "tsx server/db/seed.ts",
-    "start": "node server.cjs",
+    "start": "node server.js",
     "build:all": "npm run build",
     "start:tsx": "npx tsx server/index.ts",
     "db:seed-users": "tsx server/db/seed-users.ts"
@@ -53,7 +53,6 @@
     "@tanstack/react-query": "^5.83.0",
     "@types/multer": "^2.1.0",
     "bcryptjs": "^3.0.3",
-    "better-sqlite3": "^12.10.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
@@ -66,6 +65,7 @@
     "jsonwebtoken": "^9.0.3",
     "lucide-react": "^0.462.0",
     "multer": "^2.1.1",
+    "mysql2": "^3.22.3",
     "next-themes": "^0.3.0",
     "react": "^18.3.1",
     "react-day-picker": "^8.10.1",
@@ -88,7 +88,6 @@
     "@testing-library/jest-dom": "^6.6.0",
     "@testing-library/react": "^16.0.0",
     "@types/bcryptjs": "^2.4.6",
-    "@types/better-sqlite3": "^7.6.13",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/jsonwebtoken": "^9.0.10",
@@ -99,8 +98,7 @@
     "@vitejs/plugin-react-swc": "^3.11.0",
     "autoprefixer": "^10.4.21",
     "concurrently": "^9.2.1",
-    "drizzle-kit": "^0.31.10",
-    "drizzle-orm": "^0.45.2",
+    "esbuild": "^0.28.0",
     "eslint": "^9.32.0",
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.20",
@@ -115,5 +113,5 @@
     "vite": "^5.4.19",
     "vitest": "^3.2.4"
   },
-  "main": "server.cjs"
+  "main": "server.js"
 }

@@ -1,16 +1,6 @@
-import Database from 'better-sqlite3';
-import path from 'path';
-import dotenv from 'dotenv';
+import { db, tx, pool } from './connection.js';
 import { v4 as uuidv4 } from 'uuid';
 import bcrypt from 'bcryptjs';
-
-dotenv.config();
-
-const DB_PATH = process.env.DATABASE_URL || path.resolve(process.cwd(), 'server', 'db', 'smps.db');
-const db = new Database(DB_PATH);
-
-db.pragma('journal_mode = WAL');
-db.pragma('foreign_keys = ON');
 
 // ─── SuperAdmin Configuration ────────────────────────────────────────────
 const SUPERADMIN_EMAIL = 'lab@bowdot.com';
@@ -82,34 +72,30 @@ const ASSIGNMENTS: SeedAssignment[] = [
   { employeeEmail: 'lhernandez@smps.com', supervisorEmail: 'rfigueroa@smps.com', period: '2025-H2' },
 ];
 
-async function seed() {
+export async function seed() {
   console.log('Seeding database...');
 
-  const insertUser = db.prepare(`
-    INSERT OR IGNORE INTO users (id, email, password_hash, security_question, security_answer, name, position, practice_area, custom_position_id, is_admin, is_super_user, is_managing_partner, is_active, must_change_password, created_at, updated_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, NULL, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))
-  `);
+  const now = () => new Date().toISOString().slice(0, 19).replace('T', ' ');
 
-  const insertAssignment = db.prepare(`
-    INSERT OR IGNORE INTO supervisor_assignments (id, employee_id, supervisor_id, period)
-    VALUES (?, ?, ?, ?)
-  `);
-
-  const transaction = db.transaction(() => {
-    // ─── 1. Create SuperAdmin ────────────────────────────────────────────
-    const existingSuper = db.prepare('SELECT id FROM users WHERE email = ?').get(SUPERADMIN_EMAIL) as { id: string } | undefined;
+  // ─── 1. Create SuperAdmin ────────────────────────────────────────────
+  await db.transaction(async (conn) => {
+    const existingSuper = await tx.get(conn, 'SELECT id FROM users WHERE email = ?', [SUPERADMIN_EMAIL]) as { id: string } | undefined;
 
     if (existingSuper) {
       // Update password hash to ensure it's correct
       const passwordHash = bcrypt.hashSync(SUPERADMIN_PASSWORD, 12);
-      db.prepare('UPDATE users SET password_hash = ?, must_change_password = 0, updated_at = datetime(\'now\') WHERE id = ?').run(passwordHash, existingSuper.id);
+      await tx.run(conn, 'UPDATE users SET password_hash = ?, must_change_password = 0, updated_at = ? WHERE id = ?', [passwordHash, now(), existingSuper.id]);
       console.log(`  ✓ SuperAdmin already exists (${SUPERADMIN_EMAIL}) - password updated`);
     } else {
       const saId = uuidv4();
       const saPasswordHash = bcrypt.hashSync(SUPERADMIN_PASSWORD, 12);
       const saSecurityHash = bcrypt.hashSync(SUPERADMIN_EMAIL.toLowerCase().trim(), 12);
       const saSecurityQuestion = '¿Cuál es su correo electrónico?';
-      insertUser.run(saId, SUPERADMIN_EMAIL, saPasswordHash, saSecurityQuestion, saSecurityHash, SUPERADMIN_NAME, 'socio', null, 1, 1, 1, 1, 0);
+      await tx.run(conn,
+        `INSERT IGNORE INTO users (id, email, password_hash, security_question, security_answer, name, position, practice_area, custom_position_id, is_super_user, is_admin, is_managing_partner, is_active, must_change_password, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, NULL, ?, ?, ?, ?, ?, ?, ?)`,
+        [saId, SUPERADMIN_EMAIL, saPasswordHash, saSecurityQuestion, saSecurityHash, SUPERADMIN_NAME, 'socio', null, 1, 1, 1, 1, 0, now(), now()]
+      );
       console.log(`  ✓ SuperAdmin created (${SUPERADMIN_EMAIL})`);
     }
 
@@ -120,66 +106,115 @@ async function seed() {
       const securityAnswerHash = bcrypt.hashSync(user.email.toLowerCase().trim(), 12);
       const securityQuestion = '¿Cuál es su correo electrónico?';
 
-      insertUser.run(
-        id, user.email, passwordHash, securityQuestion, securityAnswerHash,
-        user.name, user.position, user.practiceArea || null,
-        user.isAdmin ? 1 : 0, 0, user.isManagingPartner ? 1 : 0,
-        user.isActive ? 1 : 0, 1, // must_change_password = 1 for all regular users
+      await tx.run(conn,
+        `INSERT IGNORE INTO users (id, email, password_hash, security_question, security_answer, name, position, practice_area, custom_position_id, is_admin, is_super_user, is_managing_partner, is_active, must_change_password, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, NULL, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          id, user.email, passwordHash, securityQuestion, securityAnswerHash,
+          user.name, user.position, user.practiceArea || null,
+          user.isAdmin ? 1 : 0, 0, user.isManagingPartner ? 1 : 0,
+          user.isActive ? 1 : 0, 1, now(), now(), // must_change_password = 1 for all regular users
+        ]
       );
 
       console.log(`  ✓ ${user.name} (${user.email}) - ${user.position}${user.isAdmin ? ' [ADMIN]' : ''}${user.isManagingPartner ? ' [MANAGING_PARTNER]' : ''}${!user.isActive ? ' [INACTIVE]' : ''}`);
     }
 
     // ─── 3. Seed system_status if missing ──────────────────────────────
-    const hasStatus = db.prepare('SELECT id FROM system_status LIMIT 1').get();
+    const hasStatus = await tx.get(conn, 'SELECT id FROM system_status LIMIT 1');
     if (!hasStatus) {
-      const saUser = db.prepare('SELECT id FROM users WHERE email = ?').get(SUPERADMIN_EMAIL) as { id: string } | undefined;
-      db.prepare(`INSERT INTO system_status (id, status, activation_date, payment_plan, max_users, tickets) VALUES (1, 'active', datetime('now'), 'monthly', 50, 0)`).run();
+      const saUser = await tx.get(conn, 'SELECT id FROM users WHERE email = ?', [SUPERADMIN_EMAIL]) as { id: string } | undefined;
+      await tx.run(conn, `INSERT INTO system_status (id, status, activation_date, payment_plan, max_users, tickets) VALUES (1, 'active', ?, 'monthly', 50, 0)`, [now()]);
       if (saUser) {
-        db.prepare(`INSERT INTO activation_history (id, action, date, by) VALUES (?, 'activated', datetime('now'), ?)`).run(uuidv4(), saUser.id);
+        await tx.run(conn, `INSERT INTO activation_history (id, action, date, by_user_id) VALUES (?, 'activated', ?, ?)`, [uuidv4(), now(), saUser.id]);
       }
       console.log('  ✓ System status seeded');
     }
 
     // ─── 4. Seed module_config if missing ──────────────────────────────
-    const hasModules = db.prepare('SELECT id FROM module_config LIMIT 1').get();
+    const hasModules = await tx.get(conn, 'SELECT id FROM module_config LIMIT 1');
     if (!hasModules) {
-      db.prepare(`INSERT INTO module_config (id, evaluations, communications, vacations, copilot) VALUES (1, 1, 1, 1, 1)`).run();
+      await tx.run(conn, `INSERT INTO module_config (id, evaluations, communications, vacations, copilot) VALUES (1, 1, 1, 1, 1)`);
       console.log('  ✓ Module config seeded');
+    }
+
+    // ─── 5. Seed copilot_config if missing ──────────────────────────────
+    const hasCopilotConfig = await tx.get(conn, 'SELECT id FROM copilot_config LIMIT 1');
+    if (!hasCopilotConfig) {
+      const saUser2 = await tx.get(conn, 'SELECT id FROM users WHERE email = ?', [SUPERADMIN_EMAIL]) as { id: string } | undefined;
+      await tx.run(conn,
+        `INSERT INTO copilot_config (id, model, api_provider, api_key, can_manage_users, can_manage_evaluations, can_manage_vacations, can_manage_announcements, can_manage_periods, can_manage_system, can_view_reports, max_tokens, temperature)
+         VALUES (1, 'llama-3.3-70b-versatile', 'groq', NULL, 1, 1, 1, 1, 1, 1, 1, 2048, 0.3)`);
+      console.log('  ✓ Copilot config seeded');
+    }
+
+    // ─── 6. Seed library questions if empty ──────────────────────────────
+    const hasLibraryQuestions = await tx.get(conn, 'SELECT id FROM library_questions LIMIT 1');
+    if (!hasLibraryQuestions) {
+      const saUser3 = await tx.get(conn, 'SELECT id FROM users WHERE email = ?', [SUPERADMIN_EMAIL]) as { id: string } | undefined;
+      const libraryQuestions = [
+        { qid: 'lib-001', cat: 'Criterio Técnico', text: '¿Cómo califica la calidad técnica en el desempeño de sus funciones?', weight: 10 },
+        { qid: 'lib-002', cat: 'Criterio Técnico', text: '¿Cómo califica la capacidad de análisis y resolución de problemas jurídicos?', weight: 9 },
+        { qid: 'lib-003', cat: 'Criterio Técnico', text: '¿Cómo califica la actualización y conocimiento de la normativa aplicable?', weight: 8 },
+        { qid: 'lib-004', cat: 'Liderazgo', text: '¿Cómo califica la capacidad de liderazgo y dirección de equipos?', weight: 8 },
+        { qid: 'lib-005', cat: 'Liderazgo', text: '¿Cómo califica la toma de decisiones estratégicas?', weight: 7 },
+        { qid: 'lib-006', cat: 'Liderazgo', text: '¿Cómo califica el desarrollo y mentoría del equipo a cargo?', weight: 7 },
+        { qid: 'lib-007', cat: 'Desempeño', text: '¿Cómo califica el cumplimiento de objetivos y metas establecidos?', weight: 10 },
+        { qid: 'lib-008', cat: 'Desempeño', text: '¿Cómo califica la puntualidad y asistencia?', weight: 6 },
+        { qid: 'lib-009', cat: 'Desempeño', text: '¿Cómo califica la calidad y oportunidad de los entregables?', weight: 8 },
+        { qid: 'lib-010', cat: 'Desempeño', text: '¿Cómo califica la gestión eficiente del tiempo y prioridades?', weight: 7 },
+        { qid: 'lib-011', cat: 'Habilidades Blandas', text: '¿Cómo califica la comunicación clara y efectiva?', weight: 7 },
+        { qid: 'lib-012', cat: 'Habilidades Blandas', text: '¿Cómo califica la capacidad de innovación y adaptación al cambio?', weight: 6 },
+        { qid: 'lib-013', cat: 'Habilidades Blandas', text: '¿Cómo califica la resolución de conflictos y negociación?', weight: 6 },
+        { qid: 'lib-014', cat: 'Trabajo en Equipo', text: '¿Cómo califica la colaboración y coordinación con el equipo?', weight: 7 },
+        { qid: 'lib-015', cat: 'Trabajo en Equipo', text: '¿Cómo califica la disposición para apoyar a compañeros?', weight: 6 },
+        { qid: 'lib-016', cat: 'Actitud', text: '¿Cómo califica la ética profesional y compromiso?', weight: 7 },
+        { qid: 'lib-017', cat: 'Actitud', text: '¿Cómo califica la actitud de servicio y proactividad?', weight: 6 },
+        { qid: 'lib-018', cat: 'Cumplimiento', text: '¿Cómo califica el seguimiento a instrucciones y procedimientos?', weight: 7 },
+        { qid: 'lib-019', cat: 'Cumplimiento', text: '¿Cómo califica la confidencialidad y discreción?', weight: 8 },
+        { qid: 'lib-020', cat: 'Disponibilidad', text: '¿Cómo califica la disponibilidad ante situaciones críticas?', weight: 6 },
+        { qid: 'lib-021', cat: 'Desarrollo', text: '¿Cómo califica la participación en actividades de formación continua?', weight: 5 },
+        { qid: 'lib-022', cat: 'Desarrollo', text: '¿Cómo califica la disposición para adquirir nuevas competencias?', weight: 5 },
+      ];
+      for (const q of libraryQuestions) {
+        await tx.run(conn,
+          `INSERT INTO library_questions (id, question_id, category, text, default_weight, created_at, created_by) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+          [uuidv4(), q.qid, q.cat, q.text, q.weight, now(), saUser3?.id || null]);
+      }
+      console.log('  ✓ Library questions seeded');
     }
 
     // ─── 5. Seed assignments ────────────────────────────────────────────
     for (const assignment of ASSIGNMENTS) {
-      const employee = db.prepare('SELECT id FROM users WHERE email = ?').get(assignment.employeeEmail) as { id: string } | undefined;
-      const supervisor = db.prepare('SELECT id FROM users WHERE email = ?').get(assignment.supervisorEmail) as { id: string } | undefined;
+      const employee = await tx.get(conn, 'SELECT id FROM users WHERE email = ?', [assignment.employeeEmail]) as { id: string } | undefined;
+      const supervisor = await tx.get(conn, 'SELECT id FROM users WHERE email = ?', [assignment.supervisorEmail]) as { id: string } | undefined;
 
       if (!employee || !supervisor) {
         console.warn(`  ⚠ Skipping assignment: ${assignment.employeeEmail} → ${assignment.supervisorEmail} (user not found)`);
         continue;
       }
 
-      const existing = db.prepare('SELECT id FROM supervisor_assignments WHERE employee_id = ? AND supervisor_id = ? AND period = ?').get(employee.id, supervisor.id, assignment.period);
+      const existing = await tx.get(conn, 'SELECT id FROM supervisor_assignments WHERE employee_id = ? AND supervisor_id = ? AND period = ?', [employee.id, supervisor.id, assignment.period]);
       if (existing) continue;
 
-      insertAssignment.run(uuidv4(), employee.id, supervisor.id, assignment.period);
+      await tx.run(conn, `INSERT IGNORE INTO supervisor_assignments (id, employee_id, supervisor_id, period) VALUES (?, ?, ?, ?)`, [uuidv4(), employee.id, supervisor.id, assignment.period]);
       console.log(`  ✓ Assignment: ${assignment.employeeEmail} → ${assignment.supervisorEmail} (${assignment.period})`);
     }
   });
 
-  transaction();
-
   // ─── Summary ──────────────────────────────────────────────────────────
-  const userCount = (db.prepare('SELECT COUNT(*) as count FROM users').get() as any).count;
-  const assignmentCount = (db.prepare('SELECT COUNT(*) as count FROM supervisor_assignments').get() as any).count;
+  const userCount = (await db.get('SELECT COUNT(*) as count FROM users') as any).count;
+  const assignmentCount = (await db.get('SELECT COUNT(*) as count FROM supervisor_assignments') as any).count;
   console.log(`\n✅ Seeding complete!`);
   console.log(`   Users: ${userCount}`);
   console.log(`   Assignments: ${assignmentCount}`);
   console.log(`   SuperAdmin: ${SUPERADMIN_EMAIL} / ${SUPERADMIN_PASSWORD}`);
-
-  db.close();
 }
 
-seed().catch(err => {
-  console.error('Seed failed:', err);
-  process.exit(1);
-});
+// ─── Self-execution: run standalone with `npx tsx server/db/seed-users.ts` ──
+if (import.meta.url === `file://${process.argv[1]}`) {
+  seed().catch(err => {
+    console.error('Seed failed:', err);
+    process.exit(1);
+  });
+}

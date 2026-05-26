@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { verifyToken, hashToken, JwtPayload } from '../auth/jwt.js';
-import db from '../db/connection.js';
+import { db } from '../db/connection.js';
 
 // Extend Express Request type
 declare global {
@@ -23,11 +23,15 @@ export async function authMiddleware(req: Request, res: Response, next: NextFunc
     return res.status(401).json({ error: 'Invalid token' });
   }
 
-  // Check if token is in blocklist (logged out)
-  const tokenHash = hashToken(token);
-  const blocked = db.prepare('SELECT id FROM sessions WHERE token_hash = ?').get(tokenHash);
-  if (blocked) {
-    return res.status(401).json({ error: 'Token revoked' });
+  try {
+    // Check if token is in blocklist (logged out)
+    const tokenHash = hashToken(token);
+    const blocked = await db.get('SELECT id FROM sessions WHERE token_hash = ?', [tokenHash]);
+    if (blocked) {
+      return res.status(401).json({ error: 'Token revoked' });
+    }
+  } catch (err) {
+    return res.status(500).json({ error: 'Database error' });
   }
 
   req.user = { ...payload, id: payload.sub };

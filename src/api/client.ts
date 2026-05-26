@@ -1,13 +1,40 @@
 const API_BASE = import.meta.env.VITE_API_URL || '';
 
-let token: string | null = localStorage.getItem('smps_token');
+// Safe localStorage helpers that work in iOS Safari private mode
+// where setItem throws QuotaExceededError and getItem/removeItem work fine
+function safeGetStorage(key: string): string | null {
+  try {
+    return localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+function safeSetStorage(key: string, value: string): void {
+  try {
+    localStorage.setItem(key, value);
+  } catch {
+    // QuotaExceededError in iOS Safari private mode – fall back to memory only
+    console.warn('localStorage unavailable, using in-memory session');
+  }
+}
+
+function safeRemoveStorage(key: string): void {
+  try {
+    localStorage.removeItem(key);
+  } catch {
+    // ignore
+  }
+}
+
+let token: string | null = safeGetStorage('smps_token');
 
 export function setToken(t: string | null) {
   token = t;
   if (t) {
-    localStorage.setItem('smps_token', t);
+    safeSetStorage('smps_token', t);
   } else {
-    localStorage.removeItem('smps_token');
+    safeRemoveStorage('smps_token');
   }
 }
 

@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { v4 as uuidv4 } from 'uuid';
-import db from '../db/connection.js';
+import { db, tx } from '../db/connection.js';
 import { signToken, hashToken, getTokenExpiry, getRole } from '../auth/jwt.js';
 import { hashPassword, verifyPassword, hashSecurityAnswer, verifySecurityAnswer } from '../auth/security.js';
 import { authMiddleware } from '../middleware/auth.js';
@@ -23,7 +23,7 @@ router.post('/login', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Email and password are required' });
     }
 
-    const user = db.prepare('SELECT * FROM users WHERE email = ?').get(email) as Record<string, unknown> | undefined;
+    const user = await db.get('SELECT * FROM users WHERE email = ?', [email]) as Record<string, unknown> | undefined;
 
     if (!user) {
       return res.status(401).json({ error: 'Invalid credentials' });
@@ -69,12 +69,13 @@ router.post('/logout', authMiddleware, requireAuthenticated, async (req: Request
     const payload = req.user!;
 
     // Add token to blocklist
-    db.prepare(
-      'INSERT INTO sessions (id, user_id, token_hash, created_at, expires_at) VALUES (?, ?, ?, ?, ?)'
-    ).run(uuidv4(), payload.id, tokenHash, new Date().toISOString(), expiresAt);
+    await db.run(
+      'INSERT INTO sessions (id, user_id, token_hash, created_at, expires_at) VALUES (?, ?, ?, ?, ?)',
+      [uuidv4(), payload.id, tokenHash, new Date().toISOString(), expiresAt]
+    );
 
     // Clean up expired sessions
-    db.prepare('DELETE FROM sessions WHERE expires_at < ?').run(new Date().toISOString());
+    await db.run('DELETE FROM sessions WHERE expires_at < ?', [new Date().toISOString()]);
 
     return res.json({ message: 'Logged out successfully' });
   } catch (err) {
@@ -84,9 +85,9 @@ router.post('/logout', authMiddleware, requireAuthenticated, async (req: Request
 });
 
 // ─── GET /api/auth/me ───────────────────────────────────────────────────────
-router.get('/me', authMiddleware, requireAuthenticated, (req: Request, res: Response) => {
+router.get('/me', authMiddleware, requireAuthenticated, async (req: Request, res: Response) => {
   try {
-    const user = db.prepare('SELECT * FROM users WHERE id = ?').get(req.user!.id) as Record<string, unknown> | undefined;
+    const user = await db.get('SELECT * FROM users WHERE id = ?', [req.user!.id]) as Record<string, unknown> | undefined;
 
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
@@ -109,7 +110,7 @@ router.post('/change-password', authMiddleware, requireAuthenticated, async (req
       securityAnswer?: string;
     };
 
-    const user = db.prepare('SELECT * FROM users WHERE id = ?').get(req.user!.id) as Record<string, unknown> | undefined;
+    const user = await db.get('SELECT * FROM users WHERE id = ?', [req.user!.id]) as Record<string, unknown> | undefined;
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
@@ -134,13 +135,15 @@ router.post('/change-password', authMiddleware, requireAuthenticated, async (req
 
     if (securityQuestion && securityAnswer) {
       const hashedAnswer = await hashSecurityAnswer(securityAnswer);
-      db.prepare(
-        'UPDATE users SET password_hash = ?, security_question = ?, security_answer = ?, must_change_password = 0, updated_at = ? WHERE id = ?'
-      ).run(hashedPassword, securityQuestion, hashedAnswer, now, user.id as string);
+      await db.run(
+        'UPDATE users SET password_hash = ?, security_question = ?, security_answer = ?, must_change_password = 0, updated_at = ? WHERE id = ?',
+        [hashedPassword, securityQuestion, hashedAnswer, now, user.id as string]
+      );
     } else {
-      db.prepare(
-        'UPDATE users SET password_hash = ?, must_change_password = 0, updated_at = ? WHERE id = ?'
-      ).run(hashedPassword, now, user.id as string);
+      await db.run(
+        'UPDATE users SET password_hash = ?, must_change_password = 0, updated_at = ? WHERE id = ?',
+        [hashedPassword, now, user.id as string]
+      );
     }
 
     return res.json({ message: 'Password changed successfully' });
@@ -151,7 +154,7 @@ router.post('/change-password', authMiddleware, requireAuthenticated, async (req
 });
 
 // ─── POST /api/auth/security-question ───────────────────────────────────────
-router.post('/security-question', (req: Request, res: Response) => {
+router.post('/security-question', async (req: Request, res: Response) => {
   try {
     const { email } = req.body as { email?: string };
 
@@ -159,7 +162,7 @@ router.post('/security-question', (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Email is required' });
     }
 
-    const user = db.prepare('SELECT security_question FROM users WHERE email = ?').get(email) as { security_question: string } | undefined;
+    const user = await db.get('SELECT security_question FROM users WHERE email = ?', [email]) as { security_question: string } | undefined;
 
     if (!user) {
       // Don't reveal whether the email exists
@@ -190,7 +193,7 @@ router.post('/reset-password', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'New password must be at least 6 characters' });
     }
 
-    const user = db.prepare('SELECT * FROM users WHERE email = ?').get(email) as Record<string, unknown> | undefined;
+    const user = await db.get('SELECT * FROM users WHERE email = ?', [email]) as Record<string, unknown> | undefined;
 
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
@@ -204,9 +207,10 @@ router.post('/reset-password', async (req: Request, res: Response) => {
     const hashedPassword = await hashPassword(newPassword);
     const now = new Date().toISOString();
 
-    db.prepare(
-      'UPDATE users SET password_hash = ?, must_change_password = 0, updated_at = ? WHERE id = ?'
-    ).run(hashedPassword, now, user.id as string);
+    await db.run(
+      'UPDATE users SET password_hash = ?, must_change_password = 0, updated_at = ? WHERE id = ?',
+      [hashedPassword, now, user.id as string]
+    );
 
     return res.json({ message: 'Password reset successfully' });
   } catch (err) {

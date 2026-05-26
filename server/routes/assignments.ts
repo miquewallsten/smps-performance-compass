@@ -1,13 +1,13 @@
 import { Router, Request, Response } from 'express';
 import { v4 as uuidv4 } from 'uuid';
-import db from '../db/connection.js';
+import { db, tx } from '../db/connection.js';
 import { authMiddleware } from '../middleware/auth.js';
 import { requireAdmin } from '../middleware/rbac.js';
 
 const router = Router();
 
 // ─── GET /api/assignments ────────────────────────────────────────────────
-router.get('/', authMiddleware, (req: Request, res: Response) => {
+router.get('/', authMiddleware, async (req: Request, res: Response) => {
   try {
     const { period, employeeId, supervisorId } = req.query as {
       period?: string;
@@ -31,7 +31,7 @@ router.get('/', authMiddleware, (req: Request, res: Response) => {
       params.push(supervisorId);
     }
 
-    const assignments = db.prepare(sql).all(...params);
+    const assignments = await db.all(sql, params);
     return res.json(assignments);
   } catch (err) {
     console.error('List assignments error:', err);
@@ -40,7 +40,7 @@ router.get('/', authMiddleware, (req: Request, res: Response) => {
 });
 
 // ─── POST /api/assignments ──────────────────────────────────────────────
-router.post('/', authMiddleware, requireAdmin, (req: Request, res: Response) => {
+router.post('/', authMiddleware, requireAdmin, async (req: Request, res: Response) => {
   try {
     const { employeeId, supervisorId, period } = req.body as {
       employeeId?: string;
@@ -53,18 +53,18 @@ router.post('/', authMiddleware, requireAdmin, (req: Request, res: Response) => 
     }
 
     const id = uuidv4();
-    const now = new Date().toISOString();
 
-    db.prepare(
+    await db.run(
       `INSERT INTO supervisor_assignments (id, employee_id, supervisor_id, period)
-       VALUES (?, ?, ?, ?)`
-    ).run(id, employeeId, supervisorId, period);
+       VALUES (?, ?, ?, ?)`,
+      [id, employeeId, supervisorId, period]
+    );
 
-    const assignment = db.prepare('SELECT * FROM supervisor_assignments WHERE id = ?').get(id);
+    const assignment = await db.get('SELECT * FROM supervisor_assignments WHERE id = ?', [id]);
     return res.status(201).json(assignment);
-  } catch (err: unknown) {
+  } catch (err: any) {
     // Handle unique constraint violation
-    if (err instanceof Error && err.message?.includes('UNIQUE constraint failed')) {
+    if (err.code === 'ER_DUP_ENTRY') {
       return res.status(409).json({ error: 'Assignment already exists for this employee, supervisor, and period' });
     }
     console.error('Create assignment error:', err);
@@ -73,16 +73,16 @@ router.post('/', authMiddleware, requireAdmin, (req: Request, res: Response) => 
 });
 
 // ─── DELETE /api/assignments/:id ─────────────────────────────────────────
-router.delete('/:id', authMiddleware, requireAdmin, (req: Request, res: Response) => {
+router.delete('/:id', authMiddleware, requireAdmin, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
 
-    const assignment = db.prepare('SELECT id FROM supervisor_assignments WHERE id = ?').get(id);
+    const assignment = await db.get('SELECT id FROM supervisor_assignments WHERE id = ?', [id]);
     if (!assignment) {
       return res.status(404).json({ error: 'Assignment not found' });
     }
 
-    db.prepare('DELETE FROM supervisor_assignments WHERE id = ?').run(id);
+    await db.run('DELETE FROM supervisor_assignments WHERE id = ?', [id]);
 
     return res.json({ message: 'Assignment deleted successfully' });
   } catch (err) {

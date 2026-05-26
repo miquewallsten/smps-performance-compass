@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { v4 as uuidv4 } from 'uuid';
-import db from '../db/connection.js';
+import { db, tx } from '../db/connection.js';
 import { authMiddleware } from '../middleware/auth.js';
 import { requireAdmin } from '../middleware/rbac.js';
 
@@ -12,23 +12,26 @@ function getUserLevel(user: any): string {
 }
 
 // ─── GET /api/announcements ───────────────────────────────────────────────
-router.get('/', authMiddleware, (req: Request, res: Response) => {
+router.get('/', authMiddleware, async (req: Request, res: Response) => {
   try {
     const includeArchived = req.query.includeArchived === 'true';
     let sql = 'SELECT * FROM announcements WHERE 1=1';
     const params: any[] = [];
     if (!includeArchived) { sql += ' AND (archived = 0 OR archived IS NULL)'; }
 
-    const announcements = db.prepare(sql).all(...params);
-    const result = announcements.map((a: any) => {
-      const readBy = db.prepare('SELECT user_id FROM announcement_reads WHERE announcement_id = ?').all(a.id).map((r: any) => r.user_id);
-      return { ...a, readBy };
-    }).filter((a: any) => {
+    const announcements = await db.all(sql, params);
+    const announcementsWithReads = await Promise.all(announcements.map(async (a: any) => {
+      const readRows = await db.all('SELECT user_id FROM announcement_reads WHERE announcement_id = ?', [a.id]);
+      return { ...a, readBy: readRows.map((r: any) => r.user_id) };
+    }));
+
+    const result = announcementsWithReads.filter((a: any) => {
       if (req.user!.role === 'admin' || req.user!.role === 'super_user') return true;
       if (a.audience === 'all') return true;
       const level = getUserLevel(req.user!);
       return a.audience === level;
     });
+
     return res.json(result);
   } catch (err) {
     console.error('List announcements error:', err);
@@ -37,7 +40,7 @@ router.get('/', authMiddleware, (req: Request, res: Response) => {
 });
 
 // ─── POST /api/announcements ──────────────────────────────────────────────
-router.post('/', authMiddleware, requireAdmin, (req: Request, res: Response) => {
+router.post('/', authMiddleware, requireAdmin, async (req: Request, res: Response) => {
   try {
     const { title, body, audience, expiresAt } = req.body;
     if (!title || !body || !audience) return res.status(400).json({ error: 'title, body, and audience required' });
@@ -45,10 +48,12 @@ router.post('/', authMiddleware, requireAdmin, (req: Request, res: Response) => 
 
     const id = uuidv4();
     const now = new Date().toISOString();
-    db.prepare('INSERT INTO announcements (id, author_id, title, body, audience, created_at, expires_at, archived) VALUES (?, ?, ?, ?, ?, ?, ?, 0)')
-      .run(id, req.user!.id, title, body, audience, now, expiresAt || null);
+    await db.run(
+      'INSERT INTO announcements (id, author_id, title, body, audience, created_at, expires_at, archived) VALUES (?, ?, ?, ?, ?, ?, ?, 0)',
+      [id, req.user!.id, title, body, audience, now, expiresAt || null]
+    );
 
-    const announcement = db.prepare('SELECT * FROM announcements WHERE id = ?').get(id);
+    const announcement = await db.get('SELECT * FROM announcements WHERE id = ?', [id]);
     return res.status(201).json({ ...announcement, readBy: [] });
   } catch (err) {
     console.error('Create announcement error:', err);
@@ -57,9 +62,9 @@ router.post('/', authMiddleware, requireAdmin, (req: Request, res: Response) => 
 });
 
 // ─── PATCH /api/announcements/:id ──────────────────────────────────────────
-router.patch('/:id', authMiddleware, requireAdmin, (req: Request, res: Response) => {
+router.patch('/:id', authMiddleware, requireAdmin, async (req: Request, res: Response) => {
   try {
-    const announcement = db.prepare('SELECT * FROM announcements WHERE id = ?').get(req.params.id);
+    const announcement = await db.get('SELECT * FROM announcements WHERE id = ?', [req.params.id]);
     if (!announcement) return res.status(404).json({ error: 'Announcement not found' });
 
     const { title, body, audience, expiresAt, archived } = req.body;
@@ -72,11 +77,12 @@ router.patch('/:id', authMiddleware, requireAdmin, (req: Request, res: Response)
     if (archived !== undefined) { updates.push('archived = ?'); params.push(archived ? 1 : 0); }
 
     if (updates.length > 0) {
-      db.prepare(`UPDATE announcements SET ${updates.join(', ')} WHERE id = ?`).run(...params, req.params.id);
+      await db.run(`UPDATE announcements SET ${updates.join(', ')} WHERE id = ?`, [...params, req.params.id]);
     }
 
-    const updated = db.prepare('SELECT * FROM announcements WHERE id = ?').get(req.params.id);
-    const readBy = db.prepare('SELECT user_id FROM announcement_reads WHERE announcement_id = ?').all(req.params.id).map((r: any) => r.user_id);
+    const updated = await db.get('SELECT * FROM announcements WHERE id = ?', [req.params.id]);
+    const readByRows = await db.all('SELECT user_id FROM announcement_reads WHERE announcement_id = ?', [req.params.id]);
+    const readBy = readByRows.map((r: any) => r.user_id);
     return res.json({ ...updated, readBy });
   } catch (err) {
     console.error('Update announcement error:', err);
@@ -85,13 +91,15 @@ router.patch('/:id', authMiddleware, requireAdmin, (req: Request, res: Response)
 });
 
 // ─── POST /api/announcements/:id/read ──────────────────────────────────────
-router.post('/:id/read', authMiddleware, (req: Request, res: Response) => {
+router.post('/:id/read', authMiddleware, async (req: Request, res: Response) => {
   try {
-    const announcement = db.prepare('SELECT * FROM announcements WHERE id = ?').get(req.params.id);
+    const announcement = await db.get('SELECT * FROM announcements WHERE id = ?', [req.params.id]);
     if (!announcement) return res.status(404).json({ error: 'Announcement not found' });
 
-    db.prepare('INSERT OR IGNORE INTO announcement_reads (announcement_id, user_id) VALUES (?, ?)')
-      .run(req.params.id, req.user!.id);
+    await db.run(
+      'INSERT IGNORE INTO announcement_reads (announcement_id, user_id) VALUES (?, ?)',
+      [req.params.id, req.user!.id]
+    );
     return res.json({ message: 'Marked as read' });
   } catch (err) {
     console.error('Mark read error:', err);

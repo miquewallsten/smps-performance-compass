@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { v4 as uuidv4 } from 'uuid';
-import db from '../db/connection.js';
+import { db, tx } from '../db/connection.js';
 import { signToken, getRole } from '../auth/jwt.js';
 import { hashPassword, hashSecurityAnswer } from '../auth/security.js';
 import { authMiddleware } from '../middleware/auth.js';
@@ -34,9 +34,9 @@ const VACATION_DEFAULTS: Record<string, number> = {
 };
 
 // ─── GET /api/system/initialized ──────────────────────────────────────────────
-router.get('/initialized', (_req: Request, res: Response) => {
+router.get('/initialized', async (_req: Request, res: Response) => {
   try {
-    const row = db.prepare('SELECT id FROM system_status LIMIT 1').get();
+    const row = await db.get('SELECT id FROM system_status LIMIT 1');
     return res.json({ initialized: !!row });
   } catch (err) {
     console.error('Check initialized error:', err);
@@ -48,7 +48,7 @@ router.get('/initialized', (_req: Request, res: Response) => {
 router.post('/init', async (req: Request, res: Response) => {
   try {
     // Check if already initialized
-    const existing = db.prepare('SELECT id FROM system_status LIMIT 1').get();
+    const existing = await db.get('SELECT id FROM system_status LIMIT 1');
     if (existing) {
       return res.status(409).json({ error: 'System is already initialized' });
     }
@@ -70,7 +70,7 @@ router.post('/init', async (req: Request, res: Response) => {
     }
 
     // Check if email already taken
-    const existingUser = db.prepare('SELECT id FROM users WHERE email = ?').get(email);
+    const existingUser = await db.get('SELECT id FROM users WHERE email = ?', [email]);
     if (existingUser) {
       return res.status(409).json({ error: 'Email is already registered' });
     }
@@ -83,47 +83,42 @@ router.post('/init', async (req: Request, res: Response) => {
     const hashedAnswer = await hashSecurityAnswer(securityAnswer);
 
     // Run all seeding in a transaction
-    const initSystem = db.transaction(() => {
+    await db.transaction(async (conn) => {
       // 1. Create super admin user
-      db.prepare(
+      await tx.run(conn,
         `INSERT INTO users (id, email, password_hash, security_question, security_answer, name, position, is_admin, is_super_user, is_managing_partner, is_active, must_change_password, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, 1, 1, 1, 1, 0, ?, ?)`
-      ).run(userId, email, hashedPassword, securityQuestion, hashedAnswer, name, 'socio', now, now);
+         VALUES (?, ?, ?, ?, ?, ?, ?, 1, 1, 1, 1, 0, ?, ?)`,
+        [userId, email, hashedPassword, securityQuestion, hashedAnswer, name, 'socio', now, now]);
 
       // 2. Seed all custom positions
-      const insertPosition = db.prepare(
-        `INSERT INTO custom_positions (id, label, level, practice_area, base_position, created_at)
-         VALUES (?, ?, ?, ?, ?, ?)`
-      );
       for (const pos of POSITION_CATALOG) {
-        insertPosition.run(pos.cve, pos.label, pos.level, pos.practiceArea ?? null, pos.basePosition, now);
+        await tx.run(conn,
+          `INSERT INTO custom_positions (id, label, level, practice_area, base_position, created_at)
+           VALUES (?, ?, ?, ?, ?, ?)`,
+          [pos.cve, pos.label, pos.level, pos.practiceArea ?? null, pos.basePosition, now]);
       }
 
       // 3. Seed vacation config defaults
-      const insertVacation = db.prepare(
-        `INSERT INTO vacation_config (position, days) VALUES (?, ?)`
-      );
       for (const [position, days] of Object.entries(VACATION_DEFAULTS)) {
-        insertVacation.run(position, days);
+        await tx.run(conn,
+          `INSERT INTO vacation_config (position, days) VALUES (?, ?)`,
+          [position, days]);
       }
 
       // 4. Seed module config (all enabled)
-      db.prepare(
-        `INSERT INTO module_config (id, evaluations, communications, vacations, copilot) VALUES (1, 1, 1, 1, 1)`
-      ).run();
+      await tx.run(conn,
+        `INSERT INTO module_config (id, evaluations, communications, vacations, copilot) VALUES (1, 1, 1, 1, 1)`);
 
       // 5. Seed system status
-      db.prepare(
-        `INSERT INTO system_status (id, status, activation_date, payment_plan, max_users, tickets) VALUES (1, 'active', ?, 'monthly', 50, 0)`
-      ).run(now);
+      await tx.run(conn,
+        `INSERT INTO system_status (id, status, activation_date, payment_plan, max_users, tickets) VALUES (1, 'active', ?, 'monthly', 50, 0)`,
+        [now]);
 
       // 6. Seed activation history
-      db.prepare(
-        `INSERT INTO activation_history (id, action, date, by) VALUES (?, 'activated', ?, ?)`
-      ).run(uuidv4(), now, userId);
+      await tx.run(conn,
+        `INSERT INTO activation_history (id, action, date, by_user_id) VALUES (?, 'activated', ?, ?)`,
+        [uuidv4(), now, userId]);
     });
-
-    initSystem();
 
     // Generate JWT token for the new admin
     const role = getRole({ isAdmin: true, isSuperUser: true });
@@ -135,7 +130,7 @@ router.post('/init', async (req: Request, res: Response) => {
     });
 
     // Fetch the created user to return
-    const user = db.prepare('SELECT * FROM users WHERE id = ?').get(userId) as Record<string, unknown>;
+    const user = await db.get('SELECT * FROM users WHERE id = ?', [userId]) as Record<string, unknown>;
 
     return res.status(201).json({ token, user: sanitizeUser(user) });
   } catch (err) {
@@ -145,9 +140,9 @@ router.post('/init', async (req: Request, res: Response) => {
 });
 
 // ─── GET /api/system/status ──────────────────────────────────────────────────
-router.get('/status', authMiddleware, (req: Request, res: Response) => {
+router.get('/status', authMiddleware, async (req: Request, res: Response) => {
   try {
-    const row = db.prepare('SELECT * FROM system_status LIMIT 1').get();
+    const row = await db.get('SELECT * FROM system_status LIMIT 1');
     if (!row) {
       return res.status(404).json({ error: 'System not initialized' });
     }
@@ -159,7 +154,7 @@ router.get('/status', authMiddleware, (req: Request, res: Response) => {
 });
 
 // ─── PATCH /api/system/status ────────────────────────────────────────────────
-router.patch('/status', authMiddleware, requireSuperUser, (req: Request, res: Response) => {
+router.patch('/status', authMiddleware, requireSuperUser, async (req: Request, res: Response) => {
   try {
     const { status } = req.body as { status?: string };
 
@@ -170,13 +165,13 @@ router.patch('/status', authMiddleware, requireSuperUser, (req: Request, res: Re
     const now = new Date().toISOString();
     const action = status === 'active' ? 'activated' : 'deactivated';
 
-    db.prepare('UPDATE system_status SET status = ? WHERE id = 1').run(status);
+    await db.run('UPDATE system_status SET status = ? WHERE id = 1', [status]);
 
-    db.prepare(
-      `INSERT INTO activation_history (id, action, date, by) VALUES (?, ?, ?, ?)`
-    ).run(uuidv4(), action, now, req.user!.id);
+    await db.run(
+      `INSERT INTO activation_history (id, action, date, by_user_id) VALUES (?, ?, ?, ?)`,
+      [uuidv4(), action, now, req.user!.id]);
 
-    const row = db.prepare('SELECT * FROM system_status LIMIT 1').get();
+    const row = await db.get('SELECT * FROM system_status LIMIT 1');
     return res.json(row);
   } catch (err) {
     console.error('Patch system status error:', err);
@@ -185,9 +180,9 @@ router.patch('/status', authMiddleware, requireSuperUser, (req: Request, res: Re
 });
 
 // ─── GET /api/system/modules ─────────────────────────────────────────────────
-router.get('/modules', authMiddleware, (_req: Request, res: Response) => {
+router.get('/modules', authMiddleware, async (_req: Request, res: Response) => {
   try {
-    const row = db.prepare('SELECT * FROM module_config LIMIT 1').get();
+    const row = await db.get('SELECT * FROM module_config LIMIT 1');
     if (!row) {
       return res.status(404).json({ error: 'Module config not found' });
     }
@@ -199,7 +194,7 @@ router.get('/modules', authMiddleware, (_req: Request, res: Response) => {
 });
 
 // ─── PATCH /api/system/modules ───────────────────────────────────────────────
-router.patch('/modules', authMiddleware, requireSuperUser, (req: Request, res: Response) => {
+router.patch('/modules', authMiddleware, requireSuperUser, async (req: Request, res: Response) => {
   try {
     const { evaluations, communications, vacations, copilot } = req.body as {
       evaluations?: boolean;
@@ -233,9 +228,9 @@ router.patch('/modules', authMiddleware, requireSuperUser, (req: Request, res: R
       return res.status(400).json({ error: 'No fields to update' });
     }
 
-    db.prepare(`UPDATE module_config SET ${updates.join(', ')} WHERE id = 1`).run(...values);
+    await db.run(`UPDATE module_config SET ${updates.join(', ')} WHERE id = 1`, values);
 
-    const row = db.prepare('SELECT * FROM module_config LIMIT 1').get();
+    const row = await db.get('SELECT * FROM module_config LIMIT 1');
     return res.json(row);
   } catch (err) {
     console.error('Patch modules error:', err);
@@ -244,9 +239,9 @@ router.patch('/modules', authMiddleware, requireSuperUser, (req: Request, res: R
 });
 
 // ─── GET /api/system/activation-history ──────────────────────────────────────
-router.get('/activation-history', authMiddleware, requireSuperUser, (_req: Request, res: Response) => {
+router.get('/activation-history', authMiddleware, requireSuperUser, async (_req: Request, res: Response) => {
   try {
-    const rows = db.prepare('SELECT * FROM activation_history ORDER BY date DESC').all();
+    const rows = await db.all('SELECT * FROM activation_history ORDER BY date DESC');
     return res.json(rows);
   } catch (err) {
     console.error('Get activation history error:', err);

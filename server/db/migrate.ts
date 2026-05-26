@@ -1,443 +1,441 @@
-import Database from 'better-sqlite3';
-import path from 'path';
-import dotenv from 'dotenv';
+import { pool, exec, getScalar } from './connection.js';
 
-dotenv.config();
-
-const DB_PATH = process.env.DATABASE_URL || path.resolve(process.cwd(), 'server', 'db', 'smps.db');
-const db = new Database(DB_PATH);
-
-
-db.pragma('journal_mode = WAL');
-db.pragma('foreign_keys = ON');
-
-const migrate = db.transaction(() => {
-  // ─── users ──────────────────────────────────────────────────────────────────
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS users (
-      id TEXT PRIMARY KEY,
-      email TEXT NOT NULL UNIQUE,
+/**
+ * Run all database migrations — creates every table and index if they don't exist.
+ * Errors for "already exists" are caught and ignored so this is safe to re-run.
+ */
+export async function migrate(): Promise<void> {
+  const createTables: string[] = [
+    `CREATE TABLE IF NOT EXISTS users (
+      id VARCHAR(36) PRIMARY KEY,
+      email VARCHAR(255) NOT NULL UNIQUE,
       password_hash TEXT NOT NULL,
       security_question TEXT NOT NULL,
       security_answer TEXT NOT NULL,
-      name TEXT NOT NULL,
-      position TEXT NOT NULL,
-      practice_area TEXT,
-      custom_position_id TEXT,
-      is_admin INTEGER NOT NULL DEFAULT 0,
-      is_super_user INTEGER NOT NULL DEFAULT 0,
-      is_managing_partner INTEGER NOT NULL DEFAULT 0,
-      is_active INTEGER NOT NULL DEFAULT 1,
-      must_change_password INTEGER NOT NULL DEFAULT 0,
-      created_at TEXT NOT NULL DEFAULT (datetime('now')),
-      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
-    );
-  `);
+      name VARCHAR(255) NOT NULL,
+      position VARCHAR(50) NOT NULL,
+      practice_area VARCHAR(255),
+      custom_position_id VARCHAR(36),
+      is_admin TINYINT(1) NOT NULL DEFAULT 0,
+      is_super_user TINYINT(1) NOT NULL DEFAULT 0,
+      is_managing_partner TINYINT(1) NOT NULL DEFAULT 0,
+      is_active TINYINT(1) NOT NULL DEFAULT 1,
+      must_change_password TINYINT(1) NOT NULL DEFAULT 0,
+      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
 
-  // ─── sessions ────────────────────────────────────────────────────────────────
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS sessions (
-      id TEXT PRIMARY KEY,
-      user_id TEXT NOT NULL REFERENCES users(id),
-      token_hash TEXT NOT NULL UNIQUE,
-      created_at TEXT NOT NULL DEFAULT (datetime('now')),
-      expires_at TEXT NOT NULL
-    );
-  `);
+    `CREATE TABLE IF NOT EXISTS sessions (
+      id VARCHAR(36) PRIMARY KEY,
+      user_id VARCHAR(36) NOT NULL,
+      token_hash VARCHAR(255) NOT NULL UNIQUE,
+      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      expires_at DATETIME NOT NULL,
+      INDEX idx_sessions_user (user_id),
+      INDEX idx_sessions_token (token_hash)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
 
-  // ─── custom_positions ────────────────────────────────────────────────────────
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS custom_positions (
-      id TEXT PRIMARY KEY,
-      label TEXT NOT NULL,
-      level TEXT NOT NULL,
-      practice_area TEXT,
-      base_position TEXT NOT NULL,
-      created_at TEXT NOT NULL DEFAULT (datetime('now'))
-    );
-  `);
+    `CREATE TABLE IF NOT EXISTS custom_positions (
+      id VARCHAR(36) PRIMARY KEY,
+      label VARCHAR(255) NOT NULL,
+      level VARCHAR(50) NOT NULL,
+      practice_area VARCHAR(255),
+      base_position VARCHAR(50) NOT NULL,
+      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
 
-  // ─── period_configs ──────────────────────────────────────────────────────────
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS period_configs (
-      period TEXT PRIMARY KEY,
-      self_start TEXT NOT NULL,
-      self_end TEXT NOT NULL,
-      supervisor_start TEXT NOT NULL,
-      supervisor_end TEXT NOT NULL,
-      feedback_start TEXT NOT NULL,
-      feedback_end TEXT NOT NULL,
-      action_plan_start TEXT NOT NULL,
-      action_plan_end TEXT NOT NULL
-    );
-  `);
+    `CREATE TABLE IF NOT EXISTS period_configs (
+      period VARCHAR(50) PRIMARY KEY,
+      self_start DATETIME NOT NULL,
+      self_end DATETIME NOT NULL,
+      supervisor_start DATETIME NOT NULL,
+      supervisor_end DATETIME NOT NULL,
+      feedback_start DATETIME NOT NULL,
+      feedback_end DATETIME NOT NULL,
+      action_plan_start DATETIME NOT NULL,
+      action_plan_end DATETIME NOT NULL
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
 
-  // ─── supervisor_assignments ──────────────────────────────────────────────────
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS supervisor_assignments (
-      id TEXT PRIMARY KEY,
-      employee_id TEXT NOT NULL REFERENCES users(id),
-      supervisor_id TEXT NOT NULL REFERENCES users(id),
-      period TEXT NOT NULL
-    );
-    CREATE UNIQUE INDEX IF NOT EXISTS supervisor_assignments_employee_supervisor_period_unique
-      ON supervisor_assignments(employee_id, supervisor_id, period);
-  `);
+    `CREATE TABLE IF NOT EXISTS supervisor_assignments (
+      id VARCHAR(36) PRIMARY KEY,
+      employee_id VARCHAR(36) NOT NULL,
+      supervisor_id VARCHAR(36) NOT NULL,
+      period VARCHAR(50) NOT NULL,
+      UNIQUE KEY supervisor_assignments_employee_supervisor_period_unique (employee_id, supervisor_id, period),
+      INDEX idx_sa_employee (employee_id),
+      INDEX idx_sa_supervisor (supervisor_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
 
-  // ─── evaluations ────────────────────────────────────────────────────────────
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS evaluations (
-      id TEXT PRIMARY KEY,
-      evaluator_id TEXT NOT NULL REFERENCES users(id),
-      evaluated_id TEXT NOT NULL REFERENCES users(id),
-      period TEXT NOT NULL,
-      type TEXT NOT NULL,
-      comments TEXT NOT NULL DEFAULT '',
+    `CREATE TABLE IF NOT EXISTS evaluations (
+      id VARCHAR(36) PRIMARY KEY,
+      evaluator_id VARCHAR(36) NOT NULL,
+      evaluated_id VARCHAR(36) NOT NULL,
+      period VARCHAR(50) NOT NULL,
+      type VARCHAR(50) NOT NULL,
+      comments TEXT NOT NULL,
       supervisor_comments TEXT,
-      total_score REAL NOT NULL DEFAULT 0,
-      completed_at TEXT,
-      feedback_completed INTEGER NOT NULL DEFAULT 0,
-      feedback_completed_at TEXT,
-      feedback_completed_by TEXT REFERENCES users(id),
-      created_at TEXT NOT NULL DEFAULT (datetime('now'))
-    );
-    CREATE UNIQUE INDEX IF NOT EXISTS evaluations_evaluator_evaluated_period_type_unique
-      ON evaluations(evaluator_id, evaluated_id, period, type);
-  `);
+      total_score DOUBLE NOT NULL DEFAULT 0,
+      completed_at DATETIME,
+      feedback_completed TINYINT(1) NOT NULL DEFAULT 0,
+      feedback_completed_at DATETIME,
+      feedback_completed_by VARCHAR(36),
+      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE KEY evaluations_evaluator_evaluated_period_type_unique (evaluator_id, evaluated_id, period, type),
+      INDEX idx_eval_evaluator (evaluator_id),
+      INDEX idx_eval_evaluated (evaluated_id),
+      INDEX idx_eval_period (period)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
 
-  // ─── evaluation_responses ────────────────────────────────────────────────────
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS evaluation_responses (
-      id TEXT PRIMARY KEY,
-      evaluation_id TEXT NOT NULL REFERENCES evaluations(id) ON DELETE CASCADE,
-      question_id TEXT NOT NULL,
-      score INTEGER NOT NULL,
-      not_applicable INTEGER NOT NULL DEFAULT 0,
-      no_elements INTEGER NOT NULL DEFAULT 0
-    );
-  `);
+    `CREATE TABLE IF NOT EXISTS evaluation_responses (
+      id VARCHAR(36) PRIMARY KEY,
+      evaluation_id VARCHAR(36) NOT NULL,
+      question_id VARCHAR(36) NOT NULL,
+      score DOUBLE NOT NULL DEFAULT 0,
+      not_applicable TINYINT(1) NOT NULL DEFAULT 0,
+      no_elements TINYINT(1) NOT NULL DEFAULT 0,
+      na_approved TINYINT(1) NOT NULL DEFAULT 0,
+      weight DOUBLE NOT NULL DEFAULT 1,
+      response_text TEXT,
+      INDEX idx_er_evaluation (evaluation_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
 
-  // ─── evaluation_na_approvals ─────────────────────────────────────────────────
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS evaluation_na_approvals (
-      evaluation_id TEXT NOT NULL REFERENCES evaluations(id) ON DELETE CASCADE,
-      question_id TEXT NOT NULL,
-      approved INTEGER NOT NULL DEFAULT 0,
-      PRIMARY KEY (evaluation_id, question_id)
-    );
-  `);
+    `CREATE TABLE IF NOT EXISTS evaluation_na_approvals (
+      id VARCHAR(36) PRIMARY KEY,
+      evaluation_id VARCHAR(36) NOT NULL,
+      question_id VARCHAR(36) NOT NULL,
+      approved TINYINT(1) NOT NULL DEFAULT 0,
+      approved_by VARCHAR(36),
+      approved_at DATETIME,
+      UNIQUE KEY ena_eval_question_unique (evaluation_id, question_id),
+      INDEX idx_ena_evaluation (evaluation_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
 
-  // ─── action_plans ────────────────────────────────────────────────────────────
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS action_plans (
-      id TEXT PRIMARY KEY,
-      employee_id TEXT NOT NULL REFERENCES users(id),
-      supervisor_id TEXT NOT NULL REFERENCES users(id),
-      period TEXT NOT NULL,
+    `CREATE TABLE IF NOT EXISTS action_plans (
+      id VARCHAR(36) PRIMARY KEY,
+      employee_id VARCHAR(36) NOT NULL,
+      supervisor_id VARCHAR(36) NOT NULL,
+      period VARCHAR(50) NOT NULL,
       content TEXT NOT NULL DEFAULT '',
-      approval_status TEXT NOT NULL DEFAULT 'pending',
+      approval_status VARCHAR(50) NOT NULL DEFAULT 'pending',
       approval_comments TEXT,
-      approved_by TEXT REFERENCES users(id),
-      approved_at TEXT,
-      created_at TEXT NOT NULL DEFAULT (datetime('now')),
-      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
-    );
-    CREATE UNIQUE INDEX IF NOT EXISTS action_plans_employee_period_unique
-      ON action_plans(employee_id, period);
-  `);
+      approved_by VARCHAR(36),
+      approved_at DATETIME,
+      status VARCHAR(50) NOT NULL DEFAULT 'draft',
+      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE KEY action_plans_employee_period_unique (employee_id, period),
+      INDEX idx_ap_employee (employee_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
 
-  // ─── smart_action_items ─────────────────────────────────────────────────────
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS smart_action_items (
-      id TEXT PRIMARY KEY,
-      action_plan_id TEXT NOT NULL REFERENCES action_plans(id) ON DELETE CASCADE,
-      competencia TEXT NOT NULL,
+    `CREATE TABLE IF NOT EXISTS smart_action_items (
+      id VARCHAR(36) PRIMARY KEY,
+      action_plan_id VARCHAR(36) NOT NULL,
+      competencia VARCHAR(255) NOT NULL DEFAULT '',
       objetivo TEXT NOT NULL,
       acciones TEXT NOT NULL,
-      que_evitar TEXT NOT NULL,
-      fecha_revision TEXT NOT NULL,
-      apoyos TEXT NOT NULL
-    );
-  `);
+      que_evitar TEXT NOT NULL DEFAULT '',
+      fecha_revision VARCHAR(50) NOT NULL DEFAULT '',
+      apoyos TEXT NOT NULL DEFAULT '',
+      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      INDEX idx_sai_plan (action_plan_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
 
-  // ─── personal_objectives ────────────────────────────────────────────────────
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS personal_objectives (
-      id TEXT PRIMARY KEY,
-      user_id TEXT NOT NULL REFERENCES users(id),
-      period TEXT NOT NULL,
-      type TEXT NOT NULL
-    );
-    CREATE UNIQUE INDEX IF NOT EXISTS personal_objectives_user_period_unique
-      ON personal_objectives(user_id, period);
-  `);
+    `CREATE TABLE IF NOT EXISTS personal_objectives (
+      id VARCHAR(36) PRIMARY KEY,
+      user_id VARCHAR(36) NOT NULL,
+      period VARCHAR(50) NOT NULL,
+      type VARCHAR(50) NOT NULL DEFAULT 'personal',
+      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE KEY personal_objectives_user_period_unique (user_id, period),
+      INDEX idx_po_user (user_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
 
-  // ─── admin_objectives ───────────────────────────────────────────────────────
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS admin_objectives (
-      id TEXT PRIMARY KEY,
-      personal_objectives_id TEXT NOT NULL REFERENCES personal_objectives(id) ON DELETE CASCADE,
-      tipo_objetivo TEXT NOT NULL,
-      nombre_objetivo TEXT NOT NULL,
-      pilares_estrategicos TEXT NOT NULL DEFAULT '',
-      alcance TEXT NOT NULL DEFAULT '',
-      porcentaje_avance REAL NOT NULL DEFAULT 0,
-      status TEXT NOT NULL DEFAULT 'draft',
-      submitted_at TEXT,
-      reviewed_at TEXT,
-      reviewed_by TEXT REFERENCES users(id),
-      reviewer_comment TEXT
-    );
-  `);
+    `CREATE TABLE IF NOT EXISTS admin_objectives (
+      id VARCHAR(36) PRIMARY KEY,
+      personal_objectives_id VARCHAR(36) NOT NULL,
+      tipo_objetivo VARCHAR(255) NOT NULL DEFAULT '',
+      nombre_objetivo VARCHAR(255) NOT NULL DEFAULT '',
+      pilares_estrategicos TEXT,
+      alcance TEXT,
+      porcentaje_avance DOUBLE NOT NULL DEFAULT 0,
+      status VARCHAR(50) NOT NULL DEFAULT 'draft',
+      submitted_at DATETIME,
+      reviewed_by VARCHAR(36),
+      reviewed_at DATETIME,
+      reviewer_comment TEXT,
+      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      INDEX idx_ao_parent (personal_objectives_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
 
-  // ─── legal_objectives ───────────────────────────────────────────────────────
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS legal_objectives (
-      id TEXT PRIMARY KEY,
-      personal_objectives_id TEXT NOT NULL REFERENCES personal_objectives(id) ON DELETE CASCADE,
-      horas_meta REAL NOT NULL DEFAULT 0,
-      horas_ajustadas REAL NOT NULL DEFAULT 0,
-      porcentaje_horas_vs_meta REAL NOT NULL DEFAULT 0,
-      porcentaje_eficiencia REAL NOT NULL DEFAULT 0,
-      meta_pro_bono REAL NOT NULL DEFAULT 0,
-      realizado_pro_bono REAL NOT NULL DEFAULT 0,
-      meta_marketing REAL NOT NULL DEFAULT 0,
-      realizado_marketing REAL NOT NULL DEFAULT 0,
-      meta_business_dev REAL NOT NULL DEFAULT 0,
-      realizado_business_dev REAL NOT NULL DEFAULT 0,
-      meta_mentoring REAL NOT NULL DEFAULT 0,
-      realizado_mentoring REAL NOT NULL DEFAULT 0,
-      resultado_area REAL NOT NULL DEFAULT 0,
-      resultado_firma REAL NOT NULL DEFAULT 0,
-      porcentaje_total_bono REAL NOT NULL DEFAULT 0
-    );
-  `);
+    `CREATE TABLE IF NOT EXISTS legal_objectives (
+      id VARCHAR(36) PRIMARY KEY,
+      personal_objectives_id VARCHAR(36) NOT NULL,
+      horas_meta DOUBLE NOT NULL DEFAULT 0,
+      horas_ajustadas DOUBLE NOT NULL DEFAULT 0,
+      porcentaje_horas_vs_meta DOUBLE NOT NULL DEFAULT 0,
+      porcentaje_eficiencia DOUBLE NOT NULL DEFAULT 0,
+      meta_pro_bono DOUBLE NOT NULL DEFAULT 0,
+      realizado_pro_bono DOUBLE NOT NULL DEFAULT 0,
+      meta_marketing DOUBLE NOT NULL DEFAULT 0,
+      realizado_marketing DOUBLE NOT NULL DEFAULT 0,
+      meta_business_dev DOUBLE NOT NULL DEFAULT 0,
+      realizado_business_dev DOUBLE NOT NULL DEFAULT 0,
+      meta_mentoring DOUBLE NOT NULL DEFAULT 0,
+      realizado_mentoring DOUBLE NOT NULL DEFAULT 0,
+      resultado_area DOUBLE NOT NULL DEFAULT 0,
+      resultado_firma DOUBLE NOT NULL DEFAULT 0,
+      porcentaje_total_bono DOUBLE NOT NULL DEFAULT 0,
+      INDEX idx_lo_parent (personal_objectives_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
 
-  // ─── announcements ──────────────────────────────────────────────────────────
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS announcements (
-      id TEXT PRIMARY KEY,
-      author_id TEXT NOT NULL REFERENCES users(id),
-      title TEXT NOT NULL,
+    `CREATE TABLE IF NOT EXISTS announcements (
+      id VARCHAR(36) PRIMARY KEY,
+      title VARCHAR(255) NOT NULL,
       body TEXT NOT NULL,
-      audience TEXT NOT NULL,
-      created_at TEXT NOT NULL DEFAULT (datetime('now')),
-      expires_at TEXT,
-      archived INTEGER NOT NULL DEFAULT 0
-    );
-  `);
+      audience VARCHAR(50) NOT NULL DEFAULT 'all',
+      priority VARCHAR(50) NOT NULL DEFAULT 'normal',
+      is_active TINYINT(1) NOT NULL DEFAULT 1,
+      archived TINYINT(1) NOT NULL DEFAULT 0,
+      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      expires_at DATETIME,
+      author_id VARCHAR(36) NOT NULL,
+      INDEX idx_ann_author (author_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
 
-  // ─── announcement_reads ─────────────────────────────────────────────────────
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS announcement_reads (
-      announcement_id TEXT NOT NULL REFERENCES announcements(id) ON DELETE CASCADE,
-      user_id TEXT NOT NULL REFERENCES users(id),
-      PRIMARY KEY (announcement_id, user_id)
-    );
-  `);
+    `CREATE TABLE IF NOT EXISTS announcement_reads (
+      id VARCHAR(36) PRIMARY KEY,
+      announcement_id VARCHAR(36) NOT NULL,
+      user_id VARCHAR(36) NOT NULL,
+      read_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      INDEX idx_ar_announcement (announcement_id),
+      INDEX idx_ar_user (user_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
 
-  // ─── vacation_requests ───────────────────────────────────────────────────────
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS vacation_requests (
-      id TEXT PRIMARY KEY,
-      user_id TEXT NOT NULL REFERENCES users(id),
-      start_date TEXT NOT NULL,
-      end_date TEXT NOT NULL,
-      days INTEGER NOT NULL,
-      reason TEXT NOT NULL DEFAULT '',
-      status TEXT NOT NULL DEFAULT 'pending',
-      created_at TEXT NOT NULL DEFAULT (datetime('now')),
-      period TEXT
-    );
-  `);
-
-  // ─── vacation_approvals ──────────────────────────────────────────────────────
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS vacation_approvals (
-      id TEXT PRIMARY KEY,
-      vacation_request_id TEXT NOT NULL REFERENCES vacation_requests(id) ON DELETE CASCADE,
-      approver_id TEXT NOT NULL REFERENCES users(id),
-      approved_at TEXT NOT NULL,
-      action TEXT NOT NULL,
-      comment TEXT
-    );
-  `);
-
-  // ─── extra_vacation_days ────────────────────────────────────────────────────
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS extra_vacation_days (
-      id TEXT PRIMARY KEY,
-      user_id TEXT NOT NULL REFERENCES users(id),
-      days INTEGER NOT NULL,
+    `CREATE TABLE IF NOT EXISTS vacation_requests (
+      id VARCHAR(36) PRIMARY KEY,
+      user_id VARCHAR(36) NOT NULL,
+      start_date VARCHAR(50) NOT NULL,
+      end_date VARCHAR(50) NOT NULL,
+      days INT NOT NULL DEFAULT 0,
       reason TEXT NOT NULL,
-      added_by TEXT NOT NULL REFERENCES users(id),
-      added_at TEXT NOT NULL,
-      period TEXT NOT NULL
-    );
-  `);
+      status VARCHAR(50) NOT NULL DEFAULT 'pending',
+      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      period VARCHAR(50),
+      INDEX idx_vr_user (user_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
 
-  // ─── vacation_config ────────────────────────────────────────────────────────
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS vacation_config (
-      position TEXT PRIMARY KEY,
-      days INTEGER NOT NULL
-    );
-  `);
+    `CREATE TABLE IF NOT EXISTS vacation_approvals (
+      id VARCHAR(36) PRIMARY KEY,
+      vacation_request_id VARCHAR(36) NOT NULL,
+      approver_id VARCHAR(36) NOT NULL,
+      approved_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      action VARCHAR(50) NOT NULL,
+      comment TEXT,
+      INDEX idx_va_request (vacation_request_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
 
-  // ─── custom_eval_questions ──────────────────────────────────────────────────
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS custom_eval_questions (
-      id TEXT PRIMARY KEY,
-      position TEXT NOT NULL,
-      question_id TEXT NOT NULL,
-      category TEXT NOT NULL,
+    `CREATE TABLE IF NOT EXISTS vacation_config (
+      position VARCHAR(50) PRIMARY KEY,
+      days INT NOT NULL DEFAULT 20
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+
+    `CREATE TABLE IF NOT EXISTS extra_vacation_days (
+      id VARCHAR(36) PRIMARY KEY,
+      user_id VARCHAR(36) NOT NULL,
+      days INT NOT NULL DEFAULT 0,
+      reason TEXT NOT NULL,
+      added_by VARCHAR(36) NOT NULL,
+      added_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      period VARCHAR(50),
+      INDEX idx_evd_user (user_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+
+    `CREATE TABLE IF NOT EXISTS custom_eval_questions (
+      id VARCHAR(36) PRIMARY KEY,
+      position VARCHAR(50) NOT NULL,
+      question_id VARCHAR(36) NOT NULL,
+      category VARCHAR(50) NOT NULL,
       text TEXT NOT NULL,
-      weight INTEGER NOT NULL,
-      section TEXT,
-      practice_area TEXT
-    );
-    CREATE UNIQUE INDEX IF NOT EXISTS custom_eval_questions_position_question_unique
-      ON custom_eval_questions(position, question_id);
-  `);
+      weight DOUBLE NOT NULL DEFAULT 1,
+      hidden TINYINT(1) NOT NULL DEFAULT 0,
+      UNIQUE KEY custom_eval_questions_position_question_unique (position, question_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
 
-  // ─── library_questions ──────────────────────────────────────────────────────
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS library_questions (
-      id TEXT PRIMARY KEY,
-      question_id TEXT NOT NULL UNIQUE,
-      category TEXT NOT NULL,
+    `CREATE TABLE IF NOT EXISTS library_questions (
+      id VARCHAR(36) PRIMARY KEY,
+      question_id VARCHAR(36) NOT NULL UNIQUE,
+      category VARCHAR(50) NOT NULL,
       text TEXT NOT NULL,
-      default_weight INTEGER NOT NULL,
-      created_at TEXT NOT NULL DEFAULT (datetime('now')),
-      created_by TEXT REFERENCES users(id)
-    );
-  `);
+      default_weight INT NOT NULL DEFAULT 1,
+      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      created_by VARCHAR(36)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
 
-  // ─── seed_question_overrides ────────────────────────────────────────────────
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS seed_question_overrides (
-      question_id TEXT PRIMARY KEY,
+    `CREATE TABLE IF NOT EXISTS seed_question_overrides (
+      question_id VARCHAR(36) PRIMARY KEY,
       text TEXT,
-      category TEXT,
-      weight INTEGER,
-      hidden INTEGER NOT NULL DEFAULT 0
-    );
-  `);
+      category VARCHAR(50),
+      weight INT,
+      hidden TINYINT(1) NOT NULL DEFAULT 0
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
 
-  // ─── module_config ──────────────────────────────────────────────────────────
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS module_config (
-      id INTEGER PRIMARY KEY DEFAULT 1 CHECK (id = 1),
-      evaluations INTEGER NOT NULL DEFAULT 1,
-      communications INTEGER NOT NULL DEFAULT 1,
-      vacations INTEGER NOT NULL DEFAULT 1,
-      copilot INTEGER NOT NULL DEFAULT 1
-    );
-  `);
+    `CREATE TABLE IF NOT EXISTS module_config (
+      id INT PRIMARY KEY DEFAULT 1,
+      evaluations TINYINT(1) NOT NULL DEFAULT 1,
+      communications TINYINT(1) NOT NULL DEFAULT 1,
+      vacations TINYINT(1) NOT NULL DEFAULT 1,
+      copilot TINYINT(1) NOT NULL DEFAULT 1
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
 
-  // ─── system_status ──────────────────────────────────────────────────────────
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS system_status (
-      id INTEGER PRIMARY KEY DEFAULT 1 CHECK (id = 1),
-      status TEXT NOT NULL DEFAULT 'active',
-      activation_date TEXT NOT NULL,
-      payment_plan TEXT NOT NULL DEFAULT 'monthly',
-      max_users INTEGER NOT NULL DEFAULT 50,
-      tickets INTEGER NOT NULL DEFAULT 0
-    );
-  `);
+    `CREATE TABLE IF NOT EXISTS system_status (
+      id INT PRIMARY KEY DEFAULT 1,
+      status VARCHAR(50) NOT NULL DEFAULT 'active',
+      activation_date VARCHAR(50) NOT NULL,
+      payment_plan VARCHAR(50) NOT NULL DEFAULT 'monthly',
+      max_users INT NOT NULL DEFAULT 50,
+      tickets INT NOT NULL DEFAULT 0
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
 
-  // ─── activation_history ─────────────────────────────────────────────────────
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS activation_history (
-      id TEXT PRIMARY KEY,
-      action TEXT NOT NULL,
-      date TEXT NOT NULL,
-      by TEXT REFERENCES users(id)
-    );
-  `);
+    `CREATE TABLE IF NOT EXISTS activation_history (
+      id VARCHAR(36) PRIMARY KEY,
+      action VARCHAR(255) NOT NULL,
+      date DATETIME NOT NULL,
+      by_user_id VARCHAR(36)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
 
+    `CREATE TABLE IF NOT EXISTS copilot_conversations (
+      id VARCHAR(36) PRIMARY KEY,
+      user_id VARCHAR(36) NOT NULL,
+      title VARCHAR(255) NOT NULL DEFAULT 'Nueva conversación',
+      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      INDEX idx_cc_user (user_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
 
-  // ─── copilot_conversations ──────────────────────────────────────────────────
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS copilot_conversations (
-      id TEXT PRIMARY KEY,
-      user_id TEXT NOT NULL REFERENCES users(id),
-      title TEXT NOT NULL DEFAULT 'Nueva conversación',
-      created_at TEXT NOT NULL DEFAULT (datetime('now')),
-      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
-    );
-  `);
-
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS copilot_messages (
-      id TEXT PRIMARY KEY,
-      conversation_id TEXT NOT NULL REFERENCES copilot_conversations(id) ON DELETE CASCADE,
-      role TEXT NOT NULL,
+    `CREATE TABLE IF NOT EXISTS copilot_messages (
+      id VARCHAR(36) PRIMARY KEY,
+      conversation_id VARCHAR(36) NOT NULL,
+      role VARCHAR(50) NOT NULL,
       content TEXT NOT NULL,
       tool_calls TEXT,
       tool_results TEXT,
-      created_at TEXT NOT NULL DEFAULT (datetime('now'))
-    );
-  `);
+      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      INDEX idx_cm_conversation (conversation_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
 
-  db.exec(`
-    CREATE INDEX IF NOT EXISTS idx_copilot_messages_conversation ON copilot_messages(conversation_id);
-  `);
+    `CREATE TABLE IF NOT EXISTS copilot_config (
+      id INT PRIMARY KEY DEFAULT 1,
+      model VARCHAR(255) NOT NULL DEFAULT 'llama-3.3-70b-versatile',
+      api_provider VARCHAR(50) NOT NULL DEFAULT 'groq',
+      api_key TEXT,
+      can_manage_users TINYINT(1) NOT NULL DEFAULT 1,
+      can_manage_evaluations TINYINT(1) NOT NULL DEFAULT 1,
+      can_manage_vacations TINYINT(1) NOT NULL DEFAULT 1,
+      can_manage_announcements TINYINT(1) NOT NULL DEFAULT 1,
+      can_manage_periods TINYINT(1) NOT NULL DEFAULT 0,
+      can_manage_system TINYINT(1) NOT NULL DEFAULT 0,
+      can_view_reports TINYINT(1) NOT NULL DEFAULT 1,
+      max_tokens INT NOT NULL DEFAULT 2048,
+      temperature DOUBLE NOT NULL DEFAULT 0.3
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+  ];
 
-  db.exec(`
-    CREATE INDEX IF NOT EXISTS idx_copilot_conversations_user ON copilot_conversations(user_id);
-  `);
-
-  // ─── copilot_config ──────────────────────────────────────────────────────────
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS copilot_config (
-      id INTEGER PRIMARY KEY DEFAULT 1 CHECK (id = 1),
-      model TEXT NOT NULL DEFAULT 'llama-3.3-70b-versatile',
-      api_provider TEXT NOT NULL DEFAULT 'groq',
-      can_manage_users INTEGER NOT NULL DEFAULT 1,
-      can_manage_evaluations INTEGER NOT NULL DEFAULT 1,
-      can_manage_vacations INTEGER NOT NULL DEFAULT 1,
-      can_manage_announcements INTEGER NOT NULL DEFAULT 1,
-      can_manage_periods INTEGER NOT NULL DEFAULT 0,
-      can_manage_system INTEGER NOT NULL DEFAULT 0,
-      can_view_reports INTEGER NOT NULL DEFAULT 1,
-      max_tokens INTEGER NOT NULL DEFAULT 2048,
-      temperature REAL NOT NULL DEFAULT 0.3
-    );
-  `);
-
-  // ─── Indexes ────────────────────────────────────────────────────────────────
-  db.exec(`
-    CREATE INDEX IF NOT EXISTS idx_evaluations_evaluator ON evaluations(evaluator_id);
-    CREATE INDEX IF NOT EXISTS idx_evaluations_evaluated ON evaluations(evaluated_id);
-    CREATE INDEX IF NOT EXISTS idx_evaluations_period ON evaluations(period);
-    CREATE INDEX IF NOT EXISTS idx_supervisor_assignments_employee ON supervisor_assignments(employee_id);
-    CREATE INDEX IF NOT EXISTS idx_supervisor_assignments_supervisor ON supervisor_assignments(supervisor_id);
-    CREATE INDEX IF NOT EXISTS idx_announcement_reads_user ON announcement_reads(user_id);
-    CREATE INDEX IF NOT EXISTS idx_vacation_requests_user ON vacation_requests(user_id);
-  `);
-});
-
-try {
-  migrate();
-  console.log('Migration completed successfully.');
-
-  // Verify tables
-  const tables = db.prepare("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name").all() as { name: string }[];
-  console.log('Tables created:');
-  for (const t of tables) {
-    console.log(`  - ${t.name}`);
+  // ─── Execute CREATE TABLE statements ────────────────────────────────────────
+  for (const sql of createTables) {
+    try {
+      await exec(sql);
+    } catch (err: any) {
+      if (err?.code === 'ER_TABLE_EXISTS_ERROR' || /already exists/i.test(err?.message)) {
+        // Table already exists — fine, skip
+      } else {
+        console.error('Error creating table:', err);
+        throw err;
+      }
+    }
   }
 
-  const indexes = db.prepare("SELECT name FROM sqlite_master WHERE type='index' AND name LIKE 'idx_%' ORDER BY name").all() as { name: string }[];
-  console.log('Indexes created:');
-  for (const idx of indexes) {
-    console.log(`  - ${idx.name}`);
+  // ─── ALTER TABLE migrations for existing databases ──────────────────────────
+  const alterMigrations: string[] = [
+    // evaluation_responses: add not_applicable and no_elements
+    `ALTER TABLE evaluation_responses ADD COLUMN IF NOT EXISTS not_applicable TINYINT(1) NOT NULL DEFAULT 0 AFTER score`,
+    `ALTER TABLE evaluation_responses ADD COLUMN IF NOT EXISTS no_elements TINYINT(1) NOT NULL DEFAULT 0 AFTER not_applicable`,
+
+    // evaluation_na_approvals: add approved column and unique key
+    `ALTER TABLE evaluation_na_approvals ADD COLUMN IF NOT EXISTS approved TINYINT(1) NOT NULL DEFAULT 0 AFTER question_id`,
+    `ALTER TABLE evaluation_na_approvals ADD UNIQUE INDEX IF NOT EXISTS ena_eval_question_unique (evaluation_id, question_id)`,
+
+    // action_plans: add missing columns
+    `ALTER TABLE action_plans ADD COLUMN IF NOT EXISTS content TEXT NOT NULL DEFAULT '' AFTER period`,
+    `ALTER TABLE action_plans ADD COLUMN IF NOT EXISTS approval_status VARCHAR(50) NOT NULL DEFAULT 'pending' AFTER content`,
+    `ALTER TABLE action_plans ADD COLUMN IF NOT EXISTS approval_comments TEXT AFTER approval_status`,
+    `ALTER TABLE action_plans ADD COLUMN IF NOT EXISTS approved_by VARCHAR(36) AFTER approval_comments`,
+    `ALTER TABLE action_plans ADD COLUMN IF NOT EXISTS approved_at DATETIME AFTER approved_by`,
+
+    // smart_action_items: add missing SMART columns
+    `ALTER TABLE smart_action_items ADD COLUMN IF NOT EXISTS competencia VARCHAR(255) NOT NULL DEFAULT '' AFTER action_plan_id`,
+    `ALTER TABLE smart_action_items ADD COLUMN IF NOT EXISTS objetivo TEXT NOT NULL AFTER competencia`,
+    `ALTER TABLE smart_action_items ADD COLUMN IF NOT EXISTS acciones TEXT NOT NULL AFTER objetivo`,
+    `ALTER TABLE smart_action_items ADD COLUMN IF NOT EXISTS que_evitar TEXT NOT NULL DEFAULT '' AFTER acciones`,
+    `ALTER TABLE smart_action_items ADD COLUMN IF NOT EXISTS fecha_revision VARCHAR(50) NOT NULL DEFAULT '' AFTER que_evitar`,
+    `ALTER TABLE smart_action_items ADD COLUMN IF NOT EXISTS apoyos TEXT NOT NULL DEFAULT '' AFTER fecha_revision`,
+
+    // personal_objectives: make pilares_estrategicos and alcance nullable (code doesn't always provide them)
+    `ALTER TABLE personal_objectives MODIFY COLUMN pilares_estrategicos TEXT NULL`,
+    `ALTER TABLE personal_objectives MODIFY COLUMN alcance TEXT NULL`,
+
+    // admin_objectives: add missing columns
+    `ALTER TABLE admin_objectives ADD COLUMN IF NOT EXISTS personal_objectives_id VARCHAR(36) AFTER id`,
+    `ALTER TABLE admin_objectives ADD COLUMN IF NOT EXISTS tipo_objetivo VARCHAR(255) NOT NULL DEFAULT '' AFTER personal_objectives_id`,
+    `ALTER TABLE admin_objectives ADD COLUMN IF NOT EXISTS nombre_objetivo VARCHAR(255) NOT NULL DEFAULT '' AFTER tipo_objetivo`,
+    `ALTER TABLE admin_objectives ADD COLUMN IF NOT EXISTS pilares_estrategicos TEXT AFTER nombre_objetivo`,
+    `ALTER TABLE admin_objectives ADD COLUMN IF NOT EXISTS alcance TEXT AFTER pilares_estrategicos`,
+    `ALTER TABLE admin_objectives ADD COLUMN IF NOT EXISTS porcentaje_avance DOUBLE NOT NULL DEFAULT 0 AFTER alcance`,
+    `ALTER TABLE admin_objectives ADD COLUMN IF NOT EXISTS status VARCHAR(50) NOT NULL DEFAULT 'draft' AFTER porcentaje_avance`,
+    `ALTER TABLE admin_objectives ADD COLUMN IF NOT EXISTS submitted_at DATETIME AFTER status`,
+    `ALTER TABLE admin_objectives ADD COLUMN IF NOT EXISTS reviewed_by VARCHAR(36) AFTER submitted_at`,
+    `ALTER TABLE admin_objectives ADD COLUMN IF NOT EXISTS reviewed_at DATETIME AFTER reviewed_by`,
+    `ALTER TABLE admin_objectives ADD COLUMN IF NOT EXISTS reviewer_comment TEXT AFTER reviewed_at`,
+
+    // legal_objectives: add missing columns
+    `ALTER TABLE legal_objectives ADD COLUMN IF NOT EXISTS personal_objectives_id VARCHAR(36) AFTER id`,
+    `ALTER TABLE legal_objectives ADD COLUMN IF NOT EXISTS horas_meta DOUBLE NOT NULL DEFAULT 0 AFTER personal_objectives_id`,
+    `ALTER TABLE legal_objectives ADD COLUMN IF NOT EXISTS horas_ajustadas DOUBLE NOT NULL DEFAULT 0 AFTER horas_meta`,
+    `ALTER TABLE legal_objectives ADD COLUMN IF NOT EXISTS porcentaje_horas_vs_meta DOUBLE NOT NULL DEFAULT 0 AFTER horas_ajustadas`,
+    `ALTER TABLE legal_objectives ADD COLUMN IF NOT EXISTS porcentaje_eficiencia DOUBLE NOT NULL DEFAULT 0 AFTER porcentaje_horas_vs_meta`,
+    `ALTER TABLE legal_objectives ADD COLUMN IF NOT EXISTS meta_pro_bono DOUBLE NOT NULL DEFAULT 0 AFTER porcentaje_eficiencia`,
+    `ALTER TABLE legal_objectives ADD COLUMN IF NOT EXISTS realizado_pro_bono DOUBLE NOT NULL DEFAULT 0 AFTER meta_pro_bono`,
+    `ALTER TABLE legal_objectives ADD COLUMN IF NOT EXISTS meta_marketing DOUBLE NOT NULL DEFAULT 0 AFTER realizado_pro_bono`,
+    `ALTER TABLE legal_objectives ADD COLUMN IF NOT EXISTS realizado_marketing DOUBLE NOT NULL DEFAULT 0 AFTER meta_marketing`,
+    `ALTER TABLE legal_objectives ADD COLUMN IF NOT EXISTS meta_business_dev DOUBLE NOT NULL DEFAULT 0 AFTER realizado_marketing`,
+    `ALTER TABLE legal_objectives ADD COLUMN IF NOT EXISTS realizado_business_dev DOUBLE NOT NULL DEFAULT 0 AFTER meta_business_dev`,
+    `ALTER TABLE legal_objectives ADD COLUMN IF NOT EXISTS meta_mentoring DOUBLE NOT NULL DEFAULT 0 AFTER realizado_business_dev`,
+    `ALTER TABLE legal_objectives ADD COLUMN IF NOT EXISTS realizado_mentoring DOUBLE NOT NULL DEFAULT 0 AFTER meta_mentoring`,
+    `ALTER TABLE legal_objectives ADD COLUMN IF NOT EXISTS resultado_area DOUBLE NOT NULL DEFAULT 0 AFTER realizado_mentoring`,
+    `ALTER TABLE legal_objectives ADD COLUMN IF NOT EXISTS resultado_firma DOUBLE NOT NULL DEFAULT 0 AFTER resultado_area`,
+    `ALTER TABLE legal_objectives ADD COLUMN IF NOT EXISTS porcentaje_total_bono DOUBLE NOT NULL DEFAULT 0 AFTER resultado_firma`,
+
+    // vacation_requests: add days column if missing
+    `ALTER TABLE vacation_requests ADD COLUMN IF NOT EXISTS days INT NOT NULL DEFAULT 0 AFTER end_date`,
+  ];
+
+  for (const sql of alterMigrations) {
+    try {
+      await exec(sql);
+    } catch (err: any) {
+      if (/already exists/i.test(err?.message) || /Duplicate column/i.test(err?.message) || /Duplicate key/i.test(err?.message)) {
+        // Already exists — fine, skip
+      } else {
+        console.error('Alter table warning:', err?.message || err);
+        // Don't throw — non-critical if alter fails
+      }
+    }
   }
-} catch (err) {
-  console.error('Migration failed:', err);
-  process.exit(1);
-} finally {
-  db.close();
+
+  // ─── Verify ──────────────────────────────────────────────────────────────────
+  const tableCount = await getScalar<number>(
+    `SELECT COUNT(*) AS cnt FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = DATABASE()`
+  );
+  console.log(`Migration completed successfully. ${tableCount} tables in database.`);
 }

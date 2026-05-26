@@ -1,3 +1,27 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build outputs
+dist/
+dist-ssr/
+server.cjs
+build-server.mjs
+
+# Environment files with secrets
+.env
+.env.local
+.env.*.local
+# NOTE: .env.production IS tracked since Hostinger needs it
+
+# Database files
+*.db
+*.db-shm
+*.db-wal
+server/db/*.db
+!server/db/.gitkeep
+
 # Logs
 logs
 *.log
@@ -6,11 +30,7 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
-
-node_modules
-dist
-dist-ssr
-*.local
+console.log
 
 # Editor directories and files
 .vscode/*
@@ -23,12 +43,17 @@ dist-ssr
 *.sln
 *.sw?
 
-# Backend
-.env
-data/*.db
-server/db/*.db
-!server/db/.gitkeep
+# OS files
+Thumbs.db
 
-# Database
-*.db
+# Backup files
+*.bak
+*.backup
+*.tmp
+
+# Server temp files
+tmp/
 server/dist-server/
+
+# Lovable
+.lovable/

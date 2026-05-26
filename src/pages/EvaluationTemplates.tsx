@@ -11,6 +11,7 @@ import { ChevronDown, ChevronRight, FileText, Plus, Trash2, AlertCircle, Save, B
 const ALL_CATEGORIES: QuestionCategory[] = [
   'Desempeño', 'Liderazgo', 'Cumplimiento', 'Habilidades Blandas',
   'Trabajo en Equipo', 'Actitud', 'Disponibilidad', 'Desarrollo',
+  'Criterio Técnico',
 ];
 
 const MAX_QUESTIONS = 20;

@@ -1,6 +1,10 @@
 import express from 'express';
 import cors from 'cors';
 import path from 'path';
+import dotenv from 'dotenv';
+import { pool } from './db/connection.js';
+import { migrate } from './db/migrate.js';
+import { seed } from './db/seed-users.js';
 import authRoutes from './routes/auth.js';
 import userRoutes from './routes/users.js';
 import assignmentRoutes from './routes/assignments.js';
@@ -14,7 +18,6 @@ import questionRoutes from './routes/questions.js';
 import positionRoutes from './routes/positions.js';
 import periodRoutes from './routes/periods.js';
 import copilotRoutes from './routes/copilot.js';
-import dotenv from 'dotenv';
 
 dotenv.config();
 
@@ -54,8 +57,23 @@ if (process.env.NODE_ENV === 'production') {
   });
 }
 
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT} in ${process.env.NODE_ENV || 'development'} mode`);
-});
+// Start server after database initialization
+async function startServer() {
+  try {
+    console.log('Initializing database...');
+    await migrate();
+    console.log('Seeding database...');
+    await seed();
+    
+    app.listen(PORT, () => {
+      console.log(`Server running on port ${PORT} in ${process.env.NODE_ENV || 'development'} mode`);
+    });
+  } catch (err) {
+    console.error('Failed to start server:', err);
+    process.exit(1);
+  }
+}
+
+startServer();
 
 export default app;

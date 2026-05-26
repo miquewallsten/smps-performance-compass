@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUsers, useEvaluations, useUpdateUser, useResetUserPassword, useCreateUser, useDeleteUser, useSystemStatus, useUpdateUserRole, usePositions } from '@/api/queries';
 import { POSITION_LABELS, PERIODS, Position, LEGAL_HIERARCHY, ADMIN_HIERARCHY, PracticeArea, PRACTICE_AREA_LABELS } from '@/types';
@@ -11,12 +11,12 @@ export default function UserManagement() {
   const { user: currentUser } = useAuth();
   const { data: users = [] } = useUsers();
   const { data: evaluations = [] } = useEvaluations();
-  const updateUser = useUpdateUser().mutate;
-  const changePassword = useResetUserPassword().mutate;
-  const addUser = useCreateUser().mutate;
-  const deleteUser = useDeleteUser().mutate;
+  const updateUserMut = useUpdateUser();
+  const changePasswordMut = useResetUserPassword();
+  const addUserMut = useCreateUser();
+  const deleteUserMut = useDeleteUser();
+  const updateUserRoleMut = useUpdateUserRole();
   const { data: systemStatus } = useSystemStatus();
-  const setManagingPartner = useUpdateUserRole().mutate;
   const { data: customPositions = [] } = usePositions();
 
   const [search, setSearch] = useState('');
@@ -44,20 +44,14 @@ export default function UserManagement() {
   }
 
   const isSuperUser = currentUser.isSuperUser;
-  // Dummy user concept removed - all users are real
 
   // Max user limit check
   const maxUsers = systemStatus?.maxUsers || 50;
   const activeNonDummyCount = users.filter(u => u.isActive && !u.isSuperUser).length;
   const maxReached = activeNonDummyCount >= maxUsers;
 
-  // For dummy users: only see users they created or superuser created
+  // Visibility: show all non-superuser users to admins and superadmins
   const getVisibleUsers = () => {
-    if (isSuperUser) {
-      // No dummy filter in server-backed system
-      return users.filter(u => !u.isSuperUser);
-    }
-    // Regular admin: show active non-superuser users
     return users.filter(u => !u.isSuperUser);
   };
 
@@ -76,70 +70,124 @@ export default function UserManagement() {
     return posA !== posB ? posA - posB : a.name.localeCompare(b.name, 'es');
   });
 
-  const toggleActive = (userId: string) => {
+  // ─── Action handlers (with proper async/await and error handling) ───
+
+  const handleToggleActive = useCallback((userId: string) => {
     const user = users.find(u => u.id === userId);
     if (!user) return;
-    // Check limit when activating
     if (!user.isActive && maxReached) {
-      alert(`Se ha alcanzado el máximo de usuarios activos (${maxUsers}). Contacte al administrador.`);
+      toast.error(`Se ha alcanzado el máximo de usuarios activos (${maxUsers}).`);
       return;
     }
-    updateUser({ ...user, isActive: !user.isActive });
-  };
+    updateUserMut.mutate(
+      { id: userId, isActive: !user.isActive },
+      { onSuccess: () => toast.success(user.isActive ? 'Usuario desactivado' : 'Usuario activado'), onError: (err: Error) => toast.error(err.message || 'Error al actualizar') }
+    );
+  }, [users, maxReached, updateUserMut]);
 
-  const handleChangePassword = () => {
-    if (showPasswordModal && newPassword.length >= 4) {
-      changePassword({ id: showPasswordModal, newPassword });  // This is useResetUserPassword
-      setShowPasswordModal(null);
-      setNewPassword('');
-    }
-  };
+  const handleChangePassword = useCallback(() => {
+    if (!showPasswordModal || newPassword.length < 4) return;
+    changePasswordMut.mutate(
+      { id: showPasswordModal, newPassword },
+      { onSuccess: () => { toast.success('Contraseña actualizada'); setShowPasswordModal(null); setNewPassword(''); }, onError: (err: Error) => toast.error(err.message || 'Error al cambiar contraseña') }
+    );
+  }, [showPasswordModal, newPassword, changePasswordMut]);
 
-  const handlePositionChange = (userId: string, cve: string) => {
+  const handlePositionChange = useCallback((userId: string, cve: string) => {
     const user = users.find(u => u.id === userId);
     const cat = cveCatalog.find(p => p.cve === cve);
-    if (user && cat) {
-      updateUser({
-        ...user,
-        position: cat.basePosition,
-        practiceArea: cat.level === 'legal' ? (cat.practiceArea || 'general') : undefined,
-        customPositionId: cat.cve,
-      });
-      setEditPosition(null);
+    if (!user || !cat) return;
+    updateUserMut.mutate(
+      { id: userId, position: cat.basePosition, practiceArea: cat.level === 'legal' ? (cat.practiceArea || 'general') : undefined, customPositionId: cat.cve },
+      { onSuccess: () => toast.success('Posición actualizada'), onError: (err: Error) => toast.error(err.message || 'Error al actualizar') }
+    );
+    setEditPosition(null);
+  }, [users, cveCatalog, updateUserMut]);
+
+  const handleToggleAdmin = useCallback((userId: string, makeAdmin: boolean) => {
+    const user = users.find(u => u.id === userId);
+    if (!user) return;
+    // Managing Partner must stay admin
+    if (user.isManagingPartner && !makeAdmin) {
+      toast.error('No se puede quitar el rol de Administrador al Socio Administrador.');
+      return;
     }
-  };
+    if (makeAdmin) {
+      const adminCount = users.filter(u => u.isAdmin && !u.isSuperUser).length;
+      if (adminCount >= 2) {
+        toast.error('Máximo 2 Administradores permitidos. Quite permisos a otro primero.');
+        return;
+      }
+    }
+    updateUserRoleMut.mutate(
+      { id: userId, isAdmin: makeAdmin },
+      { onSuccess: () => toast.success(makeAdmin ? `${user.name} es ahora Administrador` : 'Permisos actualizados'), onError: (err: Error) => toast.error(err.message || 'Error al actualizar rol') }
+    );
+  }, [users, updateUserRoleMut]);
 
+  const handleToggleManagingPartner = useCallback((userId: string, makeMP: boolean) => {
+    const user = users.find(u => u.id === userId);
+    if (!user) return;
+    if (makeMP) {
+      const currentMP = users.find(u => u.isManagingPartner && !u.isSuperUser);
+      if (currentMP && currentMP.id !== userId) {
+        toast.error(`Solo puede haber un Socio Administrador. Actualmente es ${currentMP.name}.`);
+        return;
+      }
+    }
+    updateUserRoleMut.mutate(
+      { id: userId, isManagingPartner: makeMP, ...(makeMP ? { isAdmin: true } : {}) },
+      { onSuccess: () => toast.success(makeMP ? `${user.name} es ahora Socio Administrador` : `${user.name} ya no es Socio Administrador`), onError: (err: Error) => toast.error(err.message || 'Error al actualizar rol') }
+    );
+  }, [users, updateUserRoleMut]);
 
-  const handleAddUser = () => {
-    if (!newUser.name.trim() || !newUser.email.trim()) return;
-    if (maxReached && !isSuperUser) {
-      alert(`Se ha alcanzado el máximo de usuarios activos (${maxUsers}). Contacte al administrador.`);
+  const handleToggleSuperUser = useCallback((userId: string, makeSU: boolean) => {
+    const user = users.find(u => u.id === userId);
+    if (!user) return;
+    if (makeSU) {
+      if (!confirm(`¿Asignar a ${user.name} como SuperUser? Control total del sistema.`)) return;
+    } else {
+      if (!confirm(`¿Quitar permisos de SuperUser a ${user.name}?`)) return;
+    }
+    updateUserRoleMut.mutate(
+      { id: userId, isSuperUser: makeSU },
+      { onSuccess: () => toast.success(makeSU ? `${user.name} es ahora SuperUser` : `${user.name} ya no es SuperUser`), onError: (err: Error) => toast.error(err.message || 'Error al actualizar rol') }
+    );
+  }, [users, updateUserRoleMut]);
+
+  const handleAddUser = useCallback(() => {
+    if (!newUser.name.trim() || !newUser.email.trim()) {
+      toast.error('Nombre y correo son obligatorios');
+      return;
+    }
+    if (newUser.password.length < 6) {
+      toast.error('La contraseña debe tener al menos 6 caracteres');
       return;
     }
     const catEntry = cveCatalog.find(p => p.cve === newUser.cve);
     if (!catEntry) { toast.error('Selecciona un puesto válido'); return; }
-    addUser({
-      name: newUser.name.trim(),
-      email: newUser.email.trim().toLowerCase(),
-      position: catEntry.basePosition,
-      practiceArea: catEntry.level === 'legal' ? (catEntry.practiceArea || 'general') : undefined,
-      customPositionId: catEntry.cve,
-      isAdmin: false,
-      password: newUser.password || '1234',
+    addUserMut.mutate(
+      {
+        name: newUser.name.trim(),
+        email: newUser.email.trim().toLowerCase(),
+        position: catEntry.basePosition,
+        practiceArea: catEntry.level === 'legal' ? (catEntry.practiceArea || 'general') : undefined,
+        customPositionId: catEntry.cve,
+        isAdmin: false,
+        password: newUser.password || '1234',
+      },
+      { onSuccess: () => { toast.success('Usuario creado exitosamente'); setNewUser({ name: '', email: '', cve: 'SMPS12', password: '1234' }); setShowAddUser(false); }, onError: (err: Error) => toast.error(err.message || 'Error al crear usuario') }
+    );
+  }, [newUser, cveCatalog, addUserMut]);
+
+  const handleDeleteUser = useCallback(() => {
+    if (!deleteConfirm) return;
+    const user = users.find(u => u.id === deleteConfirm);
+    deleteUserMut.mutate(deleteConfirm, {
+      onSuccess: () => { toast.success(`${user?.name || 'Usuario'} eliminado`); setDeleteConfirm(null); },
+      onError: (err: Error) => toast.error(err.message || 'Error al eliminar'),
     });
-    setNewUser({ name: '', email: '', cve: 'SMPS12', password: '1234' });
-    setShowAddUser(false);
-  };
-
-
-
-
-  const handleDeleteUser = () => {
-    if (deleteConfirm) {
-      deleteUser(deleteConfirm);
-      setDeleteConfirm(null);
-    }
-  };
+  }, [deleteConfirm, users, deleteUserMut]);
 
   const selectedUserData = users.find(u => u.id === selectedUser);
   const userEvals = selectedUserData ? evaluations.filter(e => e.evaluatedId === selectedUserData.id).sort((a, b) => a.period.localeCompare(b.period)) : [];
@@ -168,7 +216,6 @@ export default function UserManagement() {
                   <tr key={user.id} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
                     <td className="py-3 px-4 font-medium">
                       {user.name}
-                      
                       {user.isSuperUser && (
                         <span className="ml-2 inline-flex items-center gap-1 text-[10px] bg-yellow-400/20 text-yellow-600 px-1.5 py-0.5 rounded-full">
                           <Shield className="h-2.5 w-2.5" /> SUPERUSER
@@ -179,11 +226,14 @@ export default function UserManagement() {
                           <Star className="h-2.5 w-2.5" /> Socio Adm.
                         </span>
                       )}
+                      {!user.isSuperUser && !user.isManagingPartner && user.isAdmin && (
+                        <span className="ml-2 inline-flex items-center gap-1 text-[10px] bg-yellow-400/10 text-yellow-600 px-1.5 py-0.5 rounded-full">
+                          <Shield className="h-2.5 w-2.5" /> Admin
+                        </span>
+                      )}
                     </td>
                     <td className="py-3 px-4">
-                      {false ? (
-                        <span className="text-muted-foreground">Dummy</span>
-                      ) : editPosition === user.id ? (
+                      {editPosition === user.id ? (
                         <select value={user.customPositionId || ''} onChange={e => handlePositionChange(user.id, e.target.value)} onBlur={() => setEditPosition(null)} autoFocus
                           className="px-2 py-1 rounded border border-input bg-background text-sm">
                           <optgroup label="Corporativo">{groupedCatalog.corporativo.map(p => <option key={p.cve} value={p.cve}>{p.cve} · {p.label}</option>)}</optgroup>
@@ -197,64 +247,32 @@ export default function UserManagement() {
                           {resolvePositionLabel(user.customPositionId, customPositions) || POSITION_LABELS[user.position]}
                         </button>
                       )}
-
                     </td>
                     <td className="py-3 px-4 text-muted-foreground">{user.email}</td>
                     <td className="py-3 px-4 text-muted-foreground font-mono text-xs">{user.password}</td>
                     <td className="py-3 px-4 text-center">
-                      <button onClick={() => toggleActive(user.id)} className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${user.isActive ? 'bg-smps-success/10 text-smps-success' : 'bg-muted text-muted-foreground'}`}>
+                      <button onClick={() => handleToggleActive(user.id)} className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${user.isActive ? 'bg-smps-success/10 text-smps-success' : 'bg-muted text-muted-foreground'}`}>
                         {user.isActive ? <UserCheck className="h-3 w-3" /> : <UserX className="h-3 w-3" />}
                         {user.isActive ? 'Activo' : 'Inactivo'}
                       </button>
                     </td>
                     <td className="py-3 px-4 text-right">
                       <div className="flex items-center justify-end gap-1">
-                        {/* Admin toggle: solo el admin principal puede asignar/quitar al segundo admin */}
-                        {!false && !user.isSuperUser && currentUser.isSuperUser && user.id !== currentUser.id && (() => {
-                          const adminCount = users.filter(u => u.isAdmin && !u.isSuperUser).length;
-                          const canAdd = adminCount < 2;
-                          const isAdminUser = !!user.isAdmin;
-                          const disabled = !isAdminUser && !canAdd;
-                          return (
-                            <button
-                              disabled={disabled}
-                              onClick={() => {
-                                if (isAdminUser) {
-                                  if (user.isManagingPartner) { toast.error('No puedes quitar al administrador principal.'); return; }
-                                  if (confirm(`¿Quitar permisos de Administrador a ${user.name}?`)) {
-                                    updateUser({ ...user, isAdmin: false });
-                                    toast.success('Permisos actualizados');
-                                  }
-                                } else {
-                                  if (confirm(`¿Asignar a ${user.name} como segundo Administrador del sistema?`)) {
-                                    updateUser({ ...user, isAdmin: true });
-                                    toast.success(`${user.name} es ahora Administrador`);
-                                  }
-                                }
-                              }}
-                              className={`p-1.5 rounded-lg transition-colors disabled:opacity-30 ${isAdminUser ? 'bg-yellow-400/20 text-yellow-600' : 'hover:bg-muted text-muted-foreground'}`}
-                              title={isAdminUser ? (user.isManagingPartner ? 'Administrador Principal' : 'Administrador (clic para revocar)') : disabled ? 'Máximo 2 administradores' : 'Asignar como Administrador'}
-                            >
-                              <Shield className={`h-4 w-4 ${isAdminUser ? 'fill-current' : ''}`} />
-                            </button>
-                          );
-                        })()}
-                        {/* SuperUser toggle: only SuperUsers can promote/demote SuperUser role */}
-                        {currentUser.isSuperUser && user.id !== currentUser.id && (
+                        {/* Admin (Shield) toggle — SuperUser, Socio Adm., or Admin can modify */}
+                        {(isSuperUser || currentUser.isManagingPartner || (currentUser.isAdmin && !currentUser.isManagingPartner)) && !user.isSuperUser && user.id !== currentUser.id && (
                           <button
-                            onClick={() => {
-                              if (user.isSuperUser) {
-                                if (confirm('¿Quitar permisos de SuperUser a ' + user.name + '?')) {
-                                  setManagingPartner({ id: user.id, isSuperUser: false });
-                                  toast.success(user.name + ' ya no es SuperUser');
-                                }
-                              } else {
-                                if (confirm('¿Asignar a ' + user.name + ' como SuperUser? Control total del sistema.')) {
-                                  setManagingPartner({ id: user.id, isSuperUser: true });
-                                  toast.success(user.name + ' es ahora SuperUser');
-                                }
-                              }
-                            }}
+                            disabled={!user.isAdmin && !user.isManagingPartner && users.filter(u => u.isAdmin && !u.isSuperUser).length >= 2}
+                            onClick={() => handleToggleAdmin(user.id, !user.isAdmin)}
+                            className={`p-1.5 rounded-lg transition-colors disabled:opacity-30 ${user.isAdmin ? 'bg-yellow-400/20 text-yellow-600' : 'hover:bg-muted text-muted-foreground'}`}
+                            title={user.isManagingPartner ? 'Socio Adm. (siempre Admin)' : user.isAdmin ? 'Administrador (clic para quitar)' : 'Asignar como Administrador'}
+                          >
+                            <Shield className={`h-4 w-4 ${user.isAdmin ? 'fill-current' : ''}`} />
+                          </button>
+                        )}
+                        {/* SuperUser (Shield) toggle — only SuperUser can modify */}
+                        {isSuperUser && user.id !== currentUser.id && (
+                          <button
+                            onClick={() => handleToggleSuperUser(user.id, !user.isSuperUser)}
                             className={`p-1.5 rounded-lg transition-colors ${user.isSuperUser ? 'bg-yellow-400/20 text-yellow-600' : 'hover:bg-muted text-muted-foreground'}`}
                             title={user.isSuperUser ? 'SuperUser (clic para quitar)' : 'Asignar como SuperUser'}
                           >
@@ -262,28 +280,26 @@ export default function UserManagement() {
                           </button>
                         )}
                         {/* Show admin badge for non-SuperUser viewers */}
-                        {!currentUser.isSuperUser && user.isAdmin && !user.isSuperUser && (
-                          <span title={user.isManagingPartner ? 'Administrador Principal' : 'Administrador'} className="p-1.5">
+                        {!isSuperUser && user.isAdmin && !user.isSuperUser && (
+                          <span title={user.isManagingPartner ? 'Socio Administrador' : 'Administrador'} className="p-1.5">
                             <Shield className={`h-4 w-4 ${user.isManagingPartner ? 'text-accent fill-current' : 'text-accent'}`} />
                           </span>
                         )}
-                        {user.position === 'socio' && (
+                        {/* Managing Partner (Star) toggle — SuperUser and Managing Partner can assign */}
+                        {(isSuperUser || currentUser.isManagingPartner) && user.id !== currentUser.id && (
                           <button
-                            onClick={() => {
-                              if (user.isManagingPartner) {
-                                toast.info('Para quitar el rol, asígnalo a otro Socio.');
-                                return;
-                              }
-                              if (confirm(`Asignar a ${user.name} como Socio Administrador?`)) {
-                                setManagingPartner({ id: user.id, isManagingPartner: true });
-                                toast.success(`${user.name} es ahora Socio Administrador`);
-                              }
-                            }}
-                            className={`p-1.5 rounded-lg transition-colors ${user.isManagingPartner ? 'bg-yellow-400/20 text-yellow-600' : 'hover:bg-muted text-muted-foreground'}`}
-                            title={user.isManagingPartner ? 'Socio Administrador actual' : 'Asignar como Socio Administrador'}
+                            onClick={() => handleToggleManagingPartner(user.id, !user.isManagingPartner)}
+                            className={`p-1.5 rounded-lg transition-colors ${user.isManagingPartner ? 'bg-accent/10 text-accent' : 'hover:bg-muted text-muted-foreground'}`}
+                            title={user.isManagingPartner ? 'Socio Administrador (clic para quitar)' : 'Asignar como Socio Administrador'}
                           >
                             <Star className={`h-4 w-4 ${user.isManagingPartner ? 'fill-current' : ''}`} />
                           </button>
+                        )}
+                        {/* Show Star badge for non-SuperUser viewers */}
+                        {!isSuperUser && user.isManagingPartner && !user.isSuperUser && (
+                          <span title="Socio Administrador" className="p-1.5">
+                            <Star className="h-4 w-4 text-accent fill-current" />
+                          </span>
                         )}
                         <button onClick={() => setSelectedUser(user.id)} className="p-1.5 rounded-lg hover:bg-muted transition-colors" title="Ver evaluaciones"><Eye className="h-4 w-4 text-muted-foreground" /></button>
                         <button onClick={() => setShowPasswordModal(user.id)} className="p-1.5 rounded-lg hover:bg-muted transition-colors" title="Cambiar contraseña"><Key className="h-4 w-4 text-muted-foreground" /></button>
@@ -305,7 +321,7 @@ export default function UserManagement() {
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="font-display text-2xl font-bold">Gestión de Usuarios</h1>
-          <p className="text-muted-foreground text-sm mt-1">{visibleUsers.filter(u => true).length} usuarios registrados</p>
+          <p className="text-muted-foreground text-sm mt-1">{visibleUsers.length} usuarios registrados</p>
         </div>
         <div className="flex items-center gap-2">
           <button onClick={() => setShowAddUser(true)} className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-accent text-accent-foreground text-sm font-medium hover:opacity-90 transition-opacity">
@@ -400,6 +416,48 @@ export default function UserManagement() {
               </div>
             )}
             <button onClick={() => setSelectedUser(null)} className="mt-4 w-full py-2 rounded-lg border text-sm font-medium hover:bg-muted transition-colors">Cerrar</button>
+          </div>
+        </div>
+      )}
+
+      {/* Add User Modal */}
+      {showAddUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/20 backdrop-blur-sm" onClick={() => setShowAddUser(false)}>
+          <div className="bg-card rounded-xl border p-6 w-full max-w-md shadow-xl" onClick={e => e.stopPropagation()}>
+            <h3 className="font-display text-lg font-semibold mb-4">Nuevo Usuario</h3>
+            <div className="space-y-3">
+              <div>
+                <label className="text-sm font-medium text-foreground">Nombre completo</label>
+                <input type="text" value={newUser.name} onChange={e => setNewUser(prev => ({ ...prev, name: e.target.value }))}
+                  placeholder="Nombre del colaborador" className="w-full px-3 py-2 rounded-lg border border-input bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent text-sm" />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-foreground">Correo electrónico</label>
+                <input type="email" value={newUser.email} onChange={e => setNewUser(prev => ({ ...prev, email: e.target.value }))}
+                  placeholder="correo@smps.com" className="w-full px-3 py-2 rounded-lg border border-input bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent text-sm" />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-foreground">Puesto (CVE)</label>
+                <select value={newUser.cve} onChange={e => setNewUser(prev => ({ ...prev, cve: e.target.value }))}
+                  className="w-full px-3 py-2 rounded-lg border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-accent text-sm">
+                  <optgroup label="Corporativo">{groupedCatalog.corporativo.map(p => <option key={p.cve} value={p.cve}>{p.cve} · {p.label}</option>)}</optgroup>
+                  <optgroup label="Consultoría Fiscal">{groupedCatalog.consultoria_fiscal.map(p => <option key={p.cve} value={p.cve}>{p.cve} · {p.label}</option>)}</optgroup>
+                  <optgroup label="Litigio Fiscal">{groupedCatalog.litigio_fiscal.map(p => <option key={p.cve} value={p.cve}>{p.cve} · {p.label}</option>)}</optgroup>
+                  {groupedCatalog.general.length > 0 && <optgroup label="Legal (general)">{groupedCatalog.general.map(p => <option key={p.cve} value={p.cve}>{p.cve} · {p.label}</option>)}</optgroup>}
+                  <optgroup label="Administrativo">{groupedCatalog.administrativo.map(p => <option key={p.cve} value={p.cve}>{p.cve} · {p.label}</option>)}</optgroup>
+                </select>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-foreground">Contraseña inicial</label>
+                <input type="text" value={newUser.password} onChange={e => setNewUser(prev => ({ ...prev, password: e.target.value }))}
+                  placeholder="Mínimo 6 caracteres" className="w-full px-3 py-2 rounded-lg border border-input bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent text-sm" />
+                <p className="text-xs text-muted-foreground mt-1">El usuario deberá cambiarla al primer inicio de sesión</p>
+              </div>
+            </div>
+            <div className="flex gap-3 mt-5">
+              <button onClick={() => { setShowAddUser(false); setNewUser({ name: '', email: '', cve: 'SMPS12', password: '1234' }); }} className="flex-1 py-2 rounded-lg border text-sm font-medium hover:bg-muted transition-colors">Cancelar</button>
+              <button onClick={handleAddUser} disabled={!newUser.name.trim() || !newUser.email.trim()} className="flex-1 py-2 rounded-lg bg-accent text-accent-foreground text-sm font-medium disabled:opacity-40 hover:opacity-90 transition-opacity">Crear Usuario</button>
+            </div>
           </div>
         </div>
       )}

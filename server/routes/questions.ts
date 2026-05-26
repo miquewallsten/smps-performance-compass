@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { v4 as uuidv4 } from 'uuid';
-import db from '../db/connection.js';
+import { db, tx } from '../db/connection.js';
 import { authMiddleware } from '../middleware/auth.js';
 import { requireAdmin } from '../middleware/rbac.js';
 
@@ -8,9 +8,9 @@ const router = Router();
 
 // ─── Library Questions ──────────────────────────────────────────────────────
 
-router.get('/library', authMiddleware, (_req: Request, res: Response) => {
+router.get('/library', authMiddleware, async (_req: Request, res: Response) => {
   try {
-    const questions = db.prepare('SELECT * FROM library_questions').all();
+    const questions = await db.all('SELECT * FROM library_questions');
     return res.json(questions);
   } catch (err) {
     console.error('List library questions error:', err);
@@ -18,7 +18,7 @@ router.get('/library', authMiddleware, (_req: Request, res: Response) => {
   }
 });
 
-router.post('/library', authMiddleware, requireAdmin, (req: Request, res: Response) => {
+router.post('/library', authMiddleware, requireAdmin, async (req: Request, res: Response) => {
   try {
     const { questionId, category, text, defaultWeight } = req.body;
     if (!questionId || !category || !text || !defaultWeight) {
@@ -26,12 +26,12 @@ router.post('/library', authMiddleware, requireAdmin, (req: Request, res: Respon
     }
     const id = uuidv4();
     const now = new Date().toISOString();
-    db.prepare('INSERT INTO library_questions (id, question_id, category, text, default_weight, created_at, created_by) VALUES (?, ?, ?, ?, ?, ?, ?)')
-      .run(id, questionId, category, text, defaultWeight, now, req.user!.id);
-    const question = db.prepare('SELECT * FROM library_questions WHERE id = ?').get(id);
+    await db.run('INSERT INTO library_questions (id, question_id, category, text, default_weight, created_at, created_by) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      [id, questionId, category, text, defaultWeight, now, req.user!.id]);
+    const question = await db.get('SELECT * FROM library_questions WHERE id = ?', [id]);
     return res.status(201).json(question);
   } catch (err: any) {
-    if (err.message?.includes('UNIQUE constraint failed')) {
+    if (err.code === 'ER_DUP_ENTRY') {
       return res.status(409).json({ error: 'Question ID already exists' });
     }
     console.error('Create library question error:', err);
@@ -39,9 +39,9 @@ router.post('/library', authMiddleware, requireAdmin, (req: Request, res: Respon
   }
 });
 
-router.patch('/library/:id', authMiddleware, requireAdmin, (req: Request, res: Response) => {
+router.patch('/library/:id', authMiddleware, requireAdmin, async (req: Request, res: Response) => {
   try {
-    const question = db.prepare('SELECT * FROM library_questions WHERE id = ?').get(req.params.id);
+    const question = await db.get('SELECT * FROM library_questions WHERE id = ?', [req.params.id]);
     if (!question) return res.status(404).json({ error: 'Question not found' });
 
     const { category, text, defaultWeight } = req.body;
@@ -52,9 +52,9 @@ router.patch('/library/:id', authMiddleware, requireAdmin, (req: Request, res: R
     if (defaultWeight !== undefined) { updates.push('default_weight = ?'); params.push(defaultWeight); }
 
     if (updates.length > 0) {
-      db.prepare(`UPDATE library_questions SET ${updates.join(', ')} WHERE id = ?`).run(...params, req.params.id);
+      await db.run(`UPDATE library_questions SET ${updates.join(', ')} WHERE id = ?`, [...params, req.params.id]);
     }
-    const updated = db.prepare('SELECT * FROM library_questions WHERE id = ?').get(req.params.id);
+    const updated = await db.get('SELECT * FROM library_questions WHERE id = ?', [req.params.id]);
     return res.json(updated);
   } catch (err) {
     console.error('Update library question error:', err);
@@ -62,9 +62,9 @@ router.patch('/library/:id', authMiddleware, requireAdmin, (req: Request, res: R
   }
 });
 
-router.delete('/library/:id', authMiddleware, requireAdmin, (req: Request, res: Response) => {
+router.delete('/library/:id', authMiddleware, requireAdmin, async (req: Request, res: Response) => {
   try {
-    db.prepare('DELETE FROM library_questions WHERE id = ?').run(req.params.id);
+    await db.run('DELETE FROM library_questions WHERE id = ?', [req.params.id]);
     return res.json({ message: 'Question deleted' });
   } catch (err) {
     console.error('Delete library question error:', err);
@@ -74,13 +74,13 @@ router.delete('/library/:id', authMiddleware, requireAdmin, (req: Request, res: 
 
 // ─── Custom Questions ────────────────────────────────────────────────────────
 
-router.get('/custom', authMiddleware, (req: Request, res: Response) => {
+router.get('/custom', authMiddleware, async (req: Request, res: Response) => {
   try {
     const { position } = req.query as Record<string, string>;
     let sql = 'SELECT * FROM custom_eval_questions WHERE 1=1';
     const params: string[] = [];
     if (position) { sql += ' AND position = ?'; params.push(position); }
-    const questions = db.prepare(sql).all(...params);
+    const questions = await db.all(sql, params);
     return res.json(questions);
   } catch (err) {
     console.error('List custom questions error:', err);
@@ -88,27 +88,23 @@ router.get('/custom', authMiddleware, (req: Request, res: Response) => {
   }
 });
 
-router.post('/custom', authMiddleware, requireAdmin, (req: Request, res: Response) => {
+router.post('/custom', authMiddleware, requireAdmin, async (req: Request, res: Response) => {
   try {
     const { position, questions } = req.body;
     if (!position) return res.status(400).json({ error: 'position is required' });
     if (!Array.isArray(questions)) return res.status(400).json({ error: 'questions array is required' });
 
     // Delete existing custom questions for this position, then insert new ones
-    const deleteStmt = db.prepare('DELETE FROM custom_eval_questions WHERE position = ?');
-    const insertStmt = db.prepare(
-      'INSERT INTO custom_eval_questions (id, position, question_id, category, text, weight, section, practice_area) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
-    );
-
-    const transaction = db.transaction(() => {
-      deleteStmt.run(position);
+    await db.transaction(async (conn) => {
+      await tx.run(conn, 'DELETE FROM custom_eval_questions WHERE position = ?', [position]);
       for (const q of questions) {
-        insertStmt.run(uuidv4(), position, q.questionId, q.category, q.text, q.weight, q.section || null, q.practiceArea || null);
+        await tx.run(conn,
+          'INSERT INTO custom_eval_questions (id, position, question_id, category, text, weight, section, practice_area) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+          [uuidv4(), position, q.questionId, q.category, q.text, q.weight, q.section || null, q.practiceArea || null]);
       }
     });
-    transaction();
 
-    const result = db.prepare('SELECT * FROM custom_eval_questions WHERE position = ?').all(position);
+    const result = await db.all('SELECT * FROM custom_eval_questions WHERE position = ?', [position]);
     return res.json(result);
   } catch (err) {
     console.error('Set custom questions error:', err);
@@ -118,9 +114,9 @@ router.post('/custom', authMiddleware, requireAdmin, (req: Request, res: Respons
 
 // ─── Seed Question Overrides ────────────────────────────────────────────────
 
-router.get('/overrides', authMiddleware, (_req: Request, res: Response) => {
+router.get('/overrides', authMiddleware, async (_req: Request, res: Response) => {
   try {
-    const overrides = db.prepare('SELECT * FROM seed_question_overrides').all();
+    const overrides = await db.all('SELECT * FROM seed_question_overrides');
     return res.json(overrides);
   } catch (err) {
     console.error('List overrides error:', err);
@@ -128,10 +124,10 @@ router.get('/overrides', authMiddleware, (_req: Request, res: Response) => {
   }
 });
 
-router.patch('/overrides/:id', authMiddleware, requireAdmin, (req: Request, res: Response) => {
+router.patch('/overrides/:id', authMiddleware, requireAdmin, async (req: Request, res: Response) => {
   try {
     const { text, category, weight, hidden } = req.body;
-    const existing = db.prepare('SELECT * FROM seed_question_overrides WHERE question_id = ?').get(req.params.id);
+    const existing = await db.get('SELECT * FROM seed_question_overrides WHERE question_id = ?', [req.params.id]);
 
     if (existing) {
       const updates: string[] = [];
@@ -141,14 +137,14 @@ router.patch('/overrides/:id', authMiddleware, requireAdmin, (req: Request, res:
       if (weight !== undefined) { updates.push('weight = ?'); params.push(weight); }
       if (hidden !== undefined) { updates.push('hidden = ?'); params.push(hidden ? 1 : 0); }
       if (updates.length > 0) {
-        db.prepare(`UPDATE seed_question_overrides SET ${updates.join(', ')} WHERE question_id = ?`).run(...params, req.params.id);
+        await db.run(`UPDATE seed_question_overrides SET ${updates.join(', ')} WHERE question_id = ?`, [...params, req.params.id]);
       }
     } else {
-      db.prepare('INSERT INTO seed_question_overrides (question_id, text, category, weight, hidden) VALUES (?, ?, ?, ?, ?)')
-        .run(req.params.id, text || null, category || null, weight || null, hidden ? 1 : 0);
+      await db.run('INSERT INTO seed_question_overrides (question_id, text, category, weight, hidden) VALUES (?, ?, ?, ?, ?)',
+        [req.params.id, text || null, category || null, weight || null, hidden ? 1 : 0]);
     }
 
-    const result = db.prepare('SELECT * FROM seed_question_overrides WHERE question_id = ?').get(req.params.id);
+    const result = await db.get('SELECT * FROM seed_question_overrides WHERE question_id = ?', [req.params.id]);
     return res.json(result);
   } catch (err) {
     console.error('Update override error:', err);
