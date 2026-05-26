@@ -153,6 +153,18 @@ ARQUITECTURA DEL SISTEMA:
 - "No Aplica" (NA) y "Sin Elementos" (NE) se excluyen de la calificación
 - Calificación final = ponderada: peso_pregunta × score, sumado por sección con peso global
 
+TUS CAPACIDADES DE ESCRITURA:
+- Puedes CALIFICAR preguntas de evaluación (set_score: score 1-5 por pregunta)
+- Puedes COMPLETAR evaluaciones (complete_eval)
+- Puedes COMPLETAR sesiones de feedback (complete_feedback)
+- Puedes ACTUALIZAR comentarios de evaluaciones (update_comments)
+- Puedes CREAR, MODIFICAR y ELIMINAR preguntas de evaluación (create_question, update_question, delete_question)
+- Puedes GESTIONAR usuarios: crear, actualizar roles, activar/desactivar
+- Puedes ASIGNAR supervisores
+- Puedes CREAR periodos de evaluación
+- Puedes CREAR comunicados y anuncios
+- Eres un verdadero ASISTENTE que lee Y escribe en el sistema. No solo informas, ACTÚAS.
+
 SEGURIDAD ESTRICTA:
 1. Solo accedes a datos del sistema SMPS vía herramientas. Sin internet, sin APIs externas.
 2. NUNCA reveles contraseñas, hashes, tokens, API keys, ni datos personales innecesarios.
@@ -412,22 +424,49 @@ function getTools(cfg: Record<string, unknown>): Tool[] {
   if (cfg.can_manage_evaluations) {
     t.push({
       name: 'evaluations',
-      description: 'Evaluaciones. Acciones: list,get,periods,stats,questions,create_question,batch_questions,update_question,delete_question,list_library,supervisor_assignments.',
+      description: `Evaluaciones completas (lectura Y escritura). Acciones:
+- list: listar evaluaciones (filtros: period, evaluated_id, type)
+- get: detalle de evaluación con respuestas y calificaciones
+- periods: periodos con evaluaciones
+- stats: estadísticas de calificaciones por periodo/posición
+- score_card: score detallado de una persona por periodo (promedios por categoría, fortalezas, debilidades)
+- next_actions: qué falta para una persona (eval pendientes, feedback, planes de acción)
+- update_comments: actualizar comentarios de evaluación o supervisor
+- set_score: calificar una pregunta específica de una evaluación
+- complete_eval: marcar evaluación como completada
+- complete_feedback: marcar feedback como completado
+- questions: preguntas de evaluación por posición (de custom_eval_questions, library_questions, seed_question_overrides)
+- create_question: crear pregunta en biblioteca (library_questions)
+- batch_questions: crear múltiples preguntas
+- update_question: actualizar pregunta (biblioteca o override)
+- delete_question: eliminar/ocultar pregunta
+- list_library: listar biblioteca de preguntas
+- supervisor_assignments: asignaciones de supervisor
+- action_plan: ver/crear planes de acción
+- personal_objectives: ver/crear objetivos personales`,
       parameters: {
         type: 'object',
         properties: {
-          action: { type: 'string', enum: ['list','get','periods','stats','questions','create_question','batch_questions','update_question','delete_question','list_library','supervisor_assignments'] },
+          action: { type: 'string', enum: ['list','get','periods','stats','score_card','next_actions','update_comments','set_score','complete_eval','complete_feedback','questions','create_question','batch_questions','update_question','delete_question','list_library','supervisor_assignments','action_plan','personal_objectives'] },
           period: { type: 'string' }, id: { type: 'string' }, evaluated_id: { type: 'string' }, position: { type: 'string' },
           category: { type: 'string' }, text: { type: 'string' }, weight: { type: 'string' },
           question_id: { type: 'string' }, hidden: { type: 'string', description: 'true or false' },
           questions: { type: 'array', items: { type: 'object' } },
+          comments: { type: 'string', description: 'Comentarios del evaluador' },
+          supervisor_comments: { type: 'string', description: 'Comentarios del supervisor' },
+          score: { type: 'number', description: 'Calificación 1-5' },
+          response_text: { type: 'string', description: 'Texto de respuesta' },
+          not_applicable: { type: 'string', description: 'true si No Aplica' },
+          no_elements: { type: 'string', description: 'true si Sin Elementos' },
+          title: { type: 'string' }, description: { type: 'string' },
+          status: { type: 'string', description: 'Estado: draft, submitted, approved, rejected' },
         },
         required: ['action'],
       },
       execute: async (args, uid) => {
         const act = args.action as string;
         if (act === 'list') {
-          let s = 'SELECT e.id, e.evaluator_id, e.evaluated_id, e.period, e.type, e.total_score, e.comments, e.feedback_completed, u1.name as evaluator_name, u2.name as evaluated_name FROM evaluations e JOIN users u1 ON e.evaluator_id=u1.id JOIN users u2 ON e.evaluated_id=u2.id WHERE 1=1';
+          let s = 'SELECT e.id, e.evaluator_id, e.evaluated_id, e.period, e.type, e.total_score, e.comments, e.supervisor_comments, e.feedback_completed, e.completed_at, u1.name as evaluator_name, u2.name as evaluated_name FROM evaluations e JOIN users u1 ON e.evaluator_id=u1.id JOIN users u2 ON e.evaluated_id=u2.id WHERE 1=1';
           const p: unknown[] = [];
           if (args.period) { s += ' AND e.period=?'; p.push(args.period); }
           if (args.evaluated_id) { s += ' AND e.evaluated_id=?'; p.push(args.evaluated_id); }
@@ -439,71 +478,185 @@ function getTools(cfg: Record<string, unknown>): Tool[] {
           const responses = await db.all('SELECT * FROM evaluation_responses WHERE evaluation_id=?', [args.id]);
           return JSON.stringify({ ...ev, responses });
         }
-        if (act === 'periods') {
-          const rows = await db.all('SELECT DISTINCT period FROM evaluations ORDER BY period');
-          return JSON.stringify(rows);
-        }
+        if (act === 'periods') return JSON.stringify(await db.all('SELECT DISTINCT period FROM evaluations ORDER BY period'));
         if (act === 'stats') {
           const period = args.period || '2024-2025';
-          const rows = await db.all('SELECT e.type, COUNT(*) as count, AVG(e.total_score) as avg_score FROM evaluations WHERE period=? AND completed_at IS NOT NULL GROUP BY e.type', [period]);
-          return JSON.stringify(rows);
+          return JSON.stringify(await db.all('SELECT u.position, e.type, COUNT(*) as count, AVG(e.total_score) as avg_score, MIN(e.total_score) as min_score, MAX(e.total_score) as max_score FROM evaluations e JOIN users u ON u.id=e.evaluated_id WHERE e.period=? AND e.completed_at IS NOT NULL GROUP BY u.position, e.type', [period]));
+        }
+        if (act === 'score_card') {
+          if (!args.evaluated_id) return JSON.stringify({ error: 'Falta evaluated_id' });
+          const user = await db.get('SELECT name, position FROM users WHERE id=?', [args.evaluated_id]);
+          if (!user) return JSON.stringify({ error: 'Usuario no encontrado' });
+          const period = args.period || '2024-2025';
+          const evals = await db.all('SELECT e.id, e.type, e.total_score, e.completed_at FROM evaluations e WHERE e.evaluated_id=? AND e.period=?', [args.evaluated_id, period]);
+          const allResponses = await db.all('SELECT er.*, e.type as eval_type FROM evaluation_responses er JOIN evaluations e ON er.evaluation_id=e.id WHERE e.evaluated_id=? AND e.period=?', [args.evaluated_id, period]);
+          const cats: Record<string, { scores: number[], count: number, na: number }> = {};
+          for (const r of allResponses) {
+            const cat = r.category || 'Sin categoría';
+            if (!cats[cat]) cats[cat] = { scores: [], count: 0, na: 0 };
+            if (r.not_applicable) { cats[cat].na++; continue; }
+            if (r.score > 0) { cats[cat].scores.push(r.score * (r.weight || 1)); cats[cat].count++; }
+          }
+          const card = Object.entries(cats).map(([cat, d]) => ({
+            category: cat,
+            avg: d.count ? Math.round((d.scores.reduce((a,b)=>a+b,0) / d.scores.length)*10)/10 : 0,
+            responses: d.count,
+            not_applicable: d.na,
+          }));
+          return JSON.stringify({ user, period, evaluations: evals, categories: card, overall: evals.length ? Math.round(evals.reduce((s,e)=>s+(e.total_score||0),0)/evals.length*10)/10 : null });
+        }
+        if (act === 'next_actions') {
+          if (!args.evaluated_id) return JSON.stringify({ error: 'Falta evaluated_id' });
+          const user = await db.get('SELECT name, position FROM users WHERE id=?', [args.evaluated_id]);
+          const periods = await db.all('SELECT period FROM period_configs ORDER BY period DESC LIMIT 3');
+          const actions: string[] = [];
+          for (const p of periods) {
+            const selfEval = await db.get('SELECT id, completed_at FROM evaluations WHERE evaluator_id=? AND evaluated_id=? AND type=? AND period=?', [args.evaluated_id, args.evaluated_id, 'self', p.period]);
+            if (!selfEval) actions.push(`Autoevaluación ${p.period}: PENDIENTE`);
+            else if (!selfEval.completed_at) actions.push(`Autoevaluación ${p.period}: EN PROGRESO`);
+            const supEval = await db.get('SELECT id, completed_at, feedback_completed FROM evaluations WHERE evaluated_id=? AND type=? AND period=?', [args.evaluated_id, 'supervisor', p.period]);
+            if (!supEval) actions.push(`Evaluación supervisor ${p.period}: PENDIENTE`);
+            else if (!supEval.feedback_completed) actions.push(`Feedback ${p.period}: PENDIENTE`);
+            const actionPlan = await db.get('SELECT id, status FROM action_plans WHERE user_id=? AND period=?', [args.evaluated_id, p.period]);
+            if (!actionPlan) actions.push(`Plan de acción ${p.period}: PENDIENTE`);
+          }
+          return JSON.stringify({ user, pending_actions: actions });
+        }
+        if (act === 'update_comments') {
+          if (!args.id) return JSON.stringify({ error: 'Falta id de evaluación' });
+          const updates: string[] = [];
+          const vals: unknown[] = [];
+          if (args.comments !== undefined) { updates.push('comments=?'); vals.push(args.comments); }
+          if (args.supervisor_comments !== undefined) { updates.push('supervisor_comments=?'); vals.push(args.supervisor_comments); }
+          if (!updates.length) return JSON.stringify({ error: 'Sin cambios' });
+          vals.push(args.id);
+          await db.run(`UPDATE evaluations SET ${updates.join(', ')} WHERE id=?`, vals);
+          return JSON.stringify({ ok: true, msg: 'Comentarios actualizados' });
+        }
+        if (act === 'set_score') {
+          if (!args.id || !args.question_id || args.score === undefined) return JSON.stringify({ error: 'Falta: id (evaluación), question_id, score' });
+          const score = Math.max(1, Math.min(5, Number(args.score)));
+          const weight = args.weight ? Number(args.weight) : 1;
+          const na = args.not_applicable === 'true' || args.not_applicable === '1' ? 1 : 0;
+          const ne = args.no_elements === 'true' || args.no_elements === '1' ? 1 : 0;
+          const existing = await db.get('SELECT id FROM evaluation_responses WHERE evaluation_id=? AND question_id=?', [args.id, args.question_id]);
+          if (existing) {
+            await db.run('UPDATE evaluation_responses SET score=?, weight=?, not_applicable=?, no_elements=?, response_text=? WHERE evaluation_id=? AND question_id=?',
+              [score, weight, na, ne, (args.response_text as string) || null, args.id, args.question_id]);
+          } else {
+            await db.run('INSERT INTO evaluation_responses (id,evaluation_id,question_id,score,weight,not_applicable,no_elements,response_text) VALUES(?,?,?,?,?,?,?,?)',
+              [uuidv4(), args.id, args.question_id, score, weight, na, ne, (args.response_text as string) || null]);
+          }
+          // Recalculate total_score
+          const responses = await db.all('SELECT score, weight, not_applicable, no_elements FROM evaluation_responses WHERE evaluation_id=?', [args.id]);
+          const applicable = responses.filter((r: any) => !r.not_applicable && !r.no_elements);
+          const totalScore = applicable.length ? Math.round(applicable.reduce((s: number, r: any) => s + r.score * r.weight, 0) / applicable.reduce((s: number, r: any) => s + r.weight, 0) * 20 * 10) / 10 : 0;
+          await db.run('UPDATE evaluations SET total_score=? WHERE id=?', [totalScore, args.id]);
+          return JSON.stringify({ ok: true, score, weight, total_score: totalScore, msg: `Calificación guardada. Total actualizado: ${totalScore}` });
+        }
+        if (act === 'complete_eval') {
+          if (!args.id) return JSON.stringify({ error: 'Falta id' });
+          await db.run('UPDATE evaluations SET completed_at=? WHERE id=?', [new Date().toISOString(), args.id]);
+          // Recalculate score
+          const responses = await db.all('SELECT score, weight, not_applicable, no_elements FROM evaluation_responses WHERE evaluation_id=?', [args.id]);
+          const applicable = responses.filter((r: any) => !r.not_applicable && !r.no_elements);
+          const totalScore = applicable.length ? Math.round(applicable.reduce((s: number, r: any) => s + r.score * r.weight, 0) / applicable.reduce((s: number, r: any) => s + r.weight, 0) * 20 * 10) / 10 : 0;
+          await db.run('UPDATE evaluations SET total_score=? WHERE id=?', [totalScore, args.id]);
+          return JSON.stringify({ ok: true, msg: 'Evaluación completada', total_score: totalScore });
+        }
+        if (act === 'complete_feedback') {
+          if (!args.id) return JSON.stringify({ error: 'Falta id' });
+          await db.run('UPDATE evaluations SET feedback_completed=1, feedback_completed_at=?, feedback_completed_by=? WHERE id=?', [new Date().toISOString(), uid, args.id]);
+          return JSON.stringify({ ok: true, msg: 'Feedback completado' });
         }
         if (act === 'questions') {
-          if (args.position) return JSON.stringify(await db.all('SELECT * FROM questions WHERE position=? ORDER BY section, id', [args.position]));
-          return JSON.stringify(await db.all('SELECT * FROM questions ORDER BY section, id'));
+          if (args.position) {
+            const custom = await db.all('SELECT question_id, category, text, weight, hidden FROM custom_eval_questions WHERE position=? ORDER BY category', [args.position]);
+            const overrides = await db.all('SELECT question_id, text, category, weight, hidden FROM seed_question_overrides WHERE question_id LIKE ?', [args.position + '%']);
+            return JSON.stringify({ custom_questions: custom, seed_overrides: overrides, position: args.position });
+          }
+          const lib = await db.all('SELECT question_id, category, text, default_weight FROM library_questions ORDER BY category');
+          return JSON.stringify({ library: lib });
         }
         if (act === 'create_question') {
-          if (!args.position || !args.section || !args.text || !args.weight) return JSON.stringify({ error: 'Campos: position, section, text, weight' });
-          const id = uuidv4();
-          await db.run('INSERT INTO questions (id,position,section,text,weight,default_weight,category,hidden,created_at) VALUES(?,?,?,?,?,?,?,?,?)',
-            [id, args.position, args.section, args.text, Number(args.weight), Number(args.weight), (args.category as string) || 'competency', 0, new Date().toISOString()]);
-          return JSON.stringify({ ok: true, id });
+          if (!args.text || !args.category) return JSON.stringify({ error: 'Falta text y category' });
+          const id = uuidv4(), qid = args.question_id || 'q_' + Date.now();
+          await db.run('INSERT INTO library_questions (id,question_id,category,text,default_weight,created_at,created_by) VALUES(?,?,?,?,?,?,?)',
+            [id, qid, args.category, args.text, Number(args.weight) || 1, new Date().toISOString(), uid]);
+          return JSON.stringify({ ok: true, qid, msg: 'Pregunta creada en biblioteca' });
         }
         if (act === 'batch_questions') {
           const qs = args.questions as Record<string, unknown>[];
           const r: Record<string, unknown>[] = [];
           for (const q of qs) {
-            if (!q.position || !q.section || !q.text || !q.weight) { r.push({ text: q.text, error: 'Faltan campos' }); continue; }
-            const id = uuidv4();
-            await db.run('INSERT INTO questions (id,position,section,text,weight,default_weight,category,hidden,created_at) VALUES(?,?,?,?,?,?,?,?,?)',
-              [id, q.position, q.section, q.text, Number(q.weight), Number(q.weight), (q.category as string) || 'competency', 0, new Date().toISOString()]);
-            r.push({ text: q.text, ok: true, id });
+            if (!q.category || !q.text) { r.push({ text: q.text, error: 'Faltan campos' }); continue; }
+            try { const id = uuidv4(), qid = 'q_' + Date.now() + '_' + Math.random().toString(36).slice(2,6); await db.run('INSERT INTO library_questions (id,question_id,category,text,default_weight,created_at,created_by) VALUES(?,?,?,?,?,?,?)', [id, qid, q.category, q.text, Number(q.weight) || 1, new Date().toISOString(), uid]); r.push({ qid, ok: true }); } catch (e) { r.push({ text: q.text, error: String(e) }); }
           }
           return JSON.stringify({ msg: `${r.filter(x => x.ok).length}/${qs.length} creadas`, results: r });
         }
         if (act === 'update_question') {
           if (!args.question_id) return JSON.stringify({ error: 'Falta question_id' });
-          const updates: string[] = [];
-          const vals: unknown[] = [];
-          if (args.text) { updates.push('text=?'); vals.push(args.text); }
-          if (args.weight) { updates.push('weight=?'); vals.push(Number(args.weight)); }
-          if (args.category) { updates.push('category=?'); vals.push(args.category); }
-          if (args.hidden !== undefined) { updates.push('hidden=?'); vals.push(args.hidden === 'true' || args.hidden === '1' ? 1 : 0); }
-          if (!updates.length) return JSON.stringify({ error: 'Sin cambios' });
-          vals.push(args.question_id);
-          await db.run(`UPDATE questions SET ${updates.join(', ')} WHERE id=?`, vals);
-          return JSON.stringify({ ok: true, msg: 'Pregunta actualizada' });
+          const existing = await db.get('SELECT * FROM library_questions WHERE question_id=?', [args.question_id]);
+          if (existing) {
+            const updates = []; const vals = [];
+            if (args.text) { updates.push('text=?'); vals.push(args.text); }
+            if (args.category) { updates.push('category=?'); vals.push(args.category); }
+            if (args.weight) { updates.push('default_weight=?'); vals.push(parseFloat(args.weight as string) || (existing as any).default_weight); }
+            if (args.hidden !== undefined) { updates.push('hidden=?'); vals.push(args.hidden === 'true' ? 1 : 0); }
+            if (updates.length > 0) { vals.push(args.question_id); await db.run('UPDATE library_questions SET ' + updates.join(', ') + ' WHERE question_id=?', vals); }
+            return JSON.stringify({ ok: true, msg: 'Pregunta de biblioteca actualizada' });
+          }
+          const ov = await db.get('SELECT * FROM seed_question_overrides WHERE question_id=?', [args.question_id]);
+          if (ov) {
+            const updates = []; const vals = [];
+            if (args.text) { updates.push('text=?'); vals.push(args.text); }
+            if (args.category) { updates.push('category=?'); vals.push(args.category); }
+            if (args.weight) { updates.push('weight=?'); vals.push(parseInt(args.weight as string)); }
+            if (args.hidden !== undefined) { updates.push('hidden=?'); vals.push(args.hidden === 'true' ? 1 : 0); }
+            if (updates.length > 0) { vals.push(args.question_id); await db.run('UPDATE seed_question_overrides SET ' + updates.join(', ') + ' WHERE question_id=?', vals); }
+            return JSON.stringify({ ok: true, msg: 'Override actualizada' });
+          }
+          return JSON.stringify({ error: 'Pregunta no encontrada' });
         }
         if (act === 'delete_question') {
-          await db.run('DELETE FROM questions WHERE id=?', [args.question_id]);
-          return JSON.stringify({ ok: true });
+          if (!args.question_id) return JSON.stringify({ error: 'Falta question_id' });
+          const lib = await db.get('SELECT * FROM library_questions WHERE question_id=?', [args.question_id]);
+          if (lib) { await db.run('DELETE FROM library_questions WHERE question_id=?', [args.question_id]); return JSON.stringify({ ok: true, msg: 'Pregunta de biblioteca eliminada' }); }
+          const ov = await db.get('SELECT * FROM seed_question_overrides WHERE question_id=?', [args.question_id]);
+          if (ov) { await db.run('UPDATE seed_question_overrides SET hidden=1 WHERE question_id=?', [args.question_id]); return JSON.stringify({ ok: true, msg: 'Pregunta base ocultada' }); }
+          return JSON.stringify({ error: 'Pregunta no encontrada' });
         }
-        if (act === 'list_library') {
-          return JSON.stringify(await db.all('SELECT * FROM question_library ORDER BY category, id'));
-        }
+        if (act === 'list_library') return JSON.stringify(await db.all('SELECT question_id, category, text, default_weight FROM library_questions ORDER BY category, text'));
         if (act === 'supervisor_assignments') {
           const period = args.period || '2024-2025';
-          return JSON.stringify(await db.all(
-            'SELECT sa.*, u1.name as employee_name, u2.name as supervisor_name FROM supervisor_assignments sa JOIN users u1 ON sa.employee_id=u1.id JOIN users u2 ON sa.supervisor_id=u2.id WHERE sa.period=?',
-            [period]
-          ));
+          return JSON.stringify(await db.all('SELECT sa.*,eu.name as employee_name,su.name as supervisor_name FROM supervisor_assignments sa JOIN users eu ON sa.employee_id=eu.id JOIN users su ON sa.supervisor_id=su.id WHERE sa.period=?', [period]));
+        }
+        if (act === 'action_plan') {
+          if (args.id) {
+            const plan = await db.get('SELECT * FROM action_plans WHERE id=?', [args.id]);
+            const items = await db.all('SELECT * FROM smart_action_items WHERE action_plan_id=?', [args.id]);
+            return JSON.stringify({ ...plan, items });
+          }
+          const userId = args.evaluated_id;
+          if (userId) {
+            const plans = await db.all('SELECT * FROM action_plans WHERE user_id=? ORDER BY created_at DESC', [userId]);
+            return JSON.stringify(plans);
+          }
+          return JSON.stringify(await db.all('SELECT ap.*, u.name as user_name FROM action_plans ap JOIN users u ON ap.user_id=u.id ORDER BY ap.created_at DESC LIMIT 20'));
+        }
+        if (act === 'personal_objectives') {
+          if (args.evaluated_id) {
+            const objs = await db.all('SELECT * FROM personal_objectives WHERE user_id=? ORDER BY created_at DESC', [args.evaluated_id]);
+            return JSON.stringify(objs);
+          }
+          return JSON.stringify(await db.all('SELECT po.*, u.name as user_name FROM personal_objectives po JOIN users u ON po.user_id=u.id ORDER BY po.created_at DESC LIMIT 20'));
         }
         return JSON.stringify({ error: 'Acción desconocida' });
       },
     });
   }
 
-  if (cfg.can_manage_vacations) {
+    if (cfg.can_manage_vacations) {
     t.push({
       name: 'vacations',
       description: 'Vacaciones. Acciones: list,approve,reject.',
