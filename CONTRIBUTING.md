@@ -48,7 +48,9 @@ MYSQL_DATABASE=smps_dev
 JWT_SECRET=dev-secret-change-in-production-use-random-64-chars
 NODE_ENV=development
 PORT=3000
-GROQ_API_KEY=tu-api-key-aqui
+OLLAMA_API_KEY=tu-api-key-aqui
+OLLAMA_BASE_URL=https://ollama.com/v1
+OLLAMA_MODEL=qwen3:235b
 EOF
 
 # 5. Inicia el servidor de desarrollo

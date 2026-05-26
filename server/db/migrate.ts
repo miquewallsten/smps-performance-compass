@@ -327,8 +327,8 @@ export async function migrate(): Promise<void> {
 
     `CREATE TABLE IF NOT EXISTS copilot_config (
       id INT PRIMARY KEY DEFAULT 1,
-      model VARCHAR(255) NOT NULL DEFAULT 'llama-3.3-70b-versatile',
-      api_provider VARCHAR(50) NOT NULL DEFAULT 'groq',
+      model VARCHAR(255) NOT NULL DEFAULT 'qwen3.5:397b',
+      api_provider VARCHAR(50) NOT NULL DEFAULT 'ollama',
       api_base_url VARCHAR(500) DEFAULT NULL,
       api_key TEXT,
       can_manage_users TINYINT(1) NOT NULL DEFAULT 1,

@@ -25,16 +25,16 @@ export default function AccessControl() {
   const [tickets, setTickets] = useState(status.tickets || 0);
 
   // AI Config state
-  const [aiProvider, setAiProvider] = useState(copilotConfig?.apiProvider || 'groq');
+  const [aiProvider, setAiProvider] = useState(copilotConfig?.apiProvider || 'ollama');
   const [aiApiKey, setAiApiKey] = useState('');
-  const [aiModel, setAiModel] = useState(copilotConfig?.model || 'llama-3.3-70b-versatile');
+  const [aiModel, setAiModel] = useState(copilotConfig?.model || 'qwen3.5:397b');
   const [showApiKey, setShowApiKey] = useState(false);
   const [aiBaseUrl, setAiBaseUrl] = useState(copilotConfig?.apiBaseUrl || '');
 
   useEffect(() => {
     if (copilotConfig) {
-      setAiProvider(copilotConfig.apiProvider || 'groq');
-      setAiModel(copilotConfig.model || 'llama-3.3-70b-versatile');
+      setAiProvider(copilotConfig.apiProvider || 'ollama');
+      setAiModel(copilotConfig.model || 'qwen3.5:397b');
       setAiBaseUrl(copilotConfig.apiBaseUrl || '');
     }
   }, [copilotConfig]);
@@ -266,14 +266,9 @@ export default function AccessControl() {
           <div className="space-y-4">
             <div>
               <label className="text-sm text-muted-foreground block mb-1">Proveedor de API</label>
-              <select value={aiProvider} onChange={e => { setAiProvider(e.target.value); setAiModel(e.target.value === 'groq' ? 'llama-3.3-70b-versatile' : e.target.value === 'zhipu' ? 'glm-4-flash' : e.target.value === 'openai' ? 'gpt-4o-mini' : e.target.value === 'openrouter' ? 'deepseek/deepseek-chat' : e.target.value === 'anthropic' ? 'claude-3-5-sonnet-20241022' : e.target.value === 'ollama' ? 'llama3.3:70b' : 'gpt-4o'); }}
+              <select value={aiProvider} onChange={e => { setAiProvider(e.target.value); setAiModel(e.target.value === 'ollama' ? 'qwen3.5:397b' : 'qwen3.5:397b'); }}
                 className="w-full px-4 py-2.5 rounded-lg border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-accent">
-                <option value="groq">Groq (Gratis/Bajo costo)</option>
-                <option value="openai">OpenAI</option>
-                <option value="openrouter">OpenRouter (Multi-proveedor)</option>
-                <option value="anthropic">Anthropic</option>
-                <option value="zhipu">Zhipu AI (智谱/GLM)</option>
-                <option value="ollama">Ollama (Self-hosted)</option>
+                <option value="ollama">Ollama Cloud ⭐</option>
                 <option value="custom">Personalizado (OpenAI-compatible)</option>
               </select>
             </div>
@@ -305,40 +300,14 @@ export default function AccessControl() {
               <label className="text-sm text-muted-foreground block mb-1">Modelo</label>
               <select value={aiModel} onChange={e => setAiModel(e.target.value)}
                 className="w-full px-4 py-2.5 rounded-lg border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-accent">
-                {aiProvider === 'groq' && (
+                {aiProvider === 'ollama' && (
                   <>
-                    <option value="llama-3.3-70b-versatile">Llama 3.3 70B Versatile</option>
-                    <option value="llama-3.1-8b-instant">Llama 3.1 8B (Rapido)</option>
-                    <option value="mixtral-8x7b-32768">Mixtral 8x7B</option>
-                  </>
-                )}
-                {aiProvider === 'openai' && (
-                  <>
-                    <option value="gpt-4o-mini">GPT-4o Mini</option>
-                    <option value="gpt-4o">GPT-4o</option>
-                  </>
-                )}
-                {aiProvider === 'openrouter' && (
-                  <>
-                    <option value="deepseek/deepseek-chat">DeepSeek V3 (Gratis)</option>
-                    <option value="anthropic/claude-3.5-sonnet">Claude 3.5 Sonnet</option>
-                    <option value="google/gemini-2.0-flash-001">Gemini 2.0 Flash</option>
-                    <option value="meta-llama/llama-3.3-70b-instruct">Llama 3.3 70B</option>
-                    <option value="openai/gpt-4o">GPT-4o</option>
-                  </>
-                )}
-                {aiProvider === 'anthropic' && (
-                  <>
-                    <option value="claude-3-haiku-20240307">Claude 3 Haiku</option>
-                    <option value="claude-3-5-sonnet-20241022">Claude 3.5 Sonnet</option>
-                  </>
-                )}
-                {aiProvider === 'zhipu' && (
-                  <>
-                    <option value="glm-4-flash">GLM-4 Flash (Rapido y gratuito)</option>
-                    <option value="glm-4-plus">GLM-4 Plus (Mejor razonamiento)</option>
-                    <option value="glm-4-air">GLM-4 Air (Balanceado)</option>
-                    <option value="glm-4-long">GLM-4 Long (Contexto largo)</option>
+                    <option value="qwen3.5:397b">Qwen3 235B ⭐ Recomendado</option>
+                    <option value="qwen3:30b">Qwen3 30B (Rápido)</option>
+                    <option value="qwen3:14b">Qwen3 14B</option>
+                    <option value="llama3.3:70b">Llama 3.3 70B</option>
+                    <option value="gemma3:27b">Gemma 3 27B</option>
+                    <option value="mistral:7b">Mistral 7B</option>
                   </>
                 )}
                 {aiProvider === 'ollama' && (
@@ -360,7 +329,7 @@ export default function AccessControl() {
                   type="text"
                   value={aiBaseUrl}
                   onChange={e => setAiBaseUrl(e.target.value)}
-                  placeholder={aiProvider === 'ollama' ? 'http://localhost:11434/v1/chat/completions' : 'https://api.example.com/v1/chat/completions'}
+                  placeholder='https://ollama.com/v1/chat/completions'
                   className="w-full px-4 py-2.5 rounded-lg border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-accent"
                 />
                 <p className="text-xs text-muted-foreground mt-1">URL del endpoint compatible con OpenAI Chat Completions API.</p>

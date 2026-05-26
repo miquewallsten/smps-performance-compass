@@ -45,8 +45,8 @@ interface Conversation {
 function CopilotConfigPanel({ config, onSave }: { config: any; onSave: (data: any) => void }) {
   const [showApiKey, setShowApiKey] = useState(false);
   const [form, setForm] = useState({
-    apiProvider: config?.apiProvider ?? config?.api_provider ?? 'groq',
-    model: config?.model || 'llama-3.3-70b-versatile',
+    apiProvider: config?.apiProvider ?? config?.api_provider ?? 'ollama',
+    model: config?.model || 'qwen3.5:397b',
     apiBaseUrl: config?.apiBaseUrl ?? config?.api_base_url ?? '',
     apiKey: '',
     canManageUsers: config?.canManageUsers ?? config?.can_manage_users ?? true,
@@ -71,33 +71,12 @@ function CopilotConfigPanel({ config, onSave }: { config: any; onSave: (data: an
   };
 
   const providers = [
-    { value: 'groq', label: 'Groq (Free/Low Cost)', models: [
-      { value: 'llama-3.3-70b-versatile', label: 'Llama 3.3 70B Versatile ⭐' },
-      { value: 'llama-3.1-8b-instant', label: 'Llama 3.1 8B (Rápido)' },
-      { value: 'mixtral-8x7b-32768', label: 'Mixtral 8x7B' },
-      { value: 'gemma2-9b-it', label: 'Gemma 2 9B' },
-    ]},
-    { value: 'openai', label: 'OpenAI', models: [
-      { value: 'gpt-4o', label: 'GPT-4o ⭐ Mejor razonamiento' },
-      { value: 'gpt-4o-mini', label: 'GPT-4o Mini (Más rápido)' },
-      { value: 'gpt-4-turbo', label: 'GPT-4 Turbo' },
-    ]},
-    { value: 'openrouter', label: 'OpenRouter (Multi-provider)', models: [
-      { value: 'anthropic/claude-3.5-sonnet', label: 'Claude 3.5 Sonnet ⭐ Excelente' },
-      { value: 'google/gemini-2.0-flash-001', label: 'Gemini 2.0 Flash' },
-      { value: 'meta-llama/llama-3.3-70b-instruct', label: 'Llama 3.3 70B' },
-      { value: 'openai/gpt-4o', label: 'GPT-4o' },
-      { value: 'deepseek/deepseek-chat', label: 'DeepSeek V3 ⭐ Gratuito' },
-    ]},
-    { value: 'zhipu', label: 'Zhipu AI (智谱/GLM)', models: [
-      { value: 'glm-4-flash', label: 'GLM-4 Flash ⭐ Rápido y gratuito' },
-      { value: 'glm-4-plus', label: 'GLM-4 Plus (Mejor razonamiento)' },
-      { value: 'glm-4-air', label: 'GLM-4 Air (Balanceado)' },
-      { value: 'glm-4-long', label: 'GLM-4 Long (Contexto largo)' },
-    ]},
-    { value: 'ollama', label: 'Ollama (Self-hosted)', models: [
+    { value: 'ollama', label: 'Ollama Cloud ⭐', models: [
+      { value: 'qwen3.5:397b', label: 'Qwen3.5 397B ⭐ Recomendado' },
+      { value: 'qwen3-next:80b', label: 'Qwen3 Next 80B' },
+      { value: 'deepseek-v3.2', label: 'DeepSeek V3.2' },
       { value: 'llama3.3:70b', label: 'Llama 3.3 70B' },
-      { value: 'qwen2.5:72b', label: 'Qwen 2.5 72B' },
+      { value: 'gemma3:27b', label: 'Gemma 3 27B' },
       { value: 'mistral:7b', label: 'Mistral 7B' },
     ]},
     { value: 'custom', label: 'Personalizado (OpenAI-compatible)', models: [] },

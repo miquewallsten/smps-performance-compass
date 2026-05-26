@@ -144,7 +144,7 @@ export async function seed() {
       const saUser2 = await tx.get(conn, 'SELECT id FROM users WHERE email = ?', [SUPERADMIN_EMAIL]) as { id: string } | undefined;
       await tx.run(conn,
         `INSERT INTO copilot_config (id, model, api_provider, api_base_url, api_key, can_manage_users, can_manage_evaluations, can_manage_vacations, can_manage_announcements, can_manage_periods, can_manage_system, can_view_reports, max_tokens, temperature)
-         VALUES (1, 'llama-3.3-70b-versatile', 'groq', NULL, NULL, 1, 1, 1, 1, 1, 1, 1, 2048, 0.3)`);
+         VALUES (1, 'qwen3:235b', 'ollama', NULL, NULL, 1, 1, 1, 1, 1, 1, 1, 4096, 0.3)`);
       console.log('  ✓ Copilot config seeded');
     }
 

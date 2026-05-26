@@ -149,7 +149,6 @@ export interface User {
   isDummy?: boolean;
   createdBy?: string;
   isManagingPartner?: boolean;
-  isPrimaryAdmin?: boolean;
 }
 
 

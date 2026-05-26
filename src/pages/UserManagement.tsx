@@ -134,6 +134,14 @@ export default function UserManagement() {
         toast.error(`Solo puede haber un Socio Administrador. Actualmente es ${currentMP.name}.`);
         return;
       }
+      // If promoting to Socio Administrador, they also become Admin — check max 2 admins
+      if (!user.isAdmin) {
+        const adminCount = users.filter(u => u.isAdmin && !u.isSuperUser).length;
+        if (adminCount >= 2) {
+          toast.error('Máximo 2 Administradores permitidos. Quite permisos a otro primero.');
+          return;
+        }
+      }
     }
     updateUserRoleMut.mutate(
       { id: userId, isManagingPartner: makeMP, ...(makeMP ? { isAdmin: true } : {}) },

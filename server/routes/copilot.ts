@@ -3,7 +3,6 @@ import { v4 as uuidv4 } from 'uuid';
 import multer from 'multer';
 import * as XLSX from 'xlsx';
 import { db } from '../db/connection.js';
-import { createHmac } from 'crypto';
 import { authMiddleware } from '../middleware/auth.js';
 import { requireAdmin } from '../middleware/rbac.js';
 import { hashPassword } from '../auth/security.js';
@@ -33,29 +32,7 @@ router.use(async (_req: Request, res: Response, next: NextFunction) => {
   }
 });
 
-// ─── LLM Provider Endpoints ────────────────────────────────────────────────────
-// ─── Zhipu AI JWT Generation ────────────────────────────────────────────────
-function generateZhipuJWT(apiKey: string): string {
-  const [id, secret] = apiKey.split('.');
-  const now = Math.floor(Date.now() / 1000);
-  const header = Buffer.from(JSON.stringify({ alg: 'HS256', sign_type: 'SIGN' })).toString('base64url');
-  const payload = Buffer.from(JSON.stringify({ api_key: id, exp: now + 3600, timestamp: now })).toString('base64url');
-  const signature = createHmac('sha256', secret).update(`${header}.${payload}`).digest('base64url');
-  return `${header}.${payload}.${signature}`;
-}
-
-function getApiEndpoint(provider: string, baseUrl?: string): string {
-  switch (provider) {
-    case 'groq': return 'https://api.groq.com/openai/v1/chat/completions';
-    case 'openai': return 'https://api.openai.com/v1/chat/completions';
-    case 'anthropic': return baseUrl || 'https://api.anthropic.com/v1/messages';
-    case 'openrouter': return 'https://openrouter.ai/api/v1/chat/completions';
-    case 'zhipu': return 'https://open.bigmodel.cn/api/paas/v4/chat/completions';
-    case 'ollama': return baseUrl || 'http://localhost:11434/v1/chat/completions';
-    case 'custom': return baseUrl || 'https://api.groq.com/openai/v1/chat/completions';
-    default: return 'https://api.groq.com/openai/v1/chat/completions';
-  }
-}
+// ─── LLM Configuration ──────────────────────────────────────────────────────
 
 interface Tool {
   name: string;
@@ -639,7 +616,7 @@ router.get('/config', async (_req: Request, res: Response) => {
   try {
     let cfg = await db.get('SELECT * FROM copilot_config WHERE id=1') as Record<string, unknown> | undefined;
     if (!cfg) {
-      await db.run("INSERT INTO copilot_config (id,model,api_provider,api_base_url,api_key,can_manage_users,can_manage_evaluations,can_manage_vacations,can_manage_announcements,can_manage_periods,can_manage_system,can_view_reports,max_tokens,temperature) VALUES(1,'llama-3.3-70b-versatile','groq',NULL,NULL,1,1,1,1,1,1,1,4096,0.3)");
+      await db.run("INSERT INTO copilot_config (id,model,api_provider,api_base_url,api_key,can_manage_users,can_manage_evaluations,can_manage_vacations,can_manage_announcements,can_manage_periods,can_manage_system,can_view_reports,max_tokens,temperature) VALUES(1,'qwen3.5:397b','ollama',NULL,NULL,1,1,1,1,1,1,1,4096,0.3)");
       cfg = await db.get('SELECT * FROM copilot_config WHERE id=1') as Record<string, unknown>;
     }
     if (cfg?.api_key && typeof cfg.api_key === 'string' && cfg.api_key.length > 8) {
@@ -706,7 +683,7 @@ router.put('/config', async (req: Request, res: Response) => {
     const current = await db.get('SELECT api_key FROM copilot_config WHERE id=1') as any;
     const apiKey = (api_key && !api_key.includes('••••')) ? api_key : current?.api_key;
     await db.run('UPDATE copilot_config SET model=?,api_provider=?,api_base_url=?,api_key=?,can_manage_users=?,can_manage_evaluations=?,can_manage_vacations=?,can_manage_announcements=?,can_manage_periods=?,can_manage_system=?,can_view_reports=?,max_tokens=?,temperature=? WHERE id=1',
-      [model || 'llama-3.3-70b-versatile', api_provider || 'groq', api_base_url || null, apiKey, can_manage_users ? 1 : 0, can_manage_evaluations ? 1 : 0, can_manage_vacations ? 1 : 0, can_manage_announcements ? 1 : 0, can_manage_periods ? 1 : 0, can_manage_system ? 1 : 0, can_view_reports ? 1 : 0, max_tokens || 4096, temperature ?? 0.3]);
+      [model || 'qwen3.5:397b', api_provider || 'ollama', api_base_url || null, apiKey, can_manage_users ? 1 : 0, can_manage_evaluations ? 1 : 0, can_manage_vacations ? 1 : 0, can_manage_announcements ? 1 : 0, can_manage_periods ? 1 : 0, can_manage_system ? 1 : 0, can_view_reports ? 1 : 0, max_tokens || 4096, temperature ?? 0.3]);
     const cfg = await db.get('SELECT * FROM copilot_config WHERE id=1') as Record<string, unknown>;
     if (cfg?.api_key && typeof cfg.api_key === 'string' && cfg.api_key.length > 8) {
       return res.json({ ...cfg, api_key: (cfg.api_key as string).slice(0, 4) + '••••' + (cfg.api_key as string).slice(-4) });
@@ -753,15 +730,13 @@ router.post('/chat', upload.single('file'), async (req: Request, res: Response) 
     if (!fullMessage && !fileContent) return res.status(400).json({ error: 'Mensaje vacío' });
 
     const cfg = await db.get('SELECT * FROM copilot_config WHERE id=1') as Record<string, unknown>;
-    const apiKey = (cfg.api_key as string) || process.env.GROQ_API_KEY;
-    const provider = (cfg.api_provider as string) || 'groq';
-    const endpoint = getApiEndpoint(provider, cfg.api_base_url as string);
+    const apiKey = (cfg.api_key as string) || process.env.OLLAMA_API_KEY;
+    const baseUrl = (cfg.api_base_url as string) || process.env.OLLAMA_BASE_URL || 'https://ollama.com/v1';
+    const endpoint = `${baseUrl}/chat/completions`;
 
     if (!apiKey) return res.status(403).json({ error: 'API key no configurada. Configúrala en Ajustes del Copiloto.' });
 
-    const authToken = provider === 'zhipu' ? generateZhipuJWT(apiKey) : apiKey;
-    const headers: Record<string, string> = { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' };
-    if (provider === 'openrouter') headers['HTTP-Referer'] = 'https://bowdot.online';
+    const headers: Record<string, string> = { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' };
 
     const userName = (req.user as any)?.name || 'Admin';
     let convId = conversationId as string | undefined;
@@ -788,7 +763,7 @@ router.post('/chat', upload.single('file'), async (req: Request, res: Response) 
     let toolResultsData: string | null = null;
 
     const callLLM = async (msgs: Record<string, unknown>[]): Promise<globalThis.Response> => {
-      const model = cfg.model || 'llama-3.3-70b-versatile';
+      const model = cfg.model || process.env.OLLAMA_MODEL || 'qwen3.5:397b';
       const body = JSON.stringify({
         model, messages: msgs,
         temperature: Number(cfg.temperature) || 0.3,

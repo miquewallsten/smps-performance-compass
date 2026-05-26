@@ -113208,8 +113208,8 @@ async function migrate() {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
     `CREATE TABLE IF NOT EXISTS copilot_config (
       id INT PRIMARY KEY DEFAULT 1,
-      model VARCHAR(255) NOT NULL DEFAULT 'llama-3.3-70b-versatile',
-      api_provider VARCHAR(50) NOT NULL DEFAULT 'groq',
+      model VARCHAR(255) NOT NULL DEFAULT 'qwen3.5:397b',
+      api_provider VARCHAR(50) NOT NULL DEFAULT 'ollama',
       api_base_url VARCHAR(500) DEFAULT NULL,
       api_key TEXT,
       can_manage_users TINYINT(1) NOT NULL DEFAULT 1,
@@ -115194,7 +115194,7 @@ async function seed() {
       await tx.run(
         conn,
         `INSERT INTO copilot_config (id, model, api_provider, api_base_url, api_key, can_manage_users, can_manage_evaluations, can_manage_vacations, can_manage_announcements, can_manage_periods, can_manage_system, can_view_reports, max_tokens, temperature)
-         VALUES (1, 'llama-3.3-70b-versatile', 'groq', NULL, NULL, 1, 1, 1, 1, 1, 1, 1, 2048, 0.3)`
+         VALUES (1, 'qwen3:235b', 'ollama', NULL, NULL, 1, 1, 1, 1, 1, 1, 1, 4096, 0.3)`
       );
       console.log("  \u2713 Copilot config seeded");
     }
@@ -115805,6 +115805,13 @@ router2.patch("/:id/role", authMiddleware, requireAdmin, async (req, res) => {
       if (currentMPs.length >= 1) {
         const mpName = currentMPs[0]?.name || "otro usuario";
         return res.status(409).json({ error: `Solo puede haber un Socio Administrador. Actualmente es ${mpName}.` });
+      }
+      // If user is not already admin, check max 2 admins constraint (Socio Administrador also gets Admin)
+      if (!(user.is_admin === 1 || user.is_admin === true)) {
+        const currentAdmins = await db.all("SELECT id FROM users WHERE is_admin = 1 AND is_super_user = 0 AND id != ?", [id]);
+        if (currentAdmins.length >= 2) {
+          return res.status(409).json({ error: "M\u00E1ximo 2 Usuario Administrador permitidos. Quite permisos a otro primero." });
+        }
       }
       updates.push("is_managing_partner = ?");
       values.push(1);
@@ -117116,7 +117123,6 @@ var periods_default = router12;
 var import_express13 = __toESM(require_express2(), 1);
 var import_multer = __toESM(require("multer"), 1);
 var XLSX = __toESM(require_xlsx(), 1);
-var import_crypto3 = require("crypto");
 var router13 = (0, import_express13.Router)();
 var upload = (0, import_multer.default)({
   storage: import_multer.default.memoryStorage(),
@@ -117139,34 +117145,6 @@ router13.use(async (_req, res, next) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-function generateZhipuJWT(apiKey) {
-  const [id, secret] = apiKey.split(".");
-  const now = Math.floor(Date.now() / 1e3);
-  const header = Buffer.from(JSON.stringify({ alg: "HS256", sign_type: "SIGN" })).toString("base64url");
-  const payload = Buffer.from(JSON.stringify({ api_key: id, exp: now + 3600, timestamp: now })).toString("base64url");
-  const signature = (0, import_crypto3.createHmac)("sha256", secret).update(`${header}.${payload}`).digest("base64url");
-  return `${header}.${payload}.${signature}`;
-}
-function getApiEndpoint(provider, baseUrl) {
-  switch (provider) {
-    case "groq":
-      return "https://api.groq.com/openai/v1/chat/completions";
-    case "openai":
-      return "https://api.openai.com/v1/chat/completions";
-    case "anthropic":
-      return baseUrl || "https://api.anthropic.com/v1/messages";
-    case "openrouter":
-      return "https://openrouter.ai/api/v1/chat/completions";
-    case "zhipu":
-      return "https://open.bigmodel.cn/api/paas/v4/chat/completions";
-    case "ollama":
-      return baseUrl || "http://localhost:11434/v1/chat/completions";
-    case "custom":
-      return baseUrl || "https://api.groq.com/openai/v1/chat/completions";
-    default:
-      return "https://api.groq.com/openai/v1/chat/completions";
-  }
-}
 function parseFile(buf, name) {
   const ext = name.toLowerCase().slice(name.lastIndexOf("."));
   try {
@@ -117818,7 +117796,7 @@ router13.get("/config", async (_req, res) => {
   try {
     let cfg = await db.get("SELECT * FROM copilot_config WHERE id=1");
     if (!cfg) {
-      await db.run("INSERT INTO copilot_config (id,model,api_provider,api_base_url,api_key,can_manage_users,can_manage_evaluations,can_manage_vacations,can_manage_announcements,can_manage_periods,can_manage_system,can_view_reports,max_tokens,temperature) VALUES(1,'llama-3.3-70b-versatile','groq',NULL,NULL,1,1,1,1,1,1,1,4096,0.3)");
+      await db.run("INSERT INTO copilot_config (id,model,api_provider,api_base_url,api_key,can_manage_users,can_manage_evaluations,can_manage_vacations,can_manage_announcements,can_manage_periods,can_manage_system,can_view_reports,max_tokens,temperature) VALUES(1,'qwen3.5:397b','ollama',NULL,NULL,1,1,1,1,1,1,1,4096,0.3)");
       cfg = await db.get("SELECT * FROM copilot_config WHERE id=1");
     }
     if (cfg?.api_key && typeof cfg.api_key === "string" && cfg.api_key.length > 8) {
@@ -117889,7 +117867,7 @@ router13.put("/config", async (req, res) => {
     const apiKey = api_key && !api_key.includes("\u2022\u2022\u2022\u2022") ? api_key : current?.api_key;
     await db.run(
       "UPDATE copilot_config SET model=?,api_provider=?,api_base_url=?,api_key=?,can_manage_users=?,can_manage_evaluations=?,can_manage_vacations=?,can_manage_announcements=?,can_manage_periods=?,can_manage_system=?,can_view_reports=?,max_tokens=?,temperature=? WHERE id=1",
-      [model || "llama-3.3-70b-versatile", api_provider || "groq", api_base_url || null, apiKey, can_manage_users ? 1 : 0, can_manage_evaluations ? 1 : 0, can_manage_vacations ? 1 : 0, can_manage_announcements ? 1 : 0, can_manage_periods ? 1 : 0, can_manage_system ? 1 : 0, can_view_reports ? 1 : 0, max_tokens || 4096, temperature ?? 0.3]
+      [model || "qwen3.5:397b", api_provider || "ollama", api_base_url || null, apiKey, can_manage_users ? 1 : 0, can_manage_evaluations ? 1 : 0, can_manage_vacations ? 1 : 0, can_manage_announcements ? 1 : 0, can_manage_periods ? 1 : 0, can_manage_system ? 1 : 0, can_view_reports ? 1 : 0, max_tokens || 4096, temperature ?? 0.3]
     );
     const cfg = await db.get("SELECT * FROM copilot_config WHERE id=1");
     if (cfg?.api_key && typeof cfg.api_key === "string" && cfg.api_key.length > 8) {
@@ -117941,13 +117919,11 @@ router13.post("/chat", upload.single("file"), async (req, res) => {
     const fileName = req.file?.originalname || "";
     if (!fullMessage && !fileContent) return res.status(400).json({ error: "Mensaje vac\xEDo" });
     const cfg = await db.get("SELECT * FROM copilot_config WHERE id=1");
-    const apiKey = cfg.api_key || process.env.GROQ_API_KEY;
-    const provider = cfg.api_provider || "groq";
-    const endpoint = getApiEndpoint(provider, cfg.api_base_url);
+    const apiKey = cfg.api_key || process.env.OLLAMA_API_KEY;
+    const baseUrl = cfg.api_base_url || process.env.OLLAMA_BASE_URL || "https://ollama.com/v1";
+    const endpoint = `${baseUrl}/chat/completions`;
     if (!apiKey) return res.status(403).json({ error: "API key no configurada. Config\xFArala en Ajustes del Copiloto." });
-    const authToken = provider === "zhipu" ? generateZhipuJWT(apiKey) : apiKey;
-    const headers = { "Authorization": `Bearer ${authToken}`, "Content-Type": "application/json" };
-    if (provider === "openrouter") headers["HTTP-Referer"] = "https://bowdot.online";
+    const headers = { "Authorization": `Bearer ${apiKey}`, "Content-Type": "application/json" };
     const userName = req.user?.name || "Admin";
     let convId = conversationId;
     if (!convId) {
@@ -117970,7 +117946,7 @@ ${fileContent}` : fullMessage, (/* @__PURE__ */ new Date()).toISOString()]);
     let toolCallsData = null;
     let toolResultsData = null;
     const callLLM = async (msgs) => {
-      const model = cfg.model || "llama-3.3-70b-versatile";
+      const model = cfg.model || process.env.OLLAMA_MODEL || "qwen3.5:397b";
       const body = JSON.stringify({
         model,
         messages: msgs,
