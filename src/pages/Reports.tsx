@@ -134,7 +134,7 @@ export default function Reports() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="smps-surface-elevated">
+        <div className="smps-surface-card">
           <h3 className="smps-section-title font-display text-base font-semibold mb-3">Evaluaciones Completadas (Todas las Etapas)</h3>
           <ResponsiveContainer width="100%" height={250}>
             <PieChart>
@@ -148,7 +148,7 @@ export default function Reports() {
           <p className="text-center text-sm text-muted-foreground mt-2">{fullyCompleted} de {totalUsers} empleados han completado todas las etapas</p>
         </div>
 
-        <div className="smps-surface-elevated">
+        <div className="smps-surface-card">
           <h3 className="smps-section-title font-display text-base font-semibold mb-3">Realización por Etapa</h3>
           <ResponsiveContainer width="100%" height={250}>
             <BarChart data={stageData}>
@@ -162,7 +162,7 @@ export default function Reports() {
           </ResponsiveContainer>
         </div>
 
-        <div className="smps-surface-elevated">
+        <div className="smps-surface-card">
           <h3 className="smps-section-title font-display text-base font-semibold mb-3">Autoevaluaciones por Nivel</h3>
           <ResponsiveContainer width="100%" height={250}>
             <BarChart data={selfByPosition}>
@@ -176,7 +176,7 @@ export default function Reports() {
           </ResponsiveContainer>
         </div>
 
-        <div className="smps-surface-elevated">
+        <div className="smps-surface-card">
           <h3 className="smps-section-title font-display text-base font-semibold mb-3">Evaluaciones de Evaluadores por Nivel</h3>
           <ResponsiveContainer width="100%" height={250}>
             <BarChart data={supervisorByPosition}>
@@ -191,7 +191,7 @@ export default function Reports() {
         </div>
 
         {avgByPosition.length > 0 && (
-          <div className="smps-surface-elevated lg:col-span-2">
+          <div className="smps-surface-card lg:col-span-2">
             <h3 className="smps-section-title font-display text-base font-semibold mb-3">Promedio por Posición</h3>
             <ResponsiveContainer width="100%" height={250}>
               <BarChart data={avgByPosition}>

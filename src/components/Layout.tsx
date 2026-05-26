@@ -30,7 +30,10 @@ export default function Layout() {
   const [collapsed, setCollapsed] = useState(false);
   const [evalGroupOpen, setEvalGroupOpen] = useState(true);
 
-  useEffect(() => { if (!currentUser) navigate('/login'); }, [currentUser, navigate]);
+  useEffect(() => {
+    if (!currentUser) navigate('/login');
+  }, [currentUser, navigate]);
+
   if (!currentUser) return null;
 
   if (systemStatus?.status === 'inactive' && !currentUser.isSuperUser) {
@@ -40,7 +43,9 @@ export default function Layout() {
           <Shield className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
           <h1 className="font-display text-xl font-bold mb-2">Sistema Inactivo</h1>
           <p className="text-sm text-muted-foreground mb-4">El acceso al sistema se encuentra temporalmente suspendido. Contacte al administrador para más información.</p>
-          <button onClick={() => { logout(); navigate('/login'); }} className="smps-btn px-5 py-2 bg-accent text-accent-foreground text-sm hover:opacity-90">Cerrar Sesión</button>
+          <button onClick={() => { logout(); navigate('/login'); }} className="px-5 py-2 rounded-md bg-accent text-accent-foreground text-sm font-medium hover:opacity-90 transition-all duration-150 active:scale-[0.98]">
+            Cerrar Sesión
+          </button>
         </div>
       </div>
     );
@@ -50,6 +55,7 @@ export default function Layout() {
   const isSuperUser = currentUser.isSuperUser;
   const isSocio = currentUser.position === 'socio';
   const isAdminOrSuper = isAdmin || isSuperUser;
+
   const hasTeam = assignments.some(a => a.supervisorId === currentUser.id && a.period === CURRENT_PERIOD);
   const myLevel = POSITION_LEVELS[currentUser.position];
 
@@ -58,19 +64,33 @@ export default function Layout() {
     const myEvaluados = assignments.filter(a => a.supervisorId === currentUser.id && a.period === CURRENT_PERIOD).map(a => a.employeeId);
     const selfDone = evaluations.some(e => e.evaluatedId === currentUser.id && e.type === 'self' && e.period === CURRENT_PERIOD);
     let count = selfDone ? 0 : 1;
-    myEvaluados.forEach(eid => { const has = evaluations.some(e => e.evaluatedId === eid && e.type === 'supervisor' && e.period === CURRENT_PERIOD); if (!has) count++; });
+    myEvaluados.forEach(eid => {
+      const hasSupervisorEval = evaluations.some(e => e.evaluatedId === eid && e.type === 'supervisor' && e.period === CURRENT_PERIOD);
+      if (!hasSupervisorEval) count++;
+    });
     return count;
   })();
 
   const unreadAnnouncementCount = (() => {
     if (!modules.communications) return 0;
-    return announcements.filter(a => { if (a.archived) return false; if (a.readBy.includes(currentUser.id)) return false; if (a.audience === 'all') return true; if (a.audience === myLevel) return true; if (isAdminOrSuper || isSocio) return true; return false; }).length;
+    return announcements.filter(a => {
+      if (a.archived) return false;
+      if (a.readBy.includes(currentUser.id)) return false;
+      if (a.audience === 'all') return true;
+      if (a.audience === myLevel) return true;
+      if (isAdminOrSuper || isSocio) return true;
+      return false;
+    }).length;
   })();
 
   const pendingVacationCount = (() => {
     if (!modules.vacations) return 0;
     const myEvaluados = assignments.filter(a => a.supervisorId === currentUser.id && a.period === CURRENT_PERIOD).map(a => a.employeeId);
-    return vacationRequests.filter(r => { if (r.status !== 'pending') return false; if (isAdmin || isSuperUser) return true; return myEvaluados.includes(r.userId); }).length;
+    return vacationRequests.filter(r => {
+      if (r.status !== 'pending') return false;
+      if (isAdmin || isSuperUser) return true;
+      return myEvaluados.includes(r.userId);
+    }).length;
   })();
 
   const showEvalModule = modules.evaluations || isSuperUser;
@@ -80,36 +100,33 @@ export default function Layout() {
   const evalItems = [
     { to: '/dashboard', icon: LayoutDashboard, label: 'Panel', show: true },
     { to: '/my-profile', icon: UserIcon, label: 'Mis Eval.', show: true },
-    { to: '/self-evaluation', icon: ClipboardCheck, label: 'Mi Eval.', show: true },
+    { to: '/self-evaluation', icon: ClipboardCheck, label: 'Mi Eval.', show: true, badge: pendingEvalCount > 0 ? 1 : 0 },
     { to: '/my-action-plan', icon: FileText, label: 'Plan Acción', show: true },
-    { to: '/personal-objectives', icon: Target, label: 'Objetivos', show: true },
-    { to: '/evaluations', icon: UserCheck, label: 'Evaluar Equipo', show: hasTeam, badge: pendingEvalCount },
-    { to: '/org-chart', icon: Map, label: 'Organigrama', show: true },
+    { to: '/evaluations', icon: ClipboardList, label: 'Evaluar', show: hasTeam || isAdminOrSuper, badge: pendingEvalCount > 1 ? pendingEvalCount - (evaluations.some(e => e.evaluatedId === currentUser.id && e.type === 'self' && e.period === CURRENT_PERIOD) ? 0 : 0) : 0 },
   ];
 
   const otherItems = [
-    ...(showCommModule ? [{ to: '/communications', icon: Megaphone, label: 'Comunicados', show: true, badge: unreadAnnouncementCount }] : []),
-    ...(showVacModule ? [{ to: '/vacations', icon: Palmtree, label: 'Vacaciones', show: true, badge: pendingVacationCount }] : []),
     { to: '/reports', icon: BarChart3, label: 'Reportes', show: isAdminOrSuper },
-    { to: '/period-config', icon: Calendar, label: 'Config Periodo', show: isAdminOrSuper },
-    { to: '/evaluation-templates', icon: ClipboardList, label: 'Plantillas', show: isSuperUser },
+    { to: '/orgchart', icon: Map, label: 'Organigrama', show: isAdminOrSuper },
+    { to: '/users', icon: Users, label: 'Usuarios', show: isAdminOrSuper },
+    { to: '/assign', icon: UserCheck, label: 'Asignar', show: isAdminOrSuper },
+    { to: '/evaluation-templates', icon: BookOpen, label: 'Plantillas', show: isSuperUser },
     { to: '/question-library', icon: BookOpen, label: 'Preguntas', show: isSuperUser },
-    { to: '/user-management', icon: Users, label: 'Usuarios', show: isAdminOrSuper },
-    { to: '/assign-supervisors', icon: UserCheck, label: 'Asignar Sups', show: isAdminOrSuper },
-    { to: '/access-control', icon: Shield, label: 'Accesos', show: isSuperUser },
-    ...(modules.copilot ? [{ to: '/copilot', icon: Bot, label: 'Copiloto IA', show: isAdminOrSuper }] : []),
-    { to: '/setup', icon: Settings, label: 'Configuración', show: isSuperUser },
-    { to: '/settings', icon: Settings, label: 'Ajustes', show: true },
+    { to: '/personal-objectives', icon: Target, label: 'Objetivos', show: showEvalModule && (isAdminOrSuper || hasTeam) },
+    { to: '/communications', icon: Megaphone, label: 'Comunicación', show: showCommModule, badge: unreadAnnouncementCount },
+    { to: '/vacations', icon: Palmtree, label: 'Vacaciones', show: showVacModule, badge: pendingVacationCount },
+    { to: '/period-config', icon: Calendar, label: 'Periodos', show: isSuperUser },
+    { to: '/copilot', icon: Bot, label: 'Copilot', show: modules.copilot },
+    { to: '/settings', icon: Settings, label: 'Config', show: true },
   ];
 
-  const renderNavItem = (item: typeof evalItems[0]) => {
-    if (!item.show) return null;
+  const renderNavItem = (item: { to: string; icon: React.ElementType; label: string; badge?: number }) => {
     const isActive = location.pathname === item.to;
     return (
-      <NavLink to={item.to} className={`flex items-center gap-3 px-3 py-1.5 rounded-md text-sm transition-[color,background-color] duration-150 ${isActive ? 'bg-sidebar-accent text-sidebar-primary font-medium' : 'text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent/50'}`}>
+      <NavLink to={item.to} className={`flex items-center gap-3 px-3 py-1.5 rounded-md text-sm transition-all duration-150 ${isActive ? 'bg-sidebar-accent text-sidebar-primary font-medium' : 'text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent/50'}`}>
         <item.icon className="h-4 w-4 flex-shrink-0" />
         {!collapsed && <span className="truncate">{item.label}</span>}
-        {!collapsed && <Badge count={item.badge} />}
+        {!collapsed && item.badge && item.badge > 0 && <Badge count={item.badge} />}
       </NavLink>
     );
   };
@@ -117,7 +134,7 @@ export default function Layout() {
   return (
     <div className="min-h-screen bg-background">
       <header className="fixed top-0 left-0 right-0 z-50 h-14 bg-primary text-primary-foreground flex items-center px-4">
-        <button onClick={() => setCollapsed(!collapsed)} className="p-2 rounded-md hover:bg-sidebar-accent transition-[background-color] duration-150 mr-3 md:block active:scale-95">
+        <button onClick={() => setCollapsed(!collapsed)} className="p-2 rounded-md hover:bg-sidebar-accent transition-colors mr-3 md:block">
           <Menu className="h-5 w-5" />
         </button>
         <div className="flex items-center gap-2">
@@ -130,36 +147,46 @@ export default function Layout() {
         </div>
         <div className="ml-auto flex items-center gap-2">
           <span className="text-primary-foreground/60 text-xs hidden lg:block">{currentUser.name}</span>
-          <a href="/help" target="_blank" rel="noopener noreferrer" className="p-1.5 rounded-md text-primary-foreground/60 hover:text-primary-foreground hover:bg-sidebar-accent/50 transition-[color,background-color] duration-150 active:scale-95" title="Centro de ayuda">
+          <a href="/help" target="_blank" rel="noopener noreferrer" className="p-1.5 rounded-md text-primary-foreground/60 hover:text-primary-foreground hover:bg-sidebar-accent/50 transition-colors" title="Centro de ayuda">
             <HelpCircle className="h-4 w-4" />
           </a>
-          <button onClick={() => { logout(); navigate('/login'); }} className="p-1.5 rounded-md text-primary-foreground/60 hover:text-primary-foreground hover:bg-sidebar-accent/50 transition-[color,background-color] duration-150 active:scale-95" title="Cerrar sesión">
+          <button onClick={() => { logout(); navigate('/login'); }} className="p-1.5 rounded-md text-primary-foreground/60 hover:text-primary-foreground hover:bg-sidebar-accent/50 transition-colors" title="Cerrar sesión">
             <LogOut className="h-4 w-4" />
           </button>
         </div>
       </header>
 
       <div className="flex flex-1 pt-14">
-        {/* Emil: specific transition-[width] not transition-all */}
-        <aside className={`${collapsed ? 'w-14' : 'w-52'} bg-sidebar border-r border-sidebar-border transition-[width] duration-200 ease-out flex-shrink-0 hidden md:flex flex-col fixed top-14 left-0 bottom-0 z-40`}>
+        <aside className={`${collapsed ? 'w-14' : 'w-52'} bg-sidebar border-r border-sidebar-border transition-all duration-200 flex-shrink-0 hidden md:flex flex-col fixed top-14 left-0 bottom-0 z-40`}>
           <nav className="flex-1 py-3 px-2 space-y-0.5 overflow-y-auto">
             {showEvalModule && (
               <>
                 {!collapsed && (
-                  <button onClick={() => setEvalGroupOpen(!evalGroupOpen)} className="flex items-center gap-2 px-3 py-1.5 text-[11px] uppercase tracking-widest text-sidebar-foreground/40 font-semibold w-full hover:text-sidebar-foreground/60 transition-[color] duration-150">
+                  <button
+                    onClick={() => setEvalGroupOpen(!evalGroupOpen)}
+                    className="flex items-center gap-2 px-3 py-1.5 text-[11px] uppercase tracking-widest text-sidebar-foreground/40 font-semibold w-full hover:text-sidebar-foreground/60 transition-colors"
+                  >
                     <span>Evaluación</span>
                     {pendingEvalCount > 0 && <Badge count={pendingEvalCount} />}
-                    <ChevronDown className={`h-3 w-3 ml-auto transition-transform duration-150 ease-out ${evalGroupOpen ? '' : '-rotate-90'}`} />
+                    <ChevronDown className={`h-3 w-3 ml-auto transition-transform duration-200 ${evalGroupOpen ? '' : '-rotate-90'}`} />
                   </button>
                 )}
-                {(evalGroupOpen || collapsed) && evalItems.map((item, i) => <div key={item.to} className={`smps-fade-up smps-delay-${Math.min(i + 1, 8)}`}>{renderNavItem(item)}</div>)}
+                {(evalGroupOpen || collapsed) && evalItems.map(item => (
+                  <div key={item.to} className="relative">
+                    {renderNavItem(item)}
+                  </div>
+                ))}
                 {!collapsed && <div className="border-b border-sidebar-border my-1.5" />}
               </>
             )}
-            {otherItems.map((item, i) => <div key={item.to} className={`smps-fade-up smps-delay-${Math.min(i + 1, 8)}`}>{renderNavItem(item)}</div>)}
+            {otherItems.map(item => (
+              <div key={item.to} className="relative">
+                {renderNavItem(item)}
+              </div>
+            ))}
           </nav>
           <div className="p-2 border-t border-sidebar-border">
-            <button onClick={() => setCollapsed(!collapsed)} className="w-full flex items-center justify-center py-1.5 text-sidebar-foreground/40 hover:text-sidebar-foreground transition-[color] duration-150 active:scale-95">
+            <button onClick={() => setCollapsed(!collapsed)} className="w-full flex items-center justify-center py-1.5 text-sidebar-foreground/40 hover:text-sidebar-foreground transition-colors">
               {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
             </button>
             {!collapsed && <p className="text-[10px] text-sidebar-foreground/25 text-center mt-0.5">Bowdot</p>}
@@ -174,14 +201,14 @@ export default function Layout() {
             { to: '/vacations', icon: Palmtree, label: 'Vacaciones' },
             { to: '/settings', icon: Settings, label: 'Más' },
           ].map(item => (
-            <NavLink key={item.to} to={item.to} className="flex flex-col items-center py-1 px-2 text-sidebar-foreground/50 transition-[color] duration-150" activeClassName="text-sidebar-primary">
+            <NavLink key={item.to} to={item.to} className="flex flex-col items-center py-1 px-2 text-sidebar-foreground/50 transition-colors" activeClassName="text-sidebar-primary">
               <item.icon className="h-5 w-5" />
               <span className="text-[10px] mt-0.5 leading-tight">{item.label}</span>
             </NavLink>
           ))}
         </div>
 
-        <main className={`flex-1 overflow-auto pb-16 md:pb-0 ${collapsed ? 'md:ml-14' : 'md:ml-52'} transition-[margin] duration-200 ease-out`}>
+        <main className={`flex-1 overflow-auto pb-16 md:pb-0 ${collapsed ? 'md:ml-14' : 'md:ml-52'} transition-all duration-200`}>
           <div className="p-4 md:p-5 max-w-6xl mx-auto smps-fade-in">
             <PeriodEndAlert />
             <Outlet />

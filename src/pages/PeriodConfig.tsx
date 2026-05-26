@@ -109,7 +109,7 @@ export default function PeriodConfigPage() {
         </select>
       </div>
 
-      <div className="bg-card rounded-xl border p-6">
+      <div className="smps-surface-elevated">
         <div className="flex items-center justify-between mb-5">
           <div className="flex items-center gap-3">
             <Calendar className="h-5 w-5 text-accent" />
@@ -123,7 +123,7 @@ export default function PeriodConfigPage() {
 
         <div className="space-y-4">
           {stages.map(stage => (
-            <div key={stage.label} className="pl-5 smps-accent-bar" style={{"--bar-color": stage.color} as React.CSSProperties}>
+            <div key={stage.label} className="pl-5 smps-accent-bar" style={{ "--bar-color": stage.color } as React.CSSProperties}>
               <p className="text-sm font-semibold mb-2">{stage.label}</p>
               <div className="grid grid-cols-2 gap-3">
                 <div>

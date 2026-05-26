@@ -196,23 +196,23 @@ export default function Evaluations() {
                           const isNA = naQuestions[q.id];
                           const isNE = noElementsQuestions[q.id];
                           return (
-                            <div key={q.id} className="smps-surface-card">
+                            <div key={q.id} className="bg-card rounded-lg border p-4">
                               <div className="flex items-start justify-between mb-3">
                                 <p className="text-sm font-medium text-foreground pr-4">{q.text}</p>
                                 <span className="smps-badge bg-muted text-muted-foreground whitespace-nowrap">Peso: {q.weight}%</span>
                               </div>
                               <div className="flex gap-2 flex-wrap">
                                 <button onClick={() => { clearQuestion(q.id); setNoElementsQuestions(prev => ({ ...prev, [q.id]: true })); }}
-                                  className={`min-w-[70px] py-2 px-2 rounded-lg text-xs font-medium border transition-[background-color,border-color,color,transform,box-shadow] duration-150 ease-out flex items-center justify-center gap-1 ${isNE ? 'bg-smps-warning/20 text-smps-warning border-smps-warning/30' : 'bg-muted/50 text-muted-foreground border-transparent hover:border-border'}`}>
+                                  className={`min-w-[70px] py-2 px-2 rounded-lg text-xs font-medium border transition-all flex items-center justify-center gap-1 ${isNE ? 'bg-smps-warning/20 text-smps-warning border-smps-warning/30' : 'bg-muted/50 text-muted-foreground border-transparent hover:border-border'}`}>
                                   <MinusCircle className="h-3 w-3" /> Sin Elementos
                                 </button>
                                 <button onClick={() => { clearQuestion(q.id); setNaQuestions(prev => ({ ...prev, [q.id]: true })); }}
-                                  className={`min-w-[70px] py-2 px-2 rounded-lg text-xs font-medium border transition-[background-color,border-color,color,transform,box-shadow] duration-150 ease-out flex items-center justify-center gap-1 ${isNA ? 'bg-muted text-foreground border-foreground/30' : 'bg-muted/50 text-muted-foreground border-transparent hover:border-border'}`}>
+                                  className={`min-w-[70px] py-2 px-2 rounded-lg text-xs font-medium border transition-all flex items-center justify-center gap-1 ${isNA ? 'bg-muted text-foreground border-foreground/30' : 'bg-muted/50 text-muted-foreground border-transparent hover:border-border'}`}>
                                   <Ban className="h-3 w-3" /> No Aplica
                                 </button>
                                 {[1, 2, 3, 4, 5].map(score => (
                                   <button key={score} onClick={() => { clearQuestion(q.id); setResponses(prev => ({ ...prev, [q.id]: score })); }}
-                                    className={`flex-1 min-w-[70px] py-2 px-2 rounded-lg text-xs font-medium border transition-[background-color,border-color,color,transform,box-shadow] duration-150 ease-out ${!isNA && !isNE && responses[q.id] === score ? 'bg-accent text-accent-foreground border-accent' : 'bg-muted/50 text-muted-foreground border-transparent hover:border-border'}`}>
+                                    className={`flex-1 min-w-[70px] py-2 px-2 rounded-lg text-xs font-medium border transition-all ${!isNA && !isNE && responses[q.id] === score ? 'bg-accent text-accent-foreground border-accent' : 'bg-muted/50 text-muted-foreground border-transparent hover:border-border'}`}>
                                     {SCORE_LABELS[score]}
                                   </button>
                                 ))}
@@ -231,7 +231,7 @@ export default function Evaluations() {
           })}
         </div>
 
-        <div className="mt-6 smps-surface-elevated">
+        <div className="mt-6 smps-surface-card">
           <h3 className="smps-section-title font-display text-base font-semibold mb-3">Comentarios <span className="text-accent text-sm font-normal">(requerido)</span></h3>
           <textarea value={comments} onChange={e => setComments(e.target.value)}
             placeholder="Observaciones sobre el desempeño del colaborador..."
@@ -242,7 +242,7 @@ export default function Evaluations() {
         </div>
 
         {(isSocio || isSupervisor(selectedEmployee)) && (
-          <div className="mt-4 smps-surface-elevated border-accent/30">
+          <div className="mt-4 smps-surface-card border-accent/30">
             <h3 className="smps-section-title font-display text-base font-semibold mb-3 text-accent">Comentarios del Evaluador</h3>
             <p className="text-xs text-muted-foreground mb-2">Visible y editable únicamente para socios y evaluadores asignados.</p>
             <textarea value={supervisorComments} onChange={e => setSupervisorComments(e.target.value)}
@@ -263,12 +263,12 @@ export default function Evaluations() {
 
         {showConfirm && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/20 backdrop-blur-sm" onClick={() => setShowConfirm(false)}>
-            <div className="smps-surface-elevated w-full max-w-sm shadow-xl" onClick={e => e.stopPropagation()}>
+            <div className="smps-surface-card w-full max-w-sm shadow-xl" onClick={e => e.stopPropagation()}>
               <h3 className="smps-section-title font-display text-base font-semibold mb-2">Confirmar Envío</h3>
               <p className="text-sm text-muted-foreground mb-4">Una vez enviada la evaluación, <strong>no será posible modificarla</strong>. ¿Desea continuar?</p>
               <div className="flex gap-3">
                 <button onClick={() => setShowConfirm(false)} className="flex-1 py-2 rounded-lg border text-sm font-medium hover:bg-muted transition-colors">Cancelar</button>
-                <button onClick={handleSubmit} className="flex-1 py-2 rounded-md bg-accent text-accent-foreground text-sm font-medium hover:opacity-90 transition-[opacity,transform] duration-150 ease-out active:scale-[0.98]">Confirmar</button>
+                <button onClick={handleSubmit} className="flex-1 py-2 rounded-md bg-accent text-accent-foreground text-sm font-medium hover:opacity-90 transition-all duration-150 active:scale-[0.98]">Confirmar</button>
               </div>
             </div>
           </div>
@@ -425,7 +425,7 @@ export default function Evaluations() {
       {(isAdminOrSocio || viewableUsers.length > 0) && (
         <div className="mt-8">
           <div className="flex items-center justify-between flex-wrap gap-3 mb-4">
-            <h3 className="font-display text-lg font-semibold">Historial de Evaluaciones</h3>
+            <h3 className="smps-section-title font-display text-base font-semibold">Historial de Evaluaciones</h3>
             <div className="flex items-center gap-2 flex-wrap">
               <HierarchyFilters levelFilter={histLevelFilter} setLevelFilter={setHistLevelFilter} positionFilter={histPosFilter} setPositionFilter={setHistPosFilter} />
               <select value={viewPeriod} onChange={e => setViewPeriod(e.target.value)}
@@ -494,7 +494,7 @@ export default function Evaluations() {
         <div className="fixed inset-0 z-50 bg-foreground/20 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => { setActionPlanEmployee(null); setActionPlanContent(''); }}>
           <div className="bg-card rounded-xl border shadow-xl w-full max-w-lg" onClick={e => e.stopPropagation()}>
             <div className="p-4 border-b">
-              <h3 className="font-display text-lg font-semibold flex items-center gap-2">
+              <h3 className="smps-section-title font-display text-base font-semibold flex items-center gap-2">
                 <FileText className="h-5 w-5 text-accent" />
                 Plan de Acción — {users.find(u => u.id === actionPlanEmployee)?.name}
               </h3>

@@ -324,7 +324,7 @@ export default function UserManagement() {
           <p className="text-muted-foreground text-sm mt-1">{visibleUsers.length} usuarios registrados</p>
         </div>
         <div className="flex items-center gap-2">
-          <button onClick={() => setShowAddUser(true)} className="flex items-center gap-2 px-4 py-2.5 rounded-md bg-accent text-accent-foreground text-sm font-medium hover:opacity-90 transition-[opacity,transform] duration-150 ease-out active:scale-[0.98]">
+          <button onClick={() => setShowAddUser(true)} className="flex items-center gap-2 px-4 py-2.5 rounded-md bg-accent text-accent-foreground text-sm font-medium hover:opacity-90 transition-all duration-150 active:scale-[0.98]">
             <Plus className="h-4 w-4" /> Nuevo Usuario
           </button>
         </div>
