@@ -75,7 +75,7 @@ export default function SetupPage() {
             </div>
             {error && <div className="text-sm text-destructive bg-destructive/10 rounded-lg px-4 py-2.5">{error}</div>}
             <button type="submit" disabled={loading}
-              className="w-full py-2.5 rounded-md bg-accent text-accent-foreground font-semibold hover:opacity-90 transition-all duration-150 active:scale-[0.98] disabled:opacity-50">
+              className="w-full py-2.5 rounded-md bg-accent text-accent-foreground font-semibold hover:opacity-90 transition-[opacity,transform] duration-150 ease-out active:scale-[0.98] disabled:opacity-50">
               {loading ? 'Configurando...' : 'Crear Super Administrador'}
             </button>
           </form>

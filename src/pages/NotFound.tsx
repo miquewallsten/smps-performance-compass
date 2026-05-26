@@ -14,7 +14,7 @@ const NotFound = () => {
         <FileQuestion className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
         <h1 className="font-display text-4xl font-bold mb-2">404</h1>
         <p className="text-lg text-muted-foreground mb-6">Página no encontrada</p>
-        <a href="/" className="px-5 py-2 rounded-md bg-accent text-accent-foreground text-sm font-medium hover:opacity-90 transition-all duration-150 active:scale-[0.98]">
+        <a href="/" className="px-5 py-2 rounded-md bg-accent text-accent-foreground text-sm font-medium hover:opacity-90 transition-[opacity,transform] duration-150 ease-out active:scale-[0.98]">
           Volver al Inicio
         </a>
       </div>

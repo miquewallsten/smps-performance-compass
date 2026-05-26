@@ -203,16 +203,16 @@ export default function Evaluations() {
                               </div>
                               <div className="flex gap-2 flex-wrap">
                                 <button onClick={() => { clearQuestion(q.id); setNoElementsQuestions(prev => ({ ...prev, [q.id]: true })); }}
-                                  className={`min-w-[70px] py-2 px-2 rounded-lg text-xs font-medium border transition-all flex items-center justify-center gap-1 ${isNE ? 'bg-smps-warning/20 text-smps-warning border-smps-warning/30' : 'bg-muted/50 text-muted-foreground border-transparent hover:border-border'}`}>
+                                  className={`min-w-[70px] py-2 px-2 rounded-lg text-xs font-medium border transition-[background-color,border-color,color,transform,box-shadow] duration-150 ease-out flex items-center justify-center gap-1 ${isNE ? 'bg-smps-warning/20 text-smps-warning border-smps-warning/30' : 'bg-muted/50 text-muted-foreground border-transparent hover:border-border'}`}>
                                   <MinusCircle className="h-3 w-3" /> Sin Elementos
                                 </button>
                                 <button onClick={() => { clearQuestion(q.id); setNaQuestions(prev => ({ ...prev, [q.id]: true })); }}
-                                  className={`min-w-[70px] py-2 px-2 rounded-lg text-xs font-medium border transition-all flex items-center justify-center gap-1 ${isNA ? 'bg-muted text-foreground border-foreground/30' : 'bg-muted/50 text-muted-foreground border-transparent hover:border-border'}`}>
+                                  className={`min-w-[70px] py-2 px-2 rounded-lg text-xs font-medium border transition-[background-color,border-color,color,transform,box-shadow] duration-150 ease-out flex items-center justify-center gap-1 ${isNA ? 'bg-muted text-foreground border-foreground/30' : 'bg-muted/50 text-muted-foreground border-transparent hover:border-border'}`}>
                                   <Ban className="h-3 w-3" /> No Aplica
                                 </button>
                                 {[1, 2, 3, 4, 5].map(score => (
                                   <button key={score} onClick={() => { clearQuestion(q.id); setResponses(prev => ({ ...prev, [q.id]: score })); }}
-                                    className={`flex-1 min-w-[70px] py-2 px-2 rounded-lg text-xs font-medium border transition-all ${!isNA && !isNE && responses[q.id] === score ? 'bg-accent text-accent-foreground border-accent' : 'bg-muted/50 text-muted-foreground border-transparent hover:border-border'}`}>
+                                    className={`flex-1 min-w-[70px] py-2 px-2 rounded-lg text-xs font-medium border transition-[background-color,border-color,color,transform,box-shadow] duration-150 ease-out ${!isNA && !isNE && responses[q.id] === score ? 'bg-accent text-accent-foreground border-accent' : 'bg-muted/50 text-muted-foreground border-transparent hover:border-border'}`}>
                                     {SCORE_LABELS[score]}
                                   </button>
                                 ))}
@@ -268,7 +268,7 @@ export default function Evaluations() {
               <p className="text-sm text-muted-foreground mb-4">Una vez enviada la evaluación, <strong>no será posible modificarla</strong>. ¿Desea continuar?</p>
               <div className="flex gap-3">
                 <button onClick={() => setShowConfirm(false)} className="flex-1 py-2 rounded-lg border text-sm font-medium hover:bg-muted transition-colors">Cancelar</button>
-                <button onClick={handleSubmit} className="flex-1 py-2 rounded-md bg-accent text-accent-foreground text-sm font-medium hover:opacity-90 transition-all duration-150 active:scale-[0.98]">Confirmar</button>
+                <button onClick={handleSubmit} className="flex-1 py-2 rounded-md bg-accent text-accent-foreground text-sm font-medium hover:opacity-90 transition-[opacity,transform] duration-150 ease-out active:scale-[0.98]">Confirmar</button>
               </div>
             </div>
           </div>

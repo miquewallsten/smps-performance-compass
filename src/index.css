@@ -80,58 +80,91 @@
   h1, h2, h3, h4, h5, h6 { font-family: var(--font-display); }
 }
 @layer components {
+  /* ─── Gradient header ──────────────────────────────────────────────── */
   .smps-gradient-header {
     background: linear-gradient(135deg, hsl(215 50% 15%), hsl(215 40% 25%));
   }
+
+  /* ─── Card hover — Emil: specific property transitions, never transition-all ─ */
   .smps-card-hover {
-    @apply transition-all duration-200;
+    transition: transform 200ms ease-out, box-shadow 200ms ease-out;
   }
-  .smps-card-hover:hover {
-    box-shadow: 0 4px 16px -4px hsl(215 50% 15% / 0.1);
-    transform: translateY(-1px);
+  @media (hover: hover) and (pointer: fine) {
+    .smps-card-hover:hover {
+      box-shadow: 0 4px 16px -4px hsl(215 50% 15% / 0.1);
+      transform: translateY(-1px);
+    }
   }
+
+  /* ─── Stat card — specific transitions + hover guard ────────────────── */
   .smps-stat-card {
     @apply rounded-lg border bg-card p-4 cursor-pointer;
-    transition: all 0.2s ease;
+    transition: transform 200ms ease-out, box-shadow 200ms ease-out, border-color 200ms ease-out;
   }
-  .smps-stat-card:hover {
-    box-shadow: 0 2px 12px -2px hsl(215 50% 15% / 0.08);
-    border-color: hsl(var(--border));
-    transform: translateY(-1px);
+  @media (hover: hover) and (pointer: fine) {
+    .smps-stat-card:hover {
+      box-shadow: 0 2px 12px -2px hsl(215 50% 15% / 0.08);
+      border-color: hsl(var(--border));
+      transform: translateY(-1px);
+    }
   }
+  .smps-stat-card:active {
+    transform: scale(0.97);
+  }
+
+  /* ─── Badge ─────────────────────────────────────────────────────────── */
   .smps-badge {
     @apply inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium;
   }
+
+  /* ─── Progress bar — transition width only ─────────────────────────── */
   .smps-progress-bar {
     @apply h-1.5 rounded-full overflow-hidden;
     background: hsl(var(--muted));
   }
   .smps-progress-bar .fill {
-    @apply h-full rounded-full transition-all duration-700 ease-out;
+    @apply h-full rounded-full;
+    transition: width 700ms ease-out;
     background: linear-gradient(90deg, hsl(var(--accent)), hsl(var(--smps-red-light)));
   }
+
+  /* ─── Surface variants ─────────────────────────────────────────────── */
   .smps-surface-flat { @apply bg-transparent border-0 p-0; }
   .smps-surface-card { @apply rounded-lg border bg-card p-4; }
   .smps-surface-elevated { @apply rounded-xl border bg-card p-5 shadow-sm; }
   .smps-surface-hero { @apply rounded-xl bg-primary text-primary-foreground p-5; }
+
+  /* ─── Overlay ──────────────────────────────────────────────────────── */
   .smps-overlay {
     background: hsl(215 50% 15% / 0.45);
     backdrop-filter: blur(4px);
   }
-  .smps-fade-in { animation: smps-fade-in 0.2s ease-out both; }
-  .smps-fade-up { animation: smps-fade-up 0.25s ease-out both; }
-  .smps-slide-in { animation: smps-slide-in 0.2s ease-out both; }
-  .smps-scale-in { animation: smps-scale-in 0.15s ease-out both; }
-  .smps-delay-1 { animation-delay: 40ms; }
-  .smps-delay-2 { animation-delay: 80ms; }
-  .smps-delay-3 { animation-delay: 120ms; }
-  .smps-delay-4 { animation-delay: 160ms; }
-  .smps-delay-5 { animation-delay: 200ms; }
-  .smps-delay-6 { animation-delay: 240ms; }
-  .smps-delay-7 { animation-delay: 280ms; }
-  .smps-delay-8 { animation-delay: 320ms; }
-  .smps-score-btn { @apply transition-all duration-150; }
+
+  /* ─── Motion utilities — Emil: purposeful, not decorative ─────────── */
+  .smps-fade-in { animation: smps-fade-in 200ms ease-out both; }
+  .smps-fade-up { animation: smps-fade-up 250ms ease-out both; }
+  .smps-slide-in { animation: smps-slide-in 200ms ease-out both; }
+  .smps-scale-in { animation: smps-scale-in 150ms ease-out both; }
+  .smps-slide-up { animation: smps-slide-up 250ms ease-out both; }
+  .smps-reveal { animation: smps-reveal 350ms cubic-bezier(0.16, 1, 0.3, 1) both; }
+
+  /* ─── Stagger delays — Emil: 60ms steps for natural rhythm ─────────── */
+  .smps-delay-1 { animation-delay: 60ms; }
+  .smps-delay-2 { animation-delay: 120ms; }
+  .smps-delay-3 { animation-delay: 180ms; }
+  .smps-delay-4 { animation-delay: 240ms; }
+  .smps-delay-5 { animation-delay: 300ms; }
+  .smps-delay-6 { animation-delay: 360ms; }
+  .smps-delay-7 { animation-delay: 420ms; }
+  .smps-delay-8 { animation-delay: 480ms; }
+
+  /* ─── Score button — specific transition + active press ────────────── */
+  .smps-score-btn {
+    transition: background-color 150ms ease-out, border-color 150ms ease-out, color 150ms ease-out, transform 100ms ease-out, box-shadow 150ms ease-out;
+  }
   .smps-score-btn:active { transform: scale(0.95); }
+
+  /* ─── Accent bar ──────────────────────────────────────────────────── */
   .smps-accent-bar { position: relative; }
   .smps-accent-bar::before {
     content: '';
@@ -139,13 +172,61 @@
     border-radius: 2px;
     background: var(--bar-color, hsl(var(--accent)));
     opacity: 0.7;
-    transition: opacity 0.15s ease, top 0.15s ease, bottom 0.15s ease;
+    transition: opacity 150ms ease-out, top 150ms ease-out, bottom 150ms ease-out;
   }
-  .smps-accent-bar:hover::before { opacity: 1; top: 4px; bottom: 4px; }
+  @media (hover: hover) and (pointer: fine) {
+    .smps-accent-bar:hover::before { opacity: 1; top: 4px; bottom: 4px; }
+  }
+
+  /* ─── Section title ────────────────────────────────────────────────── */
   .smps-section-title { @apply font-display text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3; }
   .smps-stat-value { @apply text-2xl font-bold font-display tracking-tight; }
+
+  /* ─── Button press — Emil: :active scale on ALL interactive elements ─ */
+  .smps-btn {
+    @apply rounded-md font-medium;
+    transition: opacity 150ms ease-out, transform 100ms ease-out, background-color 150ms ease-out;
+  }
+  .smps-btn:active { transform: scale(0.97); }
+
+  /* ─── List stagger — children animate in sequence ──────────────────── */
+  .smps-stagger > *:nth-child(1) { animation-delay: 0ms; }
+  .smps-stagger > *:nth-child(2) { animation-delay: 60ms; }
+  .smps-stagger > *:nth-child(3) { animation-delay: 120ms; }
+  .smps-stagger > *:nth-child(4) { animation-delay: 180ms; }
+  .smps-stagger > *:nth-child(5) { animation-delay: 240ms; }
+  .smps-stagger > *:nth-child(6) { animation-delay: 300ms; }
+  .smps-stagger > *:nth-child(7) { animation-delay: 360ms; }
+  .smps-stagger > *:nth-child(8) { animation-delay: 420ms; }
+  .smps-stagger > * { animation-fill-mode: both; }
+
+  /* ─── Focus ring — sleek, not default ─────────────────────────────── */
+  .smps-focus {
+    @apply focus:outline-none focus:ring-2 focus:ring-accent/30 focus:ring-offset-1;
+  }
+
+  /* ─── Subtle dividers ─────────────────────────────────────────────── */
+  .smps-divider {
+    border-bottom: 1px solid hsl(var(--border));
+  }
+
+  /* ─── Color accents for strategic pops ─────────────────────────────── */
+  .smps-accent-dot {
+    @apply inline-block w-1.5 h-1.5 rounded-full bg-accent mr-2;
+  }
+  .smps-gold-dot {
+    @apply inline-block w-1.5 h-1.5 rounded-full mr-2;
+    background: hsl(var(--smps-gold));
+  }
 }
+
+/* ─── Keyframes ─────────────────────────────────────────────────────── */
 @keyframes smps-fade-in { from { opacity: 0; } to { opacity: 1; } }
-@keyframes smps-fade-up { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes smps-fade-up { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes smps-slide-in { from { opacity: 0; transform: translateX(-8px); } to { opacity: 1; transform: translateX(0); } }
 @keyframes smps-scale-in { from { opacity: 0; transform: scale(0.97); } to { opacity: 1; transform: scale(1); } }
+@keyframes smps-slide-up { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes smps-reveal {
+  from { opacity: 0; transform: translateY(16px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}

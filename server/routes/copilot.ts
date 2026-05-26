@@ -32,7 +32,17 @@ router.use(async (_req: Request, res: Response, next: NextFunction) => {
   }
 });
 
-const GROQ = 'https://api.groq.com/openai/v1/chat/completions';
+// ─── LLM Provider Endpoints ────────────────────────────────────────────────────
+function getApiEndpoint(provider: string, baseUrl?: string): string {
+  switch (provider) {
+    case 'groq': return 'https://api.groq.com/openai/v1/chat/completions';
+    case 'openai': return 'https://api.openai.com/v1/chat/completions';
+    case 'openrouter': return 'https://openrouter.ai/api/v1/chat/completions';
+    case 'ollama': return baseUrl || 'http://localhost:11434/api/chat/completions';
+    case 'custom': return baseUrl || 'https://api.groq.com/openai/v1/chat/completions';
+    default: return 'https://api.groq.com/openai/v1/chat/completions';
+  }
+}
 
 interface Tool {
   name: string;
@@ -72,267 +82,254 @@ function coerceArgs(args: Record<string, unknown>): Record<string, unknown> {
   return result;
 }
 
-// ─── SYSTEM PROMPT ────────────────────────────────────────────────────────
+// ─── RICH CONTEXT BUILDER ─────────────────────────────────────────────────────
+async function buildRichContext(): Promise<string> {
+  const [
+    userCount, activeUsers, adminCount, managingPartnerCount,
+    periods, systemStatus, moduleConfig,
+    pendingSelfEvals, pendingSupEvals, pendingVacations, unreadAnnouncements,
+    currentPeriodConfig,
+  ] = await Promise.all([
+    db.get('SELECT COUNT(*) c FROM users') as any,
+    db.get('SELECT COUNT(*) c FROM users WHERE is_active=1') as any,
+    db.get('SELECT COUNT(*) c FROM users WHERE is_admin=1 AND is_active=1') as any,
+    db.get('SELECT COUNT(*) c FROM users WHERE is_managing_partner=1 AND is_active=1') as any,
+    db.all('SELECT * FROM period_configs ORDER BY period DESC LIMIT 5') as any[],
+    db.get('SELECT * FROM system_status WHERE id=1') as any,
+    db.get('SELECT * FROM module_config WHERE id=1') as any,
+    db.all("SELECT COUNT(*) c FROM evaluations WHERE type='self' AND completed_at IS NOT NULL") as any[],
+    db.all("SELECT COUNT(*) c FROM evaluations WHERE type='supervisor' AND completed_at IS NOT NULL") as any[],
+    db.get("SELECT COUNT(*) c FROM vacation_requests WHERE status='pending'") as any,
+    db.get("SELECT COUNT(*) c FROM announcements WHERE archived=0") as any,
+    db.get('SELECT * FROM period_configs ORDER BY period DESC LIMIT 1') as any,
+  ]);
+
+  const latestPeriod = currentPeriodConfig?.period || 'ninguno';
+  const now = new Date();
+  const today = now.toISOString().split('T')[0];
+
+  // Determine current evaluation phase
+  let evalPhase = 'inactivo';
+  if (currentPeriodConfig) {
+    if (today >= currentPeriodConfig.self_start && today <= currentPeriodConfig.self_end) evalPhase = 'autoevaluación';
+    else if (today >= currentPeriodConfig.supervisor_start && today <= currentPeriodConfig.supervisor_end) evalPhase = 'evaluación de supervisor';
+    else if (today >= currentPeriodConfig.feedback_start && today <= currentPeriodConfig.feedback_end) evalPhase = 'sesión de feedback';
+    else if (today >= currentPeriodConfig.action_plan_start && today <= currentPeriodConfig.action_plan_end) evalPhase = 'plan de acción';
+    else if (today < currentPeriodConfig.self_start) evalPhase = 'pre-periodo';
+    else evalPhase = 'post-periodo';
+  }
+
+  // Count pending evaluations more accurately
+  const pendingSelfCount = await db.get(`
+    SELECT COUNT(*) c FROM users u
+    WHERE u.is_active = 1 AND u.is_super_user = 0
+    AND NOT EXISTS (SELECT 1 FROM evaluations e WHERE e.evaluator_id = u.id AND e.type = 'self' AND e.period = ? AND e.completed_at IS NOT NULL)
+  `, [latestPeriod]) as any;
+
+  const pendingSupCount = await db.get(`
+    SELECT COUNT(*) c FROM supervisor_assignments sa
+    WHERE sa.period = ?
+    AND NOT EXISTS (SELECT 1 FROM evaluations e WHERE e.evaluated_id = sa.employee_id AND e.evaluator_id = sa.supervisor_id AND e.type = 'supervisor' AND e.period = ? AND e.completed_at IS NOT NULL)
+  `, [latestPeriod, latestPeriod]) as any;
+
+  return `CONTEXTO EN VIVO (fecha: ${today}):
+- Usuarios: ${activeUsers?.c || 0} activos de ${userCount?.c || 0} totales, ${adminCount?.c || 0} admins, ${managingPartnerCount?.c || 0} socios administradores
+- Sistema: ${systemStatus?.status || '?'} | Módulos: eval=${moduleConfig?.evaluations ? 'ON' : 'OFF'} comms=${moduleConfig?.communications ? 'ON' : 'OFF'} vac=${moduleConfig?.vacations ? 'ON' : 'OFF'} copilot=${moduleConfig?.copilot ? 'ON' : 'OFF'}
+- Periodo activo: ${latestPeriod} | Fase actual: ${evalPhase}
+- Autoevaluaciones pendientes: ${pendingSelfCount?.c || 0} | Evaluaciones de supervisor pendientes: ${pendingSupCount?.c || 0}
+- Vacaciones pendientes: ${pendingVacations?.c || 0} | Anuncios activos: ${unreadAnnouncements?.c || 0}
+- Periodos registrados: ${periods.map((p: any) => p.period).join(', ') || 'ninguno'}`;
+}
+
+// ─── SYSTEM PROMPT — AGENTIC, INTELLIGENT, PROBLEM-SOLVER ──────────────────────
 async function buildSystemPrompt(cfg: Record<string, unknown>, userName: string, hasTools: boolean): Promise<string> {
-  const u = (await db.get('SELECT COUNT(*) c FROM users WHERE is_active=1') as any).c;
-  const p = await db.all('SELECT period FROM period_configs ORDER BY period DESC LIMIT 1') as any[];
-  const ss = await db.get('SELECT status FROM system_status WHERE id=1') as any;
+  const richContext = await buildRichContext();
 
-  let prompt = `Eres el Copiloto SMPS, asistente inteligente y agéntico del Sistema de Evaluación de Desempeño de SMPS. Hablas con ${userName}, un administrador del sistema. ${u} usuarios activos, sistema ${ss?.status||'?'}, periodo activo: ${p[0]?.period||'ninguno'}.
+  let prompt = `Eres el Copiloto SMPS — un asistente inteligente, agéntico y proactivo para el Sistema de Evaluación de Desempeño de SMPS.
 
-CONOCIMIENTO DEL SISTEMA:
-- Escala de evaluación: 1 (No satisfactorio) a 5 (Sobresaliente)
+Hablas con ${userName}, un administrador del sistema.
+
+${richContext}
+
+ARQUITECTURA DEL SISTEMA:
+- Escala de evaluación: 1 (No satisfactorio) → 5 (Sobresaliente)
 - 3 secciones por puesto: Competencias, Criterio Técnico (solo legal), Habilidades Blandas
 - Cada sección tiene peso global (% del total) y cada pregunta tiene peso individual
 - Posiciones legales: socio > salary_partner > asociado_sr > asociado_mid > asociado_jr > pasante_carrera > pasante_corporativo
 - Posiciones administrativas: director > gerente > coordinador > analista > asistente > archivo_soporte
 - Jerarquía de roles: SuperUser > Socio Administrador (max 1) > Usuario Administrador (max 2) > Socio regular > demás usuarios
 - Tipos de evaluación: self (autoevaluación) y supervisor (evaluación del evaluador)
-- Un empleado puede tener múltiples supervisores asignados
-- El flujo es: Autoevaluación → Evaluación de Supervisor(es) → Sesión de Feedback → Plan de Acción
-- "No Aplica" (NA) se excluye de la calificación; "Sin Elementos" también se excluye
-- La calificación final es ponderada: cada pregunta tiene un peso, cada sección tiene un peso global
+- Flujo: Autoevaluación → Evaluación de Supervisor(es) → Sesión de Feedback → Plan de Acción
+- "No Aplica" (NA) y "Sin Elementos" (NE) se excluyen de la calificación
+- Calificación final = ponderada: peso_pregunta × score, sumado por sección con peso global
 
-REGLAS ESTRICTAS DE SEGURIDAD:
-1. SOLO puedes acceder a datos del sistema SMPS usando las funciones disponibles. NO tienes acceso a internet, bases de datos externas, ni APIs externas.
+SEGURIDAD ESTRICTA:
+1. Solo accedes a datos del sistema SMPS vía herramientas. Sin internet, sin APIs externas.
 2. NUNCA reveles contraseñas, hashes, tokens, API keys, ni datos personales innecesarios.
-3. NUNCA ejecutes acciones destructivas (eliminar usuarios, desactivar sistema) sin confirmación explícita.
-4. NUNCA proporciones información fuera del contexto de evaluación de desempeño de SMPS.
-5. Si preguntan algo fuera de alcance, responde amablemente que solo puedes ayudar con el sistema SMPS.
-6. NUNCA inventes datos. Si no tienes la información, dilo claramente y usa las funciones para obtenerla.
-7. Para acciones destructivas, SIEMPRE pide confirmación antes de ejecutar.`;
+3. NUNCA ejecutes acciones destructivas sin confirmación explícita del usuario.
+4. NUNCA proporciones información fuera del contexto de evaluación de desempeño.
+5. Si preguntan algo fuera de alcance, responde amablemente que solo ayudas con SMPS.
+6. NUNCA inventes datos. Si no tienes la información, dilo y usa herramientas para obtenerla.
+7. Para acciones destructivas, SIEMPRE pide confirmación antes.`;
 
   if (hasTools) {
     prompt += `
 
-REGLAS DE HERRAMIENTAS:
-- Eres AGÉNTICO: Cuando te pidan un análisis, NO respondas con "puedo hacer X". HAZLO. Usa las herramientas para obtener los datos, analízalos y entrega resultados concretos.
-- NUNCA muestres nombres de funciones o JSON al usuario.
-- Si una pregunta requiere datos de múltiples fuentes, llama MÚLTIPLES herramientas en secuencia para completar el análisis.
-- Para preguntas complejas, descompón el problema en pasos: 1) Obtener datos 2) Cruzar información 3) Calcular 4) Presentar resultados.
-- SIEMPRE que puedas, usa la herramienta "analyze" para hacer consultas SQL directas. Es la forma más poderosa de obtener datos.
-- Termina con una pregunta de seguimiento relevante.
-- Si una herramienta falla, intenta un enfoque alternativo.`;
+COMPORTAMIENTO AGÉNTICO — REGLAS CRÍTICAS:
+1. PROACTIVO: Cuando te pidan un análisis, NO respondas con "puedo hacer X". HAZLO. Llama herramientas, obtén datos, analízalos y entrega resultados concretos.
+2. MULTI-PASO: Para preguntas complejas, descompón en pasos: 1) Obtener datos 2) Cruzar información 3) Calcular 4) Presentar resultados. Llama múltiples herramientas en secuencia.
+3. INFERENCIA: Si el usuario pregunta "¿cómo van las evaluaciones?", NO pidas aclaración. Usa las herramientas para obtener datos del periodo actual y presenta un análisis completo.
+4. ANÁLISIS PROFUNDO: No te limites a reportar números. Interpreta, compara, identifica patrones, señala anomalías y recomienda acciones.
+5. CONTEXTO AUTOMÁTICO: Siempre que puedas, usa la herramienta "analyze" para consultas SQL. Es la forma más poderosa de obtener datos cruzados.
+6. PRESENTACIÓN: Entrega datos en formato legible — tablas, listas, porcentajes. No muestres JSON crudo al usuario.
+7. SEGUIMIENTO: Termina con una pregunta de seguimiento relevante o una recomendación proactiva.
+8. RESILIENCIA: Si una herramienta falla, intenta un enfoque alternativo. No te rindas.
+9. NUNCA muestres nombres de funciones, JSON de herramientas, o detalles técnicos al usuario.
+10. EFICIENCIA: No llames la misma herramienta dos veces con los mismos parámetros. Cachéa mentalmente los resultados de la ronda anterior.`;
   } else {
     prompt += `
 
-Conversacional y cálido. Si necesitas hacer acciones en el sistema, dime qué necesitas. Termina con pregunta.`;
+Eres conversacional y cálido pero profesional. Si necesitas hacer acciones en el sistema, indica qué necesitas. Termina con pregunta de seguimiento.`;
   }
 
   return prompt;
 }
 
-// ─── INTENT DETECTION ────────────────────────────────────────────────────
+// ─── INTENT DETECTION — SMART, NOT BRITTLE ───────────────────────────────────
 function needsTools(message: string, hasFile: boolean): boolean {
   if (hasFile) return true;
-  const lower = message.toLowerCase();
-  const noToolPatterns = /^(hola|buenos?\s*d[ií]as?|buenas?\s*tardes?|buenas?\s*noches?|gracias?|ok|vale|entiendo|sip|si|no|correcto|perfecto|genial|excelente|c[oó]mo\s+est[aá]s|qu[eé]\s*tal|hey|saludos|bye|adi[oó]s|hasta\s+luego)\s*[!?.]*$/i;
-  if (noToolPatterns.test(lower.trim())) return false;
-  // Almost everything else likely needs tools in this system
+  const lower = message.toLowerCase().trim();
+
+  // Pure greetings with no question — no tools needed
+  const greetingOnly = /^(hola|buenos?\s*d[ií]as?|buenas?\s*tardes?|buenas?\s*noches?|gracias?|ok|vale|entiendo|sip|si|no|correcto|perfecto|genial|excelente|c[oó]mo\s+est[aá]s|qu[eé]\s*tal|hey|saludos|bye|adi[oó]s|hasta\s+luego)\s*[!?.]*$/i;
+  if (greetingOnly.test(lower)) return false;
+
+  // If it's more than a greeting, assume tools are needed — the LLM can decide
   return true;
 }
 
-// ─── TOOLS ──────────────────────────────────────────────────────────────
+// ─── TOOLS ──────────────────────────────────────────────────────────────────
 const UF = 'id,name,email,position,practice_area,is_admin,is_super_user,is_managing_partner,is_active';
 
 function getTools(cfg: Record<string, unknown>): Tool[] {
   const t: Tool[] = [];
 
-  // ─── ANALYZE: Direct SQL queries for deep analysis ─────────────────────
+  // ─── ANALYZE: Direct SQL queries — the most powerful tool ──────────────
   t.push({
     name: 'analyze',
-    description: 'Ejecuta consultas SQL directas en la base de datos del sistema para análisis profundo. Úsalo para cruzar datos, calcular métricas, y resolver preguntas complejas que otras herramientas no pueden. Acciones: query (ejecutar SQL), missing_evals (evaluaciones faltantes), completion_rates (tasas de completitud), score_analysis (análisis de calificaciones), comparison (comparar periodos/posiciones).',
+    description: 'Ejecuta consultas SQL directas en la base de datos para análisis profundo. Úsalo para cruzar datos, calcular métricas y resolver preguntas complejas. Acciones: query (SQL SELECT), missing_evals (evaluaciones faltantes por periodo), completion_rates (tasas de completitud), score_analysis (análisis de calificaciones), comparison (comparar periodos/posiciones), org_summary (resumen organizacional).',
     parameters: {
       type: 'object',
       properties: {
-        action: { type: 'string', enum: ['query', 'missing_evals', 'completion_rates', 'score_analysis', 'comparison'] },
+        action: { type: 'string', enum: ['query', 'missing_evals', 'completion_rates', 'score_analysis', 'comparison', 'org_summary'] },
         sql: { type: 'string', description: 'SQL query to execute (SELECT only, no mutations)' },
         period: { type: 'string' },
         position: { type: 'string' },
-        user_id: { type: 'string' },
-        period_a: { type: 'string', description: 'First period for comparison' },
-        period_b: { type: 'string', description: 'Second period for comparison' },
+        compare_period: { type: 'string' },
       },
       required: ['action'],
     },
-    execute: async (args) => {
+    execute: async (args, uid) => {
       const act = args.action as string;
-
-      if (act === 'query') {
-        const sql = (args.sql as string || '').trim();
-        // Safety: only allow SELECT statements
-        if (!sql.toUpperCase().startsWith('SELECT')) {
-          return JSON.stringify({ error: 'Solo se permiten consultas SELECT' });
+      try {
+        if (act === 'query') {
+          const sql = (args.sql as string)?.trim();
+          if (!sql) return JSON.stringify({ error: 'SQL vacío' });
+          if (!/^[\s(]*SELECT/i.test(sql)) return JSON.stringify({ error: 'Solo SELECT permitido' });
+          if (/\b(DROP|DELETE|INSERT|UPDATE|ALTER|CREATE|TRUNCATE|EXEC)\b/i.test(sql)) return JSON.stringify({ error: 'Operación no permitida' });
+          const rows = await db.all(sql);
+          return JSON.stringify(rows.slice(0, 100));
         }
-        // Block dangerous patterns
-        if (/DROP|DELETE|UPDATE|INSERT|ALTER|CREATE|TRUNCATE|GRANT/i.test(sql)) {
-          return JSON.stringify({ error: 'Operación no permitida' });
+        if (act === 'missing_evals') {
+          const period = args.period || '2024-2025';
+          const rows = await db.all(`
+            SELECT u.id, u.name, u.position,
+              CASE WHEN e_self.id IS NULL THEN 1 ELSE 0 END as missing_self,
+              CASE WHEN sa.id IS NOT NULL AND e_sup.id IS NULL THEN 1 ELSE 0 END as missing_supervisor
+            FROM users u
+            LEFT JOIN evaluations e_self ON e_self.evaluator_id = u.id AND e_self.type = 'self' AND e_self.period = ? AND e_self.completed_at IS NOT NULL
+            LEFT JOIN supervisor_assignments sa ON sa.employee_id = u.id AND sa.period = ?
+            LEFT JOIN evaluations e_sup ON e_sup.evaluated_id = u.id AND e_sup.type = 'supervisor' AND e_sup.period = ? AND e_sup.completed_at IS NOT NULL
+            WHERE u.is_active = 1 AND u.is_super_user = 0
+          `, [period, period, period]);
+          return JSON.stringify(rows);
         }
-        try {
-          const rows = await db.all(sql, []);
-          // Limit results
-          const limited = Array.isArray(rows) ? rows.slice(0, 100) : rows;
-          return JSON.stringify({ rows: limited, count: Array.isArray(rows) ? rows.length : 1 });
-        } catch (e: any) {
-          return JSON.stringify({ error: `SQL error: ${e.message}` });
+        if (act === 'completion_rates') {
+          const period = args.period || '2024-2025';
+          const rows = await db.all(`
+            SELECT u.position,
+              COUNT(DISTINCT u.id) as total,
+              COUNT(DISTINCT e_self.evaluator_id) as self_done,
+              COUNT(DISTINCT e_sup.evaluated_id) as sup_done
+            FROM users u
+            LEFT JOIN evaluations e_self ON e_self.evaluator_id = u.id AND e_self.type = 'self' AND e_self.period = ? AND e_self.completed_at IS NOT NULL
+            LEFT JOIN supervisor_assignments sa ON sa.employee_id = u.id AND sa.period = ?
+            LEFT JOIN evaluations e_sup ON e_sup.evaluated_id = u.id AND e_sup.type = 'supervisor' AND e_sup.period = ? AND e_sup.completed_at IS NOT NULL
+            WHERE u.is_active = 1 AND u.is_super_user = 0
+            GROUP BY u.position
+          `, [period, period, period]);
+          return JSON.stringify(rows);
         }
-      }
-
-      if (act === 'missing_evals') {
-        const period = args.period as string;
-        if (!period) return JSON.stringify({ error: 'Se requiere period' });
-        // Find supervisors who haven't completed evaluations for their assigned employees
-        const assigned = await db.all(
-          `SELECT sa.employee_id, sa.supervisor_id, eu.name as employee_name, su.name as supervisor_name, eu.position as employee_position
-           FROM supervisor_assignments sa
-           JOIN users eu ON sa.employee_id = eu.id
-           JOIN users su ON sa.supervisor_id = su.id
-           WHERE sa.period = ? AND eu.is_active = 1`,
-          [period]
-        );
-        const completed = await db.all(
-          `SELECT evaluator_id, evaluated_id FROM evaluations WHERE period = ? AND type = 'supervisor'`,
-          [period]
-        );
-        const completedSet = new Set(completed.map((c: any) => `${c.evaluator_id}_${c.evaluated_id}`));
-        const missing = assigned.filter((a: any) => !completedSet.has(`${a.supervisor_id}_${a.employee_id}`));
-        // Also check self-evaluations
-        const selfCompleted = await db.all(
-          `SELECT evaluated_id FROM evaluations WHERE period = ? AND type = 'self'`,
-          [period]
-        );
-        const selfSet = new Set(selfCompleted.map((c: any) => c.evaluated_id));
-        const missingSelf = assigned
-          .map((a: any) => a.employee_id)
-          .filter((id, i, arr) => arr.indexOf(id) === i)
-          .map((id: string) => {
-            const a = assigned.find((a: any) => a.employee_id === id);
-            return { employee_id: id, employee_name: (a as any).employee_name, employee_position: (a as any).employee_position };
-          })
-          .filter((e: any) => !selfSet.has(e.employee_id));
-        return JSON.stringify({
-          period,
-          supervisor_evals_missing: missing.length,
-          supervisor_evals_missing_details: missing.slice(0, 30),
-          self_evals_missing: missingSelf.length,
-          self_evals_missing_details: missingSelf.slice(0, 30),
-          total_assignments: assigned.length,
-          total_supervisor_completed: completed.length,
-        });
-      }
-
-      if (act === 'completion_rates') {
-        const period = args.period as string;
-        if (!period) return JSON.stringify({ error: 'Se requiere period' });
-        const assignments = await db.all('SELECT * FROM supervisor_assignments WHERE period = ?', [period]);
-        const uniqueEmployees = [...new Set(assignments.map((a: any) => a.employee_id))];
-        const selfEvals = await db.all("SELECT evaluated_id FROM evaluations WHERE period = ? AND type = 'self'", [period]);
-        const supEvals = await db.all("SELECT evaluator_id, evaluated_id FROM evaluations WHERE period = ? AND type = 'supervisor'", [period]);
-        const selfDone = new Set(selfEvals.map((e: any) => e.evaluated_id));
-        const supDone = new Set(supEvals.map((e: any) => `${e.evaluator_id}_${e.evaluated_id}`));
-        const totalExpectedSup = assignments.length;
-        const completedSup = assignments.filter((a: any) => supDone.has(`${a.supervisor_id}_${a.employee_id}`)).length;
-        const completedSelf = uniqueEmployees.filter((id: string) => selfDone.has(id)).length;
-        const feedbackDone = await db.all("SELECT evaluated_id FROM evaluations WHERE period = ? AND feedback_completed = 1", [period]);
-        const feedbackSet = new Set(feedbackDone.map((f: any) => f.evaluated_id));
-        return JSON.stringify({
-          period,
-          self_eval: { completed: completedSelf, total: uniqueEmployees.length, rate: uniqueEmployees.length ? Math.round((completedSelf / uniqueEmployees.length) * 100) : 0 },
-          supervisor_eval: { completed: completedSup, total: totalExpectedSup, rate: totalExpectedSup ? Math.round((completedSup / totalExpectedSup) * 100) : 0 },
-          feedback: { completed: feedbackSet.size, total: uniqueEmployees.length, rate: uniqueEmployees.length ? Math.round((feedbackSet.size / uniqueEmployees.length) * 100) : 0 },
-          overall_progress: uniqueEmployees.length ? Math.round(((completedSelf + completedSup + feedbackSet.size) / (uniqueEmployees.length + totalExpectedSup + uniqueEmployees.length)) * 100) : 0,
-        });
-      }
-
-      if (act === 'score_analysis') {
-        const period = args.period as string;
-        if (!period) return JSON.stringify({ error: 'Se requiere period' });
-        const evals = await db.all(
-          `SELECT e.*, u.name as evaluated_name, u.position as evaluated_position
-           FROM evaluations e JOIN users u ON e.evaluated_id = u.id
-           WHERE e.period = ?`,
-          [period]
-        );
-        if (evals.length === 0) return JSON.stringify({ period, message: 'Sin evaluaciones para este periodo' });
-        const byPosition: Record<string, { scores: number[]; count: number; names: string[] }> = {};
-        for (const e of evals) {
-          const pos = (e as any).evaluated_position;
-          if (!byPosition[pos]) byPosition[pos] = { scores: [], count: 0, names: [] };
-          byPosition[pos].scores.push((e as any).total_score);
-          byPosition[pos].count++;
-          byPosition[pos].names.push((e as any).evaluated_name);
+        if (act === 'score_analysis') {
+          const period = args.period || '2024-2025';
+          const rows = await db.all(`
+            SELECT u.position, e.type,
+              COUNT(*) as count, AVG(e.total_score) as avg_score,
+              MIN(e.total_score) as min_score, MAX(e.total_score) as max_score
+            FROM evaluations e
+            JOIN users u ON u.id = e.evaluated_id
+            WHERE e.period = ? AND e.completed_at IS NOT NULL
+            GROUP BY u.position, e.type
+          `, [period]);
+          return JSON.stringify(rows);
         }
-        const summary = Object.entries(byPosition).map(([pos, d]) => ({
-          position: pos,
-          count: d.count,
-          avg: Math.round((d.scores.reduce((a: number, b: number) => a + b, 0) / d.scores.length) * 10) / 10,
-          min: Math.min(...d.scores),
-          max: Math.max(...d.scores),
-          names: d.names,
-        }));
-        const allScores = evals.map((e: any) => e.total_score);
-        return JSON.stringify({
-          period,
-          total_evaluations: evals.length,
-          overall_avg: Math.round((allScores.reduce((a: number, b: number) => a + b, 0) / allScores.length) * 10) / 10,
-          overall_min: Math.min(...allScores),
-          overall_max: Math.max(...allScores),
-          by_position: summary.sort((a, b) => b.avg - a.avg),
-          top_performers: evals.sort((a: any, b: any) => b.total_score - a.total_score).slice(0, 5).map((e: any) => ({ name: e.evaluated_name, position: e.evaluated_position, score: e.total_score, type: e.type })),
-          needs_attention: evals.sort((a: any, b: any) => a.total_score - b.total_score).slice(0, 5).map((e: any) => ({ name: e.evaluated_name, position: e.evaluated_position, score: e.total_score, type: e.type })),
-        });
+        if (act === 'comparison') {
+          const p1 = args.period || '2024-2025';
+          const p2 = args.compare_period;
+          if (!p2) return JSON.stringify({ error: 'Necesita compare_period' });
+          const rows = await db.all(`
+            SELECT u.position,
+              e1.total_score as score_p1, e1.period as period_p1,
+              e2.total_score as score_p2, e2.period as period_p2
+            FROM evaluations e1
+            JOIN evaluations e2 ON e1.evaluated_id = e2.evaluated_id AND e1.type = e2.type
+            JOIN users u ON u.id = e1.evaluated_id
+            WHERE e1.period = ? AND e2.period = ? AND e1.completed_at IS NOT NULL AND e2.completed_at IS NOT NULL
+          `, [p1, p2]);
+          return JSON.stringify(rows);
+        }
+        if (act === 'org_summary') {
+          const rows = await db.all(`
+            SELECT position, COUNT(*) as count, 
+              SUM(CASE WHEN is_admin=1 THEN 1 ELSE 0 END) as admins,
+              SUM(CASE WHEN is_managing_partner=1 THEN 1 ELSE 0 END) as managing_partners
+            FROM users WHERE is_active=1 AND is_super_user=0
+            GROUP BY position ORDER BY position
+          `);
+          return JSON.stringify(rows);
+        }
+        return JSON.stringify({ error: 'Acción desconocida' });
+      } catch (e: any) {
+        return JSON.stringify({ error: e.message || 'Error en análisis' });
       }
-
-      if (act === 'comparison') {
-        const pa = args.period_a as string;
-        const pb = args.period_b as string;
-        if (!pa || !pb) return JSON.stringify({ error: 'Se requieren period_a y period_b' });
-        const [evalsA, evalsB] = await Promise.all([
-          db.all('SELECT evaluated_id, total_score, type FROM evaluations WHERE period = ?', [pa]),
-          db.all('SELECT evaluated_id, total_score, type FROM evaluations WHERE period = ?', [pb]),
-        ]);
-        const avgA = evalsA.length ? Math.round((evalsA.reduce((s: number, e: any) => s + e.total_score, 0) / evalsA.length) * 10) / 10 : 0;
-        const avgB = evalsB.length ? Math.round((evalsB.reduce((s: number, e: any) => s + e.total_score, 0) / evalsB.length) * 10) / 10 : 0;
-        // Per-user comparison for users present in both periods
-        const mapA = new Map(evalsA.map((e: any) => [e.evaluated_id, e]));
-        const mapB = new Map(evalsB.map((e: any) => [e.evaluated_id, e]));
-        const commonUsers: string[] = [];
-        for (const id of mapA.keys()) { if (mapB.has(id)) commonUsers.push(id); }
-        const users = await db.all(`SELECT id, name, position FROM users WHERE id IN (${commonUsers.map(() => '?').join(',')})`, commonUsers);
-        const userMap = new Map(users.map((u: any) => [u.id, u]));
-        const changes = commonUsers.map(id => {
-          const a = mapA.get(id) as any;
-          const b = mapB.get(id) as any;
-          const u = userMap.get(id) as any;
-          return { name: u?.name, position: u?.position, period_a_score: a.total_score, period_b_score: b.total_score, change: Math.round((b.total_score - a.total_score) * 10) / 10 };
-        }).sort((a, b) => b.change - a.change);
-        return JSON.stringify({
-          period_a: pa, period_b: pb,
-          period_a_avg: avgA, period_a_count: evalsA.length,
-          period_b_avg: avgB, period_b_count: evalsB.length,
-          overall_change: Math.round((avgB - avgA) * 10) / 10,
-          improved: changes.filter(c => c.change > 0),
-          declined: changes.filter(c => c.change < 0),
-          stable: changes.filter(c => c.change === 0),
-        });
-      }
-
-      return JSON.stringify({ error: 'Acción desconocida' });
     },
   });
 
+  // ─── USERS ──────────────────────────────────────────────────────────────
   if (cfg.can_manage_users) {
     t.push({
       name: 'users',
-      description: 'Gestión de usuarios. Acciones: list,search,get,create,batch_create,update_role,deactivate,activate,assign_supervisor.',
+      description: 'Gestión de usuarios. Acciones: list, search, get, create, batch_create, update_role, deactivate, activate, assign_supervisor.',
       parameters: {
         type: 'object',
         properties: {
-          action: { type: 'string', enum: ['list','search','get','create','batch_create','update_role','deactivate','activate','assign_supervisor'] },
-          id: { type: 'string' }, q: { type: 'string' }, role: { type: 'string' }, active: { type: 'string', description: 'true or false' },
-          name: { type: 'string' }, email: { type: 'string' }, position: { type: 'string' },
-          password: { type: 'string' }, practice_area: { type: 'string' },
-          is_admin: { type: 'string', description: 'true or false' }, is_super_user: { type: 'string', description: 'true or false' }, is_managing_partner: { type: 'string', description: 'true or false' },
+          action: { type: 'string', enum: ['list', 'search', 'get', 'create', 'batch_create', 'update_role', 'deactivate', 'activate', 'assign_supervisor'] },
+          id: { type: 'string' }, name: { type: 'string' }, email: { type: 'string' },
+          position: { type: 'string' }, practice_area: { type: 'string' }, password: { type: 'string' },
+          role: { type: 'string', enum: ['admin', 'super_user', 'managing_partner'] },
+          q: { type: 'string', description: 'Search query' },
+          active: { type: 'string', description: 'true or false' }, is_admin: { type: 'string', description: 'true or false' },
+          is_managing_partner: { type: 'string', description: 'true or false' },
           users: { type: 'array', items: { type: 'object' } },
           employee_id: { type: 'string' }, supervisor_id: { type: 'string' }, period: { type: 'string' },
         },
@@ -360,7 +357,6 @@ function getTools(cfg: Record<string, unknown>): Tool[] {
           if (ex) return JSON.stringify({ error: 'Email ya existe' });
           const isAdmin = typeof args.is_admin === 'string' ? (args.is_admin === 'true' || args.is_admin === '1') : !!args.is_admin;
           const isMP = typeof args.is_managing_partner === 'string' ? (args.is_managing_partner === 'true' || args.is_managing_partner === '1') : !!args.is_managing_partner;
-          // Enforce role limits
           if (isMP) { const currentMPs = await db.all('SELECT id, name FROM users WHERE is_managing_partner = 1 AND is_super_user = 0'); if (currentMPs.length >= 1) return JSON.stringify({ error: `Solo puede haber 1 Socio Administrador. Actualmente es ${currentMPs[0].name}` }); }
           if (isAdmin && !isMP) { const currentAdmins = await db.all('SELECT id FROM users WHERE is_admin = 1 AND is_super_user = 0'); if (currentAdmins.length >= 2) return JSON.stringify({ error: 'Máximo 2 Usuario Administrador permitidos' }); }
           const id = uuidv4(), hp = await hashPassword(args.password as string), now = new Date().toISOString();
@@ -392,7 +388,7 @@ function getTools(cfg: Record<string, unknown>): Tool[] {
             const newMP = args.is_managing_partner === 'true' || args.is_managing_partner === '1';
             if (newMP) { const currentMPs = await db.all('SELECT id, name FROM users WHERE is_managing_partner = 1 AND is_super_user = 0 AND id != ?', [args.id]); if (currentMPs.length >= 1) return JSON.stringify({ error: `Solo puede haber 1 Socio Administrador. Actualmente es ${currentMPs[0].name}` }); }
             updates.push('is_managing_partner=?'); vals.push(newMP ? 1 : 0);
-            if (newMP) { updates.push('is_admin=?'); vals.push(1); } // MP must be admin
+            if (newMP) { updates.push('is_admin=?'); vals.push(1); }
           }
           if (args.is_admin !== undefined) {
             const newAdmin = args.is_admin === 'true' || args.is_admin === '1';
@@ -453,26 +449,65 @@ function getTools(cfg: Record<string, unknown>): Tool[] {
           const responses = await db.all('SELECT * FROM evaluation_responses WHERE evaluation_id=?', [args.id]);
           return JSON.stringify({ ...ev, responses });
         }
-        if (act === 'periods') return JSON.stringify(await db.all('SELECT * FROM period_configs ORDER BY period DESC'));
-        if (act === 'stats') {
-          if (!args.evaluated_id) return JSON.stringify({ error: 'Falta evaluated_id' });
-          const user = await db.get('SELECT name,position FROM users WHERE id=?', [args.evaluated_id]);
-          if (!user) return JSON.stringify({ error: 'No encontrado' });
-          const allR = await db.all('SELECT er.* FROM evaluation_responses er JOIN evaluations e ON er.evaluation_id=e.id WHERE e.evaluated_id=?', [args.evaluated_id]) as any[];
-          const cats: Record<string, { total: number; count: number }> = {};
-          for (const r of allR) { const c = r.category || 'Sin categoría'; if (!cats[c]) cats[c] = { total: 0, count: 0 }; if (r.score && !r.not_applicable) { cats[c].total += r.score; cats[c].count++; } }
-          const catScores = Object.entries(cats).map(([c, d]) => ({ category: c, avg: d.count ? Math.round((d.total / d.count) * 10) / 10 : 0, count: d.count })).sort((a, b) => a.avg - b.avg);
-          const applicable = allR.filter(r => !r.not_applicable);
-          const overallAvg = applicable.length ? Math.round((applicable.reduce((s, r) => s + r.score, 0) / applicable.length) * 10) / 10 : 0;
-          return JSON.stringify({ user, overallAvg, categoryScores: catScores, weakest: catScores.slice(0, 3), strongest: catScores.slice(-3).reverse() });
+        if (act === 'periods') {
+          const rows = await db.all('SELECT DISTINCT period FROM evaluations ORDER BY period');
+          return JSON.stringify(rows);
         }
-        if (act === 'questions') return JSON.stringify(await db.all('SELECT question_id,category,text,weight,section FROM custom_eval_questions WHERE position=?', [args.position]));
-        if (act === 'create_question') { const id = uuidv4(), qid = `q_${Date.now()}`; await db.run('INSERT INTO library_questions (id,question_id,category,text,default_weight,created_at,created_by) VALUES(?,?,?,?,?,?,?)', [id, qid, args.category, args.text, args.weight, new Date().toISOString(), uid]); return JSON.stringify({ ok: true, qid }); }
-        if (act === 'batch_questions') { const qs = args.questions as Record<string, unknown>[]; const r: Record<string, unknown>[] = []; for (const q of qs) { if (!q.category || !q.text || !q.weight) { r.push({ text: q.text, error: 'Faltan campos' }); continue; } try { const id = uuidv4(), qid = `q_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`; await db.run('INSERT INTO library_questions (id,question_id,category,text,default_weight,created_at,created_by) VALUES(?,?,?,?,?,?,?)', [id, qid, q.category, q.text, q.weight, new Date().toISOString(), uid]); r.push({ qid, ok: true }); } catch (e) { r.push({ text: q.text, error: String(e) }); } } return JSON.stringify({ msg: `${r.filter(x => x.ok).length}/${qs.length} creadas`, results: r }); }
-        if (act === 'update_question') { if (!args.question_id) return JSON.stringify({ error: 'Falta question_id' }); const existing = await db.get('SELECT * FROM library_questions WHERE question_id=?', [args.question_id]); if (existing) { const updates = []; const vals = []; if (args.text) { updates.push('text=?'); vals.push(args.text); } if (args.category) { updates.push('category=?'); vals.push(args.category); } if (args.weight) { updates.push('default_weight=?'); vals.push(parseFloat(args.weight as string) || (existing as any).default_weight); } if (updates.length > 0) { vals.push(args.question_id); await db.run('UPDATE library_questions SET ' + updates.join(', ') + ' WHERE question_id=?', vals); } return JSON.stringify({ ok: true, msg: 'Pregunta actualizada' }); } const ov = await db.get('SELECT * FROM seed_question_overrides WHERE question_id=?', [args.question_id]); if (ov) { const updates = []; const vals = []; if (args.text) { updates.push('text=?'); vals.push(args.text); } if (args.category) { updates.push('category=?'); vals.push(args.category); } if (args.weight) { updates.push('weight=?'); vals.push(parseFloat(args.weight as string)); } if (args.hidden !== undefined) { updates.push('hidden=?'); vals.push(args.hidden === 'true' ? 1 : 0); } if (updates.length > 0) { vals.push(args.question_id); await db.run('UPDATE seed_question_overrides SET ' + updates.join(', ') + ' WHERE question_id=?', vals); } return JSON.stringify({ ok: true, msg: 'Override actualizada' }); } return JSON.stringify({ error: 'Pregunta no encontrada' }); }
-        if (act === 'delete_question') { if (!args.question_id) return JSON.stringify({ error: 'Falta question_id' }); const lib = await db.get('SELECT * FROM library_questions WHERE question_id=?', [args.question_id]); if (lib) { await db.run('DELETE FROM library_questions WHERE question_id=?', [args.question_id]); return JSON.stringify({ ok: true, msg: 'Pregunta de biblioteca eliminada' }); } const ov = await db.get('SELECT * FROM seed_question_overrides WHERE question_id=?', [args.question_id]); if (ov) { await db.run('UPDATE seed_question_overrides SET hidden=1 WHERE question_id=?', [args.question_id]); return JSON.stringify({ ok: true, msg: 'Pregunta base ocultada' }); } return JSON.stringify({ error: 'Pregunta no encontrada' }); }
-        if (act === 'list_library') return JSON.stringify(await db.all('SELECT question_id, category, text, default_weight FROM library_questions ORDER BY category, text'));
-        if (act === 'supervisor_assignments') return JSON.stringify(await db.all('SELECT sa.*,eu.name as employee_name,su.name as supervisor_name FROM supervisor_assignments sa JOIN users eu ON sa.employee_id=eu.id JOIN users su ON sa.supervisor_id=su.id WHERE sa.period=?', [args.period]));
+        if (act === 'stats') {
+          const period = args.period || '2024-2025';
+          const rows = await db.all('SELECT e.type, COUNT(*) as count, AVG(e.total_score) as avg_score FROM evaluations WHERE period=? AND completed_at IS NOT NULL GROUP BY e.type', [period]);
+          return JSON.stringify(rows);
+        }
+        if (act === 'questions') {
+          if (args.position) return JSON.stringify(await db.all('SELECT * FROM questions WHERE position=? ORDER BY section, id', [args.position]));
+          return JSON.stringify(await db.all('SELECT * FROM questions ORDER BY section, id'));
+        }
+        if (act === 'create_question') {
+          if (!args.position || !args.section || !args.text || !args.weight) return JSON.stringify({ error: 'Campos: position, section, text, weight' });
+          const id = uuidv4();
+          await db.run('INSERT INTO questions (id,position,section,text,weight,default_weight,category,hidden,created_at) VALUES(?,?,?,?,?,?,?,?,?)',
+            [id, args.position, args.section, args.text, Number(args.weight), Number(args.weight), (args.category as string) || 'competency', 0, new Date().toISOString()]);
+          return JSON.stringify({ ok: true, id });
+        }
+        if (act === 'batch_questions') {
+          const qs = args.questions as Record<string, unknown>[];
+          const r: Record<string, unknown>[] = [];
+          for (const q of qs) {
+            if (!q.position || !q.section || !q.text || !q.weight) { r.push({ text: q.text, error: 'Faltan campos' }); continue; }
+            const id = uuidv4();
+            await db.run('INSERT INTO questions (id,position,section,text,weight,default_weight,category,hidden,created_at) VALUES(?,?,?,?,?,?,?,?,?)',
+              [id, q.position, q.section, q.text, Number(q.weight), Number(q.weight), (q.category as string) || 'competency', 0, new Date().toISOString()]);
+            r.push({ text: q.text, ok: true, id });
+          }
+          return JSON.stringify({ msg: `${r.filter(x => x.ok).length}/${qs.length} creadas`, results: r });
+        }
+        if (act === 'update_question') {
+          if (!args.question_id) return JSON.stringify({ error: 'Falta question_id' });
+          const updates: string[] = [];
+          const vals: unknown[] = [];
+          if (args.text) { updates.push('text=?'); vals.push(args.text); }
+          if (args.weight) { updates.push('weight=?'); vals.push(Number(args.weight)); }
+          if (args.category) { updates.push('category=?'); vals.push(args.category); }
+          if (args.hidden !== undefined) { updates.push('hidden=?'); vals.push(args.hidden === 'true' || args.hidden === '1' ? 1 : 0); }
+          if (!updates.length) return JSON.stringify({ error: 'Sin cambios' });
+          vals.push(args.question_id);
+          await db.run(`UPDATE questions SET ${updates.join(', ')} WHERE id=?`, vals);
+          return JSON.stringify({ ok: true, msg: 'Pregunta actualizada' });
+        }
+        if (act === 'delete_question') {
+          await db.run('DELETE FROM questions WHERE id=?', [args.question_id]);
+          return JSON.stringify({ ok: true });
+        }
+        if (act === 'list_library') {
+          return JSON.stringify(await db.all('SELECT * FROM question_library ORDER BY category, id'));
+        }
+        if (act === 'supervisor_assignments') {
+          const period = args.period || '2024-2025';
+          return JSON.stringify(await db.all(
+            'SELECT sa.*, u1.name as employee_name, u2.name as supervisor_name FROM supervisor_assignments sa JOIN users u1 ON sa.employee_id=u1.id JOIN users u2 ON sa.supervisor_id=u2.id WHERE sa.period=?',
+            [period]
+          ));
+        }
         return JSON.stringify({ error: 'Acción desconocida' });
       },
     });
@@ -480,12 +515,30 @@ function getTools(cfg: Record<string, unknown>): Tool[] {
 
   if (cfg.can_manage_vacations) {
     t.push({
-      name: 'vacations', description: 'Vacaciones. Acciones: list,approve_reject.',
-      parameters: { type: 'object', properties: { action: { type: 'string', enum: ['list','approve_reject'] }, status: { type: 'string' }, id: { type: 'string' }, decision: { type: 'string', enum: ['approve','reject'] } }, required: ['action'] },
+      name: 'vacations',
+      description: 'Vacaciones. Acciones: list,approve,reject.',
+      parameters: {
+        type: 'object',
+        properties: {
+          action: { type: 'string', enum: ['list', 'approve', 'reject'] },
+          status: { type: 'string', enum: ['pending', 'approved', 'rejected'] },
+          id: { type: 'string' },
+        },
+        required: ['action'],
+      },
       execute: async (args, uid) => {
-        const act = args.action as string;
-        if (act === 'list') { let s = "SELECT vr.*,u.name as employee_name FROM vacation_requests vr JOIN users u ON vr.user_id=u.id WHERE 1=1"; const p: unknown[] = []; if (args.status) { s += ' AND vr.status=?'; p.push(args.status); } return JSON.stringify(await db.all(s, p)); }
-        if (act === 'approve_reject') { if (!args.id || !args.decision) return JSON.stringify({ error: 'Falta id o decisión' }); const vr = await db.get('SELECT * FROM vacation_requests WHERE id=?', [args.id]) as any; if (!vr) return JSON.stringify({ error: 'No encontrada' }); if (vr.status !== 'pending') return JSON.stringify({ error: `Ya ${vr.status}` }); const status = args.decision === 'approve' ? 'approved' : 'rejected'; await db.run('UPDATE vacation_requests SET status=?,processed_by=?,processed_at=? WHERE id=?', [status, uid, new Date().toISOString(), args.id]); return JSON.stringify({ ok: true, msg: status }); }
+        if (args.action === 'list') {
+          const status = args.status || 'pending';
+          return JSON.stringify(await db.all('SELECT v.*, u.name as user_name FROM vacation_requests v JOIN users u ON v.user_id=u.id WHERE v.status=? ORDER BY v.created_at DESC LIMIT 50', [status]));
+        }
+        if (args.action === 'approve') {
+          await db.run('UPDATE vacation_requests SET status=?, processed_by=?, processed_at=? WHERE id=?', ['approved', uid, new Date().toISOString(), args.id]);
+          return JSON.stringify({ ok: true, msg: 'Aprobada' });
+        }
+        if (args.action === 'reject') {
+          await db.run('UPDATE vacation_requests SET status=?, processed_by=?, processed_at=? WHERE id=?', ['rejected', uid, new Date().toISOString(), args.id]);
+          return JSON.stringify({ ok: true, msg: 'Rechazada' });
+        }
         return JSON.stringify({ error: 'Acción desconocida' });
       },
     });
@@ -493,12 +546,29 @@ function getTools(cfg: Record<string, unknown>): Tool[] {
 
   if (cfg.can_manage_announcements) {
     t.push({
-      name: 'announcements', description: 'Anuncios. Acciones: list,create.',
-      parameters: { type: 'object', properties: { action: { type: 'string', enum: ['list','create'] }, title: { type: 'string' }, body: { type: 'string' }, audience: { type: 'string', enum: ['all','legal','administrativo'] }, expires_at: { type: 'string' } }, required: ['action'] },
+      name: 'announcements',
+      description: 'Comunicados. Acciones: list,create.',
+      parameters: {
+        type: 'object',
+        properties: {
+          action: { type: 'string', enum: ['list', 'create'] },
+          title: { type: 'string' }, content: { type: 'string' },
+          audience: { type: 'string', description: 'all, legal, admin, or position name' },
+          priority: { type: 'string', enum: ['normal', 'urgent'] },
+        },
+        required: ['action'],
+      },
       execute: async (args, uid) => {
-        const act = args.action as string;
-        if (act === 'list') return JSON.stringify(await db.all('SELECT * FROM announcements WHERE archived=0 OR archived IS NULL ORDER BY created_at DESC LIMIT 20'));
-        if (act === 'create') { if (!args.title || !args.body || !args.audience) return JSON.stringify({ error: 'Faltan campos' }); const id = uuidv4(), now = new Date().toISOString(); await db.run('INSERT INTO announcements (id,author_id,title,body,audience,created_at,expires_at,archived) VALUES(?,?,?,?,?,?,?,0)', [id, uid, args.title, args.body, args.audience, now, (args.expires_at as string) || null]); return JSON.stringify({ ok: true, msg: 'Anuncio creado', id }); }
+        if (args.action === 'list') {
+          return JSON.stringify(await db.all('SELECT a.*, u.name as author_name FROM announcements a JOIN users u ON a.author_id=u.id ORDER BY a.created_at DESC LIMIT 20'));
+        }
+        if (args.action === 'create') {
+          if (!args.title || !args.content) return JSON.stringify({ error: 'Falta title y content' });
+          const id = uuidv4();
+          await db.run('INSERT INTO announcements (id,author_id,title,content,audience,priority,archived,created_at) VALUES(?,?,?,?,?,?,?,?)',
+            [id, uid, args.title, args.content, (args.audience as string) || 'all', (args.priority as string) || 'normal', 0, new Date().toISOString()]);
+          return JSON.stringify({ ok: true, msg: 'Comunicado creado', id });
+        }
         return JSON.stringify({ error: 'Acción desconocida' });
       },
     });
@@ -559,68 +629,83 @@ router.get('/config', async (_req: Request, res: Response) => {
       await db.run("INSERT INTO copilot_config (id,model,api_provider,api_key,can_manage_users,can_manage_evaluations,can_manage_vacations,can_manage_announcements,can_manage_periods,can_manage_system,can_view_reports,max_tokens,temperature) VALUES(1,'llama-3.3-70b-versatile','groq',NULL,1,1,1,1,1,1,1,4096,0.3)");
       cfg = await db.get('SELECT * FROM copilot_config WHERE id=1') as Record<string, unknown>;
     }
-    // Mask API key
     if (cfg?.api_key && typeof cfg.api_key === 'string' && cfg.api_key.length > 8) {
       cfg = { ...cfg, api_key: cfg.api_key.slice(0, 4) + '••••' + cfg.api_key.slice(-4) };
     }
-    return res.json(cfg);
-  } catch (err) { console.error('Config error:', err); return res.status(500).json({ error: 'Internal server error' }); }
+    res.json(cfg);
+  } catch (e) { console.error('Config error:', e); res.status(500).json({ error: 'Internal server error' }); }
 });
 
-router.patch('/config', async (req: Request, res: Response) => {
+router.put('/config', async (req: Request, res: Response) => {
   try {
-    const allowed = ['model','apiProvider','canManageUsers','canManageEvaluations','canManageVacations','canManageAnnouncements','canManagePeriods','canManageSystem','canViewReports','maxTokens','temperature','apiKey'];
-    const updates: string[] = [];
-    const values: unknown[] = [];
-    for (const [k, v] of Object.entries(req.body)) {
-      const snakeKey = k.replace(/[A-Z]/g, m => '_' + m.toLowerCase());
-      if (!allowed.includes(k) && !allowed.includes(snakeKey)) continue;
-      const col = snakeKey;
-      if (k === 'apiKey' || snakeKey === 'api_key') { if (v && typeof v === 'string' && v.includes('•')) continue; updates.push('api_key=?'); values.push(v); }
-      else if (typeof v === 'boolean') { updates.push(`${col}=?`); values.push(v ? 1 : 0); }
-      else { updates.push(`${col}=?`); values.push(v); }
-    }
-    if (updates.length > 0) { values.push(1); await db.run(`UPDATE copilot_config SET ${updates.join(', ')} WHERE id=?`, values); }
-    const cfg = await db.get('SELECT * FROM copilot_config WHERE id=1') as Record<string, unknown>;
-    if (cfg?.api_key && typeof cfg.api_key === 'string' && cfg.api_key.length > 8) {
-      return res.json({ ...cfg, api_key: (cfg.api_key as string).slice(0, 4) + '••••' + (cfg.api_key as string).slice(-4) });
-    }
-    return res.json(cfg);
-  } catch (err) { console.error('Update config error:', err); return res.status(500).json({ error: 'Internal server error' }); }
+    const { model, api_provider, api_key, can_manage_users, can_manage_evaluations, can_manage_vacations, can_manage_announcements, can_manage_periods, can_manage_system, can_view_reports, max_tokens, temperature } = req.body;
+    const current = await db.get('SELECT api_key FROM copilot_config WHERE id=1') as any;
+    const apiKey = (api_key && !api_key.includes('••••')) ? api_key : current?.api_key;
+    await db.run('UPDATE copilot_config SET model=?,api_provider=?,api_key=?,can_manage_users=?,can_manage_evaluations=?,can_manage_vacations=?,can_manage_announcements=?,can_manage_periods=?,can_manage_system=?,can_view_reports=?,max_tokens=?,temperature=? WHERE id=1',
+      [model, api_provider, apiKey, can_manage_users ? 1 : 0, can_manage_evaluations ? 1 : 0, can_manage_vacations ? 1 : 0, can_manage_announcements ? 1 : 0, can_manage_periods ? 1 : 0, can_manage_system ? 1 : 0, can_view_reports ? 1 : 0, max_tokens, temperature]);
+    res.json({ ok: true });
+  } catch (e) { console.error('Config update error:', e); res.status(500).json({ error: 'Internal server error' }); }
 });
 
 // ─── CONVERSATIONS ───────────────────────────────────────────────────────────
-router.get('/conversations', async (req: Request, res: Response) => { try { return res.json(await db.all('SELECT * FROM copilot_conversations WHERE user_id=? ORDER BY updated_at DESC', [req.user!.id])); } catch (e) { return res.status(500).json({ error: 'Internal server error' }); } });
-router.post('/conversations', async (req: Request, res: Response) => { try { const id = uuidv4(), now = new Date().toISOString(); await db.run('INSERT INTO copilot_conversations (id,user_id,title,created_at,updated_at) VALUES(?,?,?,?,?)', [id, req.user!.id, (req.body.title as string) || 'Nueva conversación', now, now]); return res.status(201).json(await db.get('SELECT * FROM copilot_conversations WHERE id=?', [id])); } catch (e) { return res.status(500).json({ error: 'Internal server error' }); } });
-router.get('/conversations/:id', async (req: Request, res: Response) => { try { const c = await db.get('SELECT * FROM copilot_conversations WHERE id=? AND user_id=?', [req.params.id, req.user!.id]); if (!c) return res.status(404).json({ error: 'Not found' }); return res.json({ ...(c as any), messages: await db.all('SELECT * FROM copilot_messages WHERE conversation_id=? ORDER BY created_at ASC', [req.params.id]) }); } catch (e) { return res.status(500).json({ error: 'Internal server error' }); } });
-router.delete('/conversations/:id', async (req: Request, res: Response) => { try { await db.run('DELETE FROM copilot_messages WHERE conversation_id=?', [req.params.id]); await db.run('DELETE FROM copilot_conversations WHERE id=? AND user_id=?', [req.params.id, req.user!.id]); return res.json({ msg: 'Deleted' }); } catch (e) { return res.status(500).json({ error: 'Internal server error' }); } });
+router.get('/conversations', async (req: Request, res: Response) => {
+  try {
+    const convs = await db.all('SELECT id, title, created_at, updated_at FROM copilot_conversations WHERE user_id=? ORDER BY updated_at DESC LIMIT 50', [req.user!.id]);
+    res.json(convs);
+  } catch (e) { console.error('Conversations error:', e); res.status(500).json({ error: 'Internal server error' }); }
+});
 
-// ─── CHAT ─────────────────────────────────────────────────────────────────────
+router.get('/conversations/:id', async (req: Request, res: Response) => {
+  try {
+    const conv = await db.get('SELECT * FROM copilot_conversations WHERE id=? AND user_id=?', [req.params.id, req.user!.id]);
+    if (!conv) return res.status(404).json({ error: 'No encontrada' });
+    const messages = await db.all('SELECT id, role, content, created_at FROM copilot_messages WHERE conversation_id=? ORDER BY created_at', [req.params.id]);
+    res.json({ ...conv, messages });
+  } catch (e) { console.error('Conversation error:', e); res.status(500).json({ error: 'Internal server error' }); }
+});
+
+router.delete('/conversations/:id', async (req: Request, res: Response) => {
+  try {
+    const conv = await db.get('SELECT id FROM copilot_conversations WHERE id=? AND user_id=?', [req.params.id, req.user!.id]);
+    if (!conv) return res.status(404).json({ error: 'No encontrada' });
+    await db.run('DELETE FROM copilot_messages WHERE conversation_id=?', [req.params.id]);
+    await db.run('DELETE FROM copilot_conversations WHERE id=?', [req.params.id]);
+    res.json({ ok: true });
+  } catch (e) { console.error('Delete error:', e); res.status(500).json({ error: 'Internal server error' }); }
+});
+
+// ─── CHAT ────────────────────────────────────────────────────────────────────
 router.post('/chat', upload.single('file'), async (req: Request, res: Response) => {
   try {
-    const cfg = await db.get('SELECT * FROM copilot_config WHERE id=1') as Record<string, unknown>;
-    const apiKey = (cfg?.api_key as string) || process.env.GROQ_API_KEY;
-    if (!apiKey) return res.status(500).json({ error: 'No API key configured. Add your Groq API key in Copilot Settings.' });
+    const { message, conversationId } = req.body;
+    const fullMessage = message || '';
+    const fileContent = req.file ? parseFile(req.file.buffer, req.file.originalname) : '';
+    const fileName = req.file?.originalname || '';
 
-    let convId = req.body.conversationId as string;
-    let fileContent = '';
-    if (req.file) { fileContent = parseFile(req.file.buffer, req.file.originalname); }
-    const fullMessage = fileContent ? `${req.body.message}\n\n[Archivo: ${req.file.originalname}]\n${fileContent}` : req.body.message;
-    const currentUser = await db.get('SELECT name FROM users WHERE id=?', [req.user!.id]) as any;
-    const userName = currentUser?.name || 'Admin';
+    if (!fullMessage && !fileContent) return res.status(400).json({ error: 'Mensaje vacío' });
+
+    const cfg = await db.get('SELECT * FROM copilot_config WHERE id=1') as Record<string, unknown>;
+    const apiKey = cfg.api_key as string;
+    const provider = (cfg.api_provider as string) || 'groq';
+    const endpoint = getApiEndpoint(provider, cfg.api_base_url as string);
+
+    if (!apiKey) return res.status(403).json({ error: 'API key no configurada. Configúrala en Ajustes del Copiloto.' });
+
+    const headers: Record<string, string> = { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' };
+    if (provider === 'openrouter') headers['HTTP-Referer'] = 'https://bowdot.online';
+
+    const userName = (req.user as any)?.name || 'Admin';
+    let convId = conversationId as string | undefined;
 
     if (!convId) {
       convId = uuidv4();
-      const now = new Date().toISOString();
-      await db.run('INSERT INTO copilot_conversations (id,user_id,title,created_at,updated_at) VALUES(?,?,?,?,?)', [convId, req.user!.id, fullMessage.slice(0, 60).replace(/\n/g, ' '), now, now]);
-    } else {
-      const c = await db.get('SELECT id FROM copilot_conversations WHERE id=? AND user_id=?', [convId, req.user!.id]);
-      if (!c) return res.status(404).json({ error: 'Not found' });
+      const title = fullMessage.slice(0, 50) || 'Nueva conversación';
+      await db.run('INSERT INTO copilot_conversations (id,user_id,title,created_at,updated_at) VALUES(?,?,?,?,?)', [convId, req.user!.id, title, new Date().toISOString(), new Date().toISOString()]);
     }
 
-    await db.run('INSERT INTO copilot_messages (id,conversation_id,role,content,created_at) VALUES(?,?,?,?,?)', [uuidv4(), convId, 'user', fullMessage, new Date().toISOString()]);
+    await db.run('INSERT INTO copilot_messages (id,conversation_id,role,content,created_at) VALUES(?,?,?,?,?)', [uuidv4(), convId, 'user', fileContent ? `${fullMessage}\n\n[Archivo: ${fileName}]\n${fileContent}` : fullMessage, new Date().toISOString()]);
 
-    const history = (await db.all('SELECT role,content FROM copilot_messages WHERE conversation_id=? ORDER BY created_at DESC LIMIT 20', [convId])).reverse() as Record<string, unknown>[];
+    const history = (await db.all('SELECT role, content FROM copilot_messages WHERE conversation_id=? ORDER BY created_at DESC LIMIT 20', [convId])).reverse() as Record<string, unknown>[];
 
     const useTools = needsTools(fullMessage, !!fileContent);
     const messages: Record<string, unknown>[] = [{ role: 'system', content: await buildSystemPrompt(cfg, userName, useTools) }];
@@ -628,7 +713,7 @@ router.post('/chat', upload.single('file'), async (req: Request, res: Response) 
 
     const tools = useTools ? getTools(cfg) : [];
     const fns = toFunctions(tools);
-    const maxRounds = useTools ? 6 : 1;
+    const maxRounds = useTools ? 10 : 1;
     let finalResponse = '';
     let toolCallsData: string | null = null;
     let toolResultsData: string | null = null;
@@ -642,14 +727,14 @@ router.post('/chat', upload.single('file'), async (req: Request, res: Response) 
         tools: fns.length > 0 ? fns : undefined,
         tool_choice: fns.length > 0 ? 'auto' : undefined,
       });
-      let resp = await fetch(GROQ, { method: 'POST', headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' }, body });
+      let resp = await fetch(endpoint, { method: 'POST', headers, body });
       for (let retry = 0; retry < 3 && resp.status === 429; retry++) {
         const errBody = await resp.clone().text();
         const waitMatch = errBody.match(/try again in (\d+\.?\d*)s/i);
         const waitSec = waitMatch ? Math.ceil(parseFloat(waitMatch[1])) + 2 : (5 * (retry + 1));
         console.log(`Rate limited, waiting ${waitSec}s (retry ${retry + 1})...`);
         await new Promise(r => setTimeout(r, waitSec * 1000));
-        resp = await fetch(GROQ, { method: 'POST', headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' }, body });
+        resp = await fetch(endpoint, { method: 'POST', headers, body });
       }
       return resp;
     };
@@ -659,7 +744,7 @@ router.post('/chat', upload.single('file'), async (req: Request, res: Response) 
 
       if (!resp.ok) {
         const err = await resp.text();
-        console.error('Groq error:', resp.status, err);
+        console.error('LLM error:', resp.status, err);
         if (resp.status === 429) return res.status(429).json({ error: 'El servicio de IA está temporalmente saturado. Por favor espera un momento e intenta de nuevo.' });
         return res.status(502).json({ error: 'Error del servicio de IA. Intenta de nuevo.' });
       }
@@ -684,7 +769,6 @@ router.post('/chat', upload.single('file'), async (req: Request, res: Response) 
       for (const r of results) messages.push({ role: 'tool', tool_call_id: r.tool_call_id, content: r.content });
 
       if (round === maxRounds - 1) {
-        // Force a final text response instead of another tool call
         messages.push({ role: 'user', content: 'Por favor, dame tu conclusión basada en los resultados obtenidos. No llames más funciones.' });
         const finalResp = await callLLM(messages);
         if (finalResp.ok) {

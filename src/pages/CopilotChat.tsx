@@ -9,7 +9,7 @@ import {
   useCopilotChat,
 } from '@/api/queries';
 import { api } from '@/api/client';
-import { Bot, Send, Plus, Trash2, Settings, MessageSquare, Loader2, Sparkles, X, Check, Shield, Users, ClipboardList, Megaphone, Palmtree, BarChart3, Wrench, AlertTriangle, Paperclip, FileText } from 'lucide-react';
+import { Bot, Send, Plus, Trash2, Settings, MessageSquare, Loader2, Sparkles, X, Check, Shield, Users, ClipboardList, Megaphone, Palmtree, BarChart3, Wrench, AlertTriangle, Paperclip, FileText, Brain, Zap, Target } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -44,7 +44,9 @@ interface Conversation {
 // ─── Config Panel ────────────────────────────────────────────────────────────
 function CopilotConfigPanel({ config, onSave }: { config: any; onSave: (data: any) => void }) {
   const [form, setForm] = useState({
+    apiProvider: config?.apiProvider ?? 'groq',
     model: config?.model || 'llama-3.3-70b-versatile',
+    apiBaseUrl: config?.apiBaseUrl ?? '',
     canManageUsers: config?.canManageUsers ?? true,
     canManageEvaluations: config?.canManageEvaluations ?? true,
     canManageVacations: config?.canManageVacations ?? true,
@@ -52,7 +54,7 @@ function CopilotConfigPanel({ config, onSave }: { config: any; onSave: (data: an
     canManagePeriods: config?.canManagePeriods ?? false,
     canManageSystem: config?.canManageSystem ?? false,
     canViewReports: config?.canViewReports ?? true,
-    maxTokens: config?.maxTokens ?? 2048,
+    maxTokens: config?.maxTokens ?? 4096,
     temperature: config?.temperature ?? 0.3,
   });
 
@@ -61,11 +63,35 @@ function CopilotConfigPanel({ config, onSave }: { config: any; onSave: (data: an
     toast.success('Configuración guardada');
   };
 
-  const models = [
-    { value: 'llama-3.3-70b-versatile', label: 'Llama 3.3 70B (Recomendado)' },
-    { value: 'llama-3.1-8b-instant', label: 'Llama 3.1 8B (Más rápido)' },
-    { value: 'mixtral-8x7b-32768', label: 'Mixtral 8x7B' },
-    { value: 'gemma2-9b-it', label: 'Gemma 2 9B' },
+  const providers = [
+    { value: 'groq', label: 'Groq (Free/Low Cost)', models: [
+      { value: 'llama-3.3-70b-versatile', label: 'Llama 3.3 70B ⭐ Recomendado' },
+      { value: 'llama-3.1-8b-instant', label: 'Llama 3.1 8B (Más rápido)' },
+      { value: 'mixtral-8x7b-32768', label: 'Mixtral 8x7B' },
+      { value: 'gemma2-9b-it', label: 'Gemma 2 9B' },
+    ]},
+    { value: 'openai', label: 'OpenAI', models: [
+      { value: 'gpt-4o', label: 'GPT-4o ⭐ Mejor razonamiento' },
+      { value: 'gpt-4o-mini', label: 'GPT-4o Mini (Más rápido)' },
+      { value: 'gpt-4-turbo', label: 'GPT-4 Turbo' },
+    ]},
+    { value: 'openrouter', label: 'OpenRouter (Multi-provider)', models: [
+      { value: 'anthropic/claude-3.5-sonnet', label: 'Claude 3.5 Sonnet ⭐ Excelente' },
+      { value: 'google/gemini-2.0-flash-001', label: 'Gemini 2.0 Flash' },
+      { value: 'meta-llama/llama-3.3-70b-instruct', label: 'Llama 3.3 70B' },
+      { value: 'openai/gpt-4o', label: 'GPT-4o' },
+    ]},
+    { value: 'ollama', label: 'Ollama (Local/Self-hosted)', models: [
+      { value: 'llama3.3:70b', label: 'Llama 3.3 70B' },
+      { value: 'qwen2.5:72b', label: 'Qwen 2.5 72B' },
+      { value: 'mistral:7b', label: 'Mistral 7B' },
+    ]},
+    { value: 'custom', label: 'Personalizado (API compatible con OpenAI)', models: [] },
+  ];
+
+  const currentProvider = providers.find(p => p.value === form.apiProvider) || providers[0];
+  const models = currentProvider.models.length > 0 ? currentProvider.models : [
+    { value: form.model, label: 'Modelo personalizado' },
   ];
 
   const permissions = [
@@ -112,154 +138,117 @@ function CopilotConfigPanel({ config, onSave }: { config: any; onSave: (data: an
       <Separator />
       <div>
         <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
-          <Shield className="h-4 w-4 text-accent" /> Permisos del Agente
+          <Shield className="h-4 w-4 text-accent" /> Permisos
         </h3>
-        <p className="text-xs text-muted-foreground mb-3">
-          Define qué acciones puede realizar el agente IA.
-        </p>
         <div className="space-y-3">
-          {permissions.map(({ key, label, icon: Icon, desc }) => (
-            <div key={key} className="flex items-start gap-3 p-2 rounded-lg hover:bg-muted/50">
-              <Switch
-                checked={!!(form as any)[key]}
-                onCheckedChange={(checked) => setForm({ ...form, [key]: checked })}
-              />
-              <div className="flex-1">
-                <div className="flex items-center gap-2">
-                  <Icon className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm font-medium">{label}</span>
+          {permissions.map(p => (
+            <div key={p.key} className="flex items-center justify-between py-1">
+              <div className="flex items-center gap-2">
+                <p.icon className="h-4 w-4 text-muted-foreground" />
+                <div>
+                  <p className="text-sm font-medium">{p.label}</p>
+                  <p className="text-xs text-muted-foreground">{p.desc}</p>
                 </div>
-                <p className="text-xs text-muted-foreground mt-0.5">{desc}</p>
               </div>
+              <Switch checked={form[p.key as keyof typeof form] as boolean}
+                onCheckedChange={(v) => setForm({ ...form, [p.key]: v })} />
             </div>
           ))}
         </div>
       </div>
-      <Separator />
-      <div className="p-3 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-xs flex items-start gap-2">
-        <AlertTriangle className="h-4 w-4 flex-shrink-0 mt-0.5" />
-        <div>
-          <p className="font-medium">Seguridad</p>
-          <p>Permisos como "Gestionar Sistema" permiten al agente activar/desactivar módulos. Úsalos con precaución.</p>
-        </div>
-      </div>
-      <Button onClick={handleSave} className="w-full">
-        <Check className="h-4 w-4 mr-2" /> Guardar Configuración
-      </Button>
+      <Button onClick={handleSave} className="w-full">Guardar</Button>
     </div>
   );
 }
 
-// ─── Main Chat Component ─────────────────────────────────────────────────────
+// ─── Main Copilot Chat ───────────────────────────────────────────────────────
 export default function CopilotChat() {
   const { user: currentUser } = useAuth();
-  const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
-  const [messageInput, setMessageInput] = useState('');
+  const { data: config } = useCopilotConfig();
+  const updateConfig = useUpdateCopilotConfig();
+  const { data: conversations = [], isLoading: convsLoading } = useCopilotConversations();
+  const [selectedConvId, setSelectedConvId] = useState<string | null>(null);
+  const { data: selectedConv, isLoading: convLoading } = useCopilotConversation(selectedConvId || '');
+  const deleteConv = useDeleteCopilotConversation();
+  const chatMutation = useCopilotChat();
   const [localMessages, setLocalMessages] = useState<Message[]>([]);
+  const [messageInput, setMessageInput] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
   const [attachedFile, setAttachedFile] = useState<File | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const { data: config } = useCopilotConfig();
-  const updateConfig = useUpdateCopilotConfig();
-  const { data: conversations } = useCopilotConversations();
-  const { data: conversationDetail } = useCopilotConversation(activeConversationId || '');
-  const deleteConversation = useDeleteCopilotConversation();
-  const chatMutation = useCopilotChat();
+  const scrollToBottom = useCallback(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, []);
 
-  // Load messages when switching conversations
+  useEffect(() => { scrollToBottom(); }, [localMessages, isStreaming, scrollToBottom]);
+
   useEffect(() => {
-    if (conversationDetail?.messages) {
-      const msgs = conversationDetail.messages.map((m: any) => ({
+    if (selectedConv?.messages) {
+      setLocalMessages(selectedConv.messages.map((m: any) => ({
         id: m.id,
-        role: m.role as 'user' | 'assistant',
+        role: m.role,
         content: m.content,
-        createdAt: m.createdAt || m.created_at,
-      }));
-      setLocalMessages(msgs);
-    } else if (!activeConversationId) {
+        createdAt: m.createdAt,
+        fileName: m.fileName,
+      })));
+    } else {
       setLocalMessages([]);
     }
-  }, [conversationDetail, activeConversationId]);
+  }, [selectedConv]);
 
-  // Scroll to bottom
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [localMessages]);
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) setAttachedFile(file);
+    e.target.value = '';
+  };
 
-  const handleSend = useCallback(async () => {
-    const trimmed = messageInput.trim();
-    if (!trimmed && !attachedFile) return;
+  const handleSend = async () => {
+    const content = messageInput.trim();
+    if (!content && !attachedFile) return;
 
-    const userMessage: Message = {
-      id: `temp-${Date.now()}`,
+    const userMsg: Message = {
+      id: crypto.randomUUID(),
       role: 'user',
-      content: trimmed,
+      content,
       createdAt: new Date().toISOString(),
       fileName: attachedFile?.name,
     };
 
-    setLocalMessages(prev => [...prev, userMessage]);
+    setLocalMessages(prev => [...prev, userMsg]);
     setMessageInput('');
-    const fileToUpload = attachedFile;
-    setAttachedFile(null);
     setIsStreaming(true);
 
     try {
-      let result: any;
-      if (fileToUpload) {
-        const formData = new FormData();
-        if (trimmed) formData.append('message', trimmed);
-        if (activeConversationId) formData.append('conversationId', activeConversationId);
-        formData.append('file', fileToUpload);
-        result = await api.upload<{ conversationId: string; message: any }>('/api/copilot/chat', formData);
-      } else {
-        result = await new Promise<any>((resolve, reject) => {
-          chatMutation.mutate(
-            { conversationId: activeConversationId || undefined, message: trimmed },
-            {
-              onSuccess: resolve,
-              onError: reject,
-            }
-          );
-        });
+      const formData = new FormData();
+      formData.append('message', content);
+      if (attachedFile) formData.append('file', attachedFile);
+      if (selectedConvId) formData.append('conversationId', selectedConvId);
+
+      const result = await chatMutation.mutateAsync(formData as any);
+      if (!selectedConvId && result.conversationId) {
+        setSelectedConvId(result.conversationId);
       }
 
-      const assistantMessage: Message = {
-        id: result.message.id,
+      const assistantMsg: Message = {
+        id: crypto.randomUUID(),
         role: 'assistant',
-        content: result.message.content,
+        content: result.message?.content || result.message || 'No pude procesar tu solicitud.',
         createdAt: new Date().toISOString(),
       };
 
-      setLocalMessages(prev => [...prev, assistantMessage]);
-      if (!activeConversationId && result.conversationId) {
-        setActiveConversationId(result.conversationId);
-      }
-    } catch (error: any) {
-      const errMsg = error?.message || '';
-      let friendlyMsg = 'Lo siento, hubo un error al procesar tu mensaje.';
-      if (errMsg.includes('429') || errMsg.includes('saturado') || errMsg.includes('rate')) {
-        friendlyMsg = 'El servicio de IA está temporalmente saturado. Por favor espera unos segundos e intenta de nuevo. 🕐';
-      } else if (errMsg.includes('Cannot connect')) {
-        friendlyMsg = 'No pude conectar con el servidor. ¿Está corriendo el servidor?';
-      }
-      toast.error(friendlyMsg);
-      const errorMessage: Message = {
-        id: `error-${Date.now()}`,
-        role: 'assistant',
-        content: friendlyMsg,
-        createdAt: new Date().toISOString(),
-      };
-      setLocalMessages(prev => [...prev, errorMessage]);
+      setLocalMessages(prev => [...prev, assistantMsg]);
+      setAttachedFile(null);
+    } catch (err: any) {
+      toast.error(err.message || 'Error al enviar mensaje');
     } finally {
       setIsStreaming(false);
     }
-  }, [messageInput, attachedFile, activeConversationId, chatMutation]);
+  };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSend();
@@ -267,135 +256,114 @@ export default function CopilotChat() {
   };
 
   const handleNewConversation = () => {
-    setActiveConversationId(null);
+    setSelectedConvId(null);
     setLocalMessages([]);
     setMessageInput('');
+    setAttachedFile(null);
   };
 
-  const handleDeleteConversation = (id: string) => {
-    deleteConversation.mutate(id, {
-      onSuccess: () => {
-        if (activeConversationId === id) {
-          setActiveConversationId(null);
-          setLocalMessages([]);
-        }
-        toast.success('Conversación eliminada');
-      },
-    });
-  };
-
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const ext = file.name.toLowerCase().slice(file.name.lastIndexOf('.'));
-      if (!['.csv', '.xlsx', '.xls', '.json', '.txt', '.md'].includes(ext)) {
-        toast.error('Formato no soportado. Usa CSV, Excel, JSON, TXT o MD.');
-        return;
+  const handleDeleteConversation = async (convId: string) => {
+    try {
+      await deleteConv.mutateAsync(convId);
+      if (selectedConvId === convId) {
+        setSelectedConvId(null);
+        setLocalMessages([]);
       }
-      setAttachedFile(file);
+      toast.success('Conversación eliminada');
+    } catch {
+      toast.error('Error al eliminar conversación');
     }
-    e.target.value = '';
   };
+
+  // ─── Smart suggestions that demonstrate agentic capabilities ──────────
+  const smartSuggestions = [
+    { text: 'Resumen de evaluaciones pendientes', icon: Target },
+    { text: 'Analizar calificaciones del periodo', icon: BarChart3 },
+    { text: 'Buscar usuario por nombre', icon: Users },
+    { text: 'Vacaciones pendientes de aprobar', icon: Palmtree },
+  ];
 
   return (
-    <div className="flex h-[calc(100vh-4rem)] gap-0">
-      {/* ─── Sidebar ──────────────────────────────────────────── */}
-      <div className="w-72 border-r flex flex-col bg-muted/30">
+    <div className="h-[calc(100vh-3.5rem)] flex">
+      {/* Sidebar — conversations list */}
+      <div className="w-64 border-r bg-card flex-shrink-0 hidden md:flex flex-col">
         <div className="p-3 border-b">
-          <Button onClick={handleNewConversation} className="w-full" size="sm">
-            <Plus className="h-4 w-4 mr-2" /> Nueva conversación
+          <Button onClick={handleNewConversation} variant="outline" className="w-full justify-start gap-2 text-sm">
+            <Plus className="h-4 w-4" /> Nueva conversación
           </Button>
         </div>
-
         <ScrollArea className="flex-1">
           <div className="p-2 space-y-1">
-            {conversations?.map((conv: Conversation) => (
-              <div
-                key={conv.id}
-                onClick={() => setActiveConversationId(conv.id)}
-                className={`group flex items-center gap-2 p-2 rounded-lg cursor-pointer text-sm transition-colors ${
-                  activeConversationId === conv.id
-                    ? 'bg-accent/10 text-accent font-medium'
-                    : 'hover:bg-muted'
-                }`}
-              >
-                <MessageSquare className="h-4 w-4 flex-shrink-0 opacity-50" />
-                <span className="flex-1 truncate">{conv.title}</span>
-                <button
-                  onClick={(e) => { e.stopPropagation(); handleDeleteConversation(conv.id); }}
-                  className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-opacity"
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </button>
-              </div>
-            ))}
-            {(!conversations || conversations.length === 0) && (
-              <p className="text-xs text-muted-foreground text-center py-4">
-                Sin conversaciones aún
-              </p>
+            {convsLoading ? (
+              <div className="p-3 text-xs text-muted-foreground text-center">Cargando...</div>
+            ) : conversations.length === 0 ? (
+              <div className="p-3 text-xs text-muted-foreground text-center">Sin conversaciones</div>
+            ) : (
+              conversations.map((conv: Conversation) => (
+                <div key={conv.id} className={`group flex items-center gap-2 px-3 py-2 rounded-md text-sm cursor-pointer transition-[background-color,color] duration-150 ${
+                  selectedConvId === conv.id ? 'bg-accent/10 text-accent font-medium' : 'hover:bg-muted text-foreground'
+                }`} onClick={() => setSelectedConvId(conv.id)}>
+                  <MessageSquare className="h-3.5 w-3.5 flex-shrink-0 text-muted-foreground" />
+                  <span className="flex-1 truncate">{conv.title || 'Sin título'}</span>
+                  <button onClick={(e) => { e.stopPropagation(); handleDeleteConversation(conv.id); }}
+                    className="opacity-0 group-hover:opacity-100 p-1 hover:text-destructive transition-[opacity,color] duration-150">
+                    <Trash2 className="h-3 w-3" />
+                  </button>
+                </div>
+              ))
             )}
           </div>
         </ScrollArea>
-
-        {/* Config button */}
-        <div className="p-3 border-t">
-          <Dialog>
-            <DialogTrigger asChild>
-              <Button variant="outline" size="sm" className="w-full">
-                <Settings className="h-4 w-4 mr-2" /> Configurar Agente
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>Configuración del Copiloto</DialogTitle>
-              </DialogHeader>
-              {config && <CopilotConfigPanel config={config} onSave={(data) => updateConfig.mutate(data)} />}
-            </DialogContent>
-          </Dialog>
-        </div>
       </div>
 
-      {/* ─── Chat Area ────────────────────────────────────────── */}
-      <div className="flex-1 flex flex-col">
+      {/* Chat area */}
+      <div className="flex-1 flex flex-col min-w-0">
         {/* Header */}
-        <div className="px-6 py-3 border-b flex items-center gap-3">
-          <div className="h-9 w-9 rounded-full bg-accent/10 flex items-center justify-center">
-            <Bot className="h-5 w-5 text-accent" />
+        <div className="h-12 border-b flex items-center justify-between px-4 flex-shrink-0">
+          <div className="flex items-center gap-2">
+            <div className="h-7 w-7 rounded-md bg-accent/10 flex items-center justify-center">
+              <Brain className="h-4 w-4 text-accent" />
+            </div>
+            <div>
+              <h2 className="text-sm font-semibold leading-none">Copiloto SMPS</h2>
+              <p className="text-[10px] text-muted-foreground">Asistente agéntico de evaluación</p>
+            </div>
           </div>
-          <div>
-            <h2 className="text-sm font-semibold">Copiloto SMPS</h2>
-            <p className="text-xs text-muted-foreground">Asistente inteligente del sistema</p>
+          <div className="flex items-center gap-1">
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-8 w-8"><Settings className="h-4 w-4" /></Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Configuración del Copiloto</DialogTitle>
+                </DialogHeader>
+                {config && <CopilotConfigPanel config={config} onSave={(data: any) => updateConfig.mutate(data)} />}
+              </DialogContent>
+            </Dialog>
           </div>
-          <Badge variant="secondary" className="ml-auto text-xs">
-            <Sparkles className="h-3 w-3 mr-1" /> IA Activa
-          </Badge>
         </div>
 
         {/* Messages */}
         <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
           {localMessages.length === 0 && (
             <div className="flex flex-col items-center justify-center h-full text-center">
-              <div className="h-16 w-16 rounded-full bg-accent/10 flex items-center justify-center mb-4">
-                <Bot className="h-8 w-8 text-accent" />
+              <div className="h-16 w-16 rounded-2xl bg-accent/10 flex items-center justify-center mb-4 smps-scale-in">
+                <Zap className="h-8 w-8 text-accent" />
               </div>
-              <h3 className="text-lg font-semibold mb-1">¡Hola, {currentUser?.name?.split(' ')[0] || 'Admin'}!</h3>
-              <p className="text-sm text-muted-foreground max-w-md">
-                Soy tu Copiloto SMPS. Puedo ayudarte con usuarios, evaluaciones, periodos, vacaciones y más.
-                ¿En qué te puedo ayudar hoy?
+              <h3 className="font-display text-lg font-semibold mb-1 smps-fade-up smps-delay-1">Copiloto SMPS</h3>
+              <p className="text-sm text-muted-foreground max-w-xs mb-6 smps-fade-up smps-delay-2">
+                Asistente inteligente para gestión de evaluaciones. Analiza datos, busca información y ejecuta acciones.
               </p>
-              <div className="flex flex-wrap gap-2 mt-4 justify-center">
-                {[
-                  '¿Cuántos usuarios activos hay?',
-                  '¿Qué periodos de evaluación existen?',
-                  'Crear un nuevo usuario',
-                  'Vacaciones pendientes',
-                ].map((suggestion) => (
+              <div className="flex flex-wrap gap-2 mt-2 justify-center smps-fade-up smps-delay-3">
+                {smartSuggestions.map((s) => (
                   <button
-                    key={suggestion}
-                    onClick={() => { setMessageInput(suggestion); inputRef.current?.focus(); }}
-                    className="px-3 py-1.5 rounded-full border text-xs hover:bg-accent/10 hover:border-accent transition-colors"
+                    key={s.text}
+                    onClick={() => { setMessageInput(s.text); inputRef.current?.focus(); }}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs hover:bg-accent/10 hover:border-accent transition-[background-color,border-color,color] duration-150 active:scale-[0.97]"
                   >
-                    {suggestion}
+                    <s.icon className="h-3 w-3" />
+                    {s.text}
                   </button>
                 ))}
               </div>
@@ -403,10 +371,10 @@ export default function CopilotChat() {
           )}
 
           {localMessages.map((msg) => (
-            <div key={msg.id} className={`flex gap-3 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+            <div key={msg.id} className={`flex gap-3 ${msg.role === 'user' ? 'justify-end' : 'justify-start'} smps-fade-up`}>
               {msg.role === 'assistant' && (
                 <div className="h-8 w-8 rounded-full bg-accent/10 flex items-center justify-center flex-shrink-0 mt-1">
-                  <Bot className="h-4 w-4 text-accent" />
+                  <Brain className="h-4 w-4 text-accent" />
                 </div>
               )}
               <div className={`max-w-[75%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${
@@ -433,14 +401,14 @@ export default function CopilotChat() {
           ))}
 
           {isStreaming && (
-            <div className="flex gap-3 justify-start">
+            <div className="flex gap-3 justify-start smps-fade-in">
               <div className="h-8 w-8 rounded-full bg-accent/10 flex items-center justify-center flex-shrink-0">
-                <Bot className="h-4 w-4 text-accent" />
+                <Brain className="h-4 w-4 text-accent" />
               </div>
               <div className="bg-muted rounded-2xl px-4 py-3">
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  <span>Pensando...</span>
+                  <span>Analizando...</span>
                 </div>
               </div>
             </div>
@@ -455,7 +423,7 @@ export default function CopilotChat() {
               <FileText className="h-4 w-4 text-accent" />
               <span className="flex-1 truncate">{attachedFile.name}</span>
               <span className="text-muted-foreground">{(attachedFile.size / 1024).toFixed(1)} KB</span>
-              <button onClick={() => setAttachedFile(null)} className="text-muted-foreground hover:text-destructive">
+              <button onClick={() => setAttachedFile(null)} className="text-muted-foreground hover:text-destructive transition-[color] duration-150">
                 <X className="h-4 w-4" />
               </button>
             </div>
@@ -476,7 +444,7 @@ export default function CopilotChat() {
               variant="ghost"
               size="icon"
               onClick={() => fileInputRef.current?.click()}
-              className="flex-shrink-0"
+              className="flex-shrink-0 active:scale-95"
               title="Adjuntar archivo"
             >
               <Paperclip className="h-5 w-5" />
@@ -494,7 +462,7 @@ export default function CopilotChat() {
               onClick={handleSend}
               disabled={isStreaming || (!messageInput.trim() && !attachedFile)}
               size="icon"
-              className="flex-shrink-0 rounded-xl"
+              className="flex-shrink-0 rounded-xl active:scale-95"
             >
               <Send className="h-5 w-5" />
             </Button>

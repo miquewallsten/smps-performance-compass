@@ -73,23 +73,23 @@ export default function Dashboard() {
     const positions = [...new Set(groupUsers.map(u => u.position))];
     return (
       <div className="mb-3">
-        <h4 className="text-xs font-bold text-accent uppercase tracking-widest mb-2">{groupLabel}</h4>
+        <h4 className="text-xs font-bold text-accent uppercase tracking-widest mb-2 flex items-center"><span className="smps-accent-dot" />{groupLabel}</h4>
         {positions.map(pos => {
           const posUsers = groupUsers.filter(u => u.position === pos);
           return (
             <div key={pos} className="mb-2">
               <h5 className="text-[11px] font-semibold text-muted-foreground mb-1">{POSITION_LABELS[pos]} ({posUsers.length})</h5>
-              <div className="space-y-0.5">
+              <div className="space-y-0.5 smps-stagger">
                 {posUsers.map(u => {
                   const hasSelfEval = periodEvals.some(e => e.type === 'self' && e.evaluatorId === u.id);
                   const userAssigns = periodAssignments.filter(a => a.employeeId === u.id);
                   const completedSup = periodEvals.filter(e => e.type === 'supervisor' && e.evaluatedId === u.id);
                   return (
-                    <div key={u.id} className="flex items-center justify-between py-1.5 px-3 rounded-md bg-muted/40 text-sm hover:bg-muted/60 transition-colors">
+                    <div key={u.id} className="flex items-center justify-between py-1.5 px-3 rounded-md bg-muted/40 text-sm hover:bg-muted/60 transition-[background-color] duration-150 smps-fade-up">
                       <span className="font-medium">{u.name}</span>
-                      <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                        {hasSelfEval && <CheckCircle className="h-3.5 w-3.5 text-smps-success" />}
-                        <span>{completedSup.length}/{userAssigns.length}</span>
+                      <div className="flex items-center gap-3 text-xs">
+                        <span className="flex items-center gap-1" title="Autoevaluación">{hasSelfEval ? <CheckCircle className="h-3 w-3 text-smps-success" /> : <Clock className="h-3 w-3 text-muted-foreground" />}</span>
+                        <span className="text-muted-foreground">{completedSup.length}/{userAssigns.length} sup</span>
                       </div>
                     </div>
                   );
@@ -104,58 +104,53 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div>
-          <h1 className="font-display text-xl font-bold">Panel Principal</h1>
-          <p className="text-xs text-muted-foreground">Periodo: {CURRENT_PERIOD}</p>
-        </div>
-        {isAdminOrSocio && (
-          <div className="flex items-center gap-1 bg-card rounded-md border p-0.5">
-            {([
-              { value: 'all', label: 'Todos' },
-              { value: 'legal', label: 'Legal' },
-              { value: 'administrativo', label: 'Administrativo' },
-            ] as const).map(opt => (
-              <button key={opt.value} onClick={() => setSelectedLevel(opt.value)}
-                className={`px-3 py-1 rounded text-xs font-medium transition-all duration-150 ${
-                  selectedLevel === opt.value ? 'bg-accent text-accent-foreground' : 'text-muted-foreground hover:text-foreground'
-                }`}>
-                {opt.label}
-              </button>
-            ))}
-          </div>
-        )}
+      <div className="flex items-baseline justify-between">
+        <h1 className="font-display text-2xl font-bold">Panel de Control</h1>
+        <p className="text-xs text-muted-foreground">{CURRENT_PERIOD}</p>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <button onClick={() => toggleCard('employees')} className="smps-stat-card smps-fade-up smps-delay-1 text-left">
+      {isAdminOrSocio && (
+        <div className="flex gap-1.5 flex-wrap">
+          {['all', 'legal', 'administrativo', ...POSITION_HIERARCHY].map(level => (
+            <button key={level} onClick={() => setSelectedLevel(level)}
+              className={`px-3 py-1 rounded text-xs font-medium transition-[background-color,color] duration-150 active:scale-[0.97] ${
+                selectedLevel === level ? 'bg-accent text-accent-foreground' : 'bg-muted/50 text-muted-foreground hover:text-foreground'
+              }`}>
+              {level === 'all' ? 'Todos' : level === 'legal' ? 'Legal' : level === 'administrativo' ? 'Administrativo' : POSITION_LABELS[level as Position] || level}
+            </button>
+          ))}
+        </div>
+      )}
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <button onClick={() => toggleCard('employees')} className="smps-stat-card smps-reveal text-left">
           <div className="flex items-center justify-between mb-2">
-            <Users className="h-4 w-4 text-muted-foreground" />
-            <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${expandedCard === 'employees' ? 'rotate-180' : ''}`} />
+            <Users className="h-4 w-4 text-accent" />
+            <ChevronDown className={`h-3.5 w-3.5 text-muted-foreground transition-transform duration-150 ${expandedCard === 'employees' ? 'rotate-180' : ''}`} />
           </div>
           <p className="smps-stat-value">{totalEmployees}</p>
           <p className="text-[11px] text-muted-foreground uppercase tracking-wide">Empleados</p>
         </button>
 
-        <button onClick={() => toggleCard('evaluated')} className="smps-stat-card smps-fade-up smps-delay-2 text-left">
+        <button onClick={() => toggleCard('evaluated')} className="smps-stat-card smps-reveal text-left" style={{ animationDelay: '60ms' }}>
           <div className="flex items-center justify-between mb-2">
             <CheckCircle className="h-4 w-4 text-smps-success" />
-            <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${expandedCard === 'evaluated' ? 'rotate-180' : ''}`} />
+            <ChevronDown className={`h-3.5 w-3.5 text-muted-foreground transition-transform duration-150 ${expandedCard === 'evaluated' ? 'rotate-180' : ''}`} />
           </div>
-          <p className="smps-stat-value">{evaluatedCount}<span className="text-sm font-normal text-muted-foreground">/{totalEmployees}</span></p>
+          <p className="smps-stat-value">{evaluatedCount}</p>
           <p className="text-[11px] text-muted-foreground uppercase tracking-wide">Evaluados</p>
         </button>
 
-        <button onClick={() => toggleCard('progress')} className="smps-stat-card smps-fade-up smps-delay-3 text-left">
+        <button onClick={() => toggleCard('progress')} className="smps-stat-card smps-reveal text-left" style={{ animationDelay: '120ms' }}>
           <div className="flex items-center justify-between mb-2">
-            <Clock className="h-4 w-4 text-muted-foreground" />
-            <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${expandedCard === 'progress' ? 'rotate-180' : ''}`} />
+            <Clock className="h-4 w-4 text-smps-gold" />
+            <ChevronDown className={`h-3.5 w-3.5 text-muted-foreground transition-transform duration-150 ${expandedCard === 'progress' ? 'rotate-180' : ''}`} />
           </div>
           <p className="smps-stat-value">{selfEvalCount}</p>
           <p className="text-[11px] text-muted-foreground uppercase tracking-wide">Autoevaluaciones</p>
         </button>
 
-        <div className="smps-stat-card smps-fade-up smps-delay-4">
+        <div className="smps-stat-card smps-reveal" style={{ animationDelay: '180ms' }}>
           <div className="flex items-center justify-between mb-2">
             <TrendingUp className="h-4 w-4 text-accent" />
           </div>
@@ -165,16 +160,16 @@ export default function Dashboard() {
       </div>
 
       {expandedCard === 'employees' && (
-        <div className="smps-surface-card smps-fade-in">
-          <p className="smps-section-title">Listado por Nivel ({totalEmployees})</p>
+        <div className="smps-surface-card smps-scale-in">
+          <p className="smps-section-title flex items-center"><span className="smps-accent-dot" />Listado por Nivel ({totalEmployees})</p>
           {renderUserGroup(legalUsers, 'Legal')}
           {renderUserGroup(adminUsersGroup, 'Administrativo')}
         </div>
       )}
 
       {expandedCard === 'evaluated' && (
-        <div className="smps-surface-card smps-fade-in">
-          <p className="smps-section-title">Evaluados — {CURRENT_PERIOD}</p>
+        <div className="smps-surface-card smps-scale-in">
+          <p className="smps-section-title flex items-center"><span className="smps-accent-dot" />Evaluados — {CURRENT_PERIOD}</p>
           {relevantEvals.length === 0 ? (
             <p className="text-sm text-muted-foreground">No hay evaluaciones completadas.</p>
           ) : (
@@ -184,8 +179,8 @@ export default function Dashboard() {
       )}
 
       {expandedCard === 'progress' && (
-        <div className="smps-surface-card smps-fade-in">
-          <p className="smps-section-title">Progreso por Posición</p>
+        <div className="smps-surface-card smps-scale-in">
+          <p className="smps-section-title flex items-center"><span className="smps-gold-dot" />Progreso por Posición</p>
           {POSITION_HIERARCHY.map(pos => {
             const posUsers = relevantUsers.filter(u => u.position === pos);
             if (posUsers.length === 0) return null;
@@ -205,8 +200,8 @@ export default function Dashboard() {
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        <div className="smps-surface-elevated">
-          <p className="smps-section-title">Mi Autoevaluación</p>
+        <div className="smps-surface-elevated smps-reveal">
+          <p className="smps-section-title flex items-center"><span className="smps-accent-dot" />Mi Autoevaluación</p>
           {mySelfEval ? (
             <div className="flex items-center gap-3">
               <CheckCircle className="h-5 w-5 text-smps-success" />
@@ -219,29 +214,29 @@ export default function Dashboard() {
             <div>
               <p className="text-sm text-muted-foreground mb-3">No has completado tu autoevaluación para este periodo.</p>
               <button onClick={() => navigate('/self-evaluation')}
-                className="px-4 py-2 rounded-md bg-accent text-accent-foreground text-sm font-medium hover:opacity-90 transition-all duration-150 active:scale-[0.98]">
+                className="smps-btn px-4 py-2 bg-accent text-accent-foreground text-sm hover:opacity-90">
                 Iniciar Autoevaluación
               </button>
             </div>
           )}
         </div>
 
-        <div className="smps-surface-elevated">
-          <p className="smps-section-title">Evaluaciones Pendientes</p>
+        <div className="smps-surface-elevated smps-reveal" style={{ animationDelay: '60ms' }}>
+          <p className="smps-section-title flex items-center"><span className="smps-gold-dot" />Evaluaciones Pendientes</p>
           {myPendingEvals.length === 0 ? (
             <div className="flex items-center gap-2">
               <CheckCircle className="h-4 w-4 text-smps-success" />
               <p className="text-sm">No tienes evaluaciones pendientes</p>
             </div>
           ) : (
-            <div className="space-y-1.5">
+            <div className="space-y-1.5 smps-stagger">
               {myPendingEvals.map(a => {
                 const emp = users.find(u => u.id === a.employeeId);
                 return (
-                  <div key={a.id} className="flex items-center justify-between py-1.5 px-3 rounded-md bg-muted/40 hover:bg-muted/60 transition-colors">
+                  <div key={a.id} className="flex items-center justify-between py-1.5 px-3 rounded-md bg-muted/40 hover:bg-muted/60 transition-[background-color] duration-150">
                     <p className="text-sm">{emp?.name} <span className="text-xs text-muted-foreground">— {emp ? POSITION_LABELS[emp.position] : ''}</span></p>
                     <button onClick={() => navigate(`/evaluations?evaluate=${a.employeeId}`)}
-                      className="px-3 py-1 rounded-md bg-accent text-accent-foreground text-xs font-medium hover:opacity-90 transition-all duration-150 active:scale-[0.98]">
+                      className="smps-btn px-3 py-1 bg-accent text-accent-foreground text-xs hover:opacity-90">
                       Evaluar
                     </button>
                   </div>

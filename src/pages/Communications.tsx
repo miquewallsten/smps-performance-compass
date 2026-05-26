@@ -114,7 +114,7 @@ export default function Communications() {
     const readers = getReaders(ann);
 
     return (
-      <Card key={ann.id} className={`transition-all ${!isRead ? 'border-accent/40 shadow-md' : 'opacity-90'}`}>
+      <Card key={ann.id} className={`transition-[border-color,box-shadow,opacity] ${!isRead ? 'border-accent/40 shadow-md' : 'opacity-90'}`}>
         <CardHeader className="pb-2">
           <div className="flex items-start justify-between gap-3">
             <div className="flex-1 min-w-0">
