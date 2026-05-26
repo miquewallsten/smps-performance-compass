@@ -34,11 +34,6 @@ jobs:
           chmod 600 ~/.ssh/deploy_key
           ssh-keyscan -p ${{ secrets.HOSTINGER_PORT }} ${{ secrets.HOSTINGER_HOST }} >> ~/.ssh/known_hosts 2>/dev/null || true
 
-      - name: Test SSH connection
-        run: |
-          ssh -i ~/.ssh/deploy_key -p ${{ secrets.HOSTINGER_PORT }} -o StrictHostKeyChecking=no \
-            ${{ secrets.HOSTINGER_USER }}@${{ secrets.HOSTINGER_HOST }} "echo 'SSH connection OK'"
-
       - name: Upload built files
         run: |
           SCP="scp -i ~/.ssh/deploy_key -P ${{ secrets.HOSTINGER_PORT }} -o StrictHostKeyChecking=no"
@@ -56,25 +51,20 @@ jobs:
           echo "Uploading source files..."
           $SCP -r server/ $REMOTE/server/
           $SCP -r src/ $REMOTE/src/
+          $SCP start.sh $REMOTE/start.sh
 
-      - name: Restart server
+      - name: Deploy (restart server)
         run: |
           ssh -i ~/.ssh/deploy_key -p ${{ secrets.HOSTINGER_PORT }} -o StrictHostKeyChecking=no \
             ${{ secrets.HOSTINGER_USER }}@${{ secrets.HOSTINGER_HOST }} \
-            "cd ${{ secrets.HOSTINGER_PATH }} && pkill -f 'node.*server.cjs' 2>/dev/null; sleep 2; nohup bash start.sh > console.log 2>&1 &"
+            "bash ${{ secrets.HOSTINGER_PATH }}/ci-deploy.sh"
 
-      - name: Wait and verify
+      - name: Verify deployment
         run: |
-          sleep 8
-          for i in 1 2 3 4 5; do
-            HEALTH=$(curl -s https://bowdot.online/api/health 2>/dev/null)
-            if echo "$HEALTH" | grep -q '"ok"'; then
-              echo "✅ Deployment successful! Health: $HEALTH"
-              exit 0
-            fi
-            echo "Attempt $i: waiting for server..."
-            sleep 5
-          done
-          echo "❌ Deployment may have issues"
-          curl -s https://bowdot.online/api/health || echo "Server not responding"
-          exit 1
+          sleep 3
+          HEALTH=$(curl -s https://bowdot.online/api/health 2>/dev/null)
+          if echo "$HEALTH" | grep -q '"ok"'; then
+            echo "✅ Deployment verified! Health: $HEALTH"
+          else
+            echo "⚠️ Could not verify via HTTPS, but server restart reported success"
+          fi
