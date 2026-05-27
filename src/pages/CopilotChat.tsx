@@ -10,7 +10,7 @@ import {
   useCopilotChat,
 } from '@/api/queries';
 import { api } from '@/api/client';
-import { Bot, Send, Plus, Trash2, Settings, MessageSquare, Loader2, Sparkles, X, Check, Shield, Users, ClipboardList, Megaphone, Palmtree, BarChart3, Wrench, AlertTriangle, Paperclip, FileText, Brain, Zap, Target, Eye, EyeOff } from 'lucide-react';
+import { Bot, Send, Plus, Trash2, Settings, MessageSquare, Loader2, Sparkles, X, Check, Shield, Users, ClipboardList, Megaphone, Palmtree, BarChart3, Wrench, AlertTriangle, Paperclip, FileText, Brain, Zap, Target, Eye, EyeOff, Menu, PanelLeftClose } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -223,6 +223,7 @@ export default function CopilotChat() {
   const [messageInput, setMessageInput] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
   const [attachedFile, setAttachedFile] = useState<File | null>(null);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -350,7 +351,8 @@ export default function CopilotChat() {
   return (
     <div className="h-full flex overflow-hidden">
       {/* Sidebar — conversations list */}
-      <div className="w-56 lg:w-64 border-r bg-card flex-shrink-0 hidden md:flex flex-col">
+      {sidebarOpen && (
+        <div className="w-56 lg:w-64 border-r bg-card flex-shrink-0 flex flex-col">
         <div className="p-3 border-b space-y-2">
           <Button onClick={handleNewConversation} variant="outline" className="w-full justify-start gap-2 text-sm">
             <Plus className="h-4 w-4" /> Nueva conversación
@@ -384,12 +386,20 @@ export default function CopilotChat() {
           </div>
         </ScrollArea>
       </div>
+      )}
 
       {/* Chat area */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Header */}
-        <div className="h-12 border-b flex items-center justify-between px-4 flex-shrink-0">
+        <div className="h-12 border-b flex items-center justify-between px-3 flex-shrink-0">
           <div className="flex items-center gap-2">
+            <button
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              className="p-1.5 rounded-md hover:bg-muted transition-colors"
+              title={sidebarOpen ? 'Ocultar historial' : 'Mostrar historial'}
+            >
+              {sidebarOpen ? <PanelLeftClose className="h-4 w-4 text-muted-foreground" /> : <Menu className="h-4 w-4 text-muted-foreground" />}
+            </button>
             <div className="h-7 w-7 rounded-md bg-accent/10 flex items-center justify-center">
               <Brain className="h-4 w-4 text-accent" />
             </div>
