@@ -117125,7 +117125,7 @@ var upload = (0, import_multer.default)({
     cb(null, [".csv", ".xlsx", ".xls", ".json", ".txt", ".md"].includes(ext));
   }
 });
-router13.use(authMiddleware, requireAdmin);
+router13.use(authMiddleware, requireSuperUser);
 router13.use(async (_req, res, next) => {
   try {
     const moduleConfig = await db.get("SELECT copilot FROM module_config WHERE id=1");

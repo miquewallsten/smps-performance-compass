@@ -61,7 +61,7 @@ class ErrorBoundary extends Component<{children: ReactNode}, {hasError: boolean,
 }
 
 function AppRoutes() {
-  const { user, loading, systemInitialized, moduleConfig } = useAuth();
+  const { user, loading, systemInitialized, moduleConfig, isSuperUser } = useAuth();
 
   if (loading) {
     return <div className="flex items-center justify-center min-h-screen">Cargando...</div>;
@@ -101,7 +101,7 @@ function AppRoutes() {
         <Route path="question-library" element={<QuestionLibrary />} />
         <Route path="my-action-plan" element={<MyActionPlan />} />
         <Route path="my-profile" element={<MyProfile />} />
-        <Route path="copilot" element={moduleConfig?.copilot ? <CopilotChat /> : <Navigate to="/dashboard" replace />} />
+        <Route path="copilot" element={moduleConfig?.copilot && isSuperUser ? <CopilotChat /> : <Navigate to="/dashboard" replace />} />
       </Route>
       <Route path="/help" element={<Help />} />
       <Route path="*" element={<NotFound />} />

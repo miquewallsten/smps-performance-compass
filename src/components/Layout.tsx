@@ -118,7 +118,7 @@ export default function Layout() {
     { to: '/communications', icon: Megaphone, label: 'Comunicación', show: showCommModule, badge: unreadAnnouncementCount },
     { to: '/vacations', icon: Palmtree, label: 'Vacaciones', show: showVacModule, badge: pendingVacationCount },
     { to: '/period-config', icon: Calendar, label: 'Periodos', show: isAdminOrSuper },
-    { to: '/copilot', icon: Bot, label: 'Copilot', show: modules.copilot && (isAdminOrSuper || isManagingPartner) },
+    { to: '/copilot', icon: Bot, label: 'Copilot', show: modules.copilot && isSuperUser },
     { to: '/settings', icon: Settings, label: 'Config', show: true },
   ];
 

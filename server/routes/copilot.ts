@@ -4,7 +4,7 @@ import multer from 'multer';
 import * as XLSX from 'xlsx';
 import { db } from '../db/connection.js';
 import { authMiddleware } from '../middleware/auth.js';
-import { requireAdmin } from '../middleware/rbac.js';
+import { requireSuperUser } from '../middleware/rbac.js';
 import { hashPassword } from '../auth/security.js';
 
 const router = Router();
@@ -16,7 +16,7 @@ const upload = multer({
     cb(null, ['.csv', '.xlsx', '.xls', '.json', '.txt', '.md'].includes(ext));
   }
 });
-router.use(authMiddleware, requireAdmin);
+router.use(authMiddleware, requireSuperUser);
 
 // Check if copilot module is enabled
 router.use(async (_req: Request, res: Response, next: NextFunction) => {
