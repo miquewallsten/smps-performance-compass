@@ -288,7 +288,7 @@ export default function PositionManagement() {
                     <input type="text" value={newArea.label} onChange={e => setNewArea(p => ({ ...p, label: e.target.value }))} placeholder="ej. Corporativo" className="w-full px-3 py-2 rounded-lg border border-input bg-background text-foreground text-sm" />
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-foreground">Nivel</label>
+                    <label className="text-sm font-medium text-foreground">Área</label>
                     <select value={newArea.level} onChange={e => setNewArea(p => ({ ...p, level: e.target.value as PositionLevel }))} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm">
                       <option value="legal">Legal</option>
                       <option value="administrativo">Administrativo</option>
