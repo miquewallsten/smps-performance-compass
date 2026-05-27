@@ -20,8 +20,8 @@ export const MOCK_USERS: User[] = [
   { id: 'u5', name: 'Lic. Diego Ramírez', email: 'dramirez@smps.com', position: 'pasante_carrera', isAdmin: false, isActive: true, password: '1234' },
   { id: 'u6', name: 'Lic. Mariana Vega', email: 'mvega@smps.com', position: 'pasante_carrera', isAdmin: false, isActive: true, password: '1234' },
   // Pasantes Corporativos
-  { id: 'u7', name: 'Laura Hernández', email: 'lhernandez@smps.com', position: 'pasante_corporativo', isAdmin: false, isActive: true, password: '1234' },
-  { id: 'u8', name: 'Miguel Ángel López', email: 'malopez@smps.com', position: 'pasante_corporativo', isAdmin: false, isActive: true, password: '1234' },
+  { id: 'u7', name: 'Laura Hernández', email: 'lhernandez@smps.com', position: 'pasante', isAdmin: false, isActive: true, password: '1234' },
+  { id: 'u8', name: 'Miguel Ángel López', email: 'malopez@smps.com', position: 'pasante', isAdmin: false, isActive: true, password: '1234' },
 
   // === ADMINISTRATIVO ===
   // Director
@@ -36,7 +36,7 @@ export const MOCK_USERS: User[] = [
   { id: 'u11', name: 'Gabriela Ortiz', email: 'gortiz@smps.com', position: 'asistente', isAdmin: false, isActive: true, password: '1234' },
   { id: 'u12', name: 'Alejandra Núñez', email: 'anunez@smps.com', position: 'asistente', isAdmin: false, isActive: false, password: '1234' },
   // Archivo y Soporte
-  { id: 'u16', name: 'José Luis Paredes', email: 'jparedes@smps.com', position: 'archivo_soporte', isAdmin: false, isActive: true, password: '1234' },
+  { id: 'u16', name: 'José Luis Paredes', email: 'jparedes@smps.com', position: 'archivista', isAdmin: false, isActive: true, password: '1234' },
 ];
 
 export const MOCK_ASSIGNMENTS: SupervisorAssignment[] = [

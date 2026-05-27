@@ -113351,11 +113351,10 @@ async function migrate() {
     console.log("  Seeding work_areas...");
     const now = (/* @__PURE__ */ new Date()).toISOString();
     const areas = [
-      ["corporativo", "Corporativo", "legal", 1],
-      ["consultoria_fiscal", "Consultor\xEDa Fiscal", "legal", 2],
-      ["litigio_fiscal", "Litigio Fiscal", "legal", 3],
-      ["general", "Legal (General)", "legal", 4],
-      ["administrativo", "Administrativo", "administrativo", 5]
+      ["fiscal_consultoria", "Fiscal Consultor\xEDa", "legal", 1],
+      ["fiscal_litigio", "Fiscal Litigio", "legal", 2],
+      ["corporativo", "Corporativo", "legal", 3],
+      ["backoffice", "Backoffice", "administrativo", 4]
     ];
     for (const [id, label, level, sortOrder] of areas) {
       await run(
@@ -113371,10 +113370,10 @@ async function migrate() {
   if (nullWorkAreaCount && nullWorkAreaCount > 0) {
     console.log(`  Migrating ${nullWorkAreaCount} positions to work_area_id...`);
     await run(
-      "UPDATE custom_positions SET work_area_id = 'administrativo' WHERE work_area_id IS NULL AND level = 'administrativo'"
+      "UPDATE custom_positions SET work_area_id = 'backoffice' WHERE work_area_id IS NULL AND level = 'administrativo'"
     );
     await run(
-      "UPDATE custom_positions SET work_area_id = COALESCE(practice_area, 'general') WHERE work_area_id IS NULL AND level = 'legal'"
+      "UPDATE custom_positions SET work_area_id = COALESCE(practice_area, 'corporativo') WHERE work_area_id IS NULL AND level = 'legal'"
     );
     console.log("  \u2713 positions migrated to work_area_id");
   }
@@ -113383,35 +113382,44 @@ async function migrate() {
     console.log("  Seeding positions into custom_positions...");
     const now = (/* @__PURE__ */ new Date()).toISOString();
     const positions = [
-      ["SMPS01", "Socio Consultor\xEDa Fiscal", "consultoria_fiscal", "socio"],
-      ["SMPS02", "Socio Litigio Fiscal", "litigio_fiscal", "socio"],
+      ["SMPS01", "Socio Consultor\xEDa Fiscal", "fiscal_consultoria", "socio"],
+      ["SMPS02", "Socio Litigio Fiscal", "fiscal_litigio", "socio"],
       ["SMPS03", "Socio Corporativo", "corporativo", "socio"],
-      ["SMPS04", "Counsel", "general", "counsel"],
-      ["SMPS05", "Asociado Sr Consultor\xEDa Fiscal", "consultoria_fiscal", "asociado_sr"],
-      ["SMPS06", "Asociado Sr Litigio Fiscal", "litigio_fiscal", "asociado_sr"],
-      ["SMPS07", "Asociado Sr Corporativo", "corporativo", "asociado_sr"],
-      ["SMPS08", "Asociado Mid Consultor\xEDa Fiscal", "consultoria_fiscal", "asociado_mid"],
-      ["SMPS09", "Asociado Mid Litigio Fiscal", "litigio_fiscal", "asociado_mid"],
-      ["SMPS10", "Asociado Mid Corporativo", "corporativo", "asociado_mid"],
-      ["SMPS11", "Asociado Jr Consultor\xEDa Fiscal", "consultoria_fiscal", "asociado_jr"],
-      ["SMPS12", "Asociado Jr Corporativo", "corporativo", "asociado_jr"],
-      ["SMPS13", "Pasante con Carrera Terminada Litigio Fiscal", "litigio_fiscal", "pasante_carrera"],
-      ["SMPS14", "Pasante con Carrera Terminada Corporativo", "corporativo", "pasante_carrera"],
-      ["SMPS15", "Pasante Corporativo", "corporativo", "pasante_corporativo"],
-      ["SMPS16", "Director de Marketing y BD", "administrativo", "director"],
-      ["SMPS17", "Directora de Adm\xF3n y Finanzas", "administrativo", "director"],
-      ["SMPS18", "Directora de Recursos Humanos", "administrativo", "director"],
-      ["SMPS19", "Coord. Cobranza", "administrativo", "coordinador"],
-      ["SMPS20", "Coord. Servicios Generales", "administrativo", "coordinador"],
-      ["SMPS21", "Coordinador de BD", "administrativo", "coordinador"],
-      ["SMPS22", "Coordinador de Marketing", "administrativo", "coordinador"],
-      ["SMPS23", "Coordinadora de R.H.", "administrativo", "coordinador"],
-      ["SMPS24", "Gte. Facturaci\xF3n y Cobranza", "administrativo", "gerente"],
-      ["SMPS25", "Analista Sistemas", "administrativo", "analista"],
-      ["SMPS26", "Soporte Sistemas", "administrativo", "archivo_soporte"],
-      ["SMPS27", "Archivista", "administrativo", "archivo_soporte"],
-      ["SMPS28", "Asistente Consultor\xEDa Fiscal", "administrativo", "asistente"],
-      ["SMPS29", "Asistente Corporativo", "administrativo", "asistente"]
+      ["SMPS04", "Salary Partner Consultor\xEDa Fiscal", "fiscal_consultoria", "salary_partner"],
+      ["SMPS05", "Salary Partner Litigio Fiscal", "fiscal_litigio", "salary_partner"],
+      ["SMPS06", "Salary Partner Corporativo", "corporativo", "salary_partner"],
+      ["SMPS07", "Counsel Consultor\xEDa Fiscal", "fiscal_consultoria", "counsel"],
+      ["SMPS08", "Counsel Litigio Fiscal", "fiscal_litigio", "counsel"],
+      ["SMPS09", "Counsel Corporativo", "corporativo", "counsel"],
+      ["SMPS10", "Asociado Sr Consultor\xEDa Fiscal", "fiscal_consultoria", "asociado_sr"],
+      ["SMPS11", "Asociado Sr Litigio Fiscal", "fiscal_litigio", "asociado_sr"],
+      ["SMPS12", "Asociado Sr Corporativo", "corporativo", "asociado_sr"],
+      ["SMPS13", "Asociado Mid Consultor\xEDa Fiscal", "fiscal_consultoria", "asociado_mid"],
+      ["SMPS14", "Asociado Mid Litigio Fiscal", "fiscal_litigio", "asociado_mid"],
+      ["SMPS15", "Asociado Mid Corporativo", "corporativo", "asociado_mid"],
+      ["SMPS16", "Asociado Jr Consultor\xEDa Fiscal", "fiscal_consultoria", "asociado_jr"],
+      ["SMPS17", "Asociado Jr Litigio Fiscal", "fiscal_litigio", "asociado_jr"],
+      ["SMPS18", "Asociado Jr Corporativo", "corporativo", "asociado_jr"],
+      ["SMPS19", "Pasante con Carrera Terminada Consultor\xEDa Fiscal", "fiscal_consultoria", "pasante_carrera"],
+      ["SMPS20", "Pasante con Carrera Terminada Litigio Fiscal", "fiscal_litigio", "pasante_carrera"],
+      ["SMPS21", "Pasante con Carrera Terminada Corporativo", "corporativo", "pasante_carrera"],
+      ["SMPS22", "Pasante Consultor\xEDa Fiscal", "fiscal_consultoria", "pasante"],
+      ["SMPS23", "Pasante Litigio Fiscal", "fiscal_litigio", "pasante"],
+      ["SMPS24", "Pasante Corporativo", "corporativo", "pasante"],
+      ["SMPS25", "Director de Marketing y BD", "backoffice", "director"],
+      ["SMPS26", "Directora de Adm\xF3n y Finanzas", "backoffice", "director"],
+      ["SMPS27", "Directora de Recursos Humanos", "backoffice", "director"],
+      ["SMPS28", "Coord. Cobranza", "backoffice", "coordinador"],
+      ["SMPS29", "Coord. Servicios Generales", "backoffice", "coordinador"],
+      ["SMPS30", "Coordinador de BD", "backoffice", "coordinador"],
+      ["SMPS31", "Coordinador de Marketing", "backoffice", "coordinador"],
+      ["SMPS32", "Coordinadora de R.H.", "backoffice", "coordinador"],
+      ["SMPS33", "Gte. Facturaci\xF3n y Cobranza", "backoffice", "gerente"],
+      ["SMPS34", "Analista Sistemas", "backoffice", "analista"],
+      ["SMPS35", "Soporte Sistemas", "backoffice", "soporte"],
+      ["SMPS36", "Archivista", "backoffice", "archivista"],
+      ["SMPS37", "Asistente Consultor\xEDa Fiscal", "backoffice", "asistente"],
+      ["SMPS38", "Asistente Corporativo", "backoffice", "asistente"]
     ];
     for (const [id, label, workAreaId, basePosition] of positions) {
       await run(
@@ -115208,9 +115216,9 @@ var USERS = [
   { name: "Lic. Ana Luc\xEDa Torres", email: "atorres@smps.com", position: "asociado_mid", practiceArea: "corporativo", isAdmin: false, isManagingPartner: false, isActive: true, password: "1234" },
   { name: "Lic. Emilio Casta\xF1eda", email: "ecastaneda@smps.com", position: "asociado_jr", practiceArea: "corporativo", isAdmin: false, isManagingPartner: false, isActive: true, password: "1234" },
   { name: "Lic. Diego Ram\xEDrez", email: "dramirez@smps.com", position: "pasante_carrera", practiceArea: "corporativo", isAdmin: false, isManagingPartner: false, isActive: true, password: "1234" },
-  { name: "Lic. Mariana Vega", email: "mvega@smps.com", position: "pasante_carrera", practiceArea: "litigio_fiscal", isAdmin: false, isManagingPartner: false, isActive: true, password: "1234" },
-  { name: "Laura Hern\xE1ndez", email: "lhernandez@smps.com", position: "pasante_corporativo", isAdmin: false, isManagingPartner: false, isActive: true, password: "1234" },
-  { name: "Miguel \xC1ngel L\xF3pez", email: "malopez@smps.com", position: "pasante_corporativo", isAdmin: false, isManagingPartner: false, isActive: true, password: "1234" },
+  { name: "Lic. Mariana Vega", email: "mvega@smps.com", position: "pasante_carrera", practiceArea: "fiscal_litigio", isAdmin: false, isManagingPartner: false, isActive: true, password: "1234" },
+  { name: "Laura Hern\xE1ndez", email: "lhernandez@smps.com", position: "pasante", isAdmin: false, isManagingPartner: false, isActive: true, password: "1234" },
+  { name: "Miguel \xC1ngel L\xF3pez", email: "malopez@smps.com", position: "pasante", isAdmin: false, isManagingPartner: false, isActive: true, password: "1234" },
   // === ADMINISTRATIVO ===
   { name: "Ing. Rafael Dom\xEDnguez", email: "rdominguez@smps.com", position: "director", isAdmin: false, isManagingPartner: false, isActive: true, password: "1234" },
   { name: "Lic. Ver\xF3nica Campos", email: "vcampos@smps.com", position: "gerente", isAdmin: false, isManagingPartner: false, isActive: true, password: "1234" },
@@ -115218,7 +115226,7 @@ var USERS = [
   { name: "Fernando Ruiz", email: "fruiz@smps.com", position: "analista", isAdmin: false, isManagingPartner: false, isActive: true, password: "1234" },
   { name: "Gabriela Ortiz", email: "gortiz@smps.com", position: "asistente", isAdmin: false, isManagingPartner: false, isActive: true, password: "1234" },
   { name: "Alejandra N\xFA\xF1ez", email: "anunez@smps.com", position: "asistente", isAdmin: false, isManagingPartner: false, isActive: false, password: "1234" },
-  { name: "Jos\xE9 Luis Paredes", email: "jparedes@smps.com", position: "archivo_soporte", isAdmin: false, isManagingPartner: false, isActive: true, password: "1234" }
+  { name: "Jos\xE9 Luis Paredes", email: "jparedes@smps.com", position: "archivista", isAdmin: false, isManagingPartner: false, isActive: true, password: "1234" }
 ];
 var ASSIGNMENTS = [
   { employeeEmail: "cmendoza@smps.com", supervisorEmail: "psalinas@smps.com", period: "2026-H1" },
@@ -116057,42 +116065,54 @@ var import_express4 = __toESM(require_express2(), 1);
 
 // server/data/positionCatalog.ts
 var WORK_AREAS = [
-  { id: "corporativo", label: "Corporativo", level: "legal", sortOrder: 1 },
-  { id: "consultoria_fiscal", label: "Consultor\xEDa Fiscal", level: "legal", sortOrder: 2 },
-  { id: "litigio_fiscal", label: "Litigio Fiscal", level: "legal", sortOrder: 3 },
-  { id: "general", label: "Legal (General)", level: "legal", sortOrder: 4 },
-  { id: "administrativo", label: "Administrativo", level: "administrativo", sortOrder: 5 }
+  { id: "fiscal_consultoria", label: "Fiscal Consultor\xEDa", level: "legal", sortOrder: 1 },
+  { id: "fiscal_litigio", label: "Fiscal Litigio", level: "legal", sortOrder: 2 },
+  { id: "corporativo", label: "Corporativo", level: "legal", sortOrder: 3 },
+  { id: "backoffice", label: "Backoffice", level: "administrativo", sortOrder: 4 }
 ];
 var POSITION_CATALOG = [
-  { cve: "SMPS01", label: "Socio Consultor\xEDa Fiscal", basePosition: "socio", workAreaId: "consultoria_fiscal" },
-  { cve: "SMPS02", label: "Socio Litigio Fiscal", basePosition: "socio", workAreaId: "litigio_fiscal" },
+  // Legal - Fiscal Consultoría
+  { cve: "SMPS01", label: "Socio Consultor\xEDa Fiscal", basePosition: "socio", workAreaId: "fiscal_consultoria" },
+  { cve: "SMPS04", label: "Salary Partner Consultor\xEDa Fiscal", basePosition: "salary_partner", workAreaId: "fiscal_consultoria" },
+  { cve: "SMPS07", label: "Counsel Consultor\xEDa Fiscal", basePosition: "counsel", workAreaId: "fiscal_consultoria" },
+  { cve: "SMPS10", label: "Asociado Sr Consultor\xEDa Fiscal", basePosition: "asociado_sr", workAreaId: "fiscal_consultoria" },
+  { cve: "SMPS13", label: "Asociado Mid Consultor\xEDa Fiscal", basePosition: "asociado_mid", workAreaId: "fiscal_consultoria" },
+  { cve: "SMPS16", label: "Asociado Jr Consultor\xEDa Fiscal", basePosition: "asociado_jr", workAreaId: "fiscal_consultoria" },
+  { cve: "SMPS19", label: "Pasante con Carrera Terminada Consultor\xEDa Fiscal", basePosition: "pasante_carrera", workAreaId: "fiscal_consultoria" },
+  { cve: "SMPS22", label: "Pasante Consultor\xEDa Fiscal", basePosition: "pasante", workAreaId: "fiscal_consultoria" },
+  // Legal - Fiscal Litigio
+  { cve: "SMPS02", label: "Socio Litigio Fiscal", basePosition: "socio", workAreaId: "fiscal_litigio" },
+  { cve: "SMPS05", label: "Salary Partner Litigio Fiscal", basePosition: "salary_partner", workAreaId: "fiscal_litigio" },
+  { cve: "SMPS08", label: "Counsel Litigio Fiscal", basePosition: "counsel", workAreaId: "fiscal_litigio" },
+  { cve: "SMPS11", label: "Asociado Sr Litigio Fiscal", basePosition: "asociado_sr", workAreaId: "fiscal_litigio" },
+  { cve: "SMPS14", label: "Asociado Mid Litigio Fiscal", basePosition: "asociado_mid", workAreaId: "fiscal_litigio" },
+  { cve: "SMPS17", label: "Asociado Jr Litigio Fiscal", basePosition: "asociado_jr", workAreaId: "fiscal_litigio" },
+  { cve: "SMPS20", label: "Pasante con Carrera Terminada Litigio Fiscal", basePosition: "pasante_carrera", workAreaId: "fiscal_litigio" },
+  { cve: "SMPS23", label: "Pasante Litigio Fiscal", basePosition: "pasante", workAreaId: "fiscal_litigio" },
+  // Legal - Corporativo
   { cve: "SMPS03", label: "Socio Corporativo", basePosition: "socio", workAreaId: "corporativo" },
-  { cve: "SMPS04", label: "Counsel", basePosition: "counsel", workAreaId: "general" },
-  { cve: "SMPS05", label: "Asociado Sr Consultor\xEDa Fiscal", basePosition: "asociado_sr", workAreaId: "consultoria_fiscal" },
-  { cve: "SMPS06", label: "Asociado Sr Litigio Fiscal", basePosition: "asociado_sr", workAreaId: "litigio_fiscal" },
-  { cve: "SMPS07", label: "Asociado Sr Corporativo", basePosition: "asociado_sr", workAreaId: "corporativo" },
-  { cve: "SMPS08", label: "Asociado Mid Consultor\xEDa Fiscal", basePosition: "asociado_mid", workAreaId: "consultoria_fiscal" },
-  { cve: "SMPS09", label: "Asociado Mid Litigio Fiscal", basePosition: "asociado_mid", workAreaId: "litigio_fiscal" },
-  { cve: "SMPS10", label: "Asociado Mid Corporativo", basePosition: "asociado_mid", workAreaId: "corporativo" },
-  { cve: "SMPS11", label: "Asociado Jr Consultor\xEDa Fiscal", basePosition: "asociado_jr", workAreaId: "consultoria_fiscal" },
-  { cve: "SMPS12", label: "Asociado Jr Corporativo", basePosition: "asociado_jr", workAreaId: "corporativo" },
-  { cve: "SMPS13", label: "Pasante con Carrera Terminada Litigio Fiscal", basePosition: "pasante_carrera", workAreaId: "litigio_fiscal" },
-  { cve: "SMPS14", label: "Pasante con Carrera Terminada Corporativo", basePosition: "pasante_carrera", workAreaId: "corporativo" },
-  { cve: "SMPS15", label: "Pasante Corporativo", basePosition: "pasante_corporativo", workAreaId: "corporativo" },
-  { cve: "SMPS16", label: "Director de Marketing y BD", basePosition: "director", workAreaId: "administrativo" },
-  { cve: "SMPS17", label: "Directora de Adm\xF3n y Finanzas", basePosition: "director", workAreaId: "administrativo" },
-  { cve: "SMPS18", label: "Directora de Recursos Humanos", basePosition: "director", workAreaId: "administrativo" },
-  { cve: "SMPS19", label: "Coord. Cobranza", basePosition: "coordinador", workAreaId: "administrativo" },
-  { cve: "SMPS20", label: "Coord. Servicios Generales", basePosition: "coordinador", workAreaId: "administrativo" },
-  { cve: "SMPS21", label: "Coordinador de BD", basePosition: "coordinador", workAreaId: "administrativo" },
-  { cve: "SMPS22", label: "Coordinador de Marketing", basePosition: "coordinador", workAreaId: "administrativo" },
-  { cve: "SMPS23", label: "Coordinadora de R.H.", basePosition: "coordinador", workAreaId: "administrativo" },
-  { cve: "SMPS24", label: "Gte. Facturaci\xF3n y Cobranza", basePosition: "gerente", workAreaId: "administrativo" },
-  { cve: "SMPS25", label: "Analista Sistemas", basePosition: "analista", workAreaId: "administrativo" },
-  { cve: "SMPS26", label: "Soporte Sistemas", basePosition: "archivo_soporte", workAreaId: "administrativo" },
-  { cve: "SMPS27", label: "Archivista", basePosition: "archivo_soporte", workAreaId: "administrativo" },
-  { cve: "SMPS28", label: "Asistente Consultor\xEDa Fiscal", basePosition: "asistente", workAreaId: "administrativo" },
-  { cve: "SMPS29", label: "Asistente Corporativo", basePosition: "asistente", workAreaId: "administrativo" }
+  { cve: "SMPS06", label: "Salary Partner Corporativo", basePosition: "salary_partner", workAreaId: "corporativo" },
+  { cve: "SMPS09", label: "Counsel Corporativo", basePosition: "counsel", workAreaId: "corporativo" },
+  { cve: "SMPS12", label: "Asociado Sr Corporativo", basePosition: "asociado_sr", workAreaId: "corporativo" },
+  { cve: "SMPS15", label: "Asociado Mid Corporativo", basePosition: "asociado_mid", workAreaId: "corporativo" },
+  { cve: "SMPS18", label: "Asociado Jr Corporativo", basePosition: "asociado_jr", workAreaId: "corporativo" },
+  { cve: "SMPS21", label: "Pasante con Carrera Terminada Corporativo", basePosition: "pasante_carrera", workAreaId: "corporativo" },
+  { cve: "SMPS24", label: "Pasante Corporativo", basePosition: "pasante", workAreaId: "corporativo" },
+  // Administrativo - Backoffice
+  { cve: "SMPS25", label: "Director de Marketing y BD", basePosition: "director", workAreaId: "backoffice" },
+  { cve: "SMPS26", label: "Directora de Adm\xF3n y Finanzas", basePosition: "director", workAreaId: "backoffice" },
+  { cve: "SMPS27", label: "Directora de Recursos Humanos", basePosition: "director", workAreaId: "backoffice" },
+  { cve: "SMPS28", label: "Coord. Cobranza", basePosition: "coordinador", workAreaId: "backoffice" },
+  { cve: "SMPS29", label: "Coord. Servicios Generales", basePosition: "coordinador", workAreaId: "backoffice" },
+  { cve: "SMPS30", label: "Coordinador de BD", basePosition: "coordinador", workAreaId: "backoffice" },
+  { cve: "SMPS31", label: "Coordinador de Marketing", basePosition: "coordinador", workAreaId: "backoffice" },
+  { cve: "SMPS32", label: "Coordinadora de R.H.", basePosition: "coordinador", workAreaId: "backoffice" },
+  { cve: "SMPS33", label: "Gte. Facturaci\xF3n y Cobranza", basePosition: "gerente", workAreaId: "backoffice" },
+  { cve: "SMPS34", label: "Analista Sistemas", basePosition: "analista", workAreaId: "backoffice" },
+  { cve: "SMPS35", label: "Soporte Sistemas", basePosition: "soporte", workAreaId: "backoffice" },
+  { cve: "SMPS36", label: "Archivista", basePosition: "archivista", workAreaId: "backoffice" },
+  { cve: "SMPS37", label: "Asistente Consultor\xEDa Fiscal", basePosition: "asistente", workAreaId: "backoffice" },
+  { cve: "SMPS38", label: "Asistente Corporativo", basePosition: "asistente", workAreaId: "backoffice" }
 ];
 
 // server/routes/system.ts
@@ -116108,14 +116128,15 @@ var VACATION_DEFAULTS = {
   asociado_sr: 15,
   asociado_mid: 15,
   asociado_jr: 10,
+  pasante: 10,
   pasante_carrera: 10,
-  pasante_corporativo: 10,
   director: 20,
   gerente: 15,
   coordinador: 15,
   analista: 10,
   asistente: 10,
-  archivo_soporte: 10
+  soporte: 10,
+  archivista: 10
 };
 router4.get("/initialized", async (_req, res) => {
   try {
@@ -116761,7 +116782,7 @@ var objectives_default = router7;
 var import_express8 = __toESM(require_express2(), 1);
 var router8 = (0, import_express8.Router)();
 function getUserLevel(user) {
-  const legalPositions = ["socio", "salary_partner", "counsel", "asociado_sr", "asociado_mid", "asociado_jr", "pasante_carrera", "pasante_corporativo"];
+  const legalPositions = ["socio", "salary_partner", "counsel", "asociado_sr", "asociado_mid", "asociado_jr", "pasante_carrera", "pasante"];
   return legalPositions.includes(user.position) ? "legal" : "administrativo";
 }
 router8.get("/", authMiddleware, async (req, res) => {
@@ -117691,8 +117712,12 @@ ARQUITECTURA DEL SISTEMA:
 - Escala de evaluaci\xF3n: 1 (No satisfactorio) \u2192 5 (Sobresaliente)
 - 3 secciones por puesto: Competencias, Criterio T\xE9cnico (solo legal), Habilidades Blandas
 - Cada secci\xF3n tiene peso global (% del total) y cada pregunta tiene peso individual
-- Posiciones legales: socio > salary_partner > asociado_sr > asociado_mid > asociado_jr > pasante_carrera > pasante_corporativo
-- Posiciones administrativas: director > gerente > coordinador > analista > asistente > archivo_soporte
+- Posiciones legales: socio > salary_partner > counsel > asociado_sr > asociado_mid > asociado_jr > pasante_carrera > pasante
+- Posiciones administrativas: director > gerente > coordinador > analista > asistente > soporte > archivista
+- \xC1reas de trabajo: fiscal_consultoria (Legal), fiscal_litigio (Legal), corporativo (Legal), backoffice (Administrativo)
+- Puestos (CVE) tienen: id (CVE como SMPS01), label (nombre), work_area_id (\xE1rea), base_position (posici\xF3n base para pesos/plantilla)
+- Al crear usuarios, asignar custom_position_id deriva autom\xE1ticamente position y practiceArea
+- Ubicaciones (locations): ciudad, oficina, piso, escritorio \u2014 asignables a usuarios
 - Jerarqu\xEDa de roles: SuperUser > Socio Administrador (max 1) > Usuario Administrador (max 2) > Socio regular > dem\xE1s usuarios
 - Tipos de evaluaci\xF3n: self (autoevaluaci\xF3n) y supervisor (evaluaci\xF3n del evaluador)
 - Flujo: Autoevaluaci\xF3n \u2192 Evaluaci\xF3n de Supervisor(es) \u2192 Sesi\xF3n de Feedback \u2192 Plan de Acci\xF3n
@@ -117709,6 +117734,9 @@ TUS CAPACIDADES DE ESCRITURA:
 - Puedes ASIGNAR supervisores
 - Puedes CREAR periodos de evaluaci\xF3n
 - Puedes CREAR comunicados y anuncios
+- Puedes GESTIONAR \xE1reas de trabajo (work_areas): listar, crear, modificar, eliminar
+- Puedes GESTIONAR puestos (positions): listar, crear, modificar, eliminar con CVE
+- Puedes GESTIONAR ubicaciones (locations): listar, crear, modificar, eliminar
 - Eres un verdadero ASISTENTE que lee Y escribe en el sistema. No solo informas, ACT\xDAAS.
 
 SEGURIDAD ESTRICTA:
@@ -118444,6 +118472,287 @@ function getTools(cfg) {
         }
         const vp = (await db.get("SELECT COUNT(*) c FROM vacation_requests WHERE status='pending'")).c;
         return JSON.stringify({ activeUsers: u, admins: a2, evalStats: es, pendingVacations: vp });
+      }
+    });
+  }
+  if (cfg.can_manage_users || cfg.can_manage_system) {
+    t.push({
+      name: "work_areas",
+      description: `Gesti\xF3n de \xE1reas de trabajo (pr\xE1ctica). Acciones:
+- list: listar todas las \xE1reas con sus puestos
+- get: obtener un \xE1rea por ID
+- create: crear nueva \xE1rea (campos: id, label, level, sort_order)
+- update: actualizar \xE1rea (campos: id, label?, level?, sort_order?)
+- delete: eliminar \xE1rea (requiere id, solo si no tiene puestos asignados)`,
+      parameters: {
+        type: "object",
+        properties: {
+          action: { type: "string", enum: ["list", "get", "create", "update", "delete"] },
+          id: { type: "string", description: "\xC1rea ID (slug, ej: fiscal_consultoria)" },
+          label: { type: "string", description: "Nombre del \xE1rea" },
+          level: { type: "string", enum: ["legal", "administrativo"], description: "Nivel del \xE1rea" },
+          sort_order: { type: "number", description: "Orden de aparici\xF3n" }
+        },
+        required: ["action"]
+      },
+      execute: async (args) => {
+        const act = args.action;
+        const now = (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "");
+        if (act === "list") {
+          const areas = await db.all("SELECT wa.*, (SELECT COUNT(*) FROM custom_positions WHERE work_area_id = wa.id) AS position_count FROM work_areas wa ORDER BY wa.sort_order, wa.label");
+          return JSON.stringify(areas);
+        }
+        if (act === "get") {
+          if (!args.id) return JSON.stringify({ error: "Falta id" });
+          const area = await db.get("SELECT * FROM work_areas WHERE id = ?", [args.id]);
+          if (!area) return JSON.stringify({ error: "\xC1rea no encontrada" });
+          const positions = await db.all("SELECT * FROM custom_positions WHERE work_area_id = ? ORDER BY id", [args.id]);
+          return JSON.stringify({ ...area, positions });
+        }
+        if (act === "create") {
+          if (!args.id || !args.label || !args.level) return JSON.stringify({ error: "Campos obligatorios: id, label, level" });
+          try {
+            await db.run(
+              "INSERT INTO work_areas (id, label, level, sort_order, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)",
+              [args.id, args.label, args.level, args.sort_order || 0, now, now]
+            );
+            return JSON.stringify({ ok: true, msg: `\xC1rea "${args.label}" creada` });
+          } catch (e) {
+            if (e.code === "ER_DUP_ENTRY") return JSON.stringify({ error: "Ya existe un \xE1rea con ese ID" });
+            return JSON.stringify({ error: e.message });
+          }
+        }
+        if (act === "update") {
+          if (!args.id) return JSON.stringify({ error: "Falta id del \xE1rea" });
+          const area = await db.get("SELECT * FROM work_areas WHERE id = ?", [args.id]);
+          if (!area) return JSON.stringify({ error: "\xC1rea no encontrada" });
+          const updates = [];
+          const vals = [];
+          if (args.label !== void 0) {
+            updates.push("label = ?");
+            vals.push(args.label);
+          }
+          if (args.level !== void 0) {
+            if (!["legal", "administrativo"].includes(args.level)) return JSON.stringify({ error: 'Level debe ser "legal" o "administrativo"' });
+            updates.push("level = ?");
+            vals.push(args.level);
+          }
+          if (args.sort_order !== void 0) {
+            updates.push("sort_order = ?");
+            vals.push(args.sort_order);
+          }
+          if (updates.length === 0) return JSON.stringify({ error: "Sin cambios" });
+          updates.push("updated_at = ?");
+          vals.push(now);
+          vals.push(args.id);
+          await db.run(`UPDATE work_areas SET ${updates.join(", ")} WHERE id = ?`, vals);
+          return JSON.stringify({ ok: true, msg: "\xC1rea actualizada" });
+        }
+        if (act === "delete") {
+          if (!args.id) return JSON.stringify({ error: "Falta id" });
+          const posCount = (await db.get("SELECT COUNT(*) c FROM custom_positions WHERE work_area_id = ?", [args.id])).c;
+          if (posCount > 0) return JSON.stringify({ error: `No se puede eliminar: tiene ${posCount} puesto(s) asignado(s). Elimina primero los puestos.` });
+          await db.run("DELETE FROM work_areas WHERE id = ?", [args.id]);
+          return JSON.stringify({ ok: true, msg: "\xC1rea eliminada" });
+        }
+        return JSON.stringify({ error: "Acci\xF3n desconocida" });
+      }
+    });
+    t.push({
+      name: "positions",
+      description: `Gesti\xF3n de puestos (CVE Puesto). Acciones:
+- list: listar puestos (filtro: work_area_id)
+- get: obtener puesto por CVE
+- create: crear puesto (campos: id/CVE, label, work_area_id, base_position)
+- update: actualizar puesto (campos: id/CVE actual, label?, work_area_id?, base_position?, new_id?)
+- delete: eliminar puesto (requiere id, solo si no tiene usuarios asignados)`,
+      parameters: {
+        type: "object",
+        properties: {
+          action: { type: "string", enum: ["list", "get", "create", "update", "delete"] },
+          id: { type: "string", description: "CVE del puesto (ej: SMPS12)" },
+          new_id: { type: "string", description: "Nuevo CVE al renombrar" },
+          label: { type: "string", description: "Nombre del puesto (ej: Asociado Sr Corporativo)" },
+          work_area_id: { type: "string", description: "ID del \xE1rea de trabajo (ej: fiscal_consultoria, backoffice)" },
+          base_position: { type: "string", description: "Posici\xF3n base (ej: socio, asociado_sr, director, asistente, etc.)" }
+        },
+        required: ["action"]
+      },
+      execute: async (args) => {
+        const act = args.action;
+        const now = (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "");
+        if (act === "list") {
+          let sql = `SELECT cp.*, wa.label AS work_area_label, wa.level AS work_area_level FROM custom_positions cp JOIN work_areas wa ON cp.work_area_id = wa.id`;
+          const params = [];
+          if (args.work_area_id) {
+            sql += " WHERE cp.work_area_id = ?";
+            params.push(args.work_area_id);
+          }
+          sql += " ORDER BY cp.id";
+          return JSON.stringify(await db.all(sql, params));
+        }
+        if (act === "get") {
+          if (!args.id) return JSON.stringify({ error: "Falta CVE" });
+          const pos = await db.get("SELECT cp.*, wa.label AS work_area_label, wa.level AS work_area_level FROM custom_positions cp JOIN work_areas wa ON cp.work_area_id = wa.id WHERE cp.id = ?", [args.id]);
+          if (!pos) return JSON.stringify({ error: "Puesto no encontrado" });
+          return JSON.stringify(pos);
+        }
+        if (act === "create") {
+          if (!args.id || !args.label || !args.work_area_id || !args.base_position) return JSON.stringify({ error: "Campos obligatorios: id (CVE), label, work_area_id, base_position" });
+          const area = await db.get("SELECT id FROM work_areas WHERE id = ?", [args.work_area_id]);
+          if (!area) return JSON.stringify({ error: "\xC1rea de trabajo no encontrada" });
+          try {
+            await db.run(
+              "INSERT INTO custom_positions (id, label, work_area_id, base_position, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)",
+              [args.id, args.label, args.work_area_id, args.base_position, now, now]
+            );
+            return JSON.stringify({ ok: true, msg: `Puesto ${args.id} "${args.label}" creado en \xE1rea ${args.work_area_id}` });
+          } catch (e) {
+            if (e.code === "ER_DUP_ENTRY") return JSON.stringify({ error: "Ya existe un puesto con ese CVE" });
+            return JSON.stringify({ error: e.message });
+          }
+        }
+        if (act === "update") {
+          if (!args.id) return JSON.stringify({ error: "Falta CVE del puesto a actualizar" });
+          const pos = await db.get("SELECT * FROM custom_positions WHERE id = ?", [args.id]);
+          if (!pos) return JSON.stringify({ error: "Puesto no encontrado" });
+          if (args.new_id && args.new_id !== args.id) {
+            const userCount = (await db.get("SELECT COUNT(*) c FROM users WHERE custom_position_id = ?", [args.id])).c;
+            if (userCount > 0) return JSON.stringify({ error: `No se puede cambiar el CVE: ${userCount} usuario(s) asignado(s). Remueve las asignaciones primero.` });
+          }
+          const updates = [];
+          const vals = [];
+          if (args.new_id && args.new_id !== args.id) {
+            updates.push("id = ?");
+            vals.push(args.new_id);
+          }
+          if (args.label !== void 0) {
+            updates.push("label = ?");
+            vals.push(args.label);
+          }
+          if (args.work_area_id !== void 0) {
+            const area = await db.get("SELECT id FROM work_areas WHERE id = ?", [args.work_area_id]);
+            if (!area) return JSON.stringify({ error: "\xC1rea de trabajo no encontrada" });
+            updates.push("work_area_id = ?");
+            vals.push(args.work_area_id);
+          }
+          if (args.base_position !== void 0) {
+            updates.push("base_position = ?");
+            vals.push(args.base_position);
+          }
+          if (updates.length === 0) return JSON.stringify({ error: "Sin cambios" });
+          updates.push("updated_at = ?");
+          vals.push(now);
+          const currentId = args.id;
+          vals.push(currentId);
+          await db.run(`UPDATE custom_positions SET ${updates.join(", ")} WHERE id = ?`, vals);
+          if (args.new_id && args.new_id !== args.id) {
+            await db.run("UPDATE users SET custom_position_id = ? WHERE custom_position_id = ?", [args.new_id, args.id]);
+          }
+          return JSON.stringify({ ok: true, msg: "Puesto actualizado" });
+        }
+        if (act === "delete") {
+          if (!args.id) return JSON.stringify({ error: "Falta CVE" });
+          const userCount = (await db.get("SELECT COUNT(*) c FROM users WHERE custom_position_id = ?", [args.id])).c;
+          if (userCount > 0) return JSON.stringify({ error: `No se puede eliminar: ${userCount} usuario(s) asignado(s). Remueve las asignaciones primero.` });
+          await db.run("DELETE FROM custom_positions WHERE id = ?", [args.id]);
+          return JSON.stringify({ ok: true, msg: "Puesto eliminado" });
+        }
+        return JSON.stringify({ error: "Acci\xF3n desconocida" });
+      }
+    });
+    t.push({
+      name: "locations",
+      description: `Gesti\xF3n de ubicaciones f\xEDsicas (ciudad, oficina, piso, escritorio). Acciones:
+- list: listar ubicaciones
+- get: obtener ubicaci\xF3n por ID
+- create: crear ubicaci\xF3n (campos: id, label, city?, office?, floor?, desk?, sort_order?)
+- update: actualizar ubicaci\xF3n (campos: id, label?, city?, office?, floor?, desk?, sort_order?)
+- delete: eliminar ubicaci\xF3n (solo si no tiene usuarios asignados)`,
+      parameters: {
+        type: "object",
+        properties: {
+          action: { type: "string", enum: ["list", "get", "create", "update", "delete"] },
+          id: { type: "string", description: "ID de ubicaci\xF3n (ej: cdmx-oficentro)" },
+          label: { type: "string", description: "Nombre/etiqueta de la ubicaci\xF3n" },
+          city: { type: "string", description: "Ciudad" },
+          office: { type: "string", description: "Oficina" },
+          floor: { type: "string", description: "Piso" },
+          desk: { type: "string", description: "Escritorio" },
+          sort_order: { type: "number", description: "Orden" }
+        },
+        required: ["action"]
+      },
+      execute: async (args) => {
+        const act = args.action;
+        const now = (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "");
+        if (act === "list") {
+          return JSON.stringify(await db.all("SELECT l.*, (SELECT COUNT(*) FROM users WHERE location_id = l.id) AS user_count FROM locations l ORDER BY l.sort_order, l.label"));
+        }
+        if (act === "get") {
+          if (!args.id) return JSON.stringify({ error: "Falta id" });
+          const loc = await db.get("SELECT * FROM locations WHERE id = ?", [args.id]);
+          if (!loc) return JSON.stringify({ error: "Ubicaci\xF3n no encontrada" });
+          return JSON.stringify(loc);
+        }
+        if (act === "create") {
+          if (!args.id || !args.label) return JSON.stringify({ error: "Campos obligatorios: id, label" });
+          try {
+            await db.run(
+              "INSERT INTO locations (id, label, city, office, floor, desk, sort_order, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+              [args.id, args.label, args.city || null, args.office || null, args.floor || null, args.desk || null, args.sort_order || 0, now, now]
+            );
+            return JSON.stringify({ ok: true, msg: `Ubicaci\xF3n "${args.label}" creada` });
+          } catch (e) {
+            if (e.code === "ER_DUP_ENTRY") return JSON.stringify({ error: "Ya existe una ubicaci\xF3n con ese ID" });
+            return JSON.stringify({ error: e.message });
+          }
+        }
+        if (act === "update") {
+          if (!args.id) return JSON.stringify({ error: "Falta id de la ubicaci\xF3n" });
+          const loc = await db.get("SELECT * FROM locations WHERE id = ?", [args.id]);
+          if (!loc) return JSON.stringify({ error: "Ubicaci\xF3n no encontrada" });
+          const updates = [];
+          const vals = [];
+          if (args.label !== void 0) {
+            updates.push("label = ?");
+            vals.push(args.label);
+          }
+          if (args.city !== void 0) {
+            updates.push("city = ?");
+            vals.push(args.city || null);
+          }
+          if (args.office !== void 0) {
+            updates.push("office = ?");
+            vals.push(args.office || null);
+          }
+          if (args.floor !== void 0) {
+            updates.push("floor = ?");
+            vals.push(args.floor || null);
+          }
+          if (args.desk !== void 0) {
+            updates.push("desk = ?");
+            vals.push(args.desk || null);
+          }
+          if (args.sort_order !== void 0) {
+            updates.push("sort_order = ?");
+            vals.push(args.sort_order);
+          }
+          if (updates.length === 0) return JSON.stringify({ error: "Sin cambios" });
+          updates.push("updated_at = ?");
+          vals.push(now);
+          vals.push(args.id);
+          await db.run(`UPDATE locations SET ${updates.join(", ")} WHERE id = ?`, vals);
+          return JSON.stringify({ ok: true, msg: "Ubicaci\xF3n actualizada" });
+        }
+        if (act === "delete") {
+          if (!args.id) return JSON.stringify({ error: "Falta id" });
+          const userCount = (await db.get("SELECT COUNT(*) c FROM users WHERE location_id = ?", [args.id])).c;
+          if (userCount > 0) return JSON.stringify({ error: `No se puede eliminar: ${userCount} usuario(s) asignado(s). Remueve las asignaciones primero.` });
+          await db.run("DELETE FROM locations WHERE id = ?", [args.id]);
+          return JSON.stringify({ ok: true, msg: "Ubicaci\xF3n eliminada" });
+        }
+        return JSON.stringify({ error: "Acci\xF3n desconocida" });
       }
     });
   }

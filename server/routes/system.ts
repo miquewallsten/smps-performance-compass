@@ -23,14 +23,15 @@ const VACATION_DEFAULTS: Record<string, number> = {
   asociado_sr: 15,
   asociado_mid: 15,
   asociado_jr: 10,
+  pasante: 10,
   pasante_carrera: 10,
-  pasante_corporativo: 10,
   director: 20,
   gerente: 15,
   coordinador: 15,
   analista: 10,
   asistente: 10,
-  archivo_soporte: 10,
+  soporte: 10,
+  archivista: 10,
 };
 
 // ─── GET /api/system/initialized ──────────────────────────────────────────────

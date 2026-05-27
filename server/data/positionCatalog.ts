@@ -6,11 +6,10 @@ export interface SeedWorkArea {
 }
 
 export const WORK_AREAS: SeedWorkArea[] = [
-  { id: 'corporativo', label: 'Corporativo', level: 'legal', sortOrder: 1 },
-  { id: 'consultoria_fiscal', label: 'Consultoría Fiscal', level: 'legal', sortOrder: 2 },
-  { id: 'litigio_fiscal', label: 'Litigio Fiscal', level: 'legal', sortOrder: 3 },
-  { id: 'general', label: 'Legal (General)', level: 'legal', sortOrder: 4 },
-  { id: 'administrativo', label: 'Administrativo', level: 'administrativo', sortOrder: 5 },
+  { id: 'fiscal_consultoria', label: 'Fiscal Consultoría', level: 'legal', sortOrder: 1 },
+  { id: 'fiscal_litigio', label: 'Fiscal Litigio', level: 'legal', sortOrder: 2 },
+  { id: 'corporativo', label: 'Corporativo', level: 'legal', sortOrder: 3 },
+  { id: 'backoffice', label: 'Backoffice', level: 'administrativo', sortOrder: 4 },
 ];
 
 export interface SeedPosition {
@@ -21,33 +20,49 @@ export interface SeedPosition {
 }
 
 export const POSITION_CATALOG: SeedPosition[] = [
-  { cve: 'SMPS01', label: 'Socio Consultoría Fiscal', basePosition: 'socio', workAreaId: 'consultoria_fiscal' },
-  { cve: 'SMPS02', label: 'Socio Litigio Fiscal', basePosition: 'socio', workAreaId: 'litigio_fiscal' },
+  // Legal - Fiscal Consultoría
+  { cve: 'SMPS01', label: 'Socio Consultoría Fiscal', basePosition: 'socio', workAreaId: 'fiscal_consultoria' },
+  { cve: 'SMPS04', label: 'Salary Partner Consultoría Fiscal', basePosition: 'salary_partner', workAreaId: 'fiscal_consultoria' },
+  { cve: 'SMPS07', label: 'Counsel Consultoría Fiscal', basePosition: 'counsel', workAreaId: 'fiscal_consultoria' },
+  { cve: 'SMPS10', label: 'Asociado Sr Consultoría Fiscal', basePosition: 'asociado_sr', workAreaId: 'fiscal_consultoria' },
+  { cve: 'SMPS13', label: 'Asociado Mid Consultoría Fiscal', basePosition: 'asociado_mid', workAreaId: 'fiscal_consultoria' },
+  { cve: 'SMPS16', label: 'Asociado Jr Consultoría Fiscal', basePosition: 'asociado_jr', workAreaId: 'fiscal_consultoria' },
+  { cve: 'SMPS19', label: 'Pasante con Carrera Terminada Consultoría Fiscal', basePosition: 'pasante_carrera', workAreaId: 'fiscal_consultoria' },
+  { cve: 'SMPS22', label: 'Pasante Consultoría Fiscal', basePosition: 'pasante', workAreaId: 'fiscal_consultoria' },
+
+  // Legal - Fiscal Litigio
+  { cve: 'SMPS02', label: 'Socio Litigio Fiscal', basePosition: 'socio', workAreaId: 'fiscal_litigio' },
+  { cve: 'SMPS05', label: 'Salary Partner Litigio Fiscal', basePosition: 'salary_partner', workAreaId: 'fiscal_litigio' },
+  { cve: 'SMPS08', label: 'Counsel Litigio Fiscal', basePosition: 'counsel', workAreaId: 'fiscal_litigio' },
+  { cve: 'SMPS11', label: 'Asociado Sr Litigio Fiscal', basePosition: 'asociado_sr', workAreaId: 'fiscal_litigio' },
+  { cve: 'SMPS14', label: 'Asociado Mid Litigio Fiscal', basePosition: 'asociado_mid', workAreaId: 'fiscal_litigio' },
+  { cve: 'SMPS17', label: 'Asociado Jr Litigio Fiscal', basePosition: 'asociado_jr', workAreaId: 'fiscal_litigio' },
+  { cve: 'SMPS20', label: 'Pasante con Carrera Terminada Litigio Fiscal', basePosition: 'pasante_carrera', workAreaId: 'fiscal_litigio' },
+  { cve: 'SMPS23', label: 'Pasante Litigio Fiscal', basePosition: 'pasante', workAreaId: 'fiscal_litigio' },
+
+  // Legal - Corporativo
   { cve: 'SMPS03', label: 'Socio Corporativo', basePosition: 'socio', workAreaId: 'corporativo' },
-  { cve: 'SMPS04', label: 'Counsel', basePosition: 'counsel', workAreaId: 'general' },
-  { cve: 'SMPS05', label: 'Asociado Sr Consultoría Fiscal', basePosition: 'asociado_sr', workAreaId: 'consultoria_fiscal' },
-  { cve: 'SMPS06', label: 'Asociado Sr Litigio Fiscal', basePosition: 'asociado_sr', workAreaId: 'litigio_fiscal' },
-  { cve: 'SMPS07', label: 'Asociado Sr Corporativo', basePosition: 'asociado_sr', workAreaId: 'corporativo' },
-  { cve: 'SMPS08', label: 'Asociado Mid Consultoría Fiscal', basePosition: 'asociado_mid', workAreaId: 'consultoria_fiscal' },
-  { cve: 'SMPS09', label: 'Asociado Mid Litigio Fiscal', basePosition: 'asociado_mid', workAreaId: 'litigio_fiscal' },
-  { cve: 'SMPS10', label: 'Asociado Mid Corporativo', basePosition: 'asociado_mid', workAreaId: 'corporativo' },
-  { cve: 'SMPS11', label: 'Asociado Jr Consultoría Fiscal', basePosition: 'asociado_jr', workAreaId: 'consultoria_fiscal' },
-  { cve: 'SMPS12', label: 'Asociado Jr Corporativo', basePosition: 'asociado_jr', workAreaId: 'corporativo' },
-  { cve: 'SMPS13', label: 'Pasante con Carrera Terminada Litigio Fiscal', basePosition: 'pasante_carrera', workAreaId: 'litigio_fiscal' },
-  { cve: 'SMPS14', label: 'Pasante con Carrera Terminada Corporativo', basePosition: 'pasante_carrera', workAreaId: 'corporativo' },
-  { cve: 'SMPS15', label: 'Pasante Corporativo', basePosition: 'pasante_corporativo', workAreaId: 'corporativo' },
-  { cve: 'SMPS16', label: 'Director de Marketing y BD', basePosition: 'director', workAreaId: 'administrativo' },
-  { cve: 'SMPS17', label: 'Directora de Admón y Finanzas', basePosition: 'director', workAreaId: 'administrativo' },
-  { cve: 'SMPS18', label: 'Directora de Recursos Humanos', basePosition: 'director', workAreaId: 'administrativo' },
-  { cve: 'SMPS19', label: 'Coord. Cobranza', basePosition: 'coordinador', workAreaId: 'administrativo' },
-  { cve: 'SMPS20', label: 'Coord. Servicios Generales', basePosition: 'coordinador', workAreaId: 'administrativo' },
-  { cve: 'SMPS21', label: 'Coordinador de BD', basePosition: 'coordinador', workAreaId: 'administrativo' },
-  { cve: 'SMPS22', label: 'Coordinador de Marketing', basePosition: 'coordinador', workAreaId: 'administrativo' },
-  { cve: 'SMPS23', label: 'Coordinadora de R.H.', basePosition: 'coordinador', workAreaId: 'administrativo' },
-  { cve: 'SMPS24', label: 'Gte. Facturación y Cobranza', basePosition: 'gerente', workAreaId: 'administrativo' },
-  { cve: 'SMPS25', label: 'Analista Sistemas', basePosition: 'analista', workAreaId: 'administrativo' },
-  { cve: 'SMPS26', label: 'Soporte Sistemas', basePosition: 'archivo_soporte', workAreaId: 'administrativo' },
-  { cve: 'SMPS27', label: 'Archivista', basePosition: 'archivo_soporte', workAreaId: 'administrativo' },
-  { cve: 'SMPS28', label: 'Asistente Consultoría Fiscal', basePosition: 'asistente', workAreaId: 'administrativo' },
-  { cve: 'SMPS29', label: 'Asistente Corporativo', basePosition: 'asistente', workAreaId: 'administrativo' },
+  { cve: 'SMPS06', label: 'Salary Partner Corporativo', basePosition: 'salary_partner', workAreaId: 'corporativo' },
+  { cve: 'SMPS09', label: 'Counsel Corporativo', basePosition: 'counsel', workAreaId: 'corporativo' },
+  { cve: 'SMPS12', label: 'Asociado Sr Corporativo', basePosition: 'asociado_sr', workAreaId: 'corporativo' },
+  { cve: 'SMPS15', label: 'Asociado Mid Corporativo', basePosition: 'asociado_mid', workAreaId: 'corporativo' },
+  { cve: 'SMPS18', label: 'Asociado Jr Corporativo', basePosition: 'asociado_jr', workAreaId: 'corporativo' },
+  { cve: 'SMPS21', label: 'Pasante con Carrera Terminada Corporativo', basePosition: 'pasante_carrera', workAreaId: 'corporativo' },
+  { cve: 'SMPS24', label: 'Pasante Corporativo', basePosition: 'pasante', workAreaId: 'corporativo' },
+
+  // Administrativo - Backoffice
+  { cve: 'SMPS25', label: 'Director de Marketing y BD', basePosition: 'director', workAreaId: 'backoffice' },
+  { cve: 'SMPS26', label: 'Directora de Admón y Finanzas', basePosition: 'director', workAreaId: 'backoffice' },
+  { cve: 'SMPS27', label: 'Directora de Recursos Humanos', basePosition: 'director', workAreaId: 'backoffice' },
+  { cve: 'SMPS28', label: 'Coord. Cobranza', basePosition: 'coordinador', workAreaId: 'backoffice' },
+  { cve: 'SMPS29', label: 'Coord. Servicios Generales', basePosition: 'coordinador', workAreaId: 'backoffice' },
+  { cve: 'SMPS30', label: 'Coordinador de BD', basePosition: 'coordinador', workAreaId: 'backoffice' },
+  { cve: 'SMPS31', label: 'Coordinador de Marketing', basePosition: 'coordinador', workAreaId: 'backoffice' },
+  { cve: 'SMPS32', label: 'Coordinadora de R.H.', basePosition: 'coordinador', workAreaId: 'backoffice' },
+  { cve: 'SMPS33', label: 'Gte. Facturación y Cobranza', basePosition: 'gerente', workAreaId: 'backoffice' },
+  { cve: 'SMPS34', label: 'Analista Sistemas', basePosition: 'analista', workAreaId: 'backoffice' },
+  { cve: 'SMPS35', label: 'Soporte Sistemas', basePosition: 'soporte', workAreaId: 'backoffice' },
+  { cve: 'SMPS36', label: 'Archivista', basePosition: 'archivista', workAreaId: 'backoffice' },
+  { cve: 'SMPS37', label: 'Asistente Consultoría Fiscal', basePosition: 'asistente', workAreaId: 'backoffice' },
+  { cve: 'SMPS38', label: 'Asistente Corporativo', basePosition: 'asistente', workAreaId: 'backoffice' },
 ];

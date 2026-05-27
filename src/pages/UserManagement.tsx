@@ -110,7 +110,7 @@ export default function UserManagement() {
     const area = sortedAreas.find((a: any) => a.id === (pos as any).workAreaId);
     const level = (area as any)?.level;
     updateUserMut.mutate(
-      { id: userId, position: (pos as any).basePosition, practiceArea: level === 'legal' ? ((pos as any).workAreaId || 'general') : undefined, customPositionId: (pos as any).id },
+      { id: userId, position: (pos as any).basePosition, practiceArea: level === 'legal' ? ((pos as any).workAreaId) : undefined, customPositionId: (pos as any).id },
       { onSuccess: () => { toast.success('Puesto actualizado'); setEditPosition(null); }, onError: (err: Error) => toast.error(err.message || 'Error') }
     );
   }, [sortedPositions, sortedAreas, updateUserMut]);
@@ -127,7 +127,7 @@ export default function UserManagement() {
         name: newUser.name.trim(),
         email: newUser.email.trim().toLowerCase(),
         position: (pos as any).basePosition,
-        practiceArea: level === 'legal' ? ((pos as any).workAreaId || 'general') : undefined,
+        practiceArea: level === 'legal' ? ((pos as any).workAreaId) : undefined,
         customPositionId: (pos as any).id,
         locationId: newUser.locationId || undefined,
         password: newUser.password || '1234',

@@ -494,11 +494,10 @@ export async function migrate(): Promise<void> {
     console.log('  Seeding work_areas...');
     const now = new Date().toISOString();
     const areas = [
-      ['corporativo', 'Corporativo', 'legal', 1],
-      ['consultoria_fiscal', 'Consultoría Fiscal', 'legal', 2],
-      ['litigio_fiscal', 'Litigio Fiscal', 'legal', 3],
-      ['general', 'Legal (General)', 'legal', 4],
-      ['administrativo', 'Administrativo', 'administrativo', 5],
+      ['fiscal_consultoria', 'Fiscal Consultoría', 'legal', 1],
+      ['fiscal_litigio', 'Fiscal Litigio', 'legal', 2],
+      ['corporativo', 'Corporativo', 'legal', 3],
+      ['backoffice', 'Backoffice', 'administrativo', 4],
     ] as const;
     for (const [id, label, level, sortOrder] of areas) {
       await run(
@@ -518,11 +517,11 @@ export async function migrate(): Promise<void> {
     console.log(`  Migrating ${nullWorkAreaCount} positions to work_area_id...`);
     // Administrativo positions
     await run(
-      "UPDATE custom_positions SET work_area_id = 'administrativo' WHERE work_area_id IS NULL AND level = 'administrativo'"
+      "UPDATE custom_positions SET work_area_id = 'backoffice' WHERE work_area_id IS NULL AND level = 'administrativo'"
     );
-    // Legal positions: use practice_area if available, else 'general'
+    // Legal positions: use practice_area if available, else 'corporativo' (fallback)
     await run(
-      "UPDATE custom_positions SET work_area_id = COALESCE(practice_area, 'general') WHERE work_area_id IS NULL AND level = 'legal'"
+      "UPDATE custom_positions SET work_area_id = COALESCE(practice_area, 'corporativo') WHERE work_area_id IS NULL AND level = 'legal'"
     );
     console.log('  ✓ positions migrated to work_area_id');
   }
@@ -533,35 +532,44 @@ export async function migrate(): Promise<void> {
     console.log('  Seeding positions into custom_positions...');
     const now = new Date().toISOString();
     const positions = [
-      ['SMPS01', 'Socio Consultoría Fiscal', 'consultoria_fiscal', 'socio'],
-      ['SMPS02', 'Socio Litigio Fiscal', 'litigio_fiscal', 'socio'],
+      ['SMPS01', 'Socio Consultoría Fiscal', 'fiscal_consultoria', 'socio'],
+      ['SMPS02', 'Socio Litigio Fiscal', 'fiscal_litigio', 'socio'],
       ['SMPS03', 'Socio Corporativo', 'corporativo', 'socio'],
-      ['SMPS04', 'Counsel', 'general', 'counsel'],
-      ['SMPS05', 'Asociado Sr Consultoría Fiscal', 'consultoria_fiscal', 'asociado_sr'],
-      ['SMPS06', 'Asociado Sr Litigio Fiscal', 'litigio_fiscal', 'asociado_sr'],
-      ['SMPS07', 'Asociado Sr Corporativo', 'corporativo', 'asociado_sr'],
-      ['SMPS08', 'Asociado Mid Consultoría Fiscal', 'consultoria_fiscal', 'asociado_mid'],
-      ['SMPS09', 'Asociado Mid Litigio Fiscal', 'litigio_fiscal', 'asociado_mid'],
-      ['SMPS10', 'Asociado Mid Corporativo', 'corporativo', 'asociado_mid'],
-      ['SMPS11', 'Asociado Jr Consultoría Fiscal', 'consultoria_fiscal', 'asociado_jr'],
-      ['SMPS12', 'Asociado Jr Corporativo', 'corporativo', 'asociado_jr'],
-      ['SMPS13', 'Pasante con Carrera Terminada Litigio Fiscal', 'litigio_fiscal', 'pasante_carrera'],
-      ['SMPS14', 'Pasante con Carrera Terminada Corporativo', 'corporativo', 'pasante_carrera'],
-      ['SMPS15', 'Pasante Corporativo', 'corporativo', 'pasante_corporativo'],
-      ['SMPS16', 'Director de Marketing y BD', 'administrativo', 'director'],
-      ['SMPS17', 'Directora de Admón y Finanzas', 'administrativo', 'director'],
-      ['SMPS18', 'Directora de Recursos Humanos', 'administrativo', 'director'],
-      ['SMPS19', 'Coord. Cobranza', 'administrativo', 'coordinador'],
-      ['SMPS20', 'Coord. Servicios Generales', 'administrativo', 'coordinador'],
-      ['SMPS21', 'Coordinador de BD', 'administrativo', 'coordinador'],
-      ['SMPS22', 'Coordinador de Marketing', 'administrativo', 'coordinador'],
-      ['SMPS23', 'Coordinadora de R.H.', 'administrativo', 'coordinador'],
-      ['SMPS24', 'Gte. Facturación y Cobranza', 'administrativo', 'gerente'],
-      ['SMPS25', 'Analista Sistemas', 'administrativo', 'analista'],
-      ['SMPS26', 'Soporte Sistemas', 'administrativo', 'archivo_soporte'],
-      ['SMPS27', 'Archivista', 'administrativo', 'archivo_soporte'],
-      ['SMPS28', 'Asistente Consultoría Fiscal', 'administrativo', 'asistente'],
-      ['SMPS29', 'Asistente Corporativo', 'administrativo', 'asistente'],
+      ['SMPS04', 'Salary Partner Consultoría Fiscal', 'fiscal_consultoria', 'salary_partner'],
+      ['SMPS05', 'Salary Partner Litigio Fiscal', 'fiscal_litigio', 'salary_partner'],
+      ['SMPS06', 'Salary Partner Corporativo', 'corporativo', 'salary_partner'],
+      ['SMPS07', 'Counsel Consultoría Fiscal', 'fiscal_consultoria', 'counsel'],
+      ['SMPS08', 'Counsel Litigio Fiscal', 'fiscal_litigio', 'counsel'],
+      ['SMPS09', 'Counsel Corporativo', 'corporativo', 'counsel'],
+      ['SMPS10', 'Asociado Sr Consultoría Fiscal', 'fiscal_consultoria', 'asociado_sr'],
+      ['SMPS11', 'Asociado Sr Litigio Fiscal', 'fiscal_litigio', 'asociado_sr'],
+      ['SMPS12', 'Asociado Sr Corporativo', 'corporativo', 'asociado_sr'],
+      ['SMPS13', 'Asociado Mid Consultoría Fiscal', 'fiscal_consultoria', 'asociado_mid'],
+      ['SMPS14', 'Asociado Mid Litigio Fiscal', 'fiscal_litigio', 'asociado_mid'],
+      ['SMPS15', 'Asociado Mid Corporativo', 'corporativo', 'asociado_mid'],
+      ['SMPS16', 'Asociado Jr Consultoría Fiscal', 'fiscal_consultoria', 'asociado_jr'],
+      ['SMPS17', 'Asociado Jr Litigio Fiscal', 'fiscal_litigio', 'asociado_jr'],
+      ['SMPS18', 'Asociado Jr Corporativo', 'corporativo', 'asociado_jr'],
+      ['SMPS19', 'Pasante con Carrera Terminada Consultoría Fiscal', 'fiscal_consultoria', 'pasante_carrera'],
+      ['SMPS20', 'Pasante con Carrera Terminada Litigio Fiscal', 'fiscal_litigio', 'pasante_carrera'],
+      ['SMPS21', 'Pasante con Carrera Terminada Corporativo', 'corporativo', 'pasante_carrera'],
+      ['SMPS22', 'Pasante Consultoría Fiscal', 'fiscal_consultoria', 'pasante'],
+      ['SMPS23', 'Pasante Litigio Fiscal', 'fiscal_litigio', 'pasante'],
+      ['SMPS24', 'Pasante Corporativo', 'corporativo', 'pasante'],
+      ['SMPS25', 'Director de Marketing y BD', 'backoffice', 'director'],
+      ['SMPS26', 'Directora de Admón y Finanzas', 'backoffice', 'director'],
+      ['SMPS27', 'Directora de Recursos Humanos', 'backoffice', 'director'],
+      ['SMPS28', 'Coord. Cobranza', 'backoffice', 'coordinador'],
+      ['SMPS29', 'Coord. Servicios Generales', 'backoffice', 'coordinador'],
+      ['SMPS30', 'Coordinador de BD', 'backoffice', 'coordinador'],
+      ['SMPS31', 'Coordinador de Marketing', 'backoffice', 'coordinador'],
+      ['SMPS32', 'Coordinadora de R.H.', 'backoffice', 'coordinador'],
+      ['SMPS33', 'Gte. Facturación y Cobranza', 'backoffice', 'gerente'],
+      ['SMPS34', 'Analista Sistemas', 'backoffice', 'analista'],
+      ['SMPS35', 'Soporte Sistemas', 'backoffice', 'soporte'],
+      ['SMPS36', 'Archivista', 'backoffice', 'archivista'],
+      ['SMPS37', 'Asistente Consultoría Fiscal', 'backoffice', 'asistente'],
+      ['SMPS38', 'Asistente Corporativo', 'backoffice', 'asistente'],
     ] as const;
     for (const [id, label, workAreaId, basePosition] of positions) {
       await run(

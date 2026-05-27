@@ -248,13 +248,13 @@ export const QUESTIONS_BY_POSITION: Record<Position, EvalQuestion[]> = {
   asociado_mid: asociadoMidQuestions,
   asociado_jr: asociadoJrQuestions,
   pasante_carrera: pasanteCarreraQuestions,
-  pasante_corporativo: pasanteCorporativoQuestions,
+  pasante: pasanteCorporativoQuestions,
   director: directorQuestions,
   gerente: gerenteQuestions,
   coordinador: coordinadorQuestions,
   analista: analistaQuestions,
   asistente: asistente_questions,
-  archivo_soporte: archivoSoporteQuestions,
+  soporte: archivoSoporteQuestions,
   dummy: socioQuestions,
 };
 

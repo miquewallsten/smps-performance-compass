@@ -62,7 +62,7 @@ export default function Vacations() {
     vacationConfig.forEach((c: any) => { vacConfigMap[c.position] = c.days; });
   }
   const carryoverExpiryMonths = 12;
-  const isPasante = (pos: Position) => pos === 'pasante_carrera' || pos === 'pasante_corporativo';
+  const isPasante = (pos: Position) => pos === 'pasante_carrera' || pos === 'pasante';
 
   const getUserVacationSummary = (userId: string) => {
     const user = users.find(u => u.id === userId);
@@ -181,8 +181,8 @@ export default function Vacations() {
   };
 
   const positionsToConfig: Position[] = [
-    'socio', 'asociado_sr', 'asociado_mid', 'asociado_jr', 'pasante_carrera', 'pasante_corporativo',
-    'director', 'gerente', 'coordinador', 'analista', 'asistente', 'archivo_soporte',
+    'socio', 'asociado_sr', 'asociado_mid', 'asociado_jr', 'pasante_carrera', 'pasante',
+    'director', 'gerente', 'coordinador', 'analista', 'asistente', 'soporte', 'archivista',
   ];
 
   // Admin employee list for download

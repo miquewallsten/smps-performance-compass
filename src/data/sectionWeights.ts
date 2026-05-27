@@ -20,15 +20,15 @@ export const SECTION_WEIGHTS: Record<Position, SectionWeights> = {
   asociado_sr:          { tecnico: 60, competencias: 20, blandas: 20 },
   asociado_mid:         { tecnico: 60, competencias: 20, blandas: 20 },
   asociado_jr:          { tecnico: 40, competencias: 40, blandas: 20 },
-  pasante_carrera:      { tecnico: 40, competencias: 40, blandas: 20 },
-  pasante_corporativo:  { tecnico: 40, competencias: 40, blandas: 20 },
+  pasante:              { tecnico: 40, competencias: 40, blandas: 20 },
   // Administrativo (sin "Criterio Técnico" → todo competencias/blandas)
   director:             { tecnico: 0, competencias: 80, blandas: 20 },
   gerente:              { tecnico: 0, competencias: 80, blandas: 20 },
   coordinador:          { tecnico: 0, competencias: 80, blandas: 20 },
   analista:             { tecnico: 0, competencias: 80, blandas: 20 },
-  asistente:            { tecnico: 0, competencias: 50, blandas: 50 }, // Staff de soporte 30/50/20 → técnico fusionado a competencias
-  archivo_soporte:      { tecnico: 0, competencias: 50, blandas: 50 },
+  asistente:            { tecnico: 0, competencias: 50, blandas: 50 },
+  soporte:              { tecnico: 0, competencias: 50, blandas: 50 },
+  archivista:           { tecnico: 0, competencias: 50, blandas: 50 },
   dummy:                { tecnico: 40, competencias: 40, blandas: 20 },
 };
 

@@ -7,7 +7,7 @@ import { requireAdmin } from '../middleware/rbac.js';
 const router = Router();
 
 function getUserLevel(user: any): string {
-  const legalPositions = ['socio', 'salary_partner', 'counsel', 'asociado_sr', 'asociado_mid', 'asociado_jr', 'pasante_carrera', 'pasante_corporativo'];
+  const legalPositions = ['socio', 'salary_partner', 'counsel', 'asociado_sr', 'asociado_mid', 'asociado_jr', 'pasante_carrera', 'pasante'];
   return legalPositions.includes(user.position) ? 'legal' : 'administrativo';
 }
 

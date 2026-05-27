@@ -6,13 +6,14 @@ export type Position =
   | 'asociado_mid'
   | 'asociado_jr'
   | 'pasante_carrera'
-  | 'pasante_corporativo'
+  | 'pasante'
   | 'director'
   | 'gerente'
   | 'coordinador'
   | 'analista'
   | 'asistente'
-  | 'archivo_soporte'
+  | 'soporte'
+  | 'archivista'
   | 'dummy';
 
 
@@ -26,13 +27,14 @@ export const POSITION_LABELS: Record<Position, string> = {
   asociado_mid: 'Asociado Mid',
   asociado_jr: 'Asociado Jr',
   pasante_carrera: 'Pasante con Carrera',
-  pasante_corporativo: 'Pasante Corporativo',
+  pasante: 'Pasante',
   director: 'Director',
   gerente: 'Gerente',
   coordinador: 'Coordinador',
   analista: 'Analista',
   asistente: 'Asistente',
-  archivo_soporte: 'Archivo y Soporte',
+  soporte: 'Soporte',
+  archivista: 'Archivista',
   dummy: 'Dummy',
 };
 
@@ -44,13 +46,14 @@ export const POSITION_LEVELS: Record<Position, PositionLevel> = {
   asociado_mid: 'legal',
   asociado_jr: 'legal',
   pasante_carrera: 'legal',
-  pasante_corporativo: 'legal',
+  pasante: 'legal',
   director: 'administrativo',
   gerente: 'administrativo',
   coordinador: 'administrativo',
   analista: 'administrativo',
   asistente: 'administrativo',
-  archivo_soporte: 'administrativo',
+  soporte: 'administrativo',
+  archivista: 'administrativo',
   dummy: 'administrativo',
 };
 
@@ -73,19 +76,17 @@ export const POSITION_RANK: Record<Position, number> = {
   analista: 4,
   pasante_carrera: 5,
   asistente: 5,
-  pasante_corporativo: 6,
-  archivo_soporte: 6,
   dummy: 99,
 
 };
 
 export const LEGAL_HIERARCHY: Position[] = [
-  'socio', 'salary_partner', 'counsel', 'asociado_sr', 'asociado_mid', 'asociado_jr', 'pasante_carrera', 'pasante_corporativo',
+  'socio', 'salary_partner', 'counsel', 'asociado_sr', 'asociado_mid', 'asociado_jr', 'pasante_carrera', 'pasante',
 ];
 
 
 export const ADMIN_HIERARCHY: Position[] = [
-  'director', 'gerente', 'coordinador', 'analista', 'asistente', 'archivo_soporte',
+  'director', 'gerente', 'coordinador', 'analista', 'asistente', 'soporte', 'archivista',
 ];
 
 export const POSITION_HIERARCHY: Position[] = [...LEGAL_HIERARCHY, ...ADMIN_HIERARCHY];
@@ -97,13 +98,13 @@ export type QuestionCategory =
 
 export type EvalSection = 'competencias' | 'tecnico' | 'blandas';
 
-export type PracticeArea = 'corporativo' | 'consultoria_fiscal' | 'litigio_fiscal' | 'general';
+export type PracticeArea = 'fiscal_consultoria' | 'fiscal_litigio' | 'corporativo' | 'backoffice';
 
 export const PRACTICE_AREA_LABELS: Record<PracticeArea, string> = {
+  fiscal_consultoria: 'Fiscal Consultoría',
+  fiscal_litigio: 'Fiscal Litigio',
   corporativo: 'Corporativo',
-  consultoria_fiscal: 'Consultoría Fiscal',
-  litigio_fiscal: 'Litigio Fiscal',
-  general: 'General',
+  backoffice: 'Backoffice',
 };
 
 export interface EvalQuestion {
