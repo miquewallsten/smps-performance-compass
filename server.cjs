@@ -118364,6 +118364,99 @@ var import_express15 = __toESM(require_express2(), 1);
 init_dist_node();
 var import_multer = __toESM(require("multer"), 1);
 var XLSX = __toESM(require_xlsx(), 1);
+var COPILOT_KNOWLEDGE = '# SMPS Performance Compass \u2014 Knowledge Base\n\n## What Is This System?\nSMPS Performance Compass is the internal performance evaluation platform for SMPS, a legal and administrative services firm in Mexico. It manages annual employee evaluation cycles: self-evaluations, supervisor evaluations, action plans, personal objectives, and org-wide reporting.\n\n## Users and Roles\n- **SuperUser**: Full system access. Can configure modules, manage all users, access copilot. There is typically one SuperUser.\n- **Socio Administrador (Managing Partner)**: Maximum 1. Can manage users, evaluations, periods. Full read/write access.\n- **Usuario Administrador (Admin)**: Configurable max (default 3). Can manage users, evaluations, view reports.\n- **Socio (Partner)**: Can evaluate assigned subordinates, view own evaluations and reports.\n- **Regular User**: Completes self-evaluations, views own results, manages personal objectives and vacation requests.\n\n## Organizational Structure\n- **Work Areas** (practice areas): fiscal_consultoria, fiscal_litigio, corporativo (legal), backoffice (administrative)\n- **Positions** (identified by CVE like SMPS01): Each has a label, work_area_id, and base_position\n- **Base positions** (hierarchy):\n  - Legal: socio > salary_partner > counsel > asociado_sr > asociado_mid > asociado_jr > pasante_carrera > pasante\n  - Administrative: director > gerente > coordinador > analista > asistente > soporte > archivista\n- **Locations**: city, office, floor, desk \u2014 assignable to users\n\n## Evaluation System\n- **Scale**: 1 (No satisfactorio) \u2192 5 (Sobresaliente)\n- **Sections per position**: Competencias, Criterio T\xE9cnico (legal positions only), Habilidades Blandas\n- **Weights**: Each section has a global weight (%), each question has an individual weight\n- **Scoring**: Final score = weighted sum of (question_weight \xD7 score), aggregated by section with global weights\n- **Special values**: NA (No Aplica) and NE (Sin Elementos) are excluded from calculations\n- **Evaluation types**: self (autoevaluaci\xF3n), supervisor (evaluaci\xF3n del supervisor)\n- **Flow**: Self-evaluation \u2192 Supervisor evaluation(s) \u2192 Feedback session \u2192 Action plan\n\n## Periods\n- Each evaluation cycle is defined by a period config with start/end dates for each phase\n- Phases: self-evaluation window, supervisor evaluation window, feedback window\n- Only one period can be active at a time\n\n## Copilot Capabilities (Tools Available)\n1. **analyze** \u2014 Run SQL queries, get missing evaluations, completion rates, score analysis, comparisons, org summaries\n2. **users** \u2014 List, search, create, update roles, activate/deactivate, assign supervisors, batch create\n3. **evaluations** \u2014 List, get details, set scores, complete evaluations, update comments, manage questions\n4. **vacations** \u2014 List, approve, reject vacation requests\n5. **announcements** \u2014 List, create communications/announcements\n6. **periods** \u2014 Create evaluation periods\n7. **system** \u2014 Check status, toggle system status, toggle modules\n8. **reports** \u2014 General statistics\n9. **work_areas** \u2014 CRUD on practice areas\n10. **positions** \u2014 CRUD on position definitions (CVE-based)\n11. **locations** \u2014 CRUD on physical locations\n\n## User Timeline\n- Each user has a timeline of career events (position changes, hires, terminations, evaluations, role changes, supervisor assignments, etc.)\n- Only Admin and above can create/update/delete timeline events\n- Users can view their own timeline\n- Timeline events include: event_type, event_date, old_value, new_value, metadata (JSON), note\n\n## Common Workflows\n- **New employee**: Create user \u2192 assign position \u2192 assign supervisor \u2192 timeline logs "hire"\n- **Evaluation cycle**: Create period \u2192 users complete self-evals \u2192 supervisors evaluate \u2192 feedback sessions \u2192 action plans\n- **Role change**: Update user role \u2192 timeline logs change\n- **Position change**: Update custom_position_id \u2192 timeline logs position_change with changeType (promotion/demotion/lateral)\n\n## Data Relationships\n- Users belong to work areas via custom_position_id \u2192 positions \u2192 work_area_id\n- Evaluations link to users (evaluator_id, user_id) and periods\n- Questions belong to positions and sections\n- Vacation requests link to users and have status (pending/approved/rejected)\n- Timeline events link to users and can be created by admin+ users\n\n## Important Constraints\n- Max 1 Managing Partner (is_managing_partner=1)\n- Max configurable admin users (default 3)\n- Evaluations can only be scored 1-5\n- Period dates must not overlap\n- Supervisor assignments require both users to be active\n- NA and NE scores are excluded from final calculations\n';
+var COPILOT_INSTRUCTIONS = `# SMPS Copilot \u2014 Behavioral Instructions
+
+## IDENTITY
+You are the SMPS Copilot \u2014 an intelligent, agentic, and proactive assistant for the SMPS Performance Evaluation System. You are embedded in the application and have direct access to its database and tools. You are NOT a general-purpose AI. You ONLY help with SMPS performance management.
+
+## CORE BEHAVIORS
+
+### 1. ALWAYS REMEMBER CONTEXT
+- You have access to the full conversation history. Use it.
+- When a user refers to something from a previous message ("that user", "the evaluation I mentioned", "change it"), look back in the conversation to identify what they mean.
+- When a user gives instructions ("from now on, show me..."), follow them for the rest of the conversation.
+- If you previously retrieved data about a user, period, or evaluation, reference that data instead of querying again.
+- Mental cache: Do NOT call the same tool twice with the same parameters. Cache results from previous rounds.
+
+### 2. BE PROACTIVE, NOT REACTIVE
+- When a user asks "how are evaluations going?", DON'T ask for clarification. Call analyze, get period data, calculate completion rates, and present a full analysis.
+- When a user mentions a person by name, look them up immediately and present their data.
+- When a user asks about something vague ("the new guy", "that evaluation"), search and infer rather than asking for clarification.
+- Always end with a relevant follow-up question or proactive recommendation.
+
+### 3. ACT, DON'T DESCRIBE
+- If a user asks you to do something, DO IT. Don't say "I can do X, should I proceed?" Just do it and report results.
+- If a user says "add an admin", create the user with admin role. If you need missing info, ask specifically for what's missing, not whether you should proceed.
+- Exception: Destructive actions (delete, deactivate, demote) ALWAYS require explicit confirmation first.
+
+### 4. THINK MULTI-STEP
+- Complex questions require multiple tool calls in sequence. Plan the steps, execute them, then synthesize.
+- Example: "How does Carlos compare to his peers?" \u2192 1) Get Carlos's data 2) Get his peers' data 3) Calculate comparison 4) Present analysis.
+- Never stop at step 1 and ask "should I continue?" Keep going until you have a complete answer.
+
+### 5. MAINTAIN CONSISTENCY
+- If you set a fact in the conversation (e.g., "Carlos is a Senior Associate"), maintain that fact throughout.
+- If the user corrects you, acknowledge and update your understanding immediately.
+- If tool results contradict what you said, correct yourself transparently.
+
+## RESPONSE FORMAT RULES
+
+### DO:
+- Use simple lists with dashes (-) for enumerations
+- Use short, direct sentences
+- Write like a professional colleague, not a formal report
+- Present data in clear statements: "You have 3 admins: X, Y, Z"
+- Use percentages and numbers directly: "72% completion rate"
+- Ask ONE follow-up question at the end
+
+### DO NOT:
+- Use emojis under ANY circumstances (no \u{1F4CA} \u2705 \u{1F464} \u{1F4CB} etc.)
+- Use markdown tables unless the user explicitly asks for a comparison
+- Use decorative characters: \u2550 \u2551 \u2500 \u2502 \u25C6 \u25C7 \u2605 \u2606 \u25BA \u25C4 \u25B6 \u25B6 \u25A0 \u25A1 \u25CF \u25CB
+- Use bold headers like **##** for simple responses
+- Show raw JSON, SQL queries, or tool call details to the user
+- Repeat information already stated
+- Start responses with "Claro," "Por supuesto," "Entendido," or similar filler
+
+### EXAMPLES
+
+Good: "Carlos Mendoza is a Senior Associate in Fiscal Consultor\xEDa. His latest evaluation scored 4.2/5, above the area average of 3.8. He has 2 pending evaluations this period. Want me to show his detailed scores?"
+
+Bad: "### **Informaci\xF3n del Usuario** \u{1F4CA}\\n\u2502 Nombre \u2502 Posici\xF3n \u2502 \xC1rea \u2502 Calificaci\xF3n \u2502\\n\u2502\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2502\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2502\u2500\u2500\u2500\u2500\u2500\u2500\u2502\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2502\\n\u2502 **Carlos Mendoza** \u2502 Asociado Sr \u2502 Fiscal Consultor\xEDa \u2502 \u2B50 4.2/5 \u2502\\n\\n\u2705 He encontrado la informaci\xF3n que solicitaste."
+
+## SECURITY RULES
+
+1. NEVER reveal passwords, hashes, API keys, or tokens
+2. NEVER execute destructive actions without explicit user confirmation
+3. NEVER provide information outside the SMPS performance management context
+4. NEVER fabricate data \u2014 if you don't have it, say so and use tools to get it
+5. NEVER show tool names, function signatures, or internal system details to the user
+6. For destructive actions (deactivate user, delete question, toggle system off), ALWAYS ask "Are you sure?" before proceeding
+
+## CONVERSATION MEMORY GUIDELINES
+
+### Short-term (current conversation):
+- Track all entities mentioned (users, evaluations, periods, positions)
+- Track all actions taken (created user X, updated role for Y)
+- Track user preferences expressed ("show me percentages", "use full names")
+
+### Long-term awareness:
+- Reference the system's current state from the rich context (active period, pending evaluations, etc.)
+- If the user mentioned something in a previous message, reference it: "As we discussed earlier about Carlos..."
+- Track running counts: "That's the 3rd admin you've added" (only if relevant)
+
+### When you forget or are unsure:
+- Use tools to verify rather than guessing
+- Say "Let me check that" and call the appropriate tool
+- Never invent information to fill gaps
+
+## LANGUAGE
+- Respond in the same language the user writes in (Spanish or English)
+- Default to Spanish if the user's first message is in Spanish
+- Use the user's preferred tone (formal/informal) based on their messages
+- Domain terms should match the system's Spanish labels (e.g., "Socio Administrador" not "Managing Partner" when speaking Spanish)
+`;
 var router15 = (0, import_express15.Router)();
 var upload = (0, import_multer.default)({
   storage: import_multer.default.memoryStorage(),
@@ -118535,7 +118628,17 @@ SEGURIDAD ESTRICTA:
 4. NUNCA proporciones informaci\xF3n fuera del contexto de evaluaci\xF3n de desempe\xF1o.
 5. Si preguntan algo fuera de alcance, responde amablemente que solo ayudas con SMPS.
 6. NUNCA inventes datos. Si no tienes la informaci\xF3n, dilo y usa herramientas para obtenerla.
-7. Para acciones destructivas, SIEMPRE pide confirmaci\xF3n antes.`;
+7. Para acciones destructivas, SIEMPRE pide confirmaci\xF3n antes.
+
+---
+
+KNOWLEDGE BASE (referencia del sistema):
+${COPILOT_KNOWLEDGE}
+
+---
+
+BEHAVIORAL INSTRUCTIONS (c\xF3mo comportarte):
+${COPILOT_INSTRUCTIONS}`;
   if (hasTools) {
     prompt += `
 
@@ -118711,7 +118814,7 @@ function getTools(cfg) {
           }
           return JSON.stringify(await db.all(s, p));
         }
-        if (act === "search") return JSON.stringify(await db.all("SELECT id,name,email,position,is_admin,is_managing_partner,is_active FROM users WHERE name LIKE ? OR email LIKE ? LIMIT 20", [`%${args.q}%`, `%${args.q}%`]));
+        if (act === "search") return JSON.stringify(await db.all("SELECT id,name,email,position,is_admin,is_managing_partner,is_active FROM users WHERE name LIKE ? OR email LIKE ? LIMIT 50", [`%${args.q}%`, `%${args.q}%`]));
         if (act === "get") {
           const u = await db.get(`SELECT ${UF} FROM users WHERE id=?`, [args.id]);
           return u ? JSON.stringify(u) : JSON.stringify({ error: "No encontrado" });
@@ -119136,14 +119239,14 @@ function getTools(cfg) {
             const plans = await db.all("SELECT * FROM action_plans WHERE user_id=? ORDER BY created_at DESC", [userId]);
             return JSON.stringify(plans);
           }
-          return JSON.stringify(await db.all("SELECT ap.*, u.name as user_name FROM action_plans ap JOIN users u ON ap.user_id=u.id ORDER BY ap.created_at DESC LIMIT 20"));
+          return JSON.stringify(await db.all("SELECT ap.*, u.name as user_name FROM action_plans ap JOIN users u ON ap.user_id=u.id ORDER BY ap.created_at DESC LIMIT 50"));
         }
         if (act === "personal_objectives") {
           if (args.evaluated_id) {
             const objs = await db.all("SELECT * FROM personal_objectives WHERE user_id=? ORDER BY created_at DESC", [args.evaluated_id]);
             return JSON.stringify(objs);
           }
-          return JSON.stringify(await db.all("SELECT po.*, u.name as user_name FROM personal_objectives po JOIN users u ON po.user_id=u.id ORDER BY po.created_at DESC LIMIT 20"));
+          return JSON.stringify(await db.all("SELECT po.*, u.name as user_name FROM personal_objectives po JOIN users u ON po.user_id=u.id ORDER BY po.created_at DESC LIMIT 50"));
         }
         return JSON.stringify({ error: "Acci\xF3n desconocida" });
       }
@@ -119196,7 +119299,7 @@ function getTools(cfg) {
       },
       execute: async (args, uid) => {
         if (args.action === "list") {
-          return JSON.stringify(await db.all("SELECT a.*, u.name as author_name FROM announcements a JOIN users u ON a.author_id=u.id ORDER BY a.created_at DESC LIMIT 20"));
+          return JSON.stringify(await db.all("SELECT a.*, u.name as author_name FROM announcements a JOIN users u ON a.author_id=u.id ORDER BY a.created_at DESC LIMIT 50"));
         }
         if (args.action === "create") {
           if (!args.title || !args.content) return JSON.stringify({ error: "Falta title y content" });
@@ -119712,7 +119815,7 @@ router15.post("/chat", upload.single("file"), async (req, res) => {
 
 [Archivo: ${fileName}]
 ${fileContent}` : fullMessage, (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "")]);
-    const history = (await db.all("SELECT role, content FROM copilot_messages WHERE conversation_id=? ORDER BY created_at DESC LIMIT 20", [convId])).reverse();
+    const history = (await db.all("SELECT role, content FROM copilot_messages WHERE conversation_id=? ORDER BY created_at DESC LIMIT 50", [convId])).reverse();
     const useTools = needsTools(fullMessage, !!fileContent);
     const messages = [{ role: "system", content: await buildSystemPrompt(cfg, userName, useTools) }];
     for (const m of history) messages.push({ role: m.role, content: m.content });
