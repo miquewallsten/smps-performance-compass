@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main, dev]
+    branches: [main]
   pull_request:
     branches: [main]
 
@@ -42,12 +42,44 @@ jobs:
           echo "Build size:"
           du -sh dist/ server.cjs
 
-      - name: Upload build artifacts (for debugging)
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: build-debug
-          path: |
-            dist/
-            server.cjs
-          retention-days: 3
+      - name: Commit built artifacts
+        # Only on push to main (not PRs), commit the built files so the server can pull them
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git add -f dist/ server.cjs
+          git diff --cached --quiet || git commit -m "chore: update built artifacts [skip ci]"
+          git push
+
+  # ─── Notify Server ─────────────────────────────────────
+  # After the built artifacts are committed, trigger the server to pull & restart
+  notify:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - name: Trigger server deploy
+        run: |
+          SECRET="smps-deploy-webhook-2025"
+          BODY='{"ref":"refs/heads/main","head_commit":{"id":"${{ github.sha }}","message":"${{ github.event.head_commit.message }}"}}'
+          SIGNATURE="sha256=$(echo -n "$BODY" | openssl dgst -sha256 -hmac "$SECRET" | awk '{print $NF}')"
+          
+          RESPONSE=$(curl -s -w "\n%{http_code}" \
+            -X POST \
+            -H "Content-Type: application/json" \
+            -H "X-Hub-Signature-256: $SIGNATURE" \
+            -d "$BODY" \
+            https://bowdot.online/deploy-webhook.php)
+          
+          HTTP_CODE=$(echo "$RESPONSE" | tail -1)
+          BODY=$(echo "$RESPONSE" | head -n -1)
+          
+          echo "Response: $BODY"
+          echo "HTTP Code: $HTTP_CODE"
+          
+          if [ "$HTTP_CODE" = "200" ]; then
+            echo "✅ Server deploy triggered successfully"
+          else
+            echo "⚠️ Server deploy trigger returned HTTP $HTTP_CODE"
+          fi
