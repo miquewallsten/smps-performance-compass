@@ -87711,10 +87711,10 @@ var require_xlsx = __commonJS({
       function parse_StrRun(data) {
         return { ich: data.read_shift(2), ifnt: data.read_shift(2) };
       }
-      function write_StrRun(run2, o) {
+      function write_StrRun(run3, o) {
         if (!o) o = new_buf(4);
-        o.write_shift(2, run2.ich || 0);
-        o.write_shift(2, run2.ifnt || 0);
+        o.write_shift(2, run3.ich || 0);
+        o.write_shift(2, run3.ifnt || 0);
         return o;
       }
       function parse_RichStr(data, length) {
@@ -112861,7 +112861,7 @@ async function all(sql, params) {
   const [rows] = await pool.execute(sql, params);
   return rows;
 }
-async function run(sql, params) {
+async function run2(sql, params) {
   const [result] = await pool.execute(sql, params);
   return result;
 }
@@ -112909,7 +112909,7 @@ async function tableExists(tableName) {
   );
   return rows[0].cnt > 0;
 }
-var db = { get, all, run, exec, getScalar, transaction, tableExists, tx };
+var db = { get, all, run: run2, exec, getScalar, transaction, tableExists, tx };
 
 // server/db/migrate.ts
 async function migrate() {
@@ -113345,6 +113345,38 @@ async function migrate() {
         console.error("Alter table warning:", err?.message || err);
       }
     }
+  }
+  const workAreaCount = await getScalar("SELECT COUNT(*) AS cnt FROM work_areas");
+  if (workAreaCount === 0) {
+    console.log("  Seeding work_areas...");
+    const now = (/* @__PURE__ */ new Date()).toISOString();
+    const areas = [
+      ["corporativo", "Corporativo", "legal", 1],
+      ["consultoria_fiscal", "Consultor\xEDa Fiscal", "legal", 2],
+      ["litigio_fiscal", "Litigio Fiscal", "legal", 3],
+      ["general", "Legal (General)", "legal", 4],
+      ["administrativo", "Administrativo", "administrativo", 5]
+    ];
+    for (const [id, label, level, sortOrder] of areas) {
+      await run(
+        "INSERT IGNORE INTO work_areas (id, label, level, sort_order, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)",
+        [id, label, level, sortOrder, now, now]
+      );
+    }
+    console.log("  \u2713 work_areas seeded");
+  }
+  const nullWorkAreaCount = await getScalar(
+    "SELECT COUNT(*) AS cnt FROM custom_positions WHERE work_area_id IS NULL"
+  );
+  if (nullWorkAreaCount && nullWorkAreaCount > 0) {
+    console.log(`  Migrating ${nullWorkAreaCount} positions to work_area_id...`);
+    await run(
+      "UPDATE custom_positions SET work_area_id = 'administrativo' WHERE work_area_id IS NULL AND level = 'administrativo'"
+    );
+    await run(
+      "UPDATE custom_positions SET work_area_id = COALESCE(practice_area, 'general') WHERE work_area_id IS NULL AND level = 'legal'"
+    );
+    console.log("  \u2713 positions migrated to work_area_id");
   }
   const tableCount = await getScalar(
     `SELECT COUNT(*) AS cnt FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = DATABASE()`

@@ -487,6 +487,46 @@ export async function migrate(): Promise<void> {
     }
   }
 
+  // ─── Data Migration: Work Areas & Positions ────────────────────────────────
+  // Seed work_areas if empty (first run after adding the table)
+  const workAreaCount = await getScalar<number>('SELECT COUNT(*) AS cnt FROM work_areas');
+  if (workAreaCount === 0) {
+    console.log('  Seeding work_areas...');
+    const now = new Date().toISOString();
+    const areas = [
+      ['corporativo', 'Corporativo', 'legal', 1],
+      ['consultoria_fiscal', 'Consultoría Fiscal', 'legal', 2],
+      ['litigio_fiscal', 'Litigio Fiscal', 'legal', 3],
+      ['general', 'Legal (General)', 'legal', 4],
+      ['administrativo', 'Administrativo', 'administrativo', 5],
+    ] as const;
+    for (const [id, label, level, sortOrder] of areas) {
+      await run(
+        'INSERT IGNORE INTO work_areas (id, label, level, sort_order, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)',
+        [id, label, level, sortOrder, now, now]
+      );
+    }
+    console.log('  ✓ work_areas seeded');
+  }
+
+  // Migrate existing custom_positions: set work_area_id from practice_area/level
+  // Only run if there are positions with NULL work_area_id
+  const nullWorkAreaCount = await getScalar<number>(
+    'SELECT COUNT(*) AS cnt FROM custom_positions WHERE work_area_id IS NULL'
+  );
+  if (nullWorkAreaCount && nullWorkAreaCount > 0) {
+    console.log(`  Migrating ${nullWorkAreaCount} positions to work_area_id...`);
+    // Administrativo positions
+    await run(
+      "UPDATE custom_positions SET work_area_id = 'administrativo' WHERE work_area_id IS NULL AND level = 'administrativo'"
+    );
+    // Legal positions: use practice_area if available, else 'general'
+    await run(
+      "UPDATE custom_positions SET work_area_id = COALESCE(practice_area, 'general') WHERE work_area_id IS NULL AND level = 'legal'"
+    );
+    console.log('  ✓ positions migrated to work_area_id');
+  }
+
   // ─── Verify ──────────────────────────────────────────────────────────────────
   const tableCount = await getScalar<number>(
     `SELECT COUNT(*) AS cnt FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = DATABASE()`
