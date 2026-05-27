@@ -119990,12 +119990,9 @@ router17.patch("/:id/timeline/:eventId", authMiddleware, requireAdmin, async (re
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router17.delete("/:id/timeline/:eventId", authMiddleware, async (req, res) => {
+router17.delete("/:id/timeline/:eventId", authMiddleware, requireAdmin, async (req, res) => {
   try {
     const { id, eventId } = req.params;
-    if (req.user.role !== "super_user") {
-      return res.status(403).json({ error: "Only super users can delete timeline events" });
-    }
     const event = await db.get("SELECT * FROM user_timeline WHERE id = ?", [eventId]);
     if (!event) {
       return res.status(404).json({ error: "Timeline event not found" });

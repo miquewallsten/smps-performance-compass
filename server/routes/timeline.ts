@@ -165,13 +165,10 @@ router.patch('/:id/timeline/:eventId', authMiddleware, requireAdmin, async (req:
 
 // ─── DELETE /api/users/:id/timeline/:eventId ────────────────────────────────
 // SuperUser only
-router.delete('/:id/timeline/:eventId', authMiddleware, async (req: Request, res: Response) => {
+router.delete('/:id/timeline/:eventId', authMiddleware, requireAdmin, async (req: Request, res: Response) => {
   try {
     const { id, eventId } = req.params;
 
-    if (req.user!.role !== 'super_user') {
-      return res.status(403).json({ error: 'Only super users can delete timeline events' });
-    }
 
     const event = await db.get('SELECT * FROM user_timeline WHERE id = ?', [eventId]);
     if (!event) {

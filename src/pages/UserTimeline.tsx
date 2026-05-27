@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { useUserTimeline, useUsers, useCreateTimelineEvent } from '@/api/queries';
+import { useUserTimeline, useUsers, useCreateTimelineEvent, useDeleteTimelineEvent } from '@/api/queries';
 import { POSITION_LABELS, PRACTICE_AREA_LABELS } from '@/types';
 import {
   ArrowUp, ArrowDown, ArrowRight, UserPlus, UserMinus, BarChart3, Shield, UserCheck,
@@ -57,6 +57,7 @@ export default function UserTimeline() {
   const [showAddNote, setShowAddNote] = useState(false);
   const [noteText, setNoteText] = useState('');
   const createEvent = useCreateTimelineEvent();
+  const deleteEvent = useDeleteTimelineEvent();
 
   const targetUser = users.find((u: any) => u.id === id);
 
@@ -67,7 +68,7 @@ export default function UserTimeline() {
 
   // Can add notes if admin/superuser
   const canAddNote = currentUser?.isAdmin || currentUser?.isSuperUser;
-  const canDelete = currentUser?.isSuperUser;
+  const canDelete = currentUser?.isAdmin || currentUser?.isSuperUser;
 
   const handleAddNote = async () => {
     if (!noteText.trim()) return;
@@ -78,6 +79,15 @@ export default function UserTimeline() {
       toast.success('Nota agregada al historial');
     } catch {
       toast.error('Error al agregar nota');
+    }
+  };
+
+  const handleDeleteEvent = async (eventId: string) => {
+    try {
+      await deleteEvent.mutateAsync({ userId: id!, eventId });
+      toast.success("Evento eliminado del historial");
+    } catch {
+      toast.error("Error al eliminar evento");
     }
   };
 
@@ -188,6 +198,15 @@ export default function UserTimeline() {
                                 <span className="text-xs bg-muted px-1.5 py-0.5 rounded">{getChangeTypeLabel(metadata)}</span>
                               )}
                               <span className="text-xs text-muted-foreground">{formatEventTime(event.event_date || event.created_at)}</span>
+                              {canDelete && (
+                                <button
+                                  onClick={() => { if (confirm('¿Eliminar este evento del historial?')) handleDeleteEvent(event.id); }}
+                                  className="ml-auto opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-all"
+                                  title="Eliminar evento"
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </button>
+                              )}
                             </div>
 
                             {/* Position change detail */}
