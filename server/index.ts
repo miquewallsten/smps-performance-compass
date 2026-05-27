@@ -20,6 +20,7 @@ import workAreaRoutes from './routes/work-areas.js';
 import locationRoutes from './routes/locations.js';
 import periodRoutes from './routes/periods.js';
 import copilotRoutes from './routes/copilot.js';
+import deployRoutes from './routes/deploy.js';
 import timelineRoutes from './routes/timeline.js';
 
 dotenv.config();
@@ -51,6 +52,7 @@ app.use('/api/work-areas', workAreaRoutes);
 app.use('/api/locations', locationRoutes);
 app.use('/api/periods', periodRoutes);
 app.use('/api/copilot', copilotRoutes);
+app.use('/api/deploy', deployRoutes);
 app.use('/api/users', timelineRoutes);
 
 // Multi-domain routing: serve landing page for bowdot.online, SMPS app for smps.bowdot.online

@@ -76,7 +76,7 @@ jobs:
             -H "Content-Type: application/json" \
             -H "X-Hub-Signature-256: $SIGNATURE" \
             -d "$BODY" \
-            https://smps.bowdot.online/deploy-webhook.php)
+            https://smps.bowdot.online/api/deploy)
           
           HTTP_CODE=$(echo "$RESPONSE" | tail -1)
           BODY=$(echo "$RESPONSE" | sed '$d')
