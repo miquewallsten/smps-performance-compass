@@ -4,6 +4,9 @@ var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
 var __getOwnPropNames = Object.getOwnPropertyNames;
 var __getProtoOf = Object.getPrototypeOf;
 var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __esm = (fn, res) => function __init() {
+  return fn && (res = (0, fn[__getOwnPropNames(fn)[0]])(fn = 0)), res;
+};
 var __commonJS = (cb, mod) => function __require() {
   return mod || (0, cb[__getOwnPropNames(cb)[0]])((mod = { exports: {} }).exports, mod), mod.exports;
 };
@@ -42,7 +45,7 @@ var require_ms = __commonJS({
       options = options || {};
       var type = typeof val;
       if (type === "string" && val.length > 0) {
-        return parse(val);
+        return parse2(val);
       } else if (type === "number" && isFinite(val)) {
         return options.long ? fmtLong(val) : fmtShort(val);
       }
@@ -50,7 +53,7 @@ var require_ms = __commonJS({
         "val is not a non-empty string or a valid number. val=" + JSON.stringify(val)
       );
     };
-    function parse(str) {
+    function parse2(str) {
       str = String(str);
       if (str.length > 100) {
         return;
@@ -576,10 +579,10 @@ var require_supports_color = __commonJS({
         return 3;
       }
       if ("TERM_PROGRAM" in env) {
-        const version = parseInt((env.TERM_PROGRAM_VERSION || "").split(".")[0], 10);
+        const version2 = parseInt((env.TERM_PROGRAM_VERSION || "").split(".")[0], 10);
         switch (env.TERM_PROGRAM) {
           case "iTerm.app":
-            return version >= 3 ? 3 : 2;
+            return version2 >= 3 ? 3 : 2;
           case "Apple_Terminal":
             return 2;
         }
@@ -1489,7 +1492,7 @@ var require_bytes = __commonJS({
     "use strict";
     module2.exports = bytes;
     module2.exports.format = format;
-    module2.exports.parse = parse;
+    module2.exports.parse = parse2;
     var formatThousandsRegExp = /\B(?=(\d{3})+(?!\d))/g;
     var formatDecimalsRegExp = /(?:\.0*|(\.[^0]+)0+)$/;
     var map = {
@@ -1503,7 +1506,7 @@ var require_bytes = __commonJS({
     var parseRegExp = /^((-|\+)?(\d+(?:\.\d+)?)) *(kb|mb|gb|tb|pb)$/i;
     function bytes(value, options) {
       if (typeof value === "string") {
-        return parse(value);
+        return parse2(value);
       }
       if (typeof value === "number") {
         return format(value, options);
@@ -1547,7 +1550,7 @@ var require_bytes = __commonJS({
       }
       return str + unitSeparator + unit;
     }
-    function parse(val) {
+    function parse2(val) {
       if (typeof val === "number" && !isNaN(val)) {
         return val;
       }
@@ -9461,7 +9464,7 @@ var require_dist = __commonJS({
     "use strict";
     Object.defineProperty(exports2, "__esModule", { value: true });
     exports2.format = format;
-    exports2.parse = parse;
+    exports2.parse = parse2;
     var TEXT_REGEXP = /^[\u0009\u0020-\u007e\u0080-\u00ff]*$/;
     var TOKEN_REGEXP = /^[!#$%&'*+.^_`|~0-9A-Za-z-]+$/;
     var QUOTE_REGEXP = /[\\"]/g;
@@ -9488,7 +9491,7 @@ var require_dist = __commonJS({
       }
       return result;
     }
-    function parse(header, options) {
+    function parse2(header, options) {
       const len = header.length;
       let index = skipOWS(header, 0, len);
       const valueStart = index;
@@ -19099,7 +19102,7 @@ var require_media_typer = __commonJS({
     var TYPE_NAME_REGEXP = /^[A-Za-z0-9][A-Za-z0-9!#$&^_-]{0,126}$/;
     var TYPE_REGEXP = /^ *([A-Za-z0-9][A-Za-z0-9!#$&^_-]{0,126})\/([A-Za-z0-9][A-Za-z0-9!#$&^_.+-]{0,126}) *$/;
     exports2.format = format;
-    exports2.parse = parse;
+    exports2.parse = parse2;
     exports2.test = test;
     function format(obj) {
       if (!obj || typeof obj !== "object") {
@@ -19132,7 +19135,7 @@ var require_media_typer = __commonJS({
       }
       return TYPE_REGEXP.test(string.toLowerCase());
     }
-    function parse(string) {
+    function parse2(string) {
       if (!string) {
         throw new TypeError("argument string is required");
       }
@@ -19263,7 +19266,7 @@ var require_content_type = __commonJS({
     var QUOTE_REGEXP = /([\\"])/g;
     var TYPE_REGEXP = /^[!#$%&'*+.^_`|~0-9A-Za-z-]+\/[!#$%&'*+.^_`|~0-9A-Za-z-]+$/;
     exports2.format = format;
-    exports2.parse = parse;
+    exports2.parse = parse2;
     function format(obj) {
       if (!obj || typeof obj !== "object") {
         throw new TypeError("argument obj is required");
@@ -19287,7 +19290,7 @@ var require_content_type = __commonJS({
       }
       return string;
     }
-    function parse(string) {
+    function parse2(string) {
       if (!string) {
         throw new TypeError("argument string is required");
       }
@@ -19419,7 +19422,7 @@ var require_read = __commonJS({
     var hasBody = require_type_is().hasBody;
     var { getCharset } = require_utils();
     module2.exports = read2;
-    function read2(req, res, next, parse, debug, options) {
+    function read2(req, res, next, parse2, debug, options) {
       if (onFinished.isFinished(req)) {
         debug("body already parsed");
         next();
@@ -19507,7 +19510,7 @@ var require_read = __commonJS({
         try {
           debug("parse body");
           str = typeof body !== "string" && encoding !== null ? iconv.decode(body, encoding) : body;
-          req.body = parse(str, encoding);
+          req.body = parse2(str, encoding);
         } catch (err) {
           next(createError(400, err, {
             body: str,
@@ -19580,7 +19583,7 @@ var require_json = __commonJS({
       const normalizedOptions = normalizeOptions(options, "application/json");
       var reviver = options?.reviver;
       var strict = options?.strict !== false;
-      function parse(body) {
+      function parse2(body) {
         if (body.length === 0) {
           return {};
         }
@@ -19607,7 +19610,7 @@ var require_json = __commonJS({
         isValidCharset: (charset) => charset.slice(0, 4) === "utf-"
       };
       return function jsonParser(req, res, next) {
-        read2(req, res, next, parse, debug, readOptions);
+        read2(req, res, next, parse2, debug, readOptions);
       };
     }
     function createStrictSyntaxError(str, char) {
@@ -21656,7 +21659,7 @@ var require_stringify = __commonJS({
       return typeof v === "string" || typeof v === "number" || typeof v === "boolean" || typeof v === "symbol" || typeof v === "bigint";
     };
     var sentinel = {};
-    var stringify = function stringify2(object, prefix, generateArrayPrefix, commaRoundTrip, allowEmptyArrays, strictNullHandling, skipNulls, encodeDotInKeys, encoder, filter, sort, allowDots, serializeDate, format, formatter, encodeValuesOnly, charset, sideChannel) {
+    var stringify2 = function stringify3(object, prefix, generateArrayPrefix, commaRoundTrip, allowEmptyArrays, strictNullHandling, skipNulls, encodeDotInKeys, encoder, filter, sort, allowDots, serializeDate, format, formatter, encodeValuesOnly, charset, sideChannel) {
       var obj = object;
       var tmpSc = sideChannel;
       var step = 0;
@@ -21734,7 +21737,7 @@ var require_stringify = __commonJS({
         sideChannel.set(object, step);
         var valueSideChannel = getSideChannel();
         valueSideChannel.set(sentinel, sideChannel);
-        pushToArray(values, stringify2(
+        pushToArray(values, stringify3(
           value,
           keyPrefix,
           generateArrayPrefix,
@@ -21854,7 +21857,7 @@ var require_stringify = __commonJS({
         if (options.skipNulls && value === null) {
           continue;
         }
-        pushToArray(keys, stringify(
+        pushToArray(keys, stringify2(
           value,
           key,
           generateArrayPrefix,
@@ -22211,13 +22214,13 @@ var require_parse = __commonJS({
 var require_lib3 = __commonJS({
   "node_modules/qs/lib/index.js"(exports2, module2) {
     "use strict";
-    var stringify = require_stringify();
-    var parse = require_parse();
+    var stringify2 = require_stringify();
+    var parse2 = require_parse();
     var formats = require_formats();
     module2.exports = {
       formats,
-      parse,
-      stringify
+      parse: parse2,
+      stringify: stringify2
     };
   }
 });
@@ -22238,7 +22241,7 @@ var require_urlencoded = __commonJS({
         throw new TypeError("option defaultCharset must be either utf-8 or iso-8859-1");
       }
       var queryparse = createQueryParser(options);
-      function parse(body, encoding) {
+      function parse2(body, encoding) {
         return body.length ? queryparse(body, encoding) : {};
       }
       const readOptions = {
@@ -22247,7 +22250,7 @@ var require_urlencoded = __commonJS({
         isValidCharset: (charset) => charset === "utf-8" || charset === "iso-8859-1"
       };
       return function urlencodedParser(req, res, next) {
-        read2(req, res, next, parse, debug, readOptions);
+        read2(req, res, next, parse2, debug, readOptions);
       };
     }
     function createQueryParser(options) {
@@ -22431,7 +22434,7 @@ var require_parseurl = __commonJS({
   "node_modules/parseurl/index.js"(exports2, module2) {
     "use strict";
     var url = require("url");
-    var parse = url.parse;
+    var parse2 = url.parse;
     var Url = url.Url;
     module2.exports = parseurl;
     module2.exports.original = originalurl;
@@ -22463,7 +22466,7 @@ var require_parseurl = __commonJS({
     }
     function fastparse(str) {
       if (typeof str !== "string" || str.charCodeAt(0) !== 47) {
-        return parse(str);
+        return parse2(str);
       }
       var pathname = str;
       var query = null;
@@ -22491,7 +22494,7 @@ var require_parseurl = __commonJS({
           /* #  */
           case 160:
           case 65279:
-            return parse(str);
+            return parse2(str);
         }
       }
       var url2 = Url !== void 0 ? new Url() : {};
@@ -32287,7 +32290,7 @@ var require_forwarded = __commonJS({
       if (!req) {
         throw new TypeError("argument req is required");
       }
-      var proxyAddrs = parse(req.headers["x-forwarded-for"] || "");
+      var proxyAddrs = parse2(req.headers["x-forwarded-for"] || "");
       var socketAddr = getSocketAddr(req);
       var addrs = [socketAddr].concat(proxyAddrs);
       return addrs;
@@ -32295,7 +32298,7 @@ var require_forwarded = __commonJS({
     function getSocketAddr(req) {
       return req.socket ? req.socket.remoteAddress : req.connection.remoteAddress;
     }
-    function parse(header) {
+    function parse2(header) {
       var end = header.length;
       var list = [];
       var start = header.length;
@@ -33324,11 +33327,11 @@ var require_dist2 = __commonJS({
     "use strict";
     Object.defineProperty(exports2, "__esModule", { value: true });
     exports2.PathError = exports2.TokenData = void 0;
-    exports2.parse = parse;
+    exports2.parse = parse2;
     exports2.compile = compile;
     exports2.match = match;
     exports2.pathToRegexp = pathToRegexp;
-    exports2.stringify = stringify;
+    exports2.stringify = stringify2;
     var DEFAULT_DELIMITER = "/";
     var NOOP_VALUE = (value) => value;
     var ID_START = /^[$_\p{ID_Start}]$/u;
@@ -33358,7 +33361,7 @@ var require_dist2 = __commonJS({
       }
     };
     exports2.PathError = PathError;
-    function parse(str, options = {}) {
+    function parse2(str, options = {}) {
       const { encodePath = NOOP_VALUE } = options;
       const chars = [...str];
       let index = 0;
@@ -33440,7 +33443,7 @@ var require_dist2 = __commonJS({
     }
     function compile(path2, options = {}) {
       const { encode = encodeURIComponent, delimiter = DEFAULT_DELIMITER } = options;
-      const data = typeof path2 === "object" ? path2 : parse(path2, options);
+      const data = typeof path2 === "object" ? path2 : parse2(path2, options);
       const fn = tokensToFunction(data.tokens, delimiter, encode);
       return function path3(params = {}) {
         const missing = [];
@@ -33547,7 +33550,7 @@ var require_dist2 = __commonJS({
             process2(p);
           return;
         }
-        const data = typeof path3 === "object" ? path3 : parse(path3, options);
+        const data = typeof path3 === "object" ? path3 : parse2(path3, options);
         flatten(data.tokens, 0, [], (tokens) => {
           if (combinations >= 256) {
             throw new PathError("Too many path combinations", data.originalPath);
@@ -33673,7 +33676,7 @@ var require_dist2 = __commonJS({
       }
       return value;
     }
-    function stringify(data) {
+    function stringify2(data) {
       return stringifyTokens(data.tokens, 0);
     }
     function stringifyName(name, next) {
@@ -44878,7 +44881,7 @@ var require_request = __commonJS({
     var http = require("node:http");
     var fresh = require_fresh();
     var parseRange = require_range_parser();
-    var parse = require_parseurl();
+    var parse2 = require_parseurl();
     var proxyaddr = require_proxy_addr();
     var req = Object.create(http.IncomingMessage.prototype);
     module2.exports = req;
@@ -44923,7 +44926,7 @@ var require_request = __commonJS({
       if (!queryparse) {
         return /* @__PURE__ */ Object.create(null);
       }
-      var querystring = parse(this).query;
+      var querystring = parse2(this).query;
       return queryparse(querystring);
     });
     req.is = function is(types) {
@@ -44967,7 +44970,7 @@ var require_request = __commonJS({
       return subdomains2.slice(offset);
     });
     defineGetter(req, "path", function path2() {
-      return parse(this).pathname;
+      return parse2(this).pathname;
     });
     defineGetter(req, "host", function host() {
       var trust = this.app.get("trust proxy fn");
@@ -45021,7 +45024,7 @@ var require_content_disposition = __commonJS({
   "node_modules/content-disposition/index.js"(exports2, module2) {
     "use strict";
     module2.exports = contentDisposition;
-    module2.exports.parse = parse;
+    module2.exports.parse = parse2;
     var utf8Decoder = new TextDecoder("utf-8");
     var ENCODE_URL_ATTR_CHAR_REGEXP = /[\x00-\x20"'()*,/:;<=>?@[\\\]{}\x7f]/g;
     var NON_LATIN1_REGEXP = /[^\x20-\x7e\xa0-\xff]/g;
@@ -45116,7 +45119,7 @@ var require_content_disposition = __commonJS({
     function getlatin1(val) {
       return String(val).replace(NON_LATIN1_REGEXP, "?");
     }
-    function parse(string) {
+    function parse2(string) {
       if (!string || typeof string !== "string") {
         throw new TypeError("argument string is required");
       }
@@ -45247,7 +45250,7 @@ var require_cookie_signature = __commonJS({
 var require_cookie = __commonJS({
   "node_modules/cookie/index.js"(exports2) {
     "use strict";
-    exports2.parse = parse;
+    exports2.parse = parse2;
     exports2.serialize = serialize;
     var __toString = Object.prototype.toString;
     var __hasOwnProperty = Object.prototype.hasOwnProperty;
@@ -45255,7 +45258,7 @@ var require_cookie = __commonJS({
     var cookieValueRegExp = /^("?)[\u0021\u0023-\u002B\u002D-\u003A\u003C-\u005B\u005D-\u007E]*\1$/;
     var domainValueRegExp = /^([.]?[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)([.][a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)*$/i;
     var pathValueRegExp = /^[\u0020-\u003A\u003D-\u007E]*$/;
-    function parse(str, opt) {
+    function parse2(str, opt) {
       if (typeof str !== "string") {
         throw new TypeError("argument str must be a string");
       }
@@ -55411,7 +55414,7 @@ var require_vary = __commonJS({
       if (!field) {
         throw new TypeError("field argument is required");
       }
-      var fields = !Array.isArray(field) ? parse(String(field)) : field;
+      var fields = !Array.isArray(field) ? parse2(String(field)) : field;
       for (var j = 0; j < fields.length; j++) {
         if (!FIELD_NAME_REGEXP.test(fields[j])) {
           throw new TypeError("field argument contains an invalid header name");
@@ -55421,7 +55424,7 @@ var require_vary = __commonJS({
         return header;
       }
       var val = header;
-      var vals = parse(header.toLowerCase());
+      var vals = parse2(header.toLowerCase());
       if (fields.indexOf("*") !== -1 || vals.indexOf("*") !== -1) {
         return "*";
       }
@@ -55434,7 +55437,7 @@ var require_vary = __commonJS({
       }
       return val;
     }
-    function parse(header) {
+    function parse2(header) {
       var end = 0;
       var list = [];
       var start = 0;
@@ -55599,7 +55602,7 @@ var require_response = __commonJS({
       var escape2 = app2.get("json escape");
       var replacer = app2.get("json replacer");
       var spaces = app2.get("json spaces");
-      var body = stringify(obj, replacer, spaces, escape2);
+      var body = stringify2(obj, replacer, spaces, escape2);
       if (!this.get("Content-Type")) {
         this.set("Content-Type", "application/json");
       }
@@ -55610,7 +55613,7 @@ var require_response = __commonJS({
       var escape2 = app2.get("json escape");
       var replacer = app2.get("json replacer");
       var spaces = app2.get("json spaces");
-      var body = stringify(obj, replacer, spaces, escape2);
+      var body = stringify2(obj, replacer, spaces, escape2);
       var callback = this.req.query[app2.get("jsonp callback name")];
       if (!this.get("Content-Type")) {
         this.set("X-Content-Type-Options", "nosniff");
@@ -55918,7 +55921,7 @@ var require_response = __commonJS({
       }
       file.pipe(res2);
     }
-    function stringify(value, replacer, spaces, escape2) {
+    function stringify2(value, replacer, spaces, escape2) {
       var json = replacer || spaces ? JSON.stringify(value, replacer, spaces) : JSON.stringify(value);
       if (escape2 && typeof json === "string") {
         json = json.replace(/[<>&]/g, function(c) {
@@ -56403,7 +56406,7 @@ var require_main = __commonJS({
       return supportsAnsi() ? `\x1B[2m${text}\x1B[0m` : text;
     }
     var LINE = /(?:^|^)\s*(?:export\s+)?([\w.-]+)(?:\s*=\s*?|:\s+?)(\s*'(?:\\'|[^'])*'|\s*"(?:\\"|[^"])*"|\s*`(?:\\`|[^`])*`|[^#\r\n]+)?\s*(?:#.*)?(?:$|$)/mg;
-    function parse(src) {
+    function parse2(src) {
       const obj = {};
       let lines = src.toString();
       lines = lines.replace(/\r\n?/mg, "\n");
@@ -56675,7 +56678,7 @@ var require_main = __commonJS({
       _parseVault,
       config,
       decrypt,
-      parse,
+      parse: parse2,
       populate
     };
     module2.exports.configDotenv = DotenvModule.configDotenv;
@@ -67766,7 +67769,7 @@ var require_auth_41 = __commonJS({
   "node_modules/mysql2/lib/auth_41.js"(exports2) {
     "use strict";
     var crypto4 = require("crypto");
-    function sha1(msg, msg1, msg2) {
+    function sha12(msg, msg1, msg2) {
       const hash2 = crypto4.createHash("sha1");
       hash2.update(msg);
       if (msg1) {
@@ -67789,24 +67792,24 @@ var require_auth_41 = __commonJS({
       if (!password) {
         return Buffer.alloc(0);
       }
-      const stage1 = sha1(password);
+      const stage1 = sha12(password);
       return exports2.calculateTokenFromPasswordSha(stage1, scramble1, scramble2);
     }
     exports2.calculateTokenFromPasswordSha = function(passwordSha, scramble1, scramble2) {
       const authPluginData1 = scramble1.slice(0, 8);
       const authPluginData2 = scramble2.slice(0, 12);
-      const stage2 = sha1(passwordSha);
-      const stage3 = sha1(authPluginData1, authPluginData2, stage2);
+      const stage2 = sha12(passwordSha);
+      const stage3 = sha12(authPluginData1, authPluginData2, stage2);
       return xor(stage3, passwordSha);
     };
     exports2.calculateToken = token;
     exports2.verifyToken = function(publicSeed1, publicSeed2, token2, doubleSha) {
-      const hashStage1 = xor(token2, sha1(publicSeed1, publicSeed2, doubleSha));
-      const candidateHash2 = sha1(hashStage1);
+      const hashStage1 = xor(token2, sha12(publicSeed1, publicSeed2, doubleSha));
+      const candidateHash2 = sha12(hashStage1);
       return candidateHash2.compare(doubleSha) === 0;
     };
     exports2.doubleSha1 = function(password) {
-      return sha1(sha1(password));
+      return sha12(sha12(password));
     };
     function xorRotating(a, seed2) {
       const result = Buffer.allocUnsafe(a.length);
@@ -73006,10 +73009,10 @@ var require_ssl_profiles = __commonJS({
 var require_connection_config = __commonJS({
   "node_modules/mysql2/lib/connection_config.js"(exports2, module2) {
     "use strict";
-    var { URL: URL2 } = require("url");
+    var { URL: URL3 } = require("url");
     var ClientConstants = require_client();
     var Charsets = require_charsets();
-    var { version } = require_package();
+    var { version: version2 } = require_package();
     var SSLProfiles = null;
     var validOptions = {
       authPlugins: 1,
@@ -73154,7 +73157,7 @@ var require_connection_config = __commonJS({
         );
         const defaultConnectAttributes = {
           _client_name: "Node-MySQL-2",
-          _client_version: version
+          _client_version: version2
         };
         this.connectAttributes = {
           ...defaultConnectAttributes,
@@ -73231,7 +73234,7 @@ var require_connection_config = __commonJS({
         return ssl;
       }
       static parseUrl(url) {
-        const parsedUrl = new URL2(url);
+        const parsedUrl = new URL3(url);
         const options = {
           host: decodeURIComponent(parsedUrl.hostname),
           port: parseInt(parsedUrl.port, 10),
@@ -73323,7 +73326,7 @@ var require_named_placeholders = __commonJS({
     var DQUOTE = 34;
     var SQUOTE = 39;
     var BSLASH = 92;
-    function parse(query) {
+    function parse2(query) {
       let ppos = RE_PARAM.exec(query);
       let curpos = 0;
       let start = 0;
@@ -73438,17 +73441,17 @@ var require_named_placeholders = __commonJS({
         if (cache && (tree = cache.get(query))) {
           return toArrayParams(tree, paramsObj);
         }
-        tree = join(parse(query));
+        tree = join(parse2(query));
         if (cache) {
           cache.set(query, tree);
         }
         return toArrayParams(tree, paramsObj);
       }
-      compile.parse = parse;
+      compile.parse = parse2;
       return compile;
     }
     function toNumbered(q, params) {
-      const tree = parse(q);
+      const tree = parse2(q);
       const paramsArr = [];
       if (tree.length === 1) {
         return [tree[0], paramsArr];
@@ -75878,6 +75881,504 @@ var require_promise = __commonJS({
   }
 });
 
+// node_modules/uuid/dist-node/max.js
+var max_default;
+var init_max = __esm({
+  "node_modules/uuid/dist-node/max.js"() {
+    max_default = "ffffffff-ffff-ffff-ffff-ffffffffffff";
+  }
+});
+
+// node_modules/uuid/dist-node/nil.js
+var nil_default;
+var init_nil = __esm({
+  "node_modules/uuid/dist-node/nil.js"() {
+    nil_default = "00000000-0000-0000-0000-000000000000";
+  }
+});
+
+// node_modules/uuid/dist-node/regex.js
+var regex_default;
+var init_regex = __esm({
+  "node_modules/uuid/dist-node/regex.js"() {
+    regex_default = /^(?:[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/i;
+  }
+});
+
+// node_modules/uuid/dist-node/validate.js
+function validate(uuid) {
+  return typeof uuid === "string" && regex_default.test(uuid);
+}
+var validate_default;
+var init_validate = __esm({
+  "node_modules/uuid/dist-node/validate.js"() {
+    init_regex();
+    validate_default = validate;
+  }
+});
+
+// node_modules/uuid/dist-node/parse.js
+function parse(uuid) {
+  if (!validate_default(uuid)) {
+    throw TypeError("Invalid UUID");
+  }
+  let v;
+  return Uint8Array.of((v = parseInt(uuid.slice(0, 8), 16)) >>> 24, v >>> 16 & 255, v >>> 8 & 255, v & 255, (v = parseInt(uuid.slice(9, 13), 16)) >>> 8, v & 255, (v = parseInt(uuid.slice(14, 18), 16)) >>> 8, v & 255, (v = parseInt(uuid.slice(19, 23), 16)) >>> 8, v & 255, (v = parseInt(uuid.slice(24, 36), 16)) / 1099511627776 & 255, v / 4294967296 & 255, v >>> 24 & 255, v >>> 16 & 255, v >>> 8 & 255, v & 255);
+}
+var parse_default;
+var init_parse = __esm({
+  "node_modules/uuid/dist-node/parse.js"() {
+    init_validate();
+    parse_default = parse;
+  }
+});
+
+// node_modules/uuid/dist-node/stringify.js
+function unsafeStringify(arr, offset = 0) {
+  return (byteToHex[arr[offset + 0]] + byteToHex[arr[offset + 1]] + byteToHex[arr[offset + 2]] + byteToHex[arr[offset + 3]] + "-" + byteToHex[arr[offset + 4]] + byteToHex[arr[offset + 5]] + "-" + byteToHex[arr[offset + 6]] + byteToHex[arr[offset + 7]] + "-" + byteToHex[arr[offset + 8]] + byteToHex[arr[offset + 9]] + "-" + byteToHex[arr[offset + 10]] + byteToHex[arr[offset + 11]] + byteToHex[arr[offset + 12]] + byteToHex[arr[offset + 13]] + byteToHex[arr[offset + 14]] + byteToHex[arr[offset + 15]]).toLowerCase();
+}
+function stringify(arr, offset = 0) {
+  const uuid = unsafeStringify(arr, offset);
+  if (!validate_default(uuid)) {
+    throw TypeError("Stringified UUID is invalid");
+  }
+  return uuid;
+}
+var byteToHex, stringify_default;
+var init_stringify = __esm({
+  "node_modules/uuid/dist-node/stringify.js"() {
+    init_validate();
+    byteToHex = [];
+    for (let i = 0; i < 256; ++i) {
+      byteToHex.push((i + 256).toString(16).slice(1));
+    }
+    stringify_default = stringify;
+  }
+});
+
+// node_modules/uuid/dist-node/rng.js
+function rng() {
+  return crypto.getRandomValues(rnds8);
+}
+var rnds8;
+var init_rng = __esm({
+  "node_modules/uuid/dist-node/rng.js"() {
+    rnds8 = new Uint8Array(16);
+  }
+});
+
+// node_modules/uuid/dist-node/v1.js
+function v1(options, buf, offset) {
+  let bytes;
+  const isV6 = options?._v6 ?? false;
+  if (options) {
+    const optionsKeys = Object.keys(options);
+    if (optionsKeys.length === 1 && optionsKeys[0] === "_v6") {
+      options = void 0;
+    }
+  }
+  if (options) {
+    bytes = v1Bytes(options.random ?? options.rng?.() ?? rng(), options.msecs, options.nsecs, options.clockseq, options.node, buf, offset);
+  } else {
+    const now = Date.now();
+    const rnds = rng();
+    updateV1State(_state, now, rnds);
+    bytes = v1Bytes(rnds, _state.msecs, _state.nsecs, isV6 ? void 0 : _state.clockseq, isV6 ? void 0 : _state.node, buf, offset);
+  }
+  return buf ?? unsafeStringify(bytes);
+}
+function updateV1State(state, now, rnds) {
+  state.msecs ??= -Infinity;
+  state.nsecs ??= 0;
+  if (now === state.msecs) {
+    state.nsecs++;
+    if (state.nsecs >= 1e4) {
+      state.node = void 0;
+      state.nsecs = 0;
+    }
+  } else if (now > state.msecs) {
+    state.nsecs = 0;
+  } else if (now < state.msecs) {
+    state.node = void 0;
+  }
+  if (!state.node) {
+    state.node = rnds.slice(10, 16);
+    state.node[0] |= 1;
+    state.clockseq = (rnds[8] << 8 | rnds[9]) & 16383;
+  }
+  state.msecs = now;
+  return state;
+}
+function v1Bytes(rnds, msecs, nsecs, clockseq, node, buf, offset = 0) {
+  if (rnds.length < 16) {
+    throw new Error("Random bytes length must be >= 16");
+  }
+  if (!buf) {
+    buf = new Uint8Array(16);
+    offset = 0;
+  } else {
+    if (offset < 0 || offset + 16 > buf.length) {
+      throw new RangeError(`UUID byte range ${offset}:${offset + 15} is out of buffer bounds`);
+    }
+  }
+  msecs ??= Date.now();
+  nsecs ??= 0;
+  clockseq ??= (rnds[8] << 8 | rnds[9]) & 16383;
+  node ??= rnds.slice(10, 16);
+  msecs += 122192928e5;
+  const tl = ((msecs & 268435455) * 1e4 + nsecs) % 4294967296;
+  buf[offset++] = tl >>> 24 & 255;
+  buf[offset++] = tl >>> 16 & 255;
+  buf[offset++] = tl >>> 8 & 255;
+  buf[offset++] = tl & 255;
+  const tmh = msecs / 4294967296 * 1e4 & 268435455;
+  buf[offset++] = tmh >>> 8 & 255;
+  buf[offset++] = tmh & 255;
+  buf[offset++] = tmh >>> 24 & 15 | 16;
+  buf[offset++] = tmh >>> 16 & 255;
+  buf[offset++] = clockseq >>> 8 | 128;
+  buf[offset++] = clockseq & 255;
+  for (let n = 0; n < 6; ++n) {
+    buf[offset++] = node[n];
+  }
+  return buf;
+}
+var _state, v1_default;
+var init_v1 = __esm({
+  "node_modules/uuid/dist-node/v1.js"() {
+    init_rng();
+    init_stringify();
+    _state = {};
+    v1_default = v1;
+  }
+});
+
+// node_modules/uuid/dist-node/v1ToV6.js
+function v1ToV6(uuid) {
+  const v1Bytes2 = typeof uuid === "string" ? parse_default(uuid) : uuid;
+  const v6Bytes = _v1ToV6(v1Bytes2);
+  return typeof uuid === "string" ? unsafeStringify(v6Bytes) : v6Bytes;
+}
+function _v1ToV6(v1Bytes2) {
+  return Uint8Array.of((v1Bytes2[6] & 15) << 4 | v1Bytes2[7] >> 4 & 15, (v1Bytes2[7] & 15) << 4 | (v1Bytes2[4] & 240) >> 4, (v1Bytes2[4] & 15) << 4 | (v1Bytes2[5] & 240) >> 4, (v1Bytes2[5] & 15) << 4 | (v1Bytes2[0] & 240) >> 4, (v1Bytes2[0] & 15) << 4 | (v1Bytes2[1] & 240) >> 4, (v1Bytes2[1] & 15) << 4 | (v1Bytes2[2] & 240) >> 4, 96 | v1Bytes2[2] & 15, v1Bytes2[3], v1Bytes2[8], v1Bytes2[9], v1Bytes2[10], v1Bytes2[11], v1Bytes2[12], v1Bytes2[13], v1Bytes2[14], v1Bytes2[15]);
+}
+var init_v1ToV6 = __esm({
+  "node_modules/uuid/dist-node/v1ToV6.js"() {
+    init_parse();
+    init_stringify();
+  }
+});
+
+// node_modules/uuid/dist-node/md5.js
+function md5(bytes) {
+  if (Array.isArray(bytes)) {
+    bytes = Buffer.from(bytes);
+  } else if (typeof bytes === "string") {
+    bytes = Buffer.from(bytes, "utf8");
+  }
+  return (0, import_node_crypto.createHash)("md5").update(bytes).digest();
+}
+var import_node_crypto, md5_default;
+var init_md5 = __esm({
+  "node_modules/uuid/dist-node/md5.js"() {
+    import_node_crypto = require("node:crypto");
+    md5_default = md5;
+  }
+});
+
+// node_modules/uuid/dist-node/v35.js
+function stringToBytes(str) {
+  str = unescape(encodeURIComponent(str));
+  const bytes = new Uint8Array(str.length);
+  for (let i = 0; i < str.length; ++i) {
+    bytes[i] = str.charCodeAt(i);
+  }
+  return bytes;
+}
+function v35(version2, hash2, value, namespace, buf, offset) {
+  const valueBytes = typeof value === "string" ? stringToBytes(value) : value;
+  const namespaceBytes = typeof namespace === "string" ? parse_default(namespace) : namespace;
+  if (typeof namespace === "string") {
+    namespace = parse_default(namespace);
+  }
+  if (namespace?.length !== 16) {
+    throw TypeError("Namespace must be array-like (16 iterable integer values, 0-255)");
+  }
+  let bytes = new Uint8Array(16 + valueBytes.length);
+  bytes.set(namespaceBytes);
+  bytes.set(valueBytes, namespaceBytes.length);
+  bytes = hash2(bytes);
+  bytes[6] = bytes[6] & 15 | version2;
+  bytes[8] = bytes[8] & 63 | 128;
+  if (buf) {
+    offset ??= 0;
+    if (offset < 0 || offset + 16 > buf.length) {
+      throw new RangeError(`UUID byte range ${offset}:${offset + 15} is out of buffer bounds`);
+    }
+    for (let i = 0; i < 16; ++i) {
+      buf[offset + i] = bytes[i];
+    }
+    return buf;
+  }
+  return unsafeStringify(bytes);
+}
+var DNS, URL2;
+var init_v35 = __esm({
+  "node_modules/uuid/dist-node/v35.js"() {
+    init_parse();
+    init_stringify();
+    DNS = "6ba7b810-9dad-11d1-80b4-00c04fd430c8";
+    URL2 = "6ba7b811-9dad-11d1-80b4-00c04fd430c8";
+  }
+});
+
+// node_modules/uuid/dist-node/v3.js
+function v3(value, namespace, buf, offset) {
+  return v35(48, md5_default, value, namespace, buf, offset);
+}
+var v3_default;
+var init_v3 = __esm({
+  "node_modules/uuid/dist-node/v3.js"() {
+    init_md5();
+    init_v35();
+    v3.DNS = DNS;
+    v3.URL = URL2;
+    v3_default = v3;
+  }
+});
+
+// node_modules/uuid/dist-node/v4.js
+function v4(options, buf, offset) {
+  if (!buf && !options && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+  return _v4(options, buf, offset);
+}
+function _v4(options, buf, offset) {
+  options = options || {};
+  const rnds = options.random ?? options.rng?.() ?? rng();
+  if (rnds.length < 16) {
+    throw new Error("Random bytes length must be >= 16");
+  }
+  rnds[6] = rnds[6] & 15 | 64;
+  rnds[8] = rnds[8] & 63 | 128;
+  if (buf) {
+    offset = offset || 0;
+    if (offset < 0 || offset + 16 > buf.length) {
+      throw new RangeError(`UUID byte range ${offset}:${offset + 15} is out of buffer bounds`);
+    }
+    for (let i = 0; i < 16; ++i) {
+      buf[offset + i] = rnds[i];
+    }
+    return buf;
+  }
+  return unsafeStringify(rnds);
+}
+var v4_default;
+var init_v4 = __esm({
+  "node_modules/uuid/dist-node/v4.js"() {
+    init_rng();
+    init_stringify();
+    v4_default = v4;
+  }
+});
+
+// node_modules/uuid/dist-node/sha1.js
+function sha1(bytes) {
+  if (Array.isArray(bytes)) {
+    bytes = Buffer.from(bytes);
+  } else if (typeof bytes === "string") {
+    bytes = Buffer.from(bytes, "utf8");
+  }
+  return (0, import_node_crypto2.createHash)("sha1").update(bytes).digest();
+}
+var import_node_crypto2, sha1_default;
+var init_sha1 = __esm({
+  "node_modules/uuid/dist-node/sha1.js"() {
+    import_node_crypto2 = require("node:crypto");
+    sha1_default = sha1;
+  }
+});
+
+// node_modules/uuid/dist-node/v5.js
+function v5(value, namespace, buf, offset) {
+  return v35(80, sha1_default, value, namespace, buf, offset);
+}
+var v5_default;
+var init_v5 = __esm({
+  "node_modules/uuid/dist-node/v5.js"() {
+    init_sha1();
+    init_v35();
+    v5.DNS = DNS;
+    v5.URL = URL2;
+    v5_default = v5;
+  }
+});
+
+// node_modules/uuid/dist-node/v6.js
+function v6(options, buf, offset) {
+  options ??= {};
+  offset ??= 0;
+  let bytes = v1_default({ ...options, _v6: true }, new Uint8Array(16));
+  bytes = v1ToV6(bytes);
+  if (buf) {
+    if (offset < 0 || offset + 16 > buf.length) {
+      throw new RangeError(`UUID byte range ${offset}:${offset + 15} is out of buffer bounds`);
+    }
+    for (let i = 0; i < 16; i++) {
+      buf[offset + i] = bytes[i];
+    }
+    return buf;
+  }
+  return unsafeStringify(bytes);
+}
+var v6_default;
+var init_v6 = __esm({
+  "node_modules/uuid/dist-node/v6.js"() {
+    init_stringify();
+    init_v1();
+    init_v1ToV6();
+    v6_default = v6;
+  }
+});
+
+// node_modules/uuid/dist-node/v6ToV1.js
+function v6ToV1(uuid) {
+  const v6Bytes = typeof uuid === "string" ? parse_default(uuid) : uuid;
+  const v1Bytes2 = _v6ToV1(v6Bytes);
+  return typeof uuid === "string" ? unsafeStringify(v1Bytes2) : v1Bytes2;
+}
+function _v6ToV1(v6Bytes) {
+  return Uint8Array.of((v6Bytes[3] & 15) << 4 | v6Bytes[4] >> 4 & 15, (v6Bytes[4] & 15) << 4 | (v6Bytes[5] & 240) >> 4, (v6Bytes[5] & 15) << 4 | v6Bytes[6] & 15, v6Bytes[7], (v6Bytes[1] & 15) << 4 | (v6Bytes[2] & 240) >> 4, (v6Bytes[2] & 15) << 4 | (v6Bytes[3] & 240) >> 4, 16 | (v6Bytes[0] & 240) >> 4, (v6Bytes[0] & 15) << 4 | (v6Bytes[1] & 240) >> 4, v6Bytes[8], v6Bytes[9], v6Bytes[10], v6Bytes[11], v6Bytes[12], v6Bytes[13], v6Bytes[14], v6Bytes[15]);
+}
+var init_v6ToV1 = __esm({
+  "node_modules/uuid/dist-node/v6ToV1.js"() {
+    init_parse();
+    init_stringify();
+  }
+});
+
+// node_modules/uuid/dist-node/v7.js
+function v7(options, buf, offset) {
+  let bytes;
+  if (options) {
+    bytes = v7Bytes(options.random ?? options.rng?.() ?? rng(), options.msecs, options.seq, buf, offset);
+  } else {
+    const now = Date.now();
+    const rnds = rng();
+    updateV7State(_state2, now, rnds);
+    bytes = v7Bytes(rnds, _state2.msecs, _state2.seq, buf, offset);
+  }
+  return buf ?? unsafeStringify(bytes);
+}
+function updateV7State(state, now, rnds) {
+  state.msecs ??= -Infinity;
+  state.seq ??= 0;
+  if (now > state.msecs) {
+    state.seq = rnds[6] << 23 | rnds[7] << 16 | rnds[8] << 8 | rnds[9];
+    state.msecs = now;
+  } else {
+    state.seq = state.seq + 1 | 0;
+    if (state.seq === 0) {
+      state.msecs++;
+    }
+  }
+  return state;
+}
+function v7Bytes(rnds, msecs, seq, buf, offset = 0) {
+  if (rnds.length < 16) {
+    throw new Error("Random bytes length must be >= 16");
+  }
+  if (!buf) {
+    buf = new Uint8Array(16);
+    offset = 0;
+  } else {
+    if (offset < 0 || offset + 16 > buf.length) {
+      throw new RangeError(`UUID byte range ${offset}:${offset + 15} is out of buffer bounds`);
+    }
+  }
+  msecs ??= Date.now();
+  seq ??= rnds[6] * 127 << 24 | rnds[7] << 16 | rnds[8] << 8 | rnds[9];
+  buf[offset++] = msecs / 1099511627776 & 255;
+  buf[offset++] = msecs / 4294967296 & 255;
+  buf[offset++] = msecs / 16777216 & 255;
+  buf[offset++] = msecs / 65536 & 255;
+  buf[offset++] = msecs / 256 & 255;
+  buf[offset++] = msecs & 255;
+  buf[offset++] = 112 | seq >>> 28 & 15;
+  buf[offset++] = seq >>> 20 & 255;
+  buf[offset++] = 128 | seq >>> 14 & 63;
+  buf[offset++] = seq >>> 6 & 255;
+  buf[offset++] = seq << 2 & 255 | rnds[10] & 3;
+  buf[offset++] = rnds[11];
+  buf[offset++] = rnds[12];
+  buf[offset++] = rnds[13];
+  buf[offset++] = rnds[14];
+  buf[offset++] = rnds[15];
+  return buf;
+}
+var _state2, v7_default;
+var init_v7 = __esm({
+  "node_modules/uuid/dist-node/v7.js"() {
+    init_rng();
+    init_stringify();
+    _state2 = {};
+    v7_default = v7;
+  }
+});
+
+// node_modules/uuid/dist-node/version.js
+function version(uuid) {
+  if (!validate_default(uuid)) {
+    throw TypeError("Invalid UUID");
+  }
+  return parseInt(uuid.slice(14, 15), 16);
+}
+var version_default;
+var init_version = __esm({
+  "node_modules/uuid/dist-node/version.js"() {
+    init_validate();
+    version_default = version;
+  }
+});
+
+// node_modules/uuid/dist-node/index.js
+var dist_node_exports = {};
+__export(dist_node_exports, {
+  MAX: () => max_default,
+  NIL: () => nil_default,
+  parse: () => parse_default,
+  stringify: () => stringify_default,
+  v1: () => v1_default,
+  v1ToV6: () => v1ToV6,
+  v3: () => v3_default,
+  v4: () => v4_default,
+  v5: () => v5_default,
+  v6: () => v6_default,
+  v6ToV1: () => v6ToV1,
+  v7: () => v7_default,
+  validate: () => validate_default,
+  version: () => version_default
+});
+var init_dist_node = __esm({
+  "node_modules/uuid/dist-node/index.js"() {
+    init_max();
+    init_nil();
+    init_parse();
+    init_stringify();
+    init_v1();
+    init_v1ToV6();
+    init_v3();
+    init_v4();
+    init_v5();
+    init_v6();
+    init_v6ToV1();
+    init_v7();
+    init_validate();
+    init_version();
+  }
+});
+
 // node_modules/safe-buffer/index.js
 var require_safe_buffer = __commonJS({
   "node_modules/safe-buffer/index.js"(exports2, module2) {
@@ -76925,31 +77426,31 @@ var require_semver = __commonJS({
     var parseOptions = require_parse_options();
     var { compareIdentifiers } = require_identifiers();
     var SemVer = class _SemVer {
-      constructor(version, options) {
+      constructor(version2, options) {
         options = parseOptions(options);
-        if (version instanceof _SemVer) {
-          if (version.loose === !!options.loose && version.includePrerelease === !!options.includePrerelease) {
-            return version;
+        if (version2 instanceof _SemVer) {
+          if (version2.loose === !!options.loose && version2.includePrerelease === !!options.includePrerelease) {
+            return version2;
           } else {
-            version = version.version;
+            version2 = version2.version;
           }
-        } else if (typeof version !== "string") {
-          throw new TypeError(`Invalid version. Must be a string. Got type "${typeof version}".`);
+        } else if (typeof version2 !== "string") {
+          throw new TypeError(`Invalid version. Must be a string. Got type "${typeof version2}".`);
         }
-        if (version.length > MAX_LENGTH) {
+        if (version2.length > MAX_LENGTH) {
           throw new TypeError(
             `version is longer than ${MAX_LENGTH} characters`
           );
         }
-        debug("SemVer", version, options);
+        debug("SemVer", version2, options);
         this.options = options;
         this.loose = !!options.loose;
         this.includePrerelease = !!options.includePrerelease;
-        const m = version.trim().match(options.loose ? re[t.LOOSE] : re[t.FULL]);
+        const m = version2.trim().match(options.loose ? re[t.LOOSE] : re[t.FULL]);
         if (!m) {
-          throw new TypeError(`Invalid Version: ${version}`);
+          throw new TypeError(`Invalid Version: ${version2}`);
         }
-        this.raw = version;
+        this.raw = version2;
         this.major = +m[1];
         this.minor = +m[2];
         this.patch = +m[3];
@@ -77181,12 +77682,12 @@ var require_parse2 = __commonJS({
   "node_modules/semver/functions/parse.js"(exports2, module2) {
     "use strict";
     var SemVer = require_semver();
-    var parse = (version, options, throwErrors = false) => {
-      if (version instanceof SemVer) {
-        return version;
+    var parse2 = (version2, options, throwErrors = false) => {
+      if (version2 instanceof SemVer) {
+        return version2;
       }
       try {
-        return new SemVer(version, options);
+        return new SemVer(version2, options);
       } catch (er) {
         if (!throwErrors) {
           return null;
@@ -77194,7 +77695,7 @@ var require_parse2 = __commonJS({
         throw er;
       }
     };
-    module2.exports = parse;
+    module2.exports = parse2;
   }
 });
 
@@ -77202,9 +77703,9 @@ var require_parse2 = __commonJS({
 var require_valid = __commonJS({
   "node_modules/semver/functions/valid.js"(exports2, module2) {
     "use strict";
-    var parse = require_parse2();
-    var valid = (version, options) => {
-      const v = parse(version, options);
+    var parse2 = require_parse2();
+    var valid = (version2, options) => {
+      const v = parse2(version2, options);
       return v ? v.version : null;
     };
     module2.exports = valid;
@@ -77215,9 +77716,9 @@ var require_valid = __commonJS({
 var require_clean = __commonJS({
   "node_modules/semver/functions/clean.js"(exports2, module2) {
     "use strict";
-    var parse = require_parse2();
-    var clean = (version, options) => {
-      const s = parse(version.trim().replace(/^[=v]+/, ""), options);
+    var parse2 = require_parse2();
+    var clean = (version2, options) => {
+      const s = parse2(version2.trim().replace(/^[=v]+/, ""), options);
       return s ? s.version : null;
     };
     module2.exports = clean;
@@ -77229,7 +77730,7 @@ var require_inc = __commonJS({
   "node_modules/semver/functions/inc.js"(exports2, module2) {
     "use strict";
     var SemVer = require_semver();
-    var inc = (version, release, options, identifier, identifierBase) => {
+    var inc = (version2, release, options, identifier, identifierBase) => {
       if (typeof options === "string") {
         identifierBase = identifier;
         identifier = options;
@@ -77237,7 +77738,7 @@ var require_inc = __commonJS({
       }
       try {
         return new SemVer(
-          version instanceof SemVer ? version.version : version,
+          version2 instanceof SemVer ? version2.version : version2,
           options
         ).inc(release, identifier, identifierBase).version;
       } catch (er) {
@@ -77252,17 +77753,17 @@ var require_inc = __commonJS({
 var require_diff = __commonJS({
   "node_modules/semver/functions/diff.js"(exports2, module2) {
     "use strict";
-    var parse = require_parse2();
+    var parse2 = require_parse2();
     var diff = (version1, version2) => {
-      const v1 = parse(version1, null, true);
-      const v2 = parse(version2, null, true);
-      const comparison = v1.compare(v2);
+      const v12 = parse2(version1, null, true);
+      const v2 = parse2(version2, null, true);
+      const comparison = v12.compare(v2);
       if (comparison === 0) {
         return null;
       }
       const v1Higher = comparison > 0;
-      const highVersion = v1Higher ? v1 : v2;
-      const lowVersion = v1Higher ? v2 : v1;
+      const highVersion = v1Higher ? v12 : v2;
+      const lowVersion = v1Higher ? v2 : v12;
       const highHasPre = !!highVersion.prerelease.length;
       const lowHasPre = !!lowVersion.prerelease.length;
       if (lowHasPre && !highHasPre) {
@@ -77277,13 +77778,13 @@ var require_diff = __commonJS({
         }
       }
       const prefix = highHasPre ? "pre" : "";
-      if (v1.major !== v2.major) {
+      if (v12.major !== v2.major) {
         return prefix + "major";
       }
-      if (v1.minor !== v2.minor) {
+      if (v12.minor !== v2.minor) {
         return prefix + "minor";
       }
-      if (v1.patch !== v2.patch) {
+      if (v12.patch !== v2.patch) {
         return prefix + "patch";
       }
       return "prerelease";
@@ -77326,9 +77827,9 @@ var require_patch = __commonJS({
 var require_prerelease = __commonJS({
   "node_modules/semver/functions/prerelease.js"(exports2, module2) {
     "use strict";
-    var parse = require_parse2();
-    var prerelease = (version, options) => {
-      const parsed = parse(version, options);
+    var parse2 = require_parse2();
+    var prerelease = (version2, options) => {
+      const parsed = parse2(version2, options);
       return parsed && parsed.prerelease.length ? parsed.prerelease : null;
     };
     module2.exports = prerelease;
@@ -77514,26 +78015,26 @@ var require_coerce = __commonJS({
   "node_modules/semver/functions/coerce.js"(exports2, module2) {
     "use strict";
     var SemVer = require_semver();
-    var parse = require_parse2();
+    var parse2 = require_parse2();
     var { safeRe: re, t } = require_re();
-    var coerce = (version, options) => {
-      if (version instanceof SemVer) {
-        return version;
+    var coerce = (version2, options) => {
+      if (version2 instanceof SemVer) {
+        return version2;
       }
-      if (typeof version === "number") {
-        version = String(version);
+      if (typeof version2 === "number") {
+        version2 = String(version2);
       }
-      if (typeof version !== "string") {
+      if (typeof version2 !== "string") {
         return null;
       }
       options = options || {};
       let match = null;
       if (!options.rtl) {
-        match = version.match(options.includePrerelease ? re[t.COERCEFULL] : re[t.COERCE]);
+        match = version2.match(options.includePrerelease ? re[t.COERCEFULL] : re[t.COERCE]);
       } else {
         const coerceRtlRegex = options.includePrerelease ? re[t.COERCERTLFULL] : re[t.COERCERTL];
         let next;
-        while ((next = coerceRtlRegex.exec(version)) && (!match || match.index + match[0].length !== version.length)) {
+        while ((next = coerceRtlRegex.exec(version2)) && (!match || match.index + match[0].length !== version2.length)) {
           if (!match || next.index + next[0].length !== match.index + match[0].length) {
             match = next;
           }
@@ -77549,7 +78050,7 @@ var require_coerce = __commonJS({
       const patch = match[4] || "0";
       const prerelease = options.includePrerelease && match[5] ? `-${match[5]}` : "";
       const build = options.includePrerelease && match[6] ? `+${match[6]}` : "";
-      return parse(`${major}.${minor}.${patch}${prerelease}${build}`, options);
+      return parse2(`${major}.${minor}.${patch}${prerelease}${build}`, options);
     };
     module2.exports = coerce;
   }
@@ -77717,19 +78218,19 @@ var require_range2 = __commonJS({
         });
       }
       // if ANY of the sets match ALL of its comparators, then pass
-      test(version) {
-        if (!version) {
+      test(version2) {
+        if (!version2) {
           return false;
         }
-        if (typeof version === "string") {
+        if (typeof version2 === "string") {
           try {
-            version = new SemVer(version, this.options);
+            version2 = new SemVer(version2, this.options);
           } catch (er) {
             return false;
           }
         }
         for (let i = 0; i < this.set.length; i++) {
-          if (testSet(this.set[i], version, this.options)) {
+          if (testSet(this.set[i], version2, this.options)) {
             return true;
           }
         }
@@ -77943,13 +78444,13 @@ var require_range2 = __commonJS({
       }
       return `${from} ${to}`.trim();
     };
-    var testSet = (set, version, options) => {
+    var testSet = (set, version2, options) => {
       for (let i = 0; i < set.length; i++) {
-        if (!set[i].test(version)) {
+        if (!set[i].test(version2)) {
           return false;
         }
       }
-      if (version.prerelease.length && !options.includePrerelease) {
+      if (version2.prerelease.length && !options.includePrerelease) {
         for (let i = 0; i < set.length; i++) {
           debug(set[i].semver);
           if (set[i].semver === Comparator.ANY) {
@@ -77957,7 +78458,7 @@ var require_range2 = __commonJS({
           }
           if (set[i].semver.prerelease.length > 0) {
             const allowed = set[i].semver;
-            if (allowed.major === version.major && allowed.minor === version.minor && allowed.patch === version.patch) {
+            if (allowed.major === version2.major && allowed.minor === version2.minor && allowed.patch === version2.patch) {
               return true;
             }
           }
@@ -78018,19 +78519,19 @@ var require_comparator = __commonJS({
       toString() {
         return this.value;
       }
-      test(version) {
-        debug("Comparator.test", version, this.options.loose);
-        if (this.semver === ANY || version === ANY) {
+      test(version2) {
+        debug("Comparator.test", version2, this.options.loose);
+        if (this.semver === ANY || version2 === ANY) {
           return true;
         }
-        if (typeof version === "string") {
+        if (typeof version2 === "string") {
           try {
-            version = new SemVer(version, this.options);
+            version2 = new SemVer(version2, this.options);
           } catch (er) {
             return false;
           }
         }
-        return cmp(version, this.operator, this.semver, this.options);
+        return cmp(version2, this.operator, this.semver, this.options);
       }
       intersects(comp, options) {
         if (!(comp instanceof _Comparator)) {
@@ -78087,13 +78588,13 @@ var require_satisfies = __commonJS({
   "node_modules/semver/functions/satisfies.js"(exports2, module2) {
     "use strict";
     var Range = require_range2();
-    var satisfies = (version, range, options) => {
+    var satisfies = (version2, range, options) => {
       try {
         range = new Range(range, options);
       } catch (er) {
         return false;
       }
-      return range.test(version);
+      return range.test(version2);
     };
     module2.exports = satisfies;
   }
@@ -78255,8 +78756,8 @@ var require_outside = __commonJS({
     var lt = require_lt();
     var lte = require_lte();
     var gte = require_gte();
-    var outside = (version, range, hilo, options) => {
-      version = new SemVer(version, options);
+    var outside = (version2, range, hilo, options) => {
+      version2 = new SemVer(version2, options);
       range = new Range(range, options);
       let gtfn, ltefn, ltfn, comp, ecomp;
       switch (hilo) {
@@ -78277,7 +78778,7 @@ var require_outside = __commonJS({
         default:
           throw new TypeError('Must provide a hilo val of "<" or ">"');
       }
-      if (satisfies(version, range, options)) {
+      if (satisfies(version2, range, options)) {
         return false;
       }
       for (let i = 0; i < range.set.length; ++i) {
@@ -78299,9 +78800,9 @@ var require_outside = __commonJS({
         if (high.operator === comp || high.operator === ecomp) {
           return false;
         }
-        if ((!low.operator || low.operator === comp) && ltefn(version, low.semver)) {
+        if ((!low.operator || low.operator === comp) && ltefn(version2, low.semver)) {
           return false;
-        } else if (low.operator === ecomp && ltfn(version, low.semver)) {
+        } else if (low.operator === ecomp && ltfn(version2, low.semver)) {
           return false;
         }
       }
@@ -78316,7 +78817,7 @@ var require_gtr = __commonJS({
   "node_modules/semver/ranges/gtr.js"(exports2, module2) {
     "use strict";
     var outside = require_outside();
-    var gtr = (version, range, options) => outside(version, range, ">", options);
+    var gtr = (version2, range, options) => outside(version2, range, ">", options);
     module2.exports = gtr;
   }
 });
@@ -78326,7 +78827,7 @@ var require_ltr = __commonJS({
   "node_modules/semver/ranges/ltr.js"(exports2, module2) {
     "use strict";
     var outside = require_outside();
-    var ltr = (version, range, options) => outside(version, range, "<", options);
+    var ltr = (version2, range, options) => outside(version2, range, "<", options);
     module2.exports = ltr;
   }
 });
@@ -78356,12 +78857,12 @@ var require_simplify = __commonJS({
       let first = null;
       let prev = null;
       const v = versions.sort((a, b) => compare2(a, b, options));
-      for (const version of v) {
-        const included = satisfies(version, range, options);
+      for (const version2 of v) {
+        const included = satisfies(version2, range, options);
         if (included) {
-          prev = version;
+          prev = version2;
           if (!first) {
-            first = version;
+            first = version2;
           }
         } else {
           if (prev) {
@@ -78565,7 +79066,7 @@ var require_semver2 = __commonJS({
     var constants = require_constants();
     var SemVer = require_semver();
     var identifiers = require_identifiers();
-    var parse = require_parse2();
+    var parse2 = require_parse2();
     var valid = require_valid();
     var clean = require_clean();
     var inc = require_inc();
@@ -78603,7 +79104,7 @@ var require_semver2 = __commonJS({
     var simplifyRange = require_simplify();
     var subset = require_subset();
     module2.exports = {
-      parse,
+      parse: parse2,
       valid,
       clean,
       inc,
@@ -79412,7 +79913,7 @@ var require_sign2 = __commonJS({
       exp: { isValid: isNumber, message: '"exp" should be a number of seconds' },
       nbf: { isValid: isNumber, message: '"nbf" should be a number of seconds' }
     };
-    function validate(schema, allowUnknown, object, parameterName) {
+    function validate2(schema, allowUnknown, object, parameterName) {
       if (!isPlainObject(object)) {
         throw new Error('Expected "' + parameterName + '" to be a plain object.');
       }
@@ -79430,10 +79931,10 @@ var require_sign2 = __commonJS({
       });
     }
     function validateOptions(options) {
-      return validate(sign_options_schema, false, options, "options");
+      return validate2(sign_options_schema, false, options, "options");
     }
     function validatePayload(payload) {
-      return validate(registered_claims_schema, true, payload, "payload");
+      return validate2(registered_claims_schema, true, payload, "payload");
     }
     var options_to_payload = {
       "audience": "aud",
@@ -84739,7 +85240,7 @@ var require_xlsx = __commonJS({
         function get_fs() {
           return fs || (fs = require("fs"));
         }
-        function parse(file, options) {
+        function parse2(file, options) {
           if (file[0] == 80 && file[1] == 75) return parse_zip2(file, options);
           if ((file[0] | 32) == 109 && (file[1] | 32) == 105) return parse_mad(file, options);
           if (file.length < 512) throw new Error("CFB file size " + file.length + " < 512");
@@ -85013,7 +85514,7 @@ var require_xlsx = __commonJS({
         }
         function read_file(filename2, options) {
           get_fs();
-          return parse(fs.readFileSync(filename2), options);
+          return parse2(fs.readFileSync(filename2), options);
         }
         function read2(blob, options) {
           var type = options && options.type;
@@ -85024,11 +85525,11 @@ var require_xlsx = __commonJS({
             case "file":
               return read_file(blob, options);
             case "base64":
-              return parse(s2a(Base64_decode(blob)), options);
+              return parse2(s2a(Base64_decode(blob)), options);
             case "binary":
-              return parse(s2a(blob), options);
+              return parse2(s2a(blob), options);
           }
-          return parse(blob, options);
+          return parse2(blob, options);
         }
         function init_cfb(cfb, opts) {
           var o = opts || {}, root = o.root || "Root Entry";
@@ -86197,7 +86698,7 @@ var require_xlsx = __commonJS({
         }
         exports3.find = find;
         exports3.read = read2;
-        exports3.parse = parse;
+        exports3.parse = parse2;
         exports3.write = write;
         exports3.writeFile = write_file;
         exports3.utils = {
@@ -92810,14 +93311,14 @@ var require_xlsx = __commonJS({
         }
         function parse_NUMBER_17(blob, length) {
           var o = parse_cell_3(blob, length);
-          var v1 = blob.read_shift(4);
+          var v12 = blob.read_shift(4);
           var v2 = blob.read_shift(4);
           var e = blob.read_shift(2);
           if (e == 65535) {
-            if (v1 === 0 && v2 === 3221225472) {
+            if (v12 === 0 && v2 === 3221225472) {
               o[1].t = "e";
               o[1].v = 15;
-            } else if (v1 === 0 && v2 === 3489660928) {
+            } else if (v12 === 0 && v2 === 3489660928) {
               o[1].t = "e";
               o[1].v = 42;
             } else o[1].v = 0;
@@ -92825,7 +93326,7 @@ var require_xlsx = __commonJS({
           }
           var s = e & 32768;
           e = (e & 32767) - 16446;
-          o[1].v = (1 - s * 2) * (v2 * Math.pow(2, e + 32) + v1 * Math.pow(2, e));
+          o[1].v = (1 - s * 2) * (v2 * Math.pow(2, e + 32) + v12 * Math.pow(2, e));
           return o;
         }
         function write_NUMBER_17(R, C, wsidx, v) {
@@ -92839,7 +93340,7 @@ var require_xlsx = __commonJS({
             o.write_shift(2, 65535);
             return o;
           }
-          var s = 0, e = 0, v1 = 0, v2 = 0;
+          var s = 0, e = 0, v12 = 0, v2 = 0;
           if (v < 0) {
             s = 1;
             v = -v;
@@ -92856,8 +93357,8 @@ var require_xlsx = __commonJS({
           v2 |= 2147483648;
           v2 >>>= 0;
           v *= Math.pow(2, 32);
-          v1 = v >>> 0;
-          o.write_shift(4, v1);
+          v12 = v >>> 0;
+          o.write_shift(4, v12);
           o.write_shift(4, v2);
           e += 16383 + (s ? 32768 : 0);
           o.write_shift(2, e);
@@ -92870,14 +93371,14 @@ var require_xlsx = __commonJS({
         }
         function parse_NUMBER_25(blob, length) {
           var o = parse_cell_3(blob, length);
-          var v1 = blob.read_shift(4);
-          o[1].v = v1 >> 6;
+          var v12 = blob.read_shift(4);
+          o[1].v = v12 >> 6;
           return o;
         }
         function parse_NUMBER_27(blob, length) {
           var o = parse_cell_3(blob, length);
-          var v1 = blob.read_shift(8, "f");
-          o[1].v = v1;
+          var v12 = blob.read_shift(8, "f");
+          o[1].v = v12;
           return o;
         }
         function parse_FORMULA_28(blob, length) {
@@ -113516,49 +114017,8 @@ async function migrate() {
   console.log(`Migration completed successfully. ${tableCount} tables in database.`);
 }
 
-// node_modules/uuid/dist-node/stringify.js
-var byteToHex = [];
-for (let i = 0; i < 256; ++i) {
-  byteToHex.push((i + 256).toString(16).slice(1));
-}
-function unsafeStringify(arr, offset = 0) {
-  return (byteToHex[arr[offset + 0]] + byteToHex[arr[offset + 1]] + byteToHex[arr[offset + 2]] + byteToHex[arr[offset + 3]] + "-" + byteToHex[arr[offset + 4]] + byteToHex[arr[offset + 5]] + "-" + byteToHex[arr[offset + 6]] + byteToHex[arr[offset + 7]] + "-" + byteToHex[arr[offset + 8]] + byteToHex[arr[offset + 9]] + "-" + byteToHex[arr[offset + 10]] + byteToHex[arr[offset + 11]] + byteToHex[arr[offset + 12]] + byteToHex[arr[offset + 13]] + byteToHex[arr[offset + 14]] + byteToHex[arr[offset + 15]]).toLowerCase();
-}
-
-// node_modules/uuid/dist-node/rng.js
-var rnds8 = new Uint8Array(16);
-function rng() {
-  return crypto.getRandomValues(rnds8);
-}
-
-// node_modules/uuid/dist-node/v4.js
-function v4(options, buf, offset) {
-  if (!buf && !options && crypto.randomUUID) {
-    return crypto.randomUUID();
-  }
-  return _v4(options, buf, offset);
-}
-function _v4(options, buf, offset) {
-  options = options || {};
-  const rnds = options.random ?? options.rng?.() ?? rng();
-  if (rnds.length < 16) {
-    throw new Error("Random bytes length must be >= 16");
-  }
-  rnds[6] = rnds[6] & 15 | 64;
-  rnds[8] = rnds[8] & 63 | 128;
-  if (buf) {
-    offset = offset || 0;
-    if (offset < 0 || offset + 16 > buf.length) {
-      throw new RangeError(`UUID byte range ${offset}:${offset + 15} is out of buffer bounds`);
-    }
-    for (let i = 0; i < 16; ++i) {
-      buf[offset + i] = rnds[i];
-    }
-    return buf;
-  }
-  return unsafeStringify(rnds);
-}
-var v4_default = v4;
+// server/db/seed-users.ts
+init_dist_node();
 
 // node_modules/bcryptjs/index.js
 var import_crypto = __toESM(require("crypto"), 1);
@@ -115475,6 +115935,7 @@ if (import_meta.url === `file://${process.argv[1]}`) {
 
 // server/routes/auth.ts
 var import_express = __toESM(require_express2(), 1);
+init_dist_node();
 
 // server/auth/jwt.ts
 var import_jsonwebtoken = __toESM(require_jsonwebtoken(), 1);
@@ -115739,6 +116200,7 @@ var auth_default = router;
 
 // server/routes/users.ts
 var import_express2 = __toESM(require_express2(), 1);
+init_dist_node();
 var router2 = (0, import_express2.Router)();
 async function getMaxAdminUsers() {
   try {
@@ -116160,6 +116622,7 @@ async function logTimelineEvent(userId, eventType, options = {}) {
 
 // server/routes/assignments.ts
 var import_express3 = __toESM(require_express2(), 1);
+init_dist_node();
 var router3 = (0, import_express3.Router)();
 router3.get("/", authMiddleware, async (req, res) => {
   try {
@@ -116240,6 +116703,7 @@ var assignments_default = router3;
 
 // server/routes/system.ts
 var import_express4 = __toESM(require_express2(), 1);
+init_dist_node();
 
 // server/data/positionCatalog.ts
 var WORK_AREAS = [
@@ -116531,9 +116995,65 @@ router4.get("/activation-history", authMiddleware, requireSuperUser, async (_req
   }
 });
 var system_default = router4;
+router4.post("/backfill-timeline", authMiddleware, requireSuperUser, async (req, res) => {
+  try {
+    const { v4: uuidv4 } = await Promise.resolve().then(() => (init_dist_node(), dist_node_exports));
+    let totalCreated = 0;
+    const users = await db.all("SELECT id, name, position, is_super_user, created_at FROM users ORDER BY created_at ASC");
+    for (const user of users) {
+      const existing = await db.get("SELECT id FROM user_timeline WHERE user_id = ? AND event_type = 'hire'", [user.id]);
+      if (existing) continue;
+      const note = user.is_super_user ? "SuperAdmin del sistema" : user.position === "socio" ? "Socio fundador" : "Usuario registrado en el sistema";
+      await db.run(
+        `INSERT INTO user_timeline (id, user_id, event_type, event_date, metadata, note, created_by, created_at, updated_at) VALUES (?, ?, 'hire', ?, ?, ?, null, ?, ?)`,
+        [uuidv4(), user.id, user.created_at, JSON.stringify({ position: user.position }), note, user.created_at, user.created_at]
+      );
+      totalCreated++;
+    }
+    const evals = await db.all(`
+      SELECT e.id, e.evaluated_id, e.evaluator_id, e.type, e.total_score, e.completed_at, e.period,
+             u.name as evaluator_name
+      FROM evaluations e LEFT JOIN users u ON e.evaluator_id = u.id
+      WHERE e.completed_at IS NOT NULL ORDER BY e.completed_at ASC
+    `);
+    const evalLabels = { self: "Autoevaluaci\xF3n", supervisor: "Evaluaci\xF3n de Supervisor", feedback: "Sesi\xF3n de Feedback" };
+    for (const ev of evals) {
+      const existing = await db.get("SELECT id FROM user_timeline WHERE user_id = ? AND event_type = 'evaluation_completed' AND metadata LIKE ?", [ev.evaluated_id, `%${ev.id}%`]);
+      if (existing) continue;
+      const metadata = { evalId: ev.id, evalType: ev.type, score: Math.round(ev.total_score), period: ev.period, evaluatorName: ev.evaluator_name };
+      await db.run(
+        `INSERT INTO user_timeline (id, user_id, event_type, event_date, metadata, note, created_by, created_at, updated_at) VALUES (?, ?, 'evaluation_completed', ?, ?, ?, null, ?, ?)`,
+        [uuidv4(), ev.evaluated_id, ev.completed_at, JSON.stringify(metadata), `${evalLabels[ev.type] || ev.type} completada \u2014 ${Math.round(ev.total_score)}% \u2014 Periodo ${ev.period}`, ev.completed_at, ev.completed_at]
+      );
+      totalCreated++;
+    }
+    const assignments = await db.all(`
+      SELECT sa.employee_id, sa.supervisor_id, sa.period, su.name as supervisor_name
+      FROM supervisor_assignments sa LEFT JOIN users su ON sa.supervisor_id = su.id
+      ORDER BY sa.period ASC
+    `);
+    for (const asgn of assignments) {
+      const existing = await db.get("SELECT id FROM user_timeline WHERE user_id = ? AND event_type = 'supervisor_assigned' AND metadata LIKE ?", [asgn.employee_id, `%${asgn.supervisor_id}%${asgn.period}%`]);
+      if (existing) continue;
+      const year = asgn.period.includes("H") ? asgn.period.replace("H", "20") : "2026";
+      const periodDate = `${year}-01-15 00:00:00`;
+      const metadata = { supervisorId: asgn.supervisor_id, supervisorName: asgn.supervisor_name, period: asgn.period };
+      await db.run(
+        `INSERT INTO user_timeline (id, user_id, event_type, event_date, metadata, note, created_by, created_at, updated_at) VALUES (?, ?, 'supervisor_assigned', ?, ?, ?, null, ?, ?)`,
+        [uuidv4(), asgn.employee_id, periodDate, JSON.stringify(metadata), `${asgn.supervisor_name} asignado como supervisor \u2014 ${asgn.period}`, periodDate, periodDate]
+      );
+      totalCreated++;
+    }
+    return res.json({ status: "complete", eventsCreated: totalCreated });
+  } catch (err) {
+    console.error("Backfill timeline error:", err);
+    return res.status(500).json({ error: "Backfill failed" });
+  }
+});
 
 // server/routes/evaluations.ts
 var import_express5 = __toESM(require_express2(), 1);
+init_dist_node();
 var router5 = (0, import_express5.Router)();
 async function fetchResponses(evaluationIds) {
   if (evaluationIds.length === 0) return /* @__PURE__ */ new Map();
@@ -116742,6 +117262,7 @@ var evaluations_default = router5;
 
 // server/routes/action-plans.ts
 var import_express6 = __toESM(require_express2(), 1);
+init_dist_node();
 var router6 = (0, import_express6.Router)();
 router6.get("/", authMiddleware, async (req, res) => {
   try {
@@ -116883,6 +117404,7 @@ var action_plans_default = router6;
 
 // server/routes/objectives.ts
 var import_express7 = __toESM(require_express2(), 1);
+init_dist_node();
 var router7 = (0, import_express7.Router)();
 router7.get("/", authMiddleware, async (req, res) => {
   try {
@@ -117030,6 +117552,7 @@ var objectives_default = router7;
 
 // server/routes/announcements.ts
 var import_express8 = __toESM(require_express2(), 1);
+init_dist_node();
 var router8 = (0, import_express8.Router)();
 function getUserLevel(user) {
   const legalPositions = ["socio", "salary_partner", "counsel", "asociado_sr", "asociado_mid", "asociado_jr", "pasante_carrera", "pasante"];
@@ -117135,6 +117658,7 @@ var announcements_default = router8;
 
 // server/routes/vacations.ts
 var import_express9 = __toESM(require_express2(), 1);
+init_dist_node();
 var router9 = (0, import_express9.Router)();
 router9.get("/requests", authMiddleware, async (req, res) => {
   try {
@@ -117294,6 +117818,7 @@ var vacations_default = router9;
 
 // server/routes/questions.ts
 var import_express10 = __toESM(require_express2(), 1);
+init_dist_node();
 var router10 = (0, import_express10.Router)();
 router10.get("/library", authMiddleware, async (_req, res) => {
   try {
@@ -117836,6 +118361,7 @@ var periods_default = router14;
 
 // server/routes/copilot.ts
 var import_express15 = __toESM(require_express2(), 1);
+init_dist_node();
 var import_multer = __toESM(require("multer"), 1);
 var XLSX = __toESM(require_xlsx(), 1);
 var router15 = (0, import_express15.Router)();
@@ -119346,6 +119872,7 @@ var deploy_default = router16;
 
 // server/routes/timeline.ts
 var import_express17 = __toESM(require_express2(), 1);
+init_dist_node();
 var router17 = (0, import_express17.Router)();
 function canAccessTimeline(requester, targetId) {
   if (requester.id === targetId) return true;

@@ -314,3 +314,68 @@ router.get('/activation-history', authMiddleware, requireSuperUser, async (_req:
 });
 
 export default router;
+
+// ─── POST /api/system/backfill-timeline ───────────────────────────────
+// Backfill timeline events from historical data (SuperUser only)
+router.post('/backfill-timeline', authMiddleware, requireSuperUser, async (req: Request, res: Response) => {
+  try {
+    const { v4: uuidv4 } = await import('uuid');
+    let totalCreated = 0;
+
+    // 1. User hire events
+    const users = await db.all('SELECT id, name, position, is_super_user, created_at FROM users ORDER BY created_at ASC');
+    for (const user of users) {
+      const existing = await db.get("SELECT id FROM user_timeline WHERE user_id = ? AND event_type = 'hire'", [user.id]);
+      if (existing) continue;
+      const note = user.is_super_user ? 'SuperAdmin del sistema' : user.position === 'socio' ? 'Socio fundador' : 'Usuario registrado en el sistema';
+      await db.run(
+        `INSERT INTO user_timeline (id, user_id, event_type, event_date, metadata, note, created_by, created_at, updated_at) VALUES (?, ?, 'hire', ?, ?, ?, null, ?, ?)`,
+        [uuidv4(), user.id, user.created_at, JSON.stringify({ position: user.position }), note, user.created_at, user.created_at]
+      );
+      totalCreated++;
+    }
+
+    // 2. Evaluation completion events
+    const evals = await db.all(`
+      SELECT e.id, e.evaluated_id, e.evaluator_id, e.type, e.total_score, e.completed_at, e.period,
+             u.name as evaluator_name
+      FROM evaluations e LEFT JOIN users u ON e.evaluator_id = u.id
+      WHERE e.completed_at IS NOT NULL ORDER BY e.completed_at ASC
+    `);
+    const evalLabels: Record<string, string> = { self: 'Autoevaluación', supervisor: 'Evaluación de Supervisor', feedback: 'Sesión de Feedback' };
+    for (const ev of evals) {
+      const existing = await db.get("SELECT id FROM user_timeline WHERE user_id = ? AND event_type = 'evaluation_completed' AND metadata LIKE ?", [ev.evaluated_id, `%${ev.id}%`]);
+      if (existing) continue;
+      const metadata = { evalId: ev.id, evalType: ev.type, score: Math.round(ev.total_score), period: ev.period, evaluatorName: ev.evaluator_name };
+      await db.run(
+        `INSERT INTO user_timeline (id, user_id, event_type, event_date, metadata, note, created_by, created_at, updated_at) VALUES (?, ?, 'evaluation_completed', ?, ?, ?, null, ?, ?)`,
+        [uuidv4(), ev.evaluated_id, ev.completed_at, JSON.stringify(metadata), `${evalLabels[ev.type] || ev.type} completada — ${Math.round(ev.total_score)}% — Periodo ${ev.period}`, ev.completed_at, ev.completed_at]
+      );
+      totalCreated++;
+    }
+
+    // 3. Supervisor assignment events
+    const assignments = await db.all(`
+      SELECT sa.employee_id, sa.supervisor_id, sa.period, su.name as supervisor_name
+      FROM supervisor_assignments sa LEFT JOIN users su ON sa.supervisor_id = su.id
+      ORDER BY sa.period ASC
+    `);
+    for (const asgn of assignments) {
+      const existing = await db.get("SELECT id FROM user_timeline WHERE user_id = ? AND event_type = 'supervisor_assigned' AND metadata LIKE ?", [asgn.employee_id, `%${asgn.supervisor_id}%${asgn.period}%`]);
+      if (existing) continue;
+      const year = asgn.period.includes('H') ? asgn.period.replace('H', '20') : '2026';
+      const periodDate = `${year}-01-15 00:00:00`;
+      const metadata = { supervisorId: asgn.supervisor_id, supervisorName: asgn.supervisor_name, period: asgn.period };
+      await db.run(
+        `INSERT INTO user_timeline (id, user_id, event_type, event_date, metadata, note, created_by, created_at, updated_at) VALUES (?, ?, 'supervisor_assigned', ?, ?, ?, null, ?, ?)`,
+        [uuidv4(), asgn.employee_id, periodDate, JSON.stringify(metadata), `${asgn.supervisor_name} asignado como supervisor — ${asgn.period}`, periodDate, periodDate]
+      );
+      totalCreated++;
+    }
+
+    return res.json({ status: 'complete', eventsCreated: totalCreated });
+  } catch (err) {
+    console.error('Backfill timeline error:', err);
+    return res.status(500).json({ error: 'Backfill failed' });
+  }
+});
