@@ -6,6 +6,7 @@ import {
   useCopilotConversations,
   useCopilotConversation,
   useDeleteCopilotConversation,
+  useClearAllCopilotConversations,
   useCopilotChat,
 } from '@/api/queries';
 import { api } from '@/api/client';
@@ -216,6 +217,7 @@ export default function CopilotChat() {
   const [selectedConvId, setSelectedConvId] = useState<string | null>(null);
   const { data: selectedConv, isLoading: convLoading } = useCopilotConversation(selectedConvId || '');
   const deleteConv = useDeleteCopilotConversation();
+  const clearAllConvs = useClearAllCopilotConversations();
   const chatMutation = useCopilotChat();
   const [localMessages, setLocalMessages] = useState<Message[]>([]);
   const [messageInput, setMessageInput] = useState('');
@@ -325,6 +327,18 @@ export default function CopilotChat() {
     }
   };
 
+  const handleClearAll = async () => {
+    if (!confirm('¿Eliminar todas las conversaciones? Esta acción no se puede deshacer.')) return;
+    try {
+      await clearAllConvs.mutateAsync();
+      setSelectedConvId(null);
+      setLocalMessages([]);
+      toast.success('Todas las conversaciones eliminadas');
+    } catch {
+      toast.error('Error al eliminar conversaciones');
+    }
+  };
+
   // ─── Smart suggestions that demonstrate agentic capabilities ──────────
   const smartSuggestions = [
     { text: 'Resumen de evaluaciones pendientes', icon: Target },
@@ -337,10 +351,15 @@ export default function CopilotChat() {
     <div className="h-[calc(100vh-3.5rem)] flex">
       {/* Sidebar — conversations list */}
       <div className="w-64 border-r bg-card flex-shrink-0 hidden md:flex flex-col">
-        <div className="p-3 border-b">
+        <div className="p-3 border-b space-y-2">
           <Button onClick={handleNewConversation} variant="outline" className="w-full justify-start gap-2 text-sm">
             <Plus className="h-4 w-4" /> Nueva conversación
           </Button>
+          {conversations.length > 0 && (
+            <Button onClick={handleClearAll} variant="ghost" className="w-full justify-start gap-2 text-sm text-destructive hover:text-destructive hover:bg-destructive/10">
+              <Trash2 className="h-4 w-4" /> Borrar todo
+            </Button>
+          )}
         </div>
         <ScrollArea className="flex-1">
           <div className="p-2 space-y-1">

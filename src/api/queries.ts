@@ -246,6 +246,10 @@ export function useDeleteCopilotConversation() {
   const qc = useQueryClient();
   return useMutation({ mutationFn: (id: string) => api.delete(`/api/copilot/conversations/${id}`), onSuccess: () => qc.invalidateQueries({ queryKey: ['copilotConversations'] }) });
 }
+export function useClearAllCopilotConversations() {
+  const qc = useQueryClient();
+  return useMutation({ mutationFn: () => api.delete<any>('/api/copilot/conversations'), onSuccess: () => { qc.invalidateQueries({ queryKey: ['copilotConversations'] }); qc.invalidateQueries({ queryKey: ['copilotConversation'] }); } });
+}
 export function useCopilotChat() {
   const qc = useQueryClient();
   return useMutation({

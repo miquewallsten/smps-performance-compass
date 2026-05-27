@@ -118102,6 +118102,21 @@ router13.delete("/conversations/:id", async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 });
+router13.delete("/conversations", async (req, res) => {
+  try {
+    const convs = await db.all("SELECT id FROM copilot_conversations WHERE user_id=?", [req.user.id]);
+    const ids = convs.map((c) => c.id);
+    if (ids.length > 0) {
+      const placeholders = ids.map(() => "?").join(",");
+      await db.run(`DELETE FROM copilot_messages WHERE conversation_id IN (${placeholders})`, ids);
+      await db.run("DELETE FROM copilot_conversations WHERE user_id=?", [req.user.id]);
+    }
+    res.json({ ok: true, deleted: ids.length });
+  } catch (e) {
+    console.error("Clear all error:", e);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
 router13.post("/chat", upload.single("file"), async (req, res) => {
   try {
     const { message, conversationId } = req.body;

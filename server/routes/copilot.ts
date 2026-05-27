@@ -872,6 +872,19 @@ router.delete('/conversations/:id', async (req: Request, res: Response) => {
   } catch (e) { console.error('Delete error:', e); res.status(500).json({ error: 'Internal server error' }); }
 });
 
+router.delete('/conversations', async (req: Request, res: Response) => {
+  try {
+    const convs = await db.all('SELECT id FROM copilot_conversations WHERE user_id=?', [req.user!.id]);
+    const ids = convs.map((c: any) => c.id);
+    if (ids.length > 0) {
+      const placeholders = ids.map(() => '?').join(',');
+      await db.run(`DELETE FROM copilot_messages WHERE conversation_id IN (${placeholders})`, ids);
+      await db.run('DELETE FROM copilot_conversations WHERE user_id=?', [req.user!.id]);
+    }
+    res.json({ ok: true, deleted: ids.length });
+  } catch (e) { console.error('Clear all error:', e); res.status(500).json({ error: 'Internal server error' }); }
+});
+
 // ─── CHAT ────────────────────────────────────────────────────────────────────
 router.post('/chat', upload.single('file'), async (req: Request, res: Response) => {
   try {
