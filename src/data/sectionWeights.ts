@@ -2,30 +2,29 @@ import { Position, EvalSection } from '@/types';
 
 /**
  * Peso GLOBAL de cada sección por posición (suma 100%).
- * Fuente: Distribución oficial de pesos por nivel de puesto (mayo 2025).
+ * Fuente: hoja "Criterio técnico + Competencias" del archivo "Criterio Juridico - SDC.xlsx".
  *
  * Legal:
- *   Socio/Salary Partner: Competencias 60%, Técnico 20%, Blandas 20%
- *   Asociado Sr/Mid:      Competencias 60%, Técnico 20%, Blandas 20%
- *   Asociado Jr/Pasante:   Competencias 40%, Técnico 40%, Blandas 20%
+ *   Socio / Salary Partner / Counsel:  Técnico 60%, Competencias 20%, Blandas 20%
+ *   Asociado Sr / Mid:                 Técnico 60%, Competencias 20%, Blandas 20%
+ *   Asociado Jr / Pasante / Pct:       Técnico 40%, Competencias 40%, Blandas 20%
  *
  * Administrativo:
- *   Dirección/Coord:       Competencias 40%, Técnico 40%, Blandas 20%
- *   Staff/Soporte:         Competencias 30%, Técnico 50%, Blandas 20%
- *
- * Counsel mantiene evaluación 100% técnico (sin cambios).
+ *   Dirección / Gerente / Coord / Analista:  Competencias 40%, Técnico 40%, Blandas 20%
+ *   Asistente / Soporte / Archivista:        Competencias 50%, Técnico 30%, Blandas 20%
  */
 export type SectionWeights = Record<EvalSection, number>;
 
 export const SECTION_WEIGHTS: Record<Position, SectionWeights> = {
-  // Legal
-  socio:                { competencias: 60, tecnico: 20, blandas: 20 },
-  salary_partner:       { competencias: 60, tecnico: 20, blandas: 20 },
-  counsel:              { competencias: 0, tecnico: 100, blandas: 0 },
+  // Legal — senior positions: technical criteria dominates
+  socio:                { competencias: 20, tecnico: 60, blandas: 20 },
+  salary_partner:       { competencias: 20, tecnico: 60, blandas: 20 },
+  counsel:              { competencias: 20, tecnico: 60, blandas: 20 },
 
-  asociado_sr:          { competencias: 60, tecnico: 20, blandas: 20 },
-  asociado_mid:         { competencias: 60, tecnico: 20, blandas: 20 },
+  asociado_sr:          { competencias: 20, tecnico: 60, blandas: 20 },
+  asociado_mid:         { competencias: 20, tecnico: 60, blandas: 20 },
   asociado_jr:          { competencias: 40, tecnico: 40, blandas: 20 },
+  pasante_carrera:      { competencias: 40, tecnico: 40, blandas: 20 },
   pasante:              { competencias: 40, tecnico: 40, blandas: 20 },
 
   // Administrativo
@@ -33,9 +32,9 @@ export const SECTION_WEIGHTS: Record<Position, SectionWeights> = {
   gerente:              { competencias: 40, tecnico: 40, blandas: 20 },
   coordinador:          { competencias: 40, tecnico: 40, blandas: 20 },
   analista:             { competencias: 40, tecnico: 40, blandas: 20 },
-  asistente:            { competencias: 30, tecnico: 50, blandas: 20 },
-  soporte:              { competencias: 30, tecnico: 50, blandas: 20 },
-  archivista:           { competencias: 30, tecnico: 50, blandas: 20 },
+  asistente:            { competencias: 50, tecnico: 30, blandas: 20 },
+  soporte:              { competencias: 50, tecnico: 30, blandas: 20 },
+  archivista:           { competencias: 50, tecnico: 30, blandas: 20 },
   dummy:                { competencias: 40, tecnico: 40, blandas: 20 },
 };
 

@@ -10,17 +10,34 @@ import { getSectionWeights } from './sectionWeights';
  */
 export function getSectionForQuestion(question: EvalQuestion, position: Position): EvalSection {
   if (question.section) return question.section;
-  const level = POSITION_LEVELS[position];
   const cat = question.category;
   const isSoft = cat === 'Habilidades Blandas' || cat === 'Actitud' || cat === 'Disponibilidad' || cat === 'Desarrollo';
   if (isSoft) return 'blandas';
-  if (level === 'legal') {
-    // Desempeño y Cumplimiento => criterio técnico; Liderazgo y Trabajo en Equipo => competencias
-    if (cat === 'Criterio Técnico' || cat === 'Desempeño' || cat === 'Cumplimiento') return 'tecnico';
-    return 'competencias';
-  }
-  // Administrativo: todo lo no-blando va a competencias
+  // Criterio Técnico, sus 14 sub-categorías y Desempeño/Cumplimiento => sección técnica
+  // (aplica para legal y administrativo — las sub-categorías de Criterio Técnico son de legal,
+  //  Desempeño y Cumplimiento aplican a ambos niveles)
+  if (isTechnicalCategory(cat)) return 'tecnico';
+  // Liderazgo y Trabajo en Equipo => competencias
   return 'competencias';
+}
+
+/**
+ * Sub-categorías de Criterio Técnico (fuente: Criterio Juridico - SDC.xlsx).
+ * Todas se mapean a la sección "tecnico".
+ */
+const TECHNICAL_SUBCATEGORIES: Set<string> = new Set([
+  'Criterio Técnico',
+  'Conocimiento normativo', 'Redacción legal', 'Due diligence',
+  'Constitución y modificaciones', 'Atención a clientes',
+  'Normatividad fiscal', 'Opiniones fiscales', 'Planeación fiscal',
+  'Criterios y jurisprudencia', 'Impactos fiscales',
+  'Redacción de escritos', 'Estrategia procesal', 'Audiencias y diligencias',
+  'Seguimiento de expedientes',
+  'Desempeño', 'Cumplimiento',
+]);
+
+function isTechnicalCategory(cat: string): boolean {
+  return TECHNICAL_SUBCATEGORIES.has(cat);
 }
 
 export const SECTION_LABELS: Record<EvalSection, string> = {
@@ -39,7 +56,7 @@ export function getSectionByCategory(category: QuestionCategory): EvalSection {
   if (category === 'Habilidades Blandas' || category === 'Actitud' || category === 'Disponibilidad' || category === 'Desarrollo') {
     return 'blandas';
   }
-  if (category === 'Criterio Técnico' || category === 'Desempeño' || category === 'Cumplimiento') return 'tecnico';
+  if (isTechnicalCategory(category)) return 'tecnico';
   // Liderazgo y Trabajo en Equipo
   return 'competencias';
 }
@@ -242,7 +259,7 @@ const archivoSoporteQuestions: EvalQuestion[] = [
 export const QUESTIONS_BY_POSITION: Record<Position, EvalQuestion[]> = {
   socio: socioQuestions,
   salary_partner: socioQuestions, // Same questions as Socio
-  counsel: socioQuestions, // Solo se usa la sección técnica (pesos competencias/blandas = 0)
+  counsel: socioQuestions, // Comparte preguntas de competencias/blandas con Socio; las técnicas vienen de technicalQuestions
 
   asociado_sr: asociadoSrQuestions,
   asociado_mid: asociadoMidQuestions,
@@ -321,14 +338,17 @@ export function getQuestionsForUser(
   const sectionWeights = getSectionWeights(position);
   const template = (customQuestions && customQuestions[position]) || QUESTIONS_BY_POSITION[position] || [];
 
-  // Particionar plantilla por sección (sin contar técnicas — esas vienen del catálogo de área).
+  // Particionar plantilla por sección.
+  // Para legal: las preguntas técnicas vienen del catálogo de área (technicalQuestions.ts).
+  // Para administrativo: las preguntas técnicas (Desempeño/Cumplimiento) vienen de la plantilla del puesto.
   const tplCompetencias = template.filter(q => getSectionForQuestion(q, position) === 'competencias');
   const tplBlandas = template.filter(q => getSectionForQuestion(q, position) === 'blandas');
+  const tplTecnico = template.filter(q => getSectionForQuestion(q, position) === 'tecnico');
 
-  // Técnicas: solo para legal y con área de práctica
+  // Técnicas: para legal vienen del catálogo de área; para admin vienen de la plantilla del puesto.
   const tecnicas: EvalQuestion[] = level === 'legal'
     ? getTechnicalQuestions(position, user.practiceArea || 'corporativo')
-    : [];
+    : tplTecnico;
 
   const rescale = (qs: EvalQuestion[], target: number): EvalQuestion[] => {
     if (qs.length === 0 || target <= 0) return [];

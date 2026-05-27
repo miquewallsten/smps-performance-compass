@@ -94,7 +94,16 @@ export const POSITION_HIERARCHY: Position[] = [...LEGAL_HIERARCHY, ...ADMIN_HIER
 export type QuestionCategory =
   | 'Desempeño' | 'Liderazgo' | 'Cumplimiento' | 'Habilidades Blandas'
   | 'Trabajo en Equipo' | 'Actitud' | 'Disponibilidad' | 'Desarrollo'
-  | 'Criterio Técnico';
+  | 'Criterio Técnico'
+  // Sub-categorías de Criterio Técnico (Corporativo)
+  | 'Conocimiento normativo' | 'Redacción legal' | 'Due diligence'
+  | 'Constitución y modificaciones' | 'Atención a clientes'
+  // Sub-categorías de Criterio Técnico (Consultoría Fiscal)
+  | 'Normatividad fiscal' | 'Opiniones fiscales' | 'Planeación fiscal'
+  | 'Criterios y jurisprudencia' | 'Impactos fiscales'
+  // Sub-categorías de Criterio Técnico (Litigio Fiscal)
+  | 'Redacción de escritos' | 'Estrategia procesal' | 'Audiencias y diligencias'
+  | 'Seguimiento de expedientes';
 
 export type EvalSection = 'competencias' | 'tecnico' | 'blandas';
 

@@ -7,8 +7,18 @@ import { BookOpen, Search, Plus, Pencil, Trash2, Save, X, Download, SlidersHoriz
 import { toast } from 'sonner';
 
 const ALL_CATEGORIES: QuestionCategory[] = [
-  'Criterio Técnico', 'Desempeño', 'Liderazgo', 'Cumplimiento', 'Habilidades Blandas',
-  'Trabajo en Equipo', 'Actitud', 'Disponibilidad', 'Desarrollo',
+  // Competencias / Blandas
+  'Liderazgo', 'Trabajo en Equipo', 'Habilidades Blandas',
+  'Actitud', 'Disponibilidad', 'Desarrollo',
+  'Desempeño', 'Cumplimiento',
+  // Criterio Técnico (general + sub-categorías)
+  'Criterio Técnico',
+  'Conocimiento normativo', 'Redacción legal', 'Due diligence',
+  'Constitución y modificaciones', 'Atención a clientes',
+  'Normatividad fiscal', 'Opiniones fiscales', 'Planeación fiscal',
+  'Criterios y jurisprudencia', 'Impactos fiscales',
+  'Redacción de escritos', 'Estrategia procesal', 'Audiencias y diligencias',
+  'Seguimiento de expedientes',
 ];
 
 type SeedItem = EvalQuestion & { positions: string[]; isSeed: true; section: EvalSection };
