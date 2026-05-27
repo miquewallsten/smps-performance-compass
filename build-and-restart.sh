@@ -1,30 +1,36 @@
 #!/bin/bash
-# build-and-restart.sh — Post-deployment script for Hostinger Git deployments
-# Run this after Hostinger pulls from GitHub.
-# Set as the "Post-deployment command" in Hostinger Git settings.
 set -e
-
-export PATH="/opt/alt/alt-nodejs22/root/usr/bin:$PATH"
+export PATH="/opt/alt/alt-nodejs22/root/usr/bin:/usr/local/bin:/usr/bin:/bin:$PATH"
+export PATH="$HOME/domains/bowdot.online/nodejs/node_modules/.bin:$PATH"
 export LD_LIBRARY_PATH="/opt/alt/alt-nodejs22/root/usr/lib64:$LD_LIBRARY_PATH"
-export NODE_ENV=production
-
 cd ~/domains/bowdot.online/nodejs
 
 echo "=== Post-deploy build starting ==="
 echo "Working directory: $(pwd)"
 
-# Install dependencies
+# Install ALL dependencies
 echo "Installing dependencies..."
-npm install --omit=dev --ignore-scripts 2>&1 | tail -5
+npm install 2>&1 | tail -5
 
-# Build frontend and server bundle
+# Build
 echo "Building application..."
-npm run build
+npm run build 2>&1
 
-echo "=== Build complete ==="
+# Verify build
+if [ -f dist/index.html ] && [ -f server.cjs ]; then
+  echo "Build successful!"
+else
+  echo "Build FAILED"
+  exit 1
+fi
 
-# Stop existing server (Hostinger's Node.js manager will restart it)
-echo "Restarting server..."
-pkill -f "node.*server" 2>/dev/null || true
+# Prune dev deps
+echo "Pruning dev dependencies..."
+npm prune --omit=dev 2>&1 | tail -3
 
-echo "=== Post-deploy complete ==="
+# Restart Passenger
+echo "Restarting Passenger..."
+mkdir -p tmp
+touch tmp/restart.txt
+
+echo "=== Post-deploy complete! ==="
