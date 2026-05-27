@@ -33971,27 +33971,27 @@ var require_router = __commonJS({
     var slice = Array.prototype.slice;
     var flatten = Array.prototype.flat;
     var methods = METHODS.map((method) => method.toLowerCase());
-    module2.exports = Router14;
+    module2.exports = Router16;
     module2.exports.Route = Route;
-    function Router14(options) {
-      if (!(this instanceof Router14)) {
-        return new Router14(options);
+    function Router16(options) {
+      if (!(this instanceof Router16)) {
+        return new Router16(options);
       }
       const opts = options || {};
-      function router14(req, res, next) {
-        router14.handle(req, res, next);
+      function router16(req, res, next) {
+        router16.handle(req, res, next);
       }
-      Object.setPrototypeOf(router14, this);
-      router14.caseSensitive = opts.caseSensitive;
-      router14.mergeParams = opts.mergeParams;
-      router14.params = {};
-      router14.strict = opts.strict;
-      router14.stack = [];
-      return router14;
+      Object.setPrototypeOf(router16, this);
+      router16.caseSensitive = opts.caseSensitive;
+      router16.mergeParams = opts.mergeParams;
+      router16.params = {};
+      router16.strict = opts.strict;
+      router16.stack = [];
+      return router16;
     }
-    Router14.prototype = function() {
+    Router16.prototype = function() {
     };
-    Router14.prototype.param = function param(name, fn) {
+    Router16.prototype.param = function param(name, fn) {
       if (!name) {
         throw new TypeError("argument name is required");
       }
@@ -34011,7 +34011,7 @@ var require_router = __commonJS({
       params.push(fn);
       return this;
     };
-    Router14.prototype.handle = function handle(req, res, callback) {
+    Router16.prototype.handle = function handle(req, res, callback) {
       if (!callback) {
         throw new TypeError("argument callback is required");
       }
@@ -34138,7 +34138,7 @@ var require_router = __commonJS({
         }
       }
     };
-    Router14.prototype.use = function use(handler) {
+    Router16.prototype.use = function use(handler) {
       let offset = 0;
       let path2 = "/";
       if (typeof handler !== "function") {
@@ -34171,7 +34171,7 @@ var require_router = __commonJS({
       }
       return this;
     };
-    Router14.prototype.route = function route(path2) {
+    Router16.prototype.route = function route(path2) {
       const route2 = new Route(path2);
       const layer = new Layer(path2, {
         sensitive: this.caseSensitive,
@@ -34186,7 +34186,7 @@ var require_router = __commonJS({
       return route2;
     };
     methods.concat("all").forEach(function(method) {
-      Router14.prototype[method] = function(path2) {
+      Router16.prototype[method] = function(path2) {
         const route = this.route(path2);
         route[method].apply(route, slice.call(arguments, 1));
         return this;
@@ -34369,13 +34369,13 @@ var require_application = __commonJS({
     var compileTrust = require_utils3().compileTrust;
     var resolve = require("node:path").resolve;
     var once = require_once();
-    var Router14 = require_router();
+    var Router16 = require_router();
     var slice = Array.prototype.slice;
     var flatten = Array.prototype.flat;
     var app2 = exports2 = module2.exports = {};
     var trustProxyDefaultSymbol = "@@symbol:trust_proxy_default";
     app2.init = function init() {
-      var router14 = null;
+      var router16 = null;
       this.cache = /* @__PURE__ */ Object.create(null);
       this.engines = /* @__PURE__ */ Object.create(null);
       this.settings = /* @__PURE__ */ Object.create(null);
@@ -34384,13 +34384,13 @@ var require_application = __commonJS({
         configurable: true,
         enumerable: true,
         get: function getrouter() {
-          if (router14 === null) {
-            router14 = new Router14({
+          if (router16 === null) {
+            router16 = new Router16({
               caseSensitive: this.enabled("case sensitive routing"),
               strict: this.enabled("strict routing")
             });
           }
-          return router14;
+          return router16;
         }
       });
     };
@@ -34461,15 +34461,15 @@ var require_application = __commonJS({
       if (fns.length === 0) {
         throw new TypeError("app.use() requires a middleware function");
       }
-      var router14 = this.router;
+      var router16 = this.router;
       fns.forEach(function(fn2) {
         if (!fn2 || !fn2.handle || !fn2.set) {
-          return router14.use(path2, fn2);
+          return router16.use(path2, fn2);
         }
         debug(".use app under %s", path2);
         fn2.mountpath = path2;
         fn2.parent = this;
-        router14.use(path2, function mounted_app(req, res, next) {
+        router16.use(path2, function mounted_app(req, res, next) {
           var orig = req.app;
           fn2.handle(req, res, function(err) {
             Object.setPrototypeOf(req, orig.request);
@@ -56052,7 +56052,7 @@ var require_express = __commonJS({
     var EventEmitter = require("node:events").EventEmitter;
     var mixin = require_merge_descriptors();
     var proto = require_application();
-    var Router14 = require_router();
+    var Router16 = require_router();
     var req = require_request();
     var res = require_response();
     exports2 = module2.exports = createApplication;
@@ -56074,8 +56074,8 @@ var require_express = __commonJS({
     exports2.application = proto;
     exports2.request = req;
     exports2.response = res;
-    exports2.Route = Router14.Route;
-    exports2.Router = Router14;
+    exports2.Route = Router16.Route;
+    exports2.Router = Router16;
     exports2.json = bodyParser.json;
     exports2.raw = bodyParser.raw;
     exports2.static = require_serve_static();
@@ -112833,7 +112833,7 @@ __export(index_exports, {
   default: () => index_default
 });
 module.exports = __toCommonJS(index_exports);
-var import_express14 = __toESM(require_express2(), 1);
+var import_express16 = __toESM(require_express2(), 1);
 var import_cors = __toESM(require_lib4(), 1);
 var import_path = __toESM(require("path"), 1);
 var import_dotenv = __toESM(require_main(), 1);
@@ -112929,6 +112929,7 @@ async function migrate() {
       is_managing_partner TINYINT(1) NOT NULL DEFAULT 0,
       is_active TINYINT(1) NOT NULL DEFAULT 1,
       must_change_password TINYINT(1) NOT NULL DEFAULT 0,
+      location_id VARCHAR(50),
       created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
       updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
@@ -112944,10 +112945,29 @@ async function migrate() {
     `CREATE TABLE IF NOT EXISTS custom_positions (
       id VARCHAR(36) PRIMARY KEY,
       label VARCHAR(255) NOT NULL,
-      level VARCHAR(50) NOT NULL,
-      practice_area VARCHAR(255),
+      work_area_id VARCHAR(50) NOT NULL,
       base_position VARCHAR(50) NOT NULL,
-      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+    `CREATE TABLE IF NOT EXISTS work_areas (
+      id VARCHAR(50) PRIMARY KEY,
+      label VARCHAR(255) NOT NULL,
+      level ENUM('legal','administrativo') NOT NULL,
+      sort_order INT NOT NULL DEFAULT 0,
+      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+    `CREATE TABLE IF NOT EXISTS locations (
+      id VARCHAR(50) PRIMARY KEY,
+      label VARCHAR(255) NOT NULL,
+      city VARCHAR(255),
+      office VARCHAR(255),
+      floor VARCHAR(50),
+      desk VARCHAR(50),
+      sort_order INT NOT NULL DEFAULT 0,
+      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
     `CREATE TABLE IF NOT EXISTS period_configs (
       period VARCHAR(50) PRIMARY KEY,
@@ -113287,7 +113307,34 @@ async function migrate() {
     `ALTER TABLE legal_objectives ADD COLUMN IF NOT EXISTS resultado_firma DOUBLE NOT NULL DEFAULT 0 AFTER resultado_area`,
     `ALTER TABLE legal_objectives ADD COLUMN IF NOT EXISTS porcentaje_total_bono DOUBLE NOT NULL DEFAULT 0 AFTER resultado_firma`,
     // vacation_requests: add days column if missing
-    `ALTER TABLE vacation_requests ADD COLUMN IF NOT EXISTS days INT NOT NULL DEFAULT 0 AFTER end_date`
+    `ALTER TABLE vacation_requests ADD COLUMN IF NOT EXISTS days INT NOT NULL DEFAULT 0 AFTER end_date`,
+    // ─── Work Areas & Positions & Locations ──────────────────────────────────
+    // work_areas: create table
+    `CREATE TABLE IF NOT EXISTS work_areas (
+      id VARCHAR(50) PRIMARY KEY,
+      label VARCHAR(255) NOT NULL,
+      level ENUM('legal','administrativo') NOT NULL,
+      sort_order INT NOT NULL DEFAULT 0,
+      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+    // locations: create table
+    `CREATE TABLE IF NOT EXISTS locations (
+      id VARCHAR(50) PRIMARY KEY,
+      label VARCHAR(255) NOT NULL,
+      city VARCHAR(255),
+      office VARCHAR(255),
+      floor VARCHAR(50),
+      desk VARCHAR(50),
+      sort_order INT NOT NULL DEFAULT 0,
+      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+    // custom_positions: add work_area_id and updated_at
+    `ALTER TABLE custom_positions ADD COLUMN IF NOT EXISTS work_area_id VARCHAR(50) AFTER label`,
+    `ALTER TABLE custom_positions ADD COLUMN IF NOT EXISTS updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP`,
+    // users: add location_id
+    `ALTER TABLE users ADD COLUMN IF NOT EXISTS location_id VARCHAR(50) AFTER must_change_password`
   ];
   for (const sql of alterMigrations) {
     try {
@@ -115533,7 +115580,7 @@ function sanitizeUser2(user) {
   const { password_hash, security_answer, ...safe } = user;
   return safe;
 }
-var SAFE_USER_COLUMNS = `id, name, email, position, practice_area, custom_position_id, is_admin, is_super_user, is_managing_partner, is_active, must_change_password, created_at, updated_at`;
+var SAFE_USER_COLUMNS = `id, name, email, position, practice_area, custom_position_id, location_id, is_admin, is_super_user, is_managing_partner, is_active, must_change_password, created_at, updated_at`;
 router2.get("/", authMiddleware, async (req, res) => {
   try {
     const allUsers = await db.all(`SELECT ${SAFE_USER_COLUMNS} FROM users WHERE is_active = 1`);
@@ -115590,7 +115637,7 @@ router2.get("/:id", authMiddleware, async (req, res) => {
 });
 router2.post("/", authMiddleware, requireAdmin, async (req, res) => {
   try {
-    const { name, email, position, password, practiceArea, customPositionId, isAdmin, isManagingPartner } = req.body;
+    const { name, email, position, password, practiceArea, customPositionId, locationId, isAdmin, isManagingPartner } = req.body;
     if (!name || !email || !position || !password) {
       return res.status(400).json({ error: "Name, email, position, and password are required" });
     }
@@ -115622,8 +115669,8 @@ router2.post("/", authMiddleware, requireAdmin, async (req, res) => {
     const hashedAnswer = await hashSecurityAnswer(email);
     const now = (/* @__PURE__ */ new Date()).toISOString();
     await db.run(
-      `INSERT INTO users (id, email, password_hash, security_question, security_answer, name, position, practice_area, custom_position_id, is_admin, is_super_user, is_managing_partner, is_active, must_change_password, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO users (id, email, password_hash, security_question, security_answer, name, position, practice_area, custom_position_id, location_id, is_admin, is_super_user, is_managing_partner, is_active, must_change_password, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         id,
         email,
@@ -115634,6 +115681,7 @@ router2.post("/", authMiddleware, requireAdmin, async (req, res) => {
         position,
         practiceArea ?? null,
         customPositionId ?? null,
+        locationId ?? null,
         finalIsAdmin,
         0,
         // isSuperUser is always false for admin-created users
@@ -115665,7 +115713,7 @@ router2.patch("/:id", authMiddleware, requireSelfOrAdmin, async (req, res) => {
     const updates = [];
     const values = [];
     if (isAdminUser) {
-      const { name, email, position, practiceArea, customPositionId, isActive, isAdmin, isManagingPartner, isSuperUser } = req.body;
+      const { name, email, position, practiceArea, customPositionId, locationId, isActive, isAdmin, isManagingPartner, isSuperUser } = req.body;
       if (name !== void 0) {
         updates.push("name = ?");
         values.push(name);
@@ -115685,6 +115733,10 @@ router2.patch("/:id", authMiddleware, requireSelfOrAdmin, async (req, res) => {
       if (customPositionId !== void 0) {
         updates.push("custom_position_id = ?");
         values.push(customPositionId);
+      }
+      if (locationId !== void 0) {
+        updates.push("location_id = ?");
+        values.push(locationId);
       }
       if (isActive !== void 0) {
         updates.push("is_active = ?");
@@ -115929,36 +115981,43 @@ var assignments_default = router3;
 var import_express4 = __toESM(require_express2(), 1);
 
 // server/data/positionCatalog.ts
+var WORK_AREAS = [
+  { id: "corporativo", label: "Corporativo", level: "legal", sortOrder: 1 },
+  { id: "consultoria_fiscal", label: "Consultor\xEDa Fiscal", level: "legal", sortOrder: 2 },
+  { id: "litigio_fiscal", label: "Litigio Fiscal", level: "legal", sortOrder: 3 },
+  { id: "general", label: "Legal (General)", level: "legal", sortOrder: 4 },
+  { id: "administrativo", label: "Administrativo", level: "administrativo", sortOrder: 5 }
+];
 var POSITION_CATALOG = [
-  { cve: "SMPS01", label: "Socio Consultor\xEDa Fiscal", basePosition: "socio", practiceArea: "consultoria_fiscal", level: "legal" },
-  { cve: "SMPS02", label: "Socio Litigio Fiscal", basePosition: "socio", practiceArea: "litigio_fiscal", level: "legal" },
-  { cve: "SMPS03", label: "Socio Corporativo", basePosition: "socio", practiceArea: "corporativo", level: "legal" },
-  { cve: "SMPS04", label: "Counsel", basePosition: "counsel", practiceArea: "general", level: "legal" },
-  { cve: "SMPS05", label: "Asociado Sr Consultor\xEDa Fiscal", basePosition: "asociado_sr", practiceArea: "consultoria_fiscal", level: "legal" },
-  { cve: "SMPS06", label: "Asociado Sr Litigio Fiscal", basePosition: "asociado_sr", practiceArea: "litigio_fiscal", level: "legal" },
-  { cve: "SMPS07", label: "Asociado Sr Corporativo", basePosition: "asociado_sr", practiceArea: "corporativo", level: "legal" },
-  { cve: "SMPS08", label: "Asociado Mid Consultor\xEDa Fiscal", basePosition: "asociado_mid", practiceArea: "consultoria_fiscal", level: "legal" },
-  { cve: "SMPS09", label: "Asociado Mid Litigio Fiscal", basePosition: "asociado_mid", practiceArea: "litigio_fiscal", level: "legal" },
-  { cve: "SMPS10", label: "Asociado Mid Corporativo", basePosition: "asociado_mid", practiceArea: "corporativo", level: "legal" },
-  { cve: "SMPS11", label: "Asociado Jr Consultor\xEDa Fiscal", basePosition: "asociado_jr", practiceArea: "consultoria_fiscal", level: "legal" },
-  { cve: "SMPS12", label: "Asociado Jr Corporativo", basePosition: "asociado_jr", practiceArea: "corporativo", level: "legal" },
-  { cve: "SMPS13", label: "Pasante con Carrera Terminada Litigio Fiscal", basePosition: "pasante_carrera", practiceArea: "litigio_fiscal", level: "legal" },
-  { cve: "SMPS14", label: "Pasante con Carrera Terminada Corporativo", basePosition: "pasante_carrera", practiceArea: "corporativo", level: "legal" },
-  { cve: "SMPS15", label: "Pasante Corporativo", basePosition: "pasante_corporativo", practiceArea: "corporativo", level: "legal" },
-  { cve: "SMPS16", label: "Director de Marketing y BD", basePosition: "director", level: "administrativo" },
-  { cve: "SMPS17", label: "Directora de Adm\xF3n y Finanzas", basePosition: "director", level: "administrativo" },
-  { cve: "SMPS18", label: "Directora de Recursos Humanos", basePosition: "director", level: "administrativo" },
-  { cve: "SMPS19", label: "Coord. Cobranza", basePosition: "coordinador", level: "administrativo" },
-  { cve: "SMPS20", label: "Coord. Servicios Generales", basePosition: "coordinador", level: "administrativo" },
-  { cve: "SMPS21", label: "Coordinador de BD", basePosition: "coordinador", level: "administrativo" },
-  { cve: "SMPS22", label: "Coordinador de Marketing", basePosition: "coordinador", level: "administrativo" },
-  { cve: "SMPS23", label: "Coordinadora de R.H.", basePosition: "coordinador", level: "administrativo" },
-  { cve: "SMPS24", label: "Gte. Facturaci\xF3n y Cobranza", basePosition: "gerente", level: "administrativo" },
-  { cve: "SMPS25", label: "Analista Sistemas", basePosition: "analista", level: "administrativo" },
-  { cve: "SMPS26", label: "Soporte Sistemas", basePosition: "archivo_soporte", level: "administrativo" },
-  { cve: "SMPS27", label: "Archivista", basePosition: "archivo_soporte", level: "administrativo" },
-  { cve: "SMPS28", label: "Asistente Consultor\xEDa Fiscal", basePosition: "asistente", level: "administrativo" },
-  { cve: "SMPS29", label: "Asistente Corporativo", basePosition: "asistente", level: "administrativo" }
+  { cve: "SMPS01", label: "Socio Consultor\xEDa Fiscal", basePosition: "socio", workAreaId: "consultoria_fiscal" },
+  { cve: "SMPS02", label: "Socio Litigio Fiscal", basePosition: "socio", workAreaId: "litigio_fiscal" },
+  { cve: "SMPS03", label: "Socio Corporativo", basePosition: "socio", workAreaId: "corporativo" },
+  { cve: "SMPS04", label: "Counsel", basePosition: "counsel", workAreaId: "general" },
+  { cve: "SMPS05", label: "Asociado Sr Consultor\xEDa Fiscal", basePosition: "asociado_sr", workAreaId: "consultoria_fiscal" },
+  { cve: "SMPS06", label: "Asociado Sr Litigio Fiscal", basePosition: "asociado_sr", workAreaId: "litigio_fiscal" },
+  { cve: "SMPS07", label: "Asociado Sr Corporativo", basePosition: "asociado_sr", workAreaId: "corporativo" },
+  { cve: "SMPS08", label: "Asociado Mid Consultor\xEDa Fiscal", basePosition: "asociado_mid", workAreaId: "consultoria_fiscal" },
+  { cve: "SMPS09", label: "Asociado Mid Litigio Fiscal", basePosition: "asociado_mid", workAreaId: "litigio_fiscal" },
+  { cve: "SMPS10", label: "Asociado Mid Corporativo", basePosition: "asociado_mid", workAreaId: "corporativo" },
+  { cve: "SMPS11", label: "Asociado Jr Consultor\xEDa Fiscal", basePosition: "asociado_jr", workAreaId: "consultoria_fiscal" },
+  { cve: "SMPS12", label: "Asociado Jr Corporativo", basePosition: "asociado_jr", workAreaId: "corporativo" },
+  { cve: "SMPS13", label: "Pasante con Carrera Terminada Litigio Fiscal", basePosition: "pasante_carrera", workAreaId: "litigio_fiscal" },
+  { cve: "SMPS14", label: "Pasante con Carrera Terminada Corporativo", basePosition: "pasante_carrera", workAreaId: "corporativo" },
+  { cve: "SMPS15", label: "Pasante Corporativo", basePosition: "pasante_corporativo", workAreaId: "corporativo" },
+  { cve: "SMPS16", label: "Director de Marketing y BD", basePosition: "director", workAreaId: "administrativo" },
+  { cve: "SMPS17", label: "Directora de Adm\xF3n y Finanzas", basePosition: "director", workAreaId: "administrativo" },
+  { cve: "SMPS18", label: "Directora de Recursos Humanos", basePosition: "director", workAreaId: "administrativo" },
+  { cve: "SMPS19", label: "Coord. Cobranza", basePosition: "coordinador", workAreaId: "administrativo" },
+  { cve: "SMPS20", label: "Coord. Servicios Generales", basePosition: "coordinador", workAreaId: "administrativo" },
+  { cve: "SMPS21", label: "Coordinador de BD", basePosition: "coordinador", workAreaId: "administrativo" },
+  { cve: "SMPS22", label: "Coordinador de Marketing", basePosition: "coordinador", workAreaId: "administrativo" },
+  { cve: "SMPS23", label: "Coordinadora de R.H.", basePosition: "coordinador", workAreaId: "administrativo" },
+  { cve: "SMPS24", label: "Gte. Facturaci\xF3n y Cobranza", basePosition: "gerente", workAreaId: "administrativo" },
+  { cve: "SMPS25", label: "Analista Sistemas", basePosition: "analista", workAreaId: "administrativo" },
+  { cve: "SMPS26", label: "Soporte Sistemas", basePosition: "archivo_soporte", workAreaId: "administrativo" },
+  { cve: "SMPS27", label: "Archivista", basePosition: "archivo_soporte", workAreaId: "administrativo" },
+  { cve: "SMPS28", label: "Asistente Consultor\xEDa Fiscal", basePosition: "asistente", workAreaId: "administrativo" },
+  { cve: "SMPS29", label: "Asistente Corporativo", basePosition: "asistente", workAreaId: "administrativo" }
 ];
 
 // server/routes/system.ts
@@ -116020,12 +116079,19 @@ router4.post("/init", async (req, res) => {
          VALUES (?, ?, ?, ?, ?, ?, ?, 1, 1, 1, 1, 0, ?, ?)`,
         [userId, email, hashedPassword, securityQuestion, hashedAnswer, name, "socio", now, now]
       );
+      for (const area of WORK_AREAS) {
+        await tx.run(
+          conn,
+          `INSERT INTO work_areas (id, label, level, sort_order, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)`,
+          [area.id, area.label, area.level, area.sortOrder, now, now]
+        );
+      }
       for (const pos of POSITION_CATALOG) {
         await tx.run(
           conn,
-          `INSERT INTO custom_positions (id, label, level, practice_area, base_position, created_at)
+          `INSERT INTO custom_positions (id, label, work_area_id, base_position, created_at, updated_at)
            VALUES (?, ?, ?, ?, ?, ?)`,
-          [pos.cve, pos.label, pos.level, pos.practiceArea ?? null, pos.basePosition, now]
+          [pos.cve, pos.label, pos.workAreaId, pos.basePosition, now, now]
         );
       }
       for (const [position, days] of Object.entries(VACATION_DEFAULTS)) {
@@ -117043,27 +117109,59 @@ var questions_default = router10;
 // server/routes/positions.ts
 var import_express11 = __toESM(require_express2(), 1);
 var router11 = (0, import_express11.Router)();
-router11.get("/", authMiddleware, async (_req, res) => {
+router11.get("/", authMiddleware, async (req, res) => {
   try {
-    const positions = await db.all("SELECT * FROM custom_positions");
+    const { work_area_id } = req.query;
+    let sql = `SELECT cp.*, wa.label AS work_area_label, wa.level AS work_area_level
+               FROM custom_positions cp
+               JOIN work_areas wa ON cp.work_area_id = wa.id`;
+    const params = [];
+    if (work_area_id) {
+      sql += " WHERE cp.work_area_id = ?";
+      params.push(work_area_id);
+    }
+    sql += " ORDER BY cp.id";
+    const positions = await db.all(sql, params);
     return res.json(positions);
   } catch (err) {
     console.error("List positions error:", err);
     return res.status(500).json({ error: "Internal server error" });
   }
 });
+router11.get("/:id", authMiddleware, async (req, res) => {
+  try {
+    const position = await db.get(
+      `SELECT cp.*, wa.label AS work_area_label, wa.level AS work_area_level
+       FROM custom_positions cp
+       JOIN work_areas wa ON cp.work_area_id = wa.id
+       WHERE cp.id = ?`,
+      [req.params.id]
+    );
+    if (!position) return res.status(404).json({ error: "Position not found" });
+    return res.json(position);
+  } catch (err) {
+    console.error("Get position error:", err);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+});
 router11.post("/", authMiddleware, requireAdmin, async (req, res) => {
   try {
-    const { id, label, level, practiceArea, basePosition } = req.body;
-    if (!id || !label || !level || !basePosition) {
-      return res.status(400).json({ error: "id, label, level, and basePosition are required" });
+    const { id, label, workAreaId, basePosition } = req.body;
+    if (!id || !label || !workAreaId || !basePosition) {
+      return res.status(400).json({ error: "id, label, workAreaId, and basePosition are required" });
     }
+    const area = await db.get("SELECT id FROM work_areas WHERE id = ?", [workAreaId]);
+    if (!area) return res.status(400).json({ error: "Work area not found" });
     const now = (/* @__PURE__ */ new Date()).toISOString();
     await db.run(
-      "INSERT INTO custom_positions (id, label, level, practice_area, base_position, created_at) VALUES (?, ?, ?, ?, ?, ?)",
-      [id, label, level, practiceArea || null, basePosition, now]
+      "INSERT INTO custom_positions (id, label, work_area_id, base_position, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)",
+      [id, label, workAreaId, basePosition, now, now]
     );
-    const position = await db.get("SELECT * FROM custom_positions WHERE id = ?", [id]);
+    const position = await db.get(
+      `SELECT cp.*, wa.label AS work_area_label, wa.level AS work_area_level
+       FROM custom_positions cp JOIN work_areas wa ON cp.work_area_id = wa.id WHERE cp.id = ?`,
+      [id]
+    );
     return res.status(201).json(position);
   } catch (err) {
     if (err.code === "ER_DUP_ENTRY") {
@@ -117073,10 +117171,72 @@ router11.post("/", authMiddleware, requireAdmin, async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
+router11.patch("/:id", authMiddleware, requireAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { label, workAreaId, basePosition, newId } = req.body;
+    const position = await db.get("SELECT * FROM custom_positions WHERE id = ?", [id]);
+    if (!position) return res.status(404).json({ error: "Position not found" });
+    if (newId && newId !== id) {
+      const userCount = await db.get(
+        "SELECT COUNT(*) AS cnt FROM users WHERE custom_position_id = ?",
+        [id]
+      );
+      if (userCount.cnt > 0) {
+        return res.status(409).json({ error: `Cannot change CVE: ${userCount.cnt} user(s) assigned to this position. Remove assignments first.` });
+      }
+    }
+    const updates = [];
+    const values = [];
+    if (newId && newId !== id) {
+      updates.push("id = ?");
+      values.push(newId);
+    }
+    if (label !== void 0) {
+      updates.push("label = ?");
+      values.push(label);
+    }
+    if (workAreaId !== void 0) {
+      const area = await db.get("SELECT id FROM work_areas WHERE id = ?", [workAreaId]);
+      if (!area) return res.status(400).json({ error: "Work area not found" });
+      updates.push("work_area_id = ?");
+      values.push(workAreaId);
+    }
+    if (basePosition !== void 0) {
+      updates.push("base_position = ?");
+      values.push(basePosition);
+    }
+    if (updates.length === 0) return res.status(400).json({ error: "No fields to update" });
+    updates.push("updated_at = ?");
+    values.push((/* @__PURE__ */ new Date()).toISOString());
+    values.push(id);
+    await db.run(`UPDATE custom_positions SET ${updates.join(", ")} WHERE id = ?`, values);
+    const finalId = newId && newId !== id ? newId : id;
+    const updated = await db.get(
+      `SELECT cp.*, wa.label AS work_area_label, wa.level AS work_area_level
+       FROM custom_positions cp JOIN work_areas wa ON cp.work_area_id = wa.id WHERE cp.id = ?`,
+      [finalId]
+    );
+    if (newId && newId !== id) {
+      await db.run("UPDATE users SET custom_position_id = ? WHERE custom_position_id = ?", [newId, id]);
+    }
+    return res.json(updated);
+  } catch (err) {
+    console.error("Update position error:", err);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+});
 router11.delete("/:id", authMiddleware, requireAdmin, async (req, res) => {
   try {
     const position = await db.get("SELECT * FROM custom_positions WHERE id = ?", [req.params.id]);
     if (!position) return res.status(404).json({ error: "Position not found" });
+    const userCount = await db.get(
+      "SELECT COUNT(*) AS cnt FROM users WHERE custom_position_id = ?",
+      [req.params.id]
+    );
+    if (userCount.cnt > 0) {
+      return res.status(409).json({ error: `Cannot delete position: ${userCount.cnt} user(s) assigned. Remove assignments first.` });
+    }
     await db.run("DELETE FROM custom_positions WHERE id = ?", [req.params.id]);
     return res.json({ message: "Position deleted" });
   } catch (err) {
@@ -117086,10 +117246,219 @@ router11.delete("/:id", authMiddleware, requireAdmin, async (req, res) => {
 });
 var positions_default = router11;
 
-// server/routes/periods.ts
+// server/routes/work-areas.ts
 var import_express12 = __toESM(require_express2(), 1);
 var router12 = (0, import_express12.Router)();
 router12.get("/", authMiddleware, async (_req, res) => {
+  try {
+    const areas = await db.all(
+      `SELECT wa.*, 
+        (SELECT COUNT(*) FROM custom_positions WHERE work_area_id = wa.id) AS position_count
+       FROM work_areas wa ORDER BY wa.sort_order, wa.label`
+    );
+    const areasWithPositions = await Promise.all(areas.map(async (area) => {
+      const positions = await db.all(
+        `SELECT cp.*, wa.label AS work_area_label, wa.level AS work_area_level
+         FROM custom_positions cp
+         JOIN work_areas wa ON cp.work_area_id = wa.id
+         WHERE cp.work_area_id = ?
+         ORDER BY cp.id`,
+        [area.id]
+      );
+      return { ...area, positions };
+    }));
+    return res.json(areasWithPositions);
+  } catch (err) {
+    console.error("List work areas error:", err);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+});
+router12.post("/", authMiddleware, requireAdmin, async (req, res) => {
+  try {
+    const { id, label, level, sortOrder } = req.body;
+    if (!id || !label || !level) {
+      return res.status(400).json({ error: "id, label, and level are required" });
+    }
+    if (!["legal", "administrativo"].includes(level)) {
+      return res.status(400).json({ error: 'Level must be "legal" or "administrativo"' });
+    }
+    const now = (/* @__PURE__ */ new Date()).toISOString();
+    await db.run(
+      "INSERT INTO work_areas (id, label, level, sort_order, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)",
+      [id, label, level, sortOrder || 0, now, now]
+    );
+    const area = await db.get("SELECT * FROM work_areas WHERE id = ?", [id]);
+    return res.status(201).json(area);
+  } catch (err) {
+    if (err.code === "ER_DUP_ENTRY") {
+      return res.status(409).json({ error: "Work area ID already exists" });
+    }
+    console.error("Create work area error:", err);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+});
+router12.patch("/:id", authMiddleware, requireAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { label, level, sortOrder } = req.body;
+    const area = await db.get("SELECT * FROM work_areas WHERE id = ?", [id]);
+    if (!area) return res.status(404).json({ error: "Work area not found" });
+    const updates = [];
+    const values = [];
+    if (label !== void 0) {
+      updates.push("label = ?");
+      values.push(label);
+    }
+    if (level !== void 0) {
+      if (!["legal", "administrativo"].includes(level)) {
+        return res.status(400).json({ error: 'Level must be "legal" or "administrativo"' });
+      }
+      updates.push("level = ?");
+      values.push(level);
+    }
+    if (sortOrder !== void 0) {
+      updates.push("sort_order = ?");
+      values.push(sortOrder);
+    }
+    if (updates.length === 0) return res.status(400).json({ error: "No fields to update" });
+    updates.push("updated_at = ?");
+    values.push((/* @__PURE__ */ new Date()).toISOString());
+    values.push(id);
+    await db.run(`UPDATE work_areas SET ${updates.join(", ")} WHERE id = ?`, values);
+    const updated = await db.get("SELECT * FROM work_areas WHERE id = ?", [id]);
+    return res.json(updated);
+  } catch (err) {
+    console.error("Update work area error:", err);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+});
+router12.delete("/:id", authMiddleware, requireAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const area = await db.get("SELECT * FROM work_areas WHERE id = ?", [id]);
+    if (!area) return res.status(404).json({ error: "Work area not found" });
+    const posCount = await db.get(
+      "SELECT COUNT(*) AS cnt FROM custom_positions WHERE work_area_id = ?",
+      [id]
+    );
+    if (posCount.cnt > 0) {
+      return res.status(409).json({ error: `Cannot delete area with ${posCount.cnt} assigned position(s). Remove positions first.` });
+    }
+    await db.run("DELETE FROM work_areas WHERE id = ?", [id]);
+    return res.json({ message: "Work area deleted" });
+  } catch (err) {
+    console.error("Delete work area error:", err);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+});
+var work_areas_default = router12;
+
+// server/routes/locations.ts
+var import_express13 = __toESM(require_express2(), 1);
+var router13 = (0, import_express13.Router)();
+router13.get("/", authMiddleware, async (_req, res) => {
+  try {
+    const locations = await db.all(
+      `SELECT l.*, 
+        (SELECT COUNT(*) FROM users WHERE location_id = l.id) AS user_count
+       FROM locations l ORDER BY l.sort_order, l.label`
+    );
+    return res.json(locations);
+  } catch (err) {
+    console.error("List locations error:", err);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+});
+router13.post("/", authMiddleware, requireAdmin, async (req, res) => {
+  try {
+    const { id, label, city, office, floor, desk, sortOrder } = req.body;
+    if (!id || !label) {
+      return res.status(400).json({ error: "id and label are required" });
+    }
+    const now = (/* @__PURE__ */ new Date()).toISOString();
+    await db.run(
+      "INSERT INTO locations (id, label, city, office, floor, desk, sort_order, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+      [id, label, city || null, office || null, floor || null, desk || null, sortOrder || 0, now, now]
+    );
+    const location = await db.get("SELECT * FROM locations WHERE id = ?", [id]);
+    return res.status(201).json(location);
+  } catch (err) {
+    if (err.code === "ER_DUP_ENTRY") {
+      return res.status(409).json({ error: "Location ID already exists" });
+    }
+    console.error("Create location error:", err);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+});
+router13.patch("/:id", authMiddleware, requireAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { label, city, office, floor, desk, sortOrder } = req.body;
+    const location = await db.get("SELECT * FROM locations WHERE id = ?", [id]);
+    if (!location) return res.status(404).json({ error: "Location not found" });
+    const updates = [];
+    const values = [];
+    if (label !== void 0) {
+      updates.push("label = ?");
+      values.push(label);
+    }
+    if (city !== void 0) {
+      updates.push("city = ?");
+      values.push(city || null);
+    }
+    if (office !== void 0) {
+      updates.push("office = ?");
+      values.push(office || null);
+    }
+    if (floor !== void 0) {
+      updates.push("floor = ?");
+      values.push(floor || null);
+    }
+    if (desk !== void 0) {
+      updates.push("desk = ?");
+      values.push(desk || null);
+    }
+    if (sortOrder !== void 0) {
+      updates.push("sort_order = ?");
+      values.push(sortOrder);
+    }
+    if (updates.length === 0) return res.status(400).json({ error: "No fields to update" });
+    updates.push("updated_at = ?");
+    values.push((/* @__PURE__ */ new Date()).toISOString());
+    values.push(id);
+    await db.run(`UPDATE locations SET ${updates.join(", ")} WHERE id = ?`, values);
+    const updated = await db.get("SELECT * FROM locations WHERE id = ?", [id]);
+    return res.json(updated);
+  } catch (err) {
+    console.error("Update location error:", err);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+});
+router13.delete("/:id", authMiddleware, requireAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const location = await db.get("SELECT * FROM locations WHERE id = ?", [id]);
+    if (!location) return res.status(404).json({ error: "Location not found" });
+    const userCount = await db.get(
+      "SELECT COUNT(*) AS cnt FROM users WHERE location_id = ?",
+      [id]
+    );
+    if (userCount.cnt > 0) {
+      return res.status(409).json({ error: `Cannot delete location: ${userCount.cnt} user(s) assigned. Remove assignments first.` });
+    }
+    await db.run("DELETE FROM locations WHERE id = ?", [id]);
+    return res.json({ message: "Location deleted" });
+  } catch (err) {
+    console.error("Delete location error:", err);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+});
+var locations_default = router13;
+
+// server/routes/periods.ts
+var import_express14 = __toESM(require_express2(), 1);
+var router14 = (0, import_express14.Router)();
+router14.get("/", authMiddleware, async (_req, res) => {
   try {
     const periods = await db.all("SELECT * FROM period_configs");
     return res.json(periods);
@@ -117098,7 +117467,7 @@ router12.get("/", authMiddleware, async (_req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router12.post("/", authMiddleware, requireAdmin, async (req, res) => {
+router14.post("/", authMiddleware, requireAdmin, async (req, res) => {
   try {
     const { period, selfStart, selfEnd, supervisorStart, supervisorEnd, feedbackStart, feedbackEnd, actionPlanStart, actionPlanEnd } = req.body;
     if (!period || !selfStart || !selfEnd || !supervisorStart || !supervisorEnd || !feedbackStart || !feedbackEnd || !actionPlanStart || !actionPlanEnd) {
@@ -117117,13 +117486,13 @@ router12.post("/", authMiddleware, requireAdmin, async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-var periods_default = router12;
+var periods_default = router14;
 
 // server/routes/copilot.ts
-var import_express13 = __toESM(require_express2(), 1);
+var import_express15 = __toESM(require_express2(), 1);
 var import_multer = __toESM(require("multer"), 1);
 var XLSX = __toESM(require_xlsx(), 1);
-var router13 = (0, import_express13.Router)();
+var router15 = (0, import_express15.Router)();
 var upload = (0, import_multer.default)({
   storage: import_multer.default.memoryStorage(),
   limits: { fileSize: 10 * 1024 * 1024 },
@@ -117132,8 +117501,8 @@ var upload = (0, import_multer.default)({
     cb(null, [".csv", ".xlsx", ".xls", ".json", ".txt", ".md"].includes(ext));
   }
 });
-router13.use(authMiddleware, requireSuperUser);
-router13.use(async (_req, res, next) => {
+router15.use(authMiddleware, requireSuperUser);
+router15.use(async (_req, res, next) => {
   try {
     const moduleConfig = await db.get("SELECT copilot FROM module_config WHERE id=1");
     if (!moduleConfig?.copilot) {
@@ -117303,7 +117672,7 @@ function needsTools(message, hasFile) {
   if (greetingOnly.test(lower)) return false;
   return true;
 }
-var UF = "id,name,email,position,practice_area,is_admin,is_super_user,is_managing_partner,is_active";
+var UF = "id,name,email,position,practice_area,custom_position_id,location_id,is_admin,is_super_user,is_managing_partner,is_active";
 function getTools(cfg) {
   const t = [];
   t.push({
@@ -117471,9 +117840,18 @@ function getTools(cfg) {
             if (currentAdmins.length >= 2) return JSON.stringify({ error: "M\xE1ximo 2 Usuario Administrador permitidos" });
           }
           const id = v4_default(), hp = await hashPassword(args.password), now = (/* @__PURE__ */ new Date()).toISOString();
+          let derivedPosition = args.position;
+          let derivedArea = args.practice_area || null;
+          if (args.custom_position_id) {
+            const posRow = await db.get("SELECT cp.base_position, cp.work_area_id, wa.level FROM custom_positions cp JOIN work_areas wa ON cp.work_area_id = wa.id WHERE cp.id = ?", [args.custom_position_id]);
+            if (posRow) {
+              derivedPosition = posRow.base_position;
+              derivedArea = posRow.level === "legal" ? posRow.work_area_id : null;
+            }
+          }
           await db.run(
-            "INSERT INTO users (id,email,password_hash,security_question,security_answer,name,position,practice_area,is_admin,is_super_user,is_managing_partner,is_active,must_change_password,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
-            [id, args.email, hp, "\xBFEmail?", args.email, args.name, args.position, args.practice_area || null, isAdmin ? 1 : 0, 0, isMP ? 1 : 0, 1, 1, now, now]
+            "INSERT INTO users (id,email,password_hash,security_question,security_answer,name,position,practice_area,custom_position_id,location_id,is_admin,is_super_user,is_managing_partner,is_active,must_change_password,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+            [id, args.email, hp, "\xBFEmail?", args.email, args.name, derivedPosition, derivedArea, args.custom_position_id || null, args.location_id || null, isAdmin ? 1 : 0, 0, isMP ? 1 : 0, 1, 1, now, now]
           );
           return JSON.stringify({ ok: true, msg: `"${args.name}" creado`, id });
         }
@@ -117491,9 +117869,18 @@ function getTools(cfg) {
               continue;
             }
             const id = v4_default(), hp = await hashPassword(u.password), now = (/* @__PURE__ */ new Date()).toISOString();
+            let bPosition = u.position;
+            let bArea = u.practice_area || null;
+            if (u.custom_position_id) {
+              const posRow = await db.get("SELECT cp.base_position, cp.work_area_id, wa.level FROM custom_positions cp JOIN work_areas wa ON cp.work_area_id = wa.id WHERE cp.id = ?", [u.custom_position_id]);
+              if (posRow) {
+                bPosition = posRow.base_position;
+                bArea = posRow.level === "legal" ? posRow.work_area_id : null;
+              }
+            }
             await db.run(
-              "INSERT INTO users (id,email,password_hash,security_question,security_answer,name,position,practice_area,is_admin,is_super_user,is_managing_partner,is_active,must_change_password,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
-              [id, u.email, hp, "\xBFEmail?", u.email, u.name, u.position, u.practice_area || null, 0, 0, 0, 1, 1, now, now]
+              "INSERT INTO users (id,email,password_hash,security_question,security_answer,name,position,practice_area,custom_position_id,location_id,is_admin,is_super_user,is_managing_partner,is_active,must_change_password,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+              [id, u.email, hp, "\xBFEmail?", u.email, u.name, bPosition, bArea, u.custom_position_id || null, u.location_id || null, 0, 0, 0, 1, 1, now, now]
             );
             r.push({ email: u.email, ok: true, id });
           }
@@ -117990,7 +118377,7 @@ function getTools(cfg) {
 function toFunctions(tools) {
   return tools.map((t) => ({ type: "function", function: { name: t.name, description: t.description, parameters: t.parameters } }));
 }
-router13.get("/config", async (_req, res) => {
+router15.get("/config", async (_req, res) => {
   try {
     let cfg = await db.get("SELECT * FROM copilot_config WHERE id=1");
     if (!cfg) {
@@ -118006,7 +118393,7 @@ router13.get("/config", async (_req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 });
-router13.patch("/config", async (req, res) => {
+router15.patch("/config", async (req, res) => {
   try {
     const fieldMap = {
       model: "model",
@@ -118058,7 +118445,7 @@ router13.patch("/config", async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router13.put("/config", async (req, res) => {
+router15.put("/config", async (req, res) => {
   try {
     const { model, api_provider, api_base_url, api_key, can_manage_users, can_manage_evaluations, can_manage_vacations, can_manage_announcements, can_manage_periods, can_manage_system, can_view_reports, max_tokens, temperature } = req.body;
     const current = await db.get("SELECT api_key FROM copilot_config WHERE id=1");
@@ -118077,7 +118464,7 @@ router13.put("/config", async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router13.get("/conversations", async (req, res) => {
+router15.get("/conversations", async (req, res) => {
   try {
     const convs = await db.all("SELECT id, title, created_at, updated_at FROM copilot_conversations WHERE user_id=? ORDER BY updated_at DESC LIMIT 50", [req.user.id]);
     res.json(convs);
@@ -118086,7 +118473,7 @@ router13.get("/conversations", async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 });
-router13.get("/conversations/:id", async (req, res) => {
+router15.get("/conversations/:id", async (req, res) => {
   try {
     const conv = await db.get("SELECT * FROM copilot_conversations WHERE id=? AND user_id=?", [req.params.id, req.user.id]);
     if (!conv) return res.status(404).json({ error: "No encontrada" });
@@ -118097,7 +118484,7 @@ router13.get("/conversations/:id", async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 });
-router13.delete("/conversations/:id", async (req, res) => {
+router15.delete("/conversations/:id", async (req, res) => {
   try {
     const conv = await db.get("SELECT id FROM copilot_conversations WHERE id=? AND user_id=?", [req.params.id, req.user.id]);
     if (!conv) return res.status(404).json({ error: "No encontrada" });
@@ -118109,7 +118496,7 @@ router13.delete("/conversations/:id", async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 });
-router13.delete("/conversations", async (req, res) => {
+router15.delete("/conversations", async (req, res) => {
   try {
     const convs = await db.all("SELECT id FROM copilot_conversations WHERE user_id=?", [req.user.id]);
     const ids = convs.map((c) => c.id);
@@ -118124,7 +118511,7 @@ router13.delete("/conversations", async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 });
-router13.post("/chat", upload.single("file"), async (req, res) => {
+router15.post("/chat", upload.single("file"), async (req, res) => {
   try {
     const { message, conversationId } = req.body;
     const fullMessage = message || "";
@@ -118240,14 +118627,14 @@ ${fileContent}` : fullMessage, (/* @__PURE__ */ new Date()).toISOString()]);
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-var copilot_default = router13;
+var copilot_default = router15;
 
 // server/index.ts
 import_dotenv.default.config();
-var app = (0, import_express14.default)();
+var app = (0, import_express16.default)();
 var PORT = process.env.PORT || 3e3;
 app.use((0, import_cors.default)());
-app.use(import_express14.default.json());
+app.use(import_express16.default.json());
 app.get("/api/health", (_req, res) => {
   res.json({ status: "ok", timestamp: (/* @__PURE__ */ new Date()).toISOString() });
 });
@@ -118262,11 +118649,13 @@ app.use("/api/announcements", announcements_default);
 app.use("/api/vacations", vacations_default);
 app.use("/api/questions", questions_default);
 app.use("/api/positions", positions_default);
+app.use("/api/work-areas", work_areas_default);
+app.use("/api/locations", locations_default);
 app.use("/api/periods", periods_default);
 app.use("/api/copilot", copilot_default);
 if (process.env.NODE_ENV === "production") {
   const distPath = import_path.default.resolve(process.cwd(), "dist");
-  app.use(import_express14.default.static(distPath));
+  app.use(import_express16.default.static(distPath));
   app.use((_req, res) => {
     res.sendFile(import_path.default.join(distPath, "index.html"));
   });
