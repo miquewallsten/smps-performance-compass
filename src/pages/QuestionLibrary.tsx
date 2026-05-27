@@ -2,6 +2,7 @@ import { useState, useMemo, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCustomQuestions, useLibraryQuestions, useCreateLibraryQuestion, useUpdateLibraryQuestion, useDeleteLibraryQuestion, useSeedOverrides, useUpdateSeedOverride } from '@/api/queries';
 import { QUESTIONS_BY_POSITION, getSectionByCategory, SECTION_LABELS, SECTION_ORDER } from '@/data/questions';
+import { getSectionWeights } from '@/data/sectionWeights';
 import { POSITION_LABELS, QuestionCategory, EvalQuestion, LibraryQuestion, EvalSection, POSITION_LEVELS, Position } from '@/types';
 import { BookOpen, Search, Plus, Pencil, Trash2, Save, X, Download, SlidersHorizontal, Layers, ChevronDown, ChevronRight, XCircle, LayoutList, LayoutGrid, Hash } from 'lucide-react';
 import { toast } from 'sonner';
@@ -284,18 +285,42 @@ export default function QuestionLibrary() {
   }, [groupMode]);
 
   const exportCSV = () => {
-    const rows: string[] = ['Sección,Categoría,Peso,Posiciones,Texto'];
-    allItems.forEach(i => {
-      const positions = i.positions.map(p => POSITION_LABELS[p as Position] || p).join('; ');
-      const text = `"${i.text.replace(/"/g, '""')}"`;
-      rows.push(`${SECTION_LABELS[i.section]},${i.category},${i.weight},"${positions}",${text}`);
+    // Export per-position rescaled weights so each position's weights sum to 100%
+    const rows: string[] = ['Posición,Sección,Categoría,Peso (%),Texto'];
+    const allPositions = new Set<string>();
+    allSeedItems.forEach(item => item.positions.forEach(p => allPositions.add(p)));
+
+    for (const pos of allPositions) {
+      const posLabel = POSITION_LABELS[pos as Position] || pos;
+      const sectionWts = getSectionWeights(pos as Position);
+      const posQuestions = allSeedItems.filter(item => item.positions.includes(pos));
+      const bySection: Record<string, typeof posQuestions> = {};
+      posQuestions.forEach(q => {
+        const section = getSectionByCategory(q.category);
+        if (!bySection[section]) bySection[section] = [];
+        bySection[section].push(q);
+      });
+      for (const [section, qs] of Object.entries(bySection)) {
+        const target = sectionWts[section as EvalSection] || 0;
+        const sum = qs.reduce((s, q) => s + (q.weight || 1), 0) || qs.length;
+        qs.forEach(q => {
+          const rescaledWeight = Math.round(((q.weight || 1) / sum) * target * 100) / 100;
+          const text = `"${q.text.replace(/"/g, '""')}"`;
+          rows.push(`${posLabel},${SECTION_LABELS[section as EvalSection] || section},${q.category},${rescaledWeight},${text}`);
+        });
+      }
+    }
+    libraryQuestions.forEach(q => {
+      const text = `"${q.text.replace(/"/g, '""')}"`;
+      const section = getSectionByCategory(q.category);
+      rows.push(`(biblioteca),${SECTION_LABELS[section]},${q.category},${q.defaultWeight || 0},${text}`);
     });
     const blob = new Blob(['\uFEFF' + rows.join('\n')], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = url; a.download = `biblioteca-preguntas-${new Date().toISOString().split('T')[0]}.csv`;
+    a.href = url; a.download = `preguntas-por-posicion-${new Date().toISOString().split('T')[0]}.csv`;
     a.click(); URL.revokeObjectURL(url);
-    toast.success('Biblioteca descargada (CSV)');
+    toast.success('CSV con pesos reescalados por posición');
   };
 
   return (
