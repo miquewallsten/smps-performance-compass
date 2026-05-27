@@ -115711,7 +115711,8 @@ function sanitizeUser2(user) {
 var SAFE_USER_COLUMNS = `id, name, email, position, practice_area, custom_position_id, location_id, is_admin, is_super_user, is_managing_partner, is_active, must_change_password, created_at, updated_at`;
 router2.get("/", authMiddleware, async (req, res) => {
   try {
-    const allUsers = await db.all(`SELECT ${SAFE_USER_COLUMNS} FROM users WHERE is_active = 1`);
+    const allUsers = await db.all(`SELECT ${SAFE_USER_COLUMNS} FROM users`);
+    const activeUsers = allUsers.filter((u) => u.is_active === 1 || u.is_active === true);
     const role = req.user.role;
     if (role === "super_user" || role === "admin") {
       return res.json(allUsers);
@@ -115726,7 +115727,7 @@ router2.get("/", authMiddleware, async (req, res) => {
       visibleIds.add(a.employee_id);
       visibleIds.add(a.supervisor_id);
     }
-    const visibleUsers = allUsers.filter((u) => visibleIds.has(u.id));
+    const visibleUsers = activeUsers.filter((u) => visibleIds.has(u.id));
     return res.json(visibleUsers);
   } catch (err) {
     console.error("List users error:", err);

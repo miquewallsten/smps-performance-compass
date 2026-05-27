@@ -36,10 +36,11 @@ const SAFE_USER_COLUMNS = `id, name, email, position, practice_area, custom_posi
 // - Regular users: see users they supervise + themselves
 router.get('/', authMiddleware, async (req: Request, res: Response) => {
   try {
-    const allUsers = await db.all(`SELECT ${SAFE_USER_COLUMNS} FROM users WHERE is_active = 1`);
+    const allUsers = await db.all(`SELECT ${SAFE_USER_COLUMNS} FROM users`);
+    const activeUsers = allUsers.filter((u: any) => u.is_active === 1 || u.is_active === true);
     const role = req.user!.role;
     
-    // SuperUser and Admin can see all users
+    // SuperUser and Admin can see all users (including inactive for management)
     if (role === 'super_user' || role === 'admin') {
       return res.json(allUsers);
     }
@@ -58,7 +59,8 @@ router.get('/', authMiddleware, async (req: Request, res: Response) => {
       visibleIds.add(a.supervisor_id);
     }
     
-    const visibleUsers = allUsers.filter((u: any) => visibleIds.has(u.id));
+    // Regular users only see active users in their scope
+    const visibleUsers = activeUsers.filter((u: any) => visibleIds.has(u.id));
     return res.json(visibleUsers);
   } catch (err) {
     console.error('List users error:', err);

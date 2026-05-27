@@ -123,6 +123,7 @@ export default function Layout() {
     { to: '/communications', icon: Megaphone, label: 'Comunicación', show: showCommModule, badge: unreadAnnouncementCount },
     { to: '/vacations', icon: Palmtree, label: 'Vacaciones', show: showVacModule, badge: pendingVacationCount },
     { to: '/period-config', icon: Calendar, label: 'Periodos', show: isAdminOrSuper },
+    { to: '/access', icon: Shield, label: 'Acceso Sistema', show: isSuperUser },
     { to: '/copilot', icon: Bot, label: 'Copilot', show: modules.copilot && isSuperUser },
     { to: '/settings', icon: Settings, label: 'Perfil', show: true },
   ];
@@ -179,7 +180,7 @@ export default function Layout() {
                     <ChevronDown className={`h-3 w-3 ml-auto transition-transform duration-200 ${evalGroupOpen ? '' : '-rotate-90'}`} />
                   </button>
                 )}
-                {(evalGroupOpen || collapsed) && evalItems.map(item => (
+                {(evalGroupOpen || collapsed) && evalItems.filter(item => item.show).map(item => (
                   <div key={item.to} className="relative">
                     {renderNavItem(item)}
                   </div>
@@ -207,7 +208,7 @@ export default function Layout() {
                 {!collapsed && <div className="border-b border-sidebar-border my-1.5" />}
               </>
             )}
-            {otherItems.map(item => (
+            {otherItems.filter(item => item.show).map(item => (
               <div key={item.to} className="relative">
                 {renderNavItem(item)}
               </div>

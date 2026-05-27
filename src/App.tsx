@@ -98,7 +98,7 @@ function AppRoutes() {
         <Route path="personal-objectives" element={<PersonalObjectivesPage />} />
         <Route path="communications" element={<Communications />} />
         <Route path="vacations" element={<Vacations />} />
-        <Route path="access" element={<AccessControl />} />
+        <Route path="access" element={isSuperUser ? <AccessControl /> : <Navigate to="/dashboard" replace />} />
         <Route path="period-config" element={<PeriodConfig />} />
         <Route path="question-library" element={<QuestionLibrary />} />
         <Route path="my-action-plan" element={<MyActionPlan />} />
