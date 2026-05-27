@@ -51,13 +51,36 @@ app.use('/api/locations', locationRoutes);
 app.use('/api/periods', periodRoutes);
 app.use('/api/copilot', copilotRoutes);
 
-// Serve static files in production
+// Multi-domain routing: serve landing page for bowdot.online, SMPS app for smps.bowdot.online
+// The landing page lives in /landing; the SMPS app lives in /dist
 if (process.env.NODE_ENV === 'production') {
+  const SMPS_DOMAINS = ['smps.bowdot.online'];
+  const isSmpsDomain = (host: string | undefined) =>
+    host && SMPS_DOMAINS.some(d => host.includes(d));
+
+  // Landing page for the main domain (bowdot.online)
+  const landingPath = path.resolve(process.cwd(), 'landing');
+  app.use((req, _res, next) => {
+    // Only serve landing if it's the main domain AND not an API route
+    if (!isSmpsDomain(req.get('host')) && !req.path.startsWith('/api')) {
+      express.static(landingPath)(req, _res, next);
+    } else {
+      next();
+    }
+  });
+
+  // SMPS app for smps.bowdot.online (or API routes on any domain)
   const distPath = path.resolve(process.cwd(), 'dist');
   app.use(express.static(distPath));
-  // SPA fallback: serve index.html for any non-API route
-  app.use((_req, res) => {
-    res.sendFile(path.join(distPath, 'index.html'));
+
+  // SPA fallback for SMPS app
+  app.use((req, res) => {
+    if (isSmpsDomain(req.get('host'))) {
+      res.sendFile(path.join(distPath, 'index.html'));
+    } else {
+      // Main domain: serve landing page for any non-API route
+      res.sendFile(path.join(landingPath, 'index.html'));
+    }
   });
 }
 

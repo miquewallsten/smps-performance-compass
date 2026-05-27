@@ -119145,10 +119145,24 @@ app.use("/api/locations", locations_default);
 app.use("/api/periods", periods_default);
 app.use("/api/copilot", copilot_default);
 if (process.env.NODE_ENV === "production") {
+  const SMPS_DOMAINS = ["smps.bowdot.online"];
+  const isSmpsDomain = (host) => host && SMPS_DOMAINS.some((d) => host.includes(d));
+  const landingPath = import_path.default.resolve(process.cwd(), "landing");
+  app.use((req, _res, next) => {
+    if (!isSmpsDomain(req.get("host")) && !req.path.startsWith("/api")) {
+      import_express16.default.static(landingPath)(req, _res, next);
+    } else {
+      next();
+    }
+  });
   const distPath = import_path.default.resolve(process.cwd(), "dist");
   app.use(import_express16.default.static(distPath));
-  app.use((_req, res) => {
-    res.sendFile(import_path.default.join(distPath, "index.html"));
+  app.use((req, res) => {
+    if (isSmpsDomain(req.get("host"))) {
+      res.sendFile(import_path.default.join(distPath, "index.html"));
+    } else {
+      res.sendFile(import_path.default.join(landingPath, "index.html"));
+    }
   });
 }
 async function startServer() {

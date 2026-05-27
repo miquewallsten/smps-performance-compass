@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bowdot — Digital Solutions</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            color: #f1f5f9;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        header {
+            padding: 2rem;
+            text-align: center;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+        }
+        .logo {
+            font-size: 2rem;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            color: #ffffff;
+        }
+        .logo span { color: #e11d48; }
+        .tagline {
+            margin-top: 0.5rem;
+            color: #94a3b8;
+            font-size: 1.05rem;
+            font-weight: 400;
+        }
+        main {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 3rem 1.5rem;
+        }
+        .apps-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 1.5rem;
+            max-width: 900px;
+            width: 100%;
+        }
+        .app-card {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 16px;
+            padding: 2rem;
+            text-decoration: none;
+            color: inherit;
+            transition: all 0.25s ease;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+        .app-card:hover {
+            background: rgba(255,255,255,0.08);
+            border-color: rgba(225,29,72,0.4);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 32px rgba(225,29,72,0.12);
+        }
+        .app-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #e11d48, #be123c);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: #fff;
+            flex-shrink: 0;
+        }
+        .app-name {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #ffffff;
+        }
+        .app-desc {
+            color: #94a3b8;
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+        .app-url {
+            color: #e11d48;
+            font-size: 0.85rem;
+            font-weight: 500;
+            margin-top: auto;
+            padding-top: 0.5rem;
+        }
+        .app-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.75rem;
+            color: #22c55e;
+            margin-top: 0.25rem;
+        }
+        .app-status::before {
+            content: '';
+            width: 6px;
+            height: 6px;
+            background: #22c55e;
+            border-radius: 50%;
+            display: inline-block;
+        }
+        footer {
+            padding: 1.5rem;
+            text-align: center;
+            border-top: 1px solid rgba(255,255,255,0.06);
+            color: #64748b;
+            font-size: 0.8rem;
+        }
+        footer a { color: #94a3b8; text-decoration: none; }
+        footer a:hover { color: #e11d48; }
+
+        @media (max-width: 640px) {
+            .logo { font-size: 1.5rem; }
+            .apps-grid { grid-template-columns: 1fr; }
+            main { padding: 2rem 1rem; }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="logo">bow<span>dot</span></div>
+        <p class="tagline">Digital solutions for modern firms</p>
+    </header>
+
+    <main>
+        <div class="apps-grid">
+            <a class="app-card" href="https://smps.bowdot.online">
+                <div class="app-icon">S</div>
+                <div class="app-name">SMPS Performance Compass</div>
+                <div class="app-desc">Performance evaluation and talent management platform for legal and professional services firms.</div>
+                <div class="app-status">Active</div>
+                <div class="app-url">smps.bowdot.online →</div>
+            </a>
+
+            <!-- Future apps can be added here -->
+            <!--
+            <a class="app-card" href="https://nextapp.bowdot.online">
+                <div class="app-icon">N</div>
+                <div class="app-name">Next App Name</div>
+                <div class="app-desc">Description of the next application.</div>
+                <div class="app-status">Active</div>
+                <div class="app-url">nextapp.bowdot.online →</div>
+            </a>
+            -->
+        </div>
+    </main>
+
+    <footer>
+        &copy; 2026 Bowdot &middot; <a href="mailto:hello@bowdot.com">hello@bowdot.com</a>
+    </footer>
+</body>
+</html>
