@@ -124,7 +124,7 @@ export async function seed() {
     const hasStatus = await tx.get(conn, 'SELECT id FROM system_status LIMIT 1');
     if (!hasStatus) {
       const saUser = await tx.get(conn, 'SELECT id FROM users WHERE email = ?', [SUPERADMIN_EMAIL]) as { id: string } | undefined;
-      await tx.run(conn, `INSERT INTO system_status (id, status, activation_date, payment_plan, max_users, tickets) VALUES (1, 'active', ?, 'monthly', 50, 0)`, [now()]);
+      await tx.run(conn, `INSERT INTO system_status (id, status, activation_date, payment_plan, max_users, max_admin_users, tickets) VALUES (1, 'active', ?, 'monthly', 50, 3, 0)`, [now()]);
       if (saUser) {
         await tx.run(conn, `INSERT INTO activation_history (id, action, date, by_user_id) VALUES (?, 'activated', ?, ?)`, [uuidv4(), now(), saUser.id]);
       }

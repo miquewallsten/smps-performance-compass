@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { QUESTIONS_BY_POSITION } from '@/data/questions';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCustomQuestions, useSetCustomQuestions, useLibraryQuestions } from '@/api/queries';
@@ -18,7 +18,16 @@ const MAX_QUESTIONS = 20;
 
 export default function EvaluationTemplates() {
   const { user: currentUser } = useAuth();
-  const { data: customQuestions = [] } = useCustomQuestions();
+  const { data: customQuestionsRaw } = useCustomQuestions();
+  const customQuestions = useMemo(() => {
+    if (!customQuestionsRaw || !Array.isArray(customQuestionsRaw)) return {} as Record<string, EvalQuestion[]>;
+    const grouped: Record<string, EvalQuestion[]> = {};
+    for (const q of customQuestionsRaw) {
+      const pos = q.position || q.practiceArea;
+      if (pos) { if (!grouped[pos]) grouped[pos] = []; grouped[pos].push(q); }
+    }
+    return grouped;
+  }, [customQuestionsRaw]);
   const setCustomQuestions = useSetCustomQuestions().mutate;
   const { data: libraryQuestions = [] } = useLibraryQuestions();
   const [expandedPosition, setExpandedPosition] = useState<Position | null>(null);
@@ -37,7 +46,7 @@ export default function EvaluationTemplates() {
   };
 
   const getQuestions = (pos: Position): EvalQuestion[] => {
-    return customQuestions[pos] || QUESTIONS_BY_POSITION[pos];
+    return customQuestions[pos] || QUESTIONS_BY_POSITION[pos] || [];
   };
 
   const startEditing = (pos: Position) => {

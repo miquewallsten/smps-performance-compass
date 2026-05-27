@@ -113200,6 +113200,7 @@ async function migrate() {
       activation_date VARCHAR(50) NOT NULL,
       payment_plan VARCHAR(50) NOT NULL DEFAULT 'monthly',
       max_users INT NOT NULL DEFAULT 50,
+      max_admin_users INT NOT NULL DEFAULT 3,
       tickets INT NOT NULL DEFAULT 0
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
     `CREATE TABLE IF NOT EXISTS activation_history (
@@ -113453,6 +113454,17 @@ async function migrate() {
       );
     }
     console.log(`  \u2713 ${positions.length} positions seeded`);
+  }
+  try {
+    const colCheck = await getScalar(
+      `SELECT COUNT(*) AS cnt FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'system_status' AND COLUMN_NAME = 'max_admin_users'`
+    );
+    if (colCheck === 0) {
+      await run(`ALTER TABLE system_status ADD COLUMN max_admin_users INT NOT NULL DEFAULT 3`);
+      console.log("  \u2713 Added max_admin_users column to system_status");
+    }
+  } catch (e) {
+    console.log("  \u26A0 Could not add max_admin_users column (may already exist):", e.message);
   }
   const tableCount = await getScalar(
     `SELECT COUNT(*) AS cnt FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = DATABASE()`
@@ -115332,7 +115344,7 @@ async function seed() {
     const hasStatus = await tx.get(conn, "SELECT id FROM system_status LIMIT 1");
     if (!hasStatus) {
       const saUser = await tx.get(conn, "SELECT id FROM users WHERE email = ?", [SUPERADMIN_EMAIL]);
-      await tx.run(conn, `INSERT INTO system_status (id, status, activation_date, payment_plan, max_users, tickets) VALUES (1, 'active', ?, 'monthly', 50, 0)`, [now()]);
+      await tx.run(conn, `INSERT INTO system_status (id, status, activation_date, payment_plan, max_users, max_admin_users, tickets) VALUES (1, 'active', ?, 'monthly', 50, 3, 0)`, [now()]);
       if (saUser) {
         await tx.run(conn, `INSERT INTO activation_history (id, action, date, by_user_id) VALUES (?, 'activated', ?, ?)`, [v4_default(), now(), saUser.id]);
       }
@@ -115684,6 +115696,14 @@ var auth_default = router;
 // server/routes/users.ts
 var import_express2 = __toESM(require_express2(), 1);
 var router2 = (0, import_express2.Router)();
+async function getMaxAdminUsers() {
+  try {
+    const row = await db.get("SELECT max_admin_users FROM system_status WHERE id = 1");
+    return row?.max_admin_users || 3;
+  } catch {
+    return 3;
+  }
+}
 function sanitizeUser2(user) {
   const { password_hash, security_answer, ...safe } = user;
   return safe;
@@ -115766,9 +115786,10 @@ router2.post("/", authMiddleware, requireAdmin, async (req, res) => {
       }
     }
     if (finalIsAdmin && !isManagingPartner) {
+      const maxAdminUsers = await getMaxAdminUsers();
       const currentAdmins = await db.all("SELECT id FROM users WHERE is_admin = 1 AND is_super_user = 0");
-      if (currentAdmins.length >= 2) {
-        return res.status(409).json({ error: "M\xE1ximo 2 Usuario Administrador permitidos. Quite permisos a otro primero." });
+      if (currentAdmins.length >= maxAdminUsers) {
+        return res.status(409).json({ error: `M\xE1ximo ${maxAdminUsers} Usuario Administrador permitidos. Quite permisos a otro primero.` });
       }
     }
     const id = v4_default();
@@ -115878,9 +115899,10 @@ router2.patch("/:id", authMiddleware, requireSelfOrAdmin, async (req, res) => {
             return res.status(409).json({ error: "No se puede quitar el rol de Administrador al Socio Administrador. Quite primero el rol de Socio Administrador." });
           }
           if (newAdmin) {
+            const maxAdminUsers = await getMaxAdminUsers();
             const currentAdmins = await db.all("SELECT id FROM users WHERE is_admin = 1 AND is_super_user = 0 AND id != ?", [id]);
-            if (currentAdmins.length >= 2) {
-              return res.status(409).json({ error: "M\xE1ximo 2 Usuario Administrador permitidos. Quite permisos a otro primero." });
+            if (currentAdmins.length >= maxAdminUsers) {
+              return res.status(409).json({ error: `M\xE1ximo ${maxAdminUsers} Usuario Administrador permitidos. Quite permisos a otro primero.` });
             }
           }
         }
@@ -115986,9 +116008,10 @@ router2.patch("/:id/role", authMiddleware, requireAdmin, async (req, res) => {
         return res.status(409).json({ error: "No se puede quitar el rol de Administrador al Socio Administrador. Quite primero el rol de Socio Administrador." });
       }
       if (isAdmin) {
+        const maxAdminUsers = await getMaxAdminUsers();
         const currentAdmins = await db.all("SELECT id FROM users WHERE is_admin = 1 AND is_super_user = 0 AND id != ?", [id]);
-        if (currentAdmins.length >= 2) {
-          return res.status(409).json({ error: "M\xE1ximo 2 Usuario Administrador permitidos. Quite permisos a otro primero." });
+        if (currentAdmins.length >= maxAdminUsers) {
+          return res.status(409).json({ error: `M\xE1ximo ${maxAdminUsers} Usuario Administrador permitidos. Quite permisos a otro primero.` });
         }
       }
       updates.push("is_admin = ?");
@@ -116228,7 +116251,7 @@ router4.post("/init", async (req, res) => {
       );
       await tx.run(
         conn,
-        `INSERT INTO system_status (id, status, activation_date, payment_plan, max_users, tickets) VALUES (1, 'active', ?, 'monthly', 50, 0)`,
+        `INSERT INTO system_status (id, status, activation_date, payment_plan, max_users, max_admin_users, tickets) VALUES (1, 'active', ?, 'monthly', 50, 3, 0)`,
         [now]
       );
       await tx.run(
@@ -116265,17 +116288,58 @@ router4.get("/status", authMiddleware, async (req, res) => {
 });
 router4.patch("/status", authMiddleware, requireSuperUser, async (req, res) => {
   try {
-    const { status } = req.body;
-    if (!status || !["active", "inactive"].includes(status)) {
-      return res.status(400).json({ error: 'Status must be "active" or "inactive"' });
+    const { status, activationDate, paymentPlan, maxUsers, tickets, maxAdminUsers } = req.body;
+    const updates = [];
+    const values = [];
+    if (status !== void 0) {
+      if (!["active", "inactive"].includes(status)) {
+        return res.status(400).json({ error: 'Status must be "active" or "inactive"' });
+      }
+      updates.push("status = ?");
+      values.push(status);
+      const now = (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "");
+      const action = status === "active" ? "activated" : "deactivated";
+      await db.run(
+        `INSERT INTO activation_history (id, action, date, by_user_id) VALUES (?, ?, ?, ?)`,
+        [v4_default(), action, now, req.user.id]
+      );
     }
-    const now = (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "").replace("T", " ").replace(/\.\d{3}Z$/, "");
-    const action = status === "active" ? "activated" : "deactivated";
-    await db.run("UPDATE system_status SET status = ? WHERE id = 1", [status]);
-    await db.run(
-      `INSERT INTO activation_history (id, action, date, by_user_id) VALUES (?, ?, ?, ?)`,
-      [v4_default(), action, now, req.user.id]
-    );
+    if (activationDate !== void 0) {
+      updates.push("activation_date = ?");
+      values.push(activationDate);
+    }
+    if (paymentPlan !== void 0) {
+      if (!["monthly", "annual"].includes(paymentPlan)) {
+        return res.status(400).json({ error: 'Payment plan must be "monthly" or "annual"' });
+      }
+      updates.push("payment_plan = ?");
+      values.push(paymentPlan);
+    }
+    if (maxUsers !== void 0) {
+      if (typeof maxUsers !== "number" || maxUsers < 1) {
+        return res.status(400).json({ error: "maxUsers must be a positive number" });
+      }
+      updates.push("max_users = ?");
+      values.push(maxUsers);
+    }
+    if (tickets !== void 0) {
+      if (typeof tickets !== "number" || tickets < 0) {
+        return res.status(400).json({ error: "tickets must be a non-negative number" });
+      }
+      updates.push("tickets = ?");
+      values.push(tickets);
+    }
+    if (maxAdminUsers !== void 0) {
+      if (typeof maxAdminUsers !== "number" || maxAdminUsers < 1) {
+        return res.status(400).json({ error: "maxAdminUsers must be a positive number" });
+      }
+      updates.push("max_admin_users = ?");
+      values.push(maxAdminUsers);
+    }
+    if (updates.length === 0) {
+      return res.status(400).json({ error: "No fields to update" });
+    }
+    await db.run(`UPDATE system_status SET ${updates.join(", ")} WHERE id = 1`, values);
     const row = await db.get("SELECT * FROM system_status LIMIT 1");
     return res.json(row);
   } catch (err) {
@@ -117743,7 +117807,7 @@ ARQUITECTURA DEL SISTEMA:
 - Puestos (CVE) tienen: id (CVE como SMPS01), label (nombre), work_area_id (\xE1rea), base_position (posici\xF3n base para pesos/plantilla)
 - Al crear usuarios, asignar custom_position_id deriva autom\xE1ticamente position y practiceArea
 - Ubicaciones (locations): ciudad, oficina, piso, escritorio \u2014 asignables a usuarios
-- Jerarqu\xEDa de roles: SuperUser > Socio Administrador (max 1) > Usuario Administrador (max 2) > Socio regular > dem\xE1s usuarios
+- Jerarqu\xEDa de roles: SuperUser > Socio Administrador (max 1) > Usuario Administrador (configurable, default 3) > Socio regular > dem\xE1s usuarios
 - Tipos de evaluaci\xF3n: self (autoevaluaci\xF3n) y supervisor (evaluaci\xF3n del evaluador)
 - Flujo: Autoevaluaci\xF3n \u2192 Evaluaci\xF3n de Supervisor(es) \u2192 Sesi\xF3n de Feedback \u2192 Plan de Acci\xF3n
 - "No Aplica" (NA) y "Sin Elementos" (NE) se excluyen de la calificaci\xF3n
@@ -117977,8 +118041,10 @@ function getTools(cfg) {
             if (currentMPs.length >= 1) return JSON.stringify({ error: `Solo puede haber 1 Socio Administrador. Actualmente es ${currentMPs[0].name}` });
           }
           if (isAdmin && !isMP) {
+            const maxAdmCfg = await db.get("SELECT max_admin_users FROM system_status WHERE id=1");
+            const maxAdm = maxAdmCfg?.max_admin_users || 3;
             const currentAdmins = await db.all("SELECT id FROM users WHERE is_admin = 1 AND is_super_user = 0");
-            if (currentAdmins.length >= 2) return JSON.stringify({ error: "M\xE1ximo 2 Usuario Administrador permitidos" });
+            if (currentAdmins.length >= maxAdm) return JSON.stringify({ error: `M\xE1ximo ${maxAdm} Usuario Administrador permitidos` });
           }
           const id = v4_default(), hp = await hashPassword(args.password), now = (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "");
           let derivedPosition = args.position;
@@ -118049,8 +118115,10 @@ function getTools(cfg) {
           if (args.is_admin !== void 0) {
             const newAdmin = args.is_admin === "true" || args.is_admin === "1";
             if (newAdmin && !user.is_managing_partner) {
+              const maxAdmCfg = await db.get("SELECT max_admin_users FROM system_status WHERE id=1");
+              const maxAdm = maxAdmCfg?.max_admin_users || 3;
               const currentAdmins = await db.all("SELECT id FROM users WHERE is_admin = 1 AND is_super_user = 0 AND id != ?", [args.id]);
-              if (currentAdmins.length >= 2) return JSON.stringify({ error: "M\xE1ximo 2 Usuario Administrador" });
+              if (currentAdmins.length >= maxAdm) return JSON.stringify({ error: `M\xE1ximo ${maxAdm} Usuario Administrador` });
             }
             if (!newAdmin && user.is_managing_partner) return JSON.stringify({ error: "No se puede quitar admin al Socio Administrador" });
             updates.push("is_admin=?");

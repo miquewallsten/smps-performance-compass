@@ -17,12 +17,13 @@ export default function AccessControl() {
   const { data: activationHistory = [] } = useActivationHistory();
   const { data: copilotConfig } = useCopilotConfig();
   const updateCopilotConfig = useUpdateCopilotConfig().mutate;
-  const status = systemStatus || { status: 'active' as const, activationDate: '', paymentPlan: 'monthly' as const, maxUsers: 50, tickets: 0 };
+  const status = systemStatus || { status: 'active' as const, activationDate: '', paymentPlan: 'monthly' as const, maxUsers: 50, maxAdminUsers: 3, tickets: 0 };
 
   const [activationDate, setActivationDate] = useState(status.activationDate || '');
   const [paymentPlan, setPaymentPlan] = useState<'monthly' | 'annual'>(status.paymentPlan || 'monthly');
   const [maxUsers, setMaxUsers] = useState(status.maxUsers || 50);
   const [tickets, setTickets] = useState(status.tickets || 0);
+  const [maxAdminUsers, setMaxAdminUsers] = useState((status as any).maxAdminUsers || 3);
 
   // AI Config state
   const [aiProvider, setAiProvider] = useState(copilotConfig?.apiProvider || 'ollama');
@@ -30,6 +31,12 @@ export default function AccessControl() {
   const [aiModel, setAiModel] = useState(copilotConfig?.model || 'qwen3.5:397b');
   const [showApiKey, setShowApiKey] = useState(false);
   const [aiBaseUrl, setAiBaseUrl] = useState(copilotConfig?.apiBaseUrl || '');
+
+  useEffect(() => {
+    if (systemStatus) {
+      setMaxAdminUsers((systemStatus as any).maxAdminUsers || 3);
+    }
+  }, [systemStatus]);
 
   useEffect(() => {
     if (copilotConfig) {
@@ -60,12 +67,12 @@ export default function AccessControl() {
   })();
 
   const handleSave = () => {
-    updateSystemStatus({ status: status.status, activationDate, paymentPlan, maxUsers, tickets });
+    updateSystemStatus({ status: status.status, activationDate, paymentPlan, maxUsers, maxAdminUsers, tickets });
     toast.success('Configuración guardada correctamente');
   };
 
   const toggleStatus = () => {
-    updateSystemStatus({ ...status, activationDate, paymentPlan, maxUsers, tickets, status: status.status === 'active' ? 'inactive' : 'active' });
+    updateSystemStatus({ ...status, activationDate, paymentPlan, maxUsers, maxAdminUsers, tickets, status: status.status === 'active' ? 'inactive' : 'active' });
   };
 
   const getExpirationDate = () => {
@@ -211,6 +218,37 @@ export default function AccessControl() {
             </select>
           </div>
         </div>
+      </div>
+
+
+      {/* Max Admin Users */}
+      <div className="smps-surface-elevated">
+        <div className="flex items-center gap-3 mb-4">
+          <Shield className="h-5 w-5 text-accent" />
+          <h3 className="font-display text-lg font-semibold">Usuarios Administrador</h3>
+        </div>
+        <div className="flex items-center gap-6">
+          <div className="flex-1">
+            <p className="text-sm text-muted-foreground mb-1">Admins activos (excl. SuperUser)</p>
+            <p className={`text-3xl font-bold font-display ${users.filter((u: any) => u.isAdmin && !u.isSuperUser && u.isActive).length > maxAdminUsers ? 'text-destructive' : 'text-foreground'}`}>
+              {users.filter((u: any) => u.isAdmin && !u.isSuperUser && u.isActive).length}
+            </p>
+          </div>
+          <div className="flex-1">
+            <label className="text-sm text-muted-foreground block mb-1">Límite máximo de admins</label>
+            <select value={maxAdminUsers} onChange={e => setMaxAdminUsers(Number(e.target.value))}
+              className="w-full px-4 py-2.5 rounded-lg border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-accent">
+              {[1, 2, 3, 4, 5].map(n => (
+                <option key={n} value={n}>{n} admins</option>
+              ))}
+            </select>
+          </div>
+        </div>
+        {users.filter((u: any) => u.isAdmin && !u.isSuperUser && u.isActive).length > maxAdminUsers && (
+          <div className="bg-destructive/5 border border-destructive/20 rounded-lg p-3 text-sm text-destructive mt-4">
+            ⚠️ Se ha excedido el límite de usuarios administrador.
+          </div>
+        )}
       </div>
 
       {/* Activation Date */}

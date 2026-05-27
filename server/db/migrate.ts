@@ -317,6 +317,7 @@ export async function migrate(): Promise<void> {
       activation_date VARCHAR(50) NOT NULL,
       payment_plan VARCHAR(50) NOT NULL DEFAULT 'monthly',
       max_users INT NOT NULL DEFAULT 50,
+      max_admin_users INT NOT NULL DEFAULT 3,
       tickets INT NOT NULL DEFAULT 0
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
 
@@ -613,6 +614,18 @@ export async function migrate(): Promise<void> {
   }
 
   // ─── Verify ──────────────────────────────────────────────────────────────────
+  // ─── Add max_admin_users column if missing ────────────────────────────────
+  try {
+    const colCheck = await getScalar<number>(
+      `SELECT COUNT(*) AS cnt FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'system_status' AND COLUMN_NAME = 'max_admin_users'`
+    );
+    if (colCheck === 0) {
+      await run(`ALTER TABLE system_status ADD COLUMN max_admin_users INT NOT NULL DEFAULT 3`);
+      console.log('  ✓ Added max_admin_users column to system_status');
+    }
+  } catch (e) {
+    console.log('  ⚠ Could not add max_admin_users column (may already exist):', (e as Error).message);
+  }
   const tableCount = await getScalar<number>(
     `SELECT COUNT(*) AS cnt FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = DATABASE()`
   );

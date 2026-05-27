@@ -7,6 +7,18 @@ import { requireAdmin, requireSelfOrAdmin } from '../middleware/rbac.js';
 
 const router = Router();
 
+
+// Get the configured max admin user limit from system_status (default 3)
+async function getMaxAdminUsers(): Promise<number> {
+  try {
+    const row = await db.get('SELECT max_admin_users FROM system_status WHERE id = 1') as Record<string, unknown> | undefined;
+    return (row?.max_admin_users as number) || 3;
+  } catch {
+    return 3; // fallback default
+  }
+}
+
+
 // Helper to strip sensitive fields from a user row
 function sanitizeUser(user: Record<string, unknown>) {
   const { password_hash, security_answer, ...safe } = user;
@@ -137,9 +149,10 @@ router.post('/', authMiddleware, requireAdmin, async (req: Request, res: Respons
     }
 
     if (finalIsAdmin && !isManagingPartner) {
+      const maxAdminUsers = await getMaxAdminUsers();
       const currentAdmins = await db.all('SELECT id FROM users WHERE is_admin = 1 AND is_super_user = 0');
-      if (currentAdmins.length >= 2) {
-        return res.status(409).json({ error: 'Máximo 2 Usuario Administrador permitidos. Quite permisos a otro primero.' });
+      if (currentAdmins.length >= maxAdminUsers) {
+        return res.status(409).json({ error: `Máximo ${maxAdminUsers} Usuario Administrador permitidos. Quite permisos a otro primero.` });
       }
     }
 
@@ -252,9 +265,10 @@ router.patch('/:id', authMiddleware, requireSelfOrAdmin, async (req: Request, re
             return res.status(409).json({ error: 'No se puede quitar el rol de Administrador al Socio Administrador. Quite primero el rol de Socio Administrador.' });
           }
           if (newAdmin) {
+            const maxAdminUsers = await getMaxAdminUsers();
             const currentAdmins = await db.all('SELECT id FROM users WHERE is_admin = 1 AND is_super_user = 0 AND id != ?', [id]);
-            if (currentAdmins.length >= 2) {
-              return res.status(409).json({ error: 'Máximo 2 Usuario Administrador permitidos. Quite permisos a otro primero.' });
+            if (currentAdmins.length >= maxAdminUsers) {
+              return res.status(409).json({ error: `Máximo ${maxAdminUsers} Usuario Administrador permitidos. Quite permisos a otro primero.` });
             }
           }
         }
@@ -382,9 +396,10 @@ router.patch('/:id/role', authMiddleware, requireAdmin, async (req: Request, res
         return res.status(409).json({ error: 'No se puede quitar el rol de Administrador al Socio Administrador. Quite primero el rol de Socio Administrador.' });
       }
       if (isAdmin) {
+        const maxAdminUsers = await getMaxAdminUsers();
         const currentAdmins = await db.all('SELECT id FROM users WHERE is_admin = 1 AND is_super_user = 0 AND id != ?', [id]);
-        if (currentAdmins.length >= 2) {
-          return res.status(409).json({ error: 'Máximo 2 Usuario Administrador permitidos. Quite permisos a otro primero.' });
+        if (currentAdmins.length >= maxAdminUsers) {
+          return res.status(409).json({ error: `Máximo ${maxAdminUsers} Usuario Administrador permitidos. Quite permisos a otro primero.` });
         }
       }
       updates.push('is_admin = ?'); values.push(isAdmin ? 1 : 0);

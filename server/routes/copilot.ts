@@ -151,7 +151,7 @@ ARQUITECTURA DEL SISTEMA:
 - Puestos (CVE) tienen: id (CVE como SMPS01), label (nombre), work_area_id (área), base_position (posición base para pesos/plantilla)
 - Al crear usuarios, asignar custom_position_id deriva automáticamente position y practiceArea
 - Ubicaciones (locations): ciudad, oficina, piso, escritorio — asignables a usuarios
-- Jerarquía de roles: SuperUser > Socio Administrador (max 1) > Usuario Administrador (max 2) > Socio regular > demás usuarios
+- Jerarquía de roles: SuperUser > Socio Administrador (max 1) > Usuario Administrador (configurable, default 3) > Socio regular > demás usuarios
 - Tipos de evaluación: self (autoevaluación) y supervisor (evaluación del evaluador)
 - Flujo: Autoevaluación → Evaluación de Supervisor(es) → Sesión de Feedback → Plan de Acción
 - "No Aplica" (NA) y "Sin Elementos" (NE) se excluyen de la calificación
@@ -377,7 +377,7 @@ function getTools(cfg: Record<string, unknown>): Tool[] {
           const isAdmin = typeof args.is_admin === 'string' ? (args.is_admin === 'true' || args.is_admin === '1') : !!args.is_admin;
           const isMP = typeof args.is_managing_partner === 'string' ? (args.is_managing_partner === 'true' || args.is_managing_partner === '1') : !!args.is_managing_partner;
           if (isMP) { const currentMPs = await db.all('SELECT id, name FROM users WHERE is_managing_partner = 1 AND is_super_user = 0'); if (currentMPs.length >= 1) return JSON.stringify({ error: `Solo puede haber 1 Socio Administrador. Actualmente es ${currentMPs[0].name}` }); }
-          if (isAdmin && !isMP) { const currentAdmins = await db.all('SELECT id FROM users WHERE is_admin = 1 AND is_super_user = 0'); if (currentAdmins.length >= 2) return JSON.stringify({ error: 'Máximo 2 Usuario Administrador permitidos' }); }
+          if (isAdmin && !isMP) { const maxAdmCfg = await db.get('SELECT max_admin_users FROM system_status WHERE id=1') as any; const maxAdm = maxAdmCfg?.max_admin_users || 3; const currentAdmins = await db.all('SELECT id FROM users WHERE is_admin = 1 AND is_super_user = 0'); if (currentAdmins.length >= maxAdm) return JSON.stringify({ error: `Máximo ${maxAdm} Usuario Administrador permitidos` }); }
           const id = uuidv4(), hp = await hashPassword(args.password as string), now = new Date().toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, '');
           // Derive practice_area and position from custom_position_id if provided
           let derivedPosition = args.position as string;
@@ -425,7 +425,7 @@ function getTools(cfg: Record<string, unknown>): Tool[] {
           }
           if (args.is_admin !== undefined) {
             const newAdmin = args.is_admin === 'true' || args.is_admin === '1';
-            if (newAdmin && !(user as any).is_managing_partner) { const currentAdmins = await db.all('SELECT id FROM users WHERE is_admin = 1 AND is_super_user = 0 AND id != ?', [args.id]); if (currentAdmins.length >= 2) return JSON.stringify({ error: 'Máximo 2 Usuario Administrador' }); }
+            if (newAdmin && !(user as any).is_managing_partner) { const maxAdmCfg = await db.get('SELECT max_admin_users FROM system_status WHERE id=1') as any; const maxAdm = maxAdmCfg?.max_admin_users || 3; const currentAdmins = await db.all('SELECT id FROM users WHERE is_admin = 1 AND is_super_user = 0 AND id != ?', [args.id]); if (currentAdmins.length >= maxAdm) return JSON.stringify({ error: `Máximo ${maxAdm} Usuario Administrador` }); }
             if (!newAdmin && (user as any).is_managing_partner) return JSON.stringify({ error: 'No se puede quitar admin al Socio Administrador' });
             updates.push('is_admin=?'); vals.push(newAdmin ? 1 : 0);
           }

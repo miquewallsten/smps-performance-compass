@@ -255,6 +255,7 @@ export const QUESTIONS_BY_POSITION: Record<Position, EvalQuestion[]> = {
   analista: analistaQuestions,
   asistente: asistente_questions,
   soporte: archivoSoporteQuestions,
+  archivista: archivoSoporteQuestions,
   dummy: socioQuestions,
 };
 

@@ -119,7 +119,7 @@ router.post('/init', async (req: Request, res: Response) => {
 
       // 6. Seed system status
       await tx.run(conn,
-        `INSERT INTO system_status (id, status, activation_date, payment_plan, max_users, tickets) VALUES (1, 'active', ?, 'monthly', 50, 0)`,
+        `INSERT INTO system_status (id, status, activation_date, payment_plan, max_users, max_admin_users, tickets) VALUES (1, 'active', ?, 'monthly', 50, 3, 0)`,
         [now]);
 
       // 7. Seed activation history
@@ -164,20 +164,76 @@ router.get('/status', authMiddleware, async (req: Request, res: Response) => {
 // ─── PATCH /api/system/status ────────────────────────────────────────────────
 router.patch('/status', authMiddleware, requireSuperUser, async (req: Request, res: Response) => {
   try {
-    const { status } = req.body as { status?: string };
+    const { status, activationDate, paymentPlan, maxUsers, tickets, maxAdminUsers } = req.body as {
+      status?: string;
+      activationDate?: string;
+      paymentPlan?: string;
+      maxUsers?: number;
+      tickets?: number;
+      maxAdminUsers?: number;
+    };
 
-    if (!status || !['active', 'inactive'].includes(status)) {
-      return res.status(400).json({ error: 'Status must be "active" or "inactive"' });
+    // Build dynamic SET clause
+    const updates: string[] = [];
+    const values: (string | number)[] = [];
+
+    if (status !== undefined) {
+      if (!['active', 'inactive'].includes(status)) {
+        return res.status(400).json({ error: 'Status must be "active" or "inactive"' });
+      }
+      updates.push('status = ?');
+      values.push(status);
+
+      // Log activation/deactivation
+      const now = new Date().toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, '');
+      const action = status === 'active' ? 'activated' : 'deactivated';
+      await db.run(
+        `INSERT INTO activation_history (id, action, date, by_user_id) VALUES (?, ?, ?, ?)`,
+        [uuidv4(), action, now, req.user!.id]);
     }
 
-    const now = new Date().toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, '').replace('T', ' ').replace(/\.\d{3}Z$/, '');
-    const action = status === 'active' ? 'activated' : 'deactivated';
+    if (activationDate !== undefined) {
+      updates.push('activation_date = ?');
+      values.push(activationDate);
+    }
 
-    await db.run('UPDATE system_status SET status = ? WHERE id = 1', [status]);
+    if (paymentPlan !== undefined) {
+      if (!['monthly', 'annual'].includes(paymentPlan)) {
+        return res.status(400).json({ error: 'Payment plan must be "monthly" or "annual"' });
+      }
+      updates.push('payment_plan = ?');
+      values.push(paymentPlan);
+    }
 
-    await db.run(
-      `INSERT INTO activation_history (id, action, date, by_user_id) VALUES (?, ?, ?, ?)`,
-      [uuidv4(), action, now, req.user!.id]);
+    if (maxUsers !== undefined) {
+      if (typeof maxUsers !== 'number' || maxUsers < 1) {
+        return res.status(400).json({ error: 'maxUsers must be a positive number' });
+      }
+      updates.push('max_users = ?');
+      values.push(maxUsers);
+    }
+
+    if (tickets !== undefined) {
+      if (typeof tickets !== 'number' || tickets < 0) {
+        return res.status(400).json({ error: 'tickets must be a non-negative number' });
+      }
+      updates.push('tickets = ?');
+      values.push(tickets);
+    }
+
+    if (maxAdminUsers !== undefined) {
+      if (typeof maxAdminUsers !== 'number' || maxAdminUsers < 1) {
+        return res.status(400).json({ error: 'maxAdminUsers must be a positive number' });
+      }
+      updates.push('max_admin_users = ?');
+      values.push(maxAdminUsers);
+    }
+
+    if (updates.length === 0) {
+      return res.status(400).json({ error: 'No fields to update' });
+    }
+
+    await db.run(`UPDATE system_status SET ${updates.join(', ')} WHERE id = 1`, values);
 
     const row = await db.get('SELECT * FROM system_status LIMIT 1');
     return res.json(row);
