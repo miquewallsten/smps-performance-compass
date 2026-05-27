@@ -27,6 +27,20 @@ SMPS Performance Compass is the internal performance evaluation platform for SMP
 - **Evaluation types**: self (autoevaluación), supervisor (evaluación del supervisor)
 - **Flow**: Self-evaluation → Supervisor evaluation(s) → Feedback session → Action plan
 
+### HOW WEIGHTS WORK (critical for CSV and percentage questions)
+- Raw weights are defined per question in the seed data (e.g., weight=7, weight=10)
+- The function `getQuestionsForUser()` RESCALES weights per section so they sum to the section's target percentage
+- Example: Competencias section has 7 questions with raw weights summing to 49. Section target is 40%. Each question's displayed weight = (raw_weight / 49) × 40 = e.g., 5.71%
+- This means: the same question can have DIFFERENT rescaled weights for different positions if they have different section weight targets
+- The CSV export uses getQuestionsForUser() to ensure weights match exactly what the UI shows
+- Rounding: Math.round(... * 100) / 100 gives 2 decimal places. Total per section may be off by ±0.01 due to rounding
+
+### SECTION WEIGHTS BY POSITION
+- Legal senior (socio, salary_partner, counsel, asociado_sr, asociado_mid): Técnico 60%, Competencias 20%, Blandas 20%
+- Legal junior (asociado_jr, pasante_carrera, pasante): Técnico 40%, Competencias 40%, Blandas 20%
+- Admin senior (director, gerente, coordinador, analista): Competencias 40%, Técnico 40%, Blandas 20%
+- Admin junior (asistente, soporte, archivista): Competencias 50%, Técnico 30%, Blandas 20%
+
 ## Periods
 - Each evaluation cycle is defined by a period config with start/end dates for each phase
 - Phases: self-evaluation window, supervisor evaluation window, feedback window
@@ -71,3 +85,14 @@ SMPS Performance Compass is the internal performance evaluation platform for SMP
 - Period dates must not overlap
 - Supervisor assignments require both users to be active
 - NA and NE scores are excluded from final calculations
+
+## FAQ — Common User Questions and Correct Answers
+
+### "Why do percentages in the CSV not sum to 100%?"
+The CSV now uses rescaled weights (same function as the UI). If you still see discrepancies, it's rounding: Math.round(... × 100) / 100 can leave ±0.01 per section. The UI shows the same values. Total per position = 100.00% ± 0.03% due to rounding across 3 sections.
+
+### "Why can't I have more than X admins?"
+The max admin count is configurable. Check the module_config or system_settings table. If no explicit limit is set, the system defaults to 3. To change it, use the system tools or update the configuration directly.
+
+### "Why does the same question have different weights for different positions?"
+Because weights are rescaled per section. A question in the Competencias section will have weight proportional to (raw_weight / section_sum) × section_target_percentage. Different positions have different section targets (e.g., 40% vs 50%), so the same question gets different rescaled weights.

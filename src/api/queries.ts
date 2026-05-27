@@ -302,7 +302,10 @@ export function useCopilotChat() {
 // ── Timeline ──
 export function useUserTimeline(userId: string, params?: Record<string, string>) {
   const queryString = params ? '?' + new URLSearchParams(params).toString() : '';
-  return useQuery({ queryKey: ['timeline', userId, params], queryFn: () => api.get<any[]>(`/api/users/${userId}/timeline${queryString}`) });
+  return useQuery({ queryKey: ['timeline', userId, params], queryFn: async () => {
+    const res = await api.get<{ events: any[]; total: number; hasMore: boolean }>(`/api/users/${userId}/timeline${queryString}`);
+    return res.events ?? [];
+  } });
 }
 
 export function useCreateTimelineEvent() {
