@@ -119301,28 +119301,47 @@ router16.post("/", async (req, res) => {
     }
     console.log("[Deploy] Webhook received, starting deployment...");
     res.json({ status: "deploy_started" });
-    try {
-      const appDir = process.env.DEPLOY_PATH || process.cwd();
-      console.log(`[Deploy] Working directory: ${appDir}`);
-      const { stdout, stderr } = await execAsync(`cd ${appDir} && git pull origin main 2>&1`);
-      console.log("[Deploy] Git pull:", stdout, stderr);
-      const { stdout: npmOut, stderr: npmErr } = await execAsync(`cd ${appDir} && npm install --omit=dev --ignore-scripts 2>&1`);
-      console.log("[Deploy] npm install:", npmOut, npmErr);
-      console.log("[Deploy] Deployment complete. Restart Passenger to pick up changes.");
-      try {
-        await execAsync(`cd ${appDir} && touch tmp/restart.txt 2>&1 || true`);
-        console.log("[Deploy] Passenger restart triggered");
-      } catch {
-        console.log("[Deploy] Could not trigger Passenger restart (may need manual restart)");
-      }
-    } catch (deployErr) {
-      console.error("[Deploy] Error:", deployErr);
-    }
+    deployAsync().catch((err) => console.error("[Deploy] Async error:", err));
   } catch (err) {
     console.error("Deploy webhook error:", err);
-    return res.status(500).json({ error: "Deploy webhook failed" });
+    if (!res.headersSent) {
+      return res.status(500).json({ error: "Deploy webhook failed" });
+    }
   }
 });
+async function deployAsync() {
+  const appDir = process.env.DEPLOY_PATH || process.cwd();
+  console.log(`[Deploy] Working directory: ${appDir}`);
+  try {
+    const env = {
+      ...process.env,
+      HOME: process.env.HOME || "/home/u906489923",
+      PATH: `${appDir}/node_modules/.bin:/opt/alt/alt-nodejs22/root/usr/bin:/usr/local/bin:/usr/bin:/bin`,
+      NODE_ENV: "production"
+    };
+    const { stdout: gitOut } = await execAsync(`cd ${appDir} && git pull origin main 2>&1`, { env });
+    console.log("[Deploy] Git pull:", gitOut);
+    if (gitOut.includes("Already up to date")) {
+      console.log("[Deploy] No changes detected, skipping restart");
+      return;
+    }
+    try {
+      const { stdout: npmOut } = await execAsync(`cd ${appDir} && npm install --omit=dev --ignore-scripts 2>&1`, { env, timeout: 6e4 });
+      console.log("[Deploy] npm install:", npmOut.slice(-200));
+    } catch (npmErr) {
+      console.log("[Deploy] npm install warning:", (npmErr.message || "").slice(-200));
+    }
+    try {
+      await execAsync(`mkdir -p ${appDir}/tmp && touch ${appDir}/tmp/restart.txt`, { env });
+      console.log("[Deploy] Passenger restart triggered");
+    } catch (restartErr) {
+      console.log("[Deploy] Could not trigger Passenger restart:", restartErr);
+    }
+    console.log("[Deploy] Deployment complete!");
+  } catch (deployErr) {
+    console.error("[Deploy] Error:", deployErr);
+  }
+}
 var deploy_default = router16;
 
 // server/routes/timeline.ts
