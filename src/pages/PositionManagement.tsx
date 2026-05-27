@@ -34,8 +34,8 @@ export default function PositionManagement() {
 
   const [showAddLocation, setShowAddLocation] = useState(false);
   const [editingLocation, setEditingLocation] = useState<string | null>(null);
-  const [newLocation, setNewLocation] = useState({ id: '', label: '', city: '', office: '', floor: '', desk: '', sortOrder: 0 });
-  const [editLocationData, setEditLocationData] = useState({ label: '', city: '', office: '', floor: '', desk: '', sortOrder: 0 });
+  const [newLocation, setNewLocation] = useState({ city: '', office: '', floor: '', desk: '' });
+  const [editLocationData, setEditLocationData] = useState({ label: '', city: '', office: '', floor: '', desk: '' });
 
   if (!currentUser || (!currentUser.isAdmin && !currentUser.isSuperUser)) {
     return <p className="text-center py-12 text-muted-foreground">Acceso restringido al administrador.</p>;
@@ -103,16 +103,24 @@ export default function PositionManagement() {
 
   // ─── Location handlers ───
   const handleCreateLocation = () => {
-    if (!newLocation.id.trim() || !newLocation.label.trim()) { toast.error('ID y nombre son obligatorios'); return; }
+    if (!newLocation.city.trim()) { toast.error('La ciudad es obligatoria'); return; }
+    const city = newLocation.city.trim();
+    const office = newLocation.office.trim();
+    const parts = [city];
+    if (office) parts.push(office);
+    if (newLocation.floor.trim()) parts.push('P' + newLocation.floor.trim());
+    if (newLocation.desk.trim()) parts.push(newLocation.desk.trim());
+    const label = parts.join(' ');
+    const id = city.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '_') + (office ? '-' + office.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '_') : '');
     createLocationMut.mutate(
-      { id: newLocation.id.trim().toLowerCase().replace(/\s+/g, '_'), label: newLocation.label.trim(), city: newLocation.city || undefined, office: newLocation.office || undefined, floor: newLocation.floor || undefined, desk: newLocation.desk || undefined, sortOrder: newLocation.sortOrder },
-      { onSuccess: () => { toast.success('Ubicación creada'); setShowAddLocation(false); setNewLocation({ id: '', label: '', city: '', office: '', floor: '', desk: '', sortOrder: 0 }); }, onError: (err: Error) => toast.error(err.message) }
+      { id, label, city: city, office: office || undefined, floor: newLocation.floor || undefined, desk: newLocation.desk || undefined },
+      { onSuccess: () => { toast.success('Ubicación creada'); setShowAddLocation(false); setNewLocation({ city: '', office: '', floor: '', desk: '' }); }, onError: (err: Error) => toast.error(err.message) }
     );
   };
 
   const handleUpdateLocation = (locationId: string) => {
     updateLocationMut.mutate(
-      { id: locationId, label: editLocationData.label.trim(), city: editLocationData.city || undefined, office: editLocationData.office || undefined, floor: editLocationData.floor || undefined, desk: editLocationData.desk || undefined, sortOrder: editLocationData.sortOrder },
+      { id: locationId, label: editLocationData.label.trim(), city: editLocationData.city || undefined, office: editLocationData.office || undefined, floor: editLocationData.floor || undefined, desk: editLocationData.desk || undefined },
       { onSuccess: () => { toast.success('Ubicación actualizada'); setEditingLocation(null); }, onError: (err: Error) => toast.error(err.message) }
     );
   };
@@ -392,7 +400,7 @@ export default function PositionManagement() {
                         <td className="py-2 px-3 text-muted-foreground">{loc.desk || '—'}</td>
                         <td className="py-2 px-3 text-right">
                           <div className="flex items-center justify-end gap-1">
-                            <button onClick={() => { setEditingLocation(loc.id); setEditLocationData({ label: loc.label, city: loc.city || '', office: loc.office || '', floor: loc.floor || '', desk: loc.desk || '', sortOrder: loc.sortOrder }); }} className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors" title="Editar ubicación">
+                            <button onClick={() => { setEditingLocation(loc.id); setEditLocationData({ label: loc.label, city: loc.city || '', office: loc.office || '', floor: loc.floor || '', desk: loc.desk || '' }); }} className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors" title="Editar ubicación">
                               <Pencil className="h-3.5 w-3.5" />
                             </button>
                             <button onClick={() => handleDeleteLocation(loc.id)} className="p-1 rounded hover:bg-destructive/10 text-destructive/70 hover:text-destructive transition-colors" title="Eliminar ubicación">
@@ -411,41 +419,31 @@ export default function PositionManagement() {
           {/* Add Location Modal */}
           {showAddLocation && (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/20 backdrop-blur-sm" onClick={() => setShowAddLocation(false)}>
-              <div className="smps-surface-elevated w-full max-w-md shadow-xl" onClick={e => e.stopPropagation()}>
+              <div className="smps-surface-elevated w-full max-w-sm shadow-xl" onClick={e => e.stopPropagation()}>
                 <h3 className="smps-section-title font-display text-base font-semibold mb-3">Nueva Ubicación</h3>
                 <div className="space-y-3">
                   <div>
-                    <label className="text-sm font-medium text-foreground">ID (slug)</label>
-                    <input type="text" value={newLocation.id} onChange={e => setNewLocation(p => ({ ...p, id: e.target.value }))} placeholder="ej. cdmx-oficentro" className="w-full px-3 py-2 rounded-lg border border-input bg-background text-foreground text-sm" />
+                    <label className="text-sm font-medium text-foreground">Ciudad</label>
+                    <input type="text" value={newLocation.city} onChange={e => setNewLocation(p => ({ ...p, city: e.target.value }))} placeholder="ej. CDMX" className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" autoFocus />
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-foreground">Nombre / Etiqueta</label>
-                    <input type="text" value={newLocation.label} onChange={e => setNewLocation(p => ({ ...p, label: e.target.value }))} placeholder="ej. CDMX Oficentro P3 A12" className="w-full px-3 py-2 rounded-lg border border-input bg-background text-foreground text-sm" />
+                    <label className="text-sm font-medium text-foreground">Oficina <span className="text-muted-foreground font-normal">(opcional)</span></label>
+                    <input type="text" value={newLocation.office} onChange={e => setNewLocation(p => ({ ...p, office: e.target.value }))} placeholder="ej. Oficentro" className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" />
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="text-sm font-medium text-foreground">Ciudad</label>
-                      <input type="text" value={newLocation.city} onChange={e => setNewLocation(p => ({ ...p, city: e.target.value }))} placeholder="CDMX" className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" />
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-foreground">Oficina</label>
-                      <input type="text" value={newLocation.office} onChange={e => setNewLocation(p => ({ ...p, office: e.target.value }))} placeholder="Oficentro" className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="text-sm font-medium text-foreground">Piso</label>
+                      <label className="text-sm font-medium text-foreground">Piso <span className="text-muted-foreground font-normal">(opcional)</span></label>
                       <input type="text" value={newLocation.floor} onChange={e => setNewLocation(p => ({ ...p, floor: e.target.value }))} placeholder="3" className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" />
                     </div>
                     <div>
-                      <label className="text-sm font-medium text-foreground">Escritorio</label>
+                      <label className="text-sm font-medium text-foreground">Escritorio <span className="text-muted-foreground font-normal">(opcional)</span></label>
                       <input type="text" value={newLocation.desk} onChange={e => setNewLocation(p => ({ ...p, desk: e.target.value }))} placeholder="A12" className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" />
                     </div>
                   </div>
                 </div>
                 <div className="flex gap-3 mt-5">
-                  <button onClick={() => { setShowAddLocation(false); setNewLocation({ id: '', label: '', city: '', office: '', floor: '', desk: '', sortOrder: 0 }); }} className="flex-1 py-2 rounded-lg border text-sm font-medium hover:bg-muted transition-colors">Cancelar</button>
-                  <button onClick={handleCreateLocation} disabled={!newLocation.id.trim() || !newLocation.label.trim()} className="flex-1 py-2 rounded-lg bg-accent text-accent-foreground text-sm font-medium disabled:opacity-40 hover:opacity-90 transition-opacity">Crear Ubicación</button>
+                  <button onClick={() => { setShowAddLocation(false); setNewLocation({ city: '', office: '', floor: '', desk: '' }); }} className="flex-1 py-2 rounded-lg border text-sm font-medium hover:bg-muted transition-colors">Cancelar</button>
+                  <button onClick={handleCreateLocation} disabled={!newLocation.city.trim()} className="flex-1 py-2 rounded-lg bg-accent text-accent-foreground text-sm font-medium disabled:opacity-40 hover:opacity-90 transition-opacity">Crear Ubicación</button>
                 </div>
               </div>
             </div>
