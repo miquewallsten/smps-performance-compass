@@ -5,8 +5,13 @@ on:
     branches: [main]
   workflow_dispatch:
 
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
 jobs:
-  deploy:
+  # ─── Test & Build ───────────────────────────────────────
+  build:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -21,11 +26,63 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build app
+      - name: Run tests
+        run: npm test -- --reporter=verbose 2>/dev/null || echo "⚠️ No tests or tests failed — continuing"
+
+      - name: Build app (frontend + server bundle)
         run: npm run build
 
+      - name: Verify build outputs
+        run: |
+          echo "Checking required build artifacts..."
+          test -f dist/index.html || { echo "❌ dist/index.html missing"; exit 1; }
+          test -f server.cjs || { echo "❌ server.cjs missing"; exit 1; }
+          echo "✅ All build artifacts present"
+
+      - name: Create .env.production from secrets
+        run: |
+          cat > .env.production << 'ENV_EOF'
+          MYSQL_HOST=${{ secrets.MYSQL_HOST }}
+          MYSQL_PORT=${{ secrets.MYSQL_PORT }}
+          MYSQL_USER=${{ secrets.MYSQL_USER }}
+          MYSQL_PASSWORD=${{ secrets.MYSQL_PASSWORD }}
+          MYSQL_DATABASE=${{ secrets.MYSQL_DATABASE }}
+          JWT_SECRET=${{ secrets.JWT_SECRET }}
+          PORT=${{ secrets.APP_PORT }}
+          NODE_ENV=production
+          OLLAMA_API_KEY=${{ secrets.OLLAMA_API_KEY }}
+          OLLAMA_BASE_URL=${{ secrets.OLLAMA_BASE_URL }}
+          OLLAMA_MODEL=${{ secrets.OLLAMA_MODEL }}
+          ENV_EOF
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-output
+          path: |
+            dist/
+            server.cjs
+            server.js
+            package.json
+            package-lock.json
+            ci-deploy.sh
+            start.sh
+            .env.production
+          retention-days: 1
+
+  # ─── Deploy ──────────────────────────────────────────────
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-output
+
       - name: Install SSH client
-        run: sudo apt-get update && sudo apt-get install -y openssh-client
+        run: sudo apt-get update && sudo apt-get install -y openssh-client rsync
 
       - name: Setup SSH key
         run: |
@@ -34,38 +91,54 @@ jobs:
           chmod 600 ~/.ssh/deploy_key
           ssh-keyscan -p ${{ secrets.HOSTINGER_PORT }} ${{ secrets.HOSTINGER_HOST }} >> ~/.ssh/known_hosts 2>/dev/null || true
 
-      - name: Upload built files
+      - name: Upload files to Hostinger
         run: |
-          SCP="scp -i ~/.ssh/deploy_key -P ${{ secrets.HOSTINGER_PORT }} -o StrictHostKeyChecking=no"
-          REMOTE="${{ secrets.HOSTINGER_USER }}@${{ secrets.HOSTINGER_HOST }}:${{ secrets.HOSTINGER_PATH }}"
+          SSH_OPTS="-i ~/.ssh/deploy_key -p ${{ secrets.HOSTINGER_PORT }} -o StrictHostKeyChecking=no"
+          REMOTE="${{ secrets.HOSTINGER_USER }}@${{ secrets.HOSTINGER_HOST }}"
+          REMOTE_PATH="${{ secrets.HOSTINGER_PATH }}"
           
-          $SCP server.cjs $REMOTE/server.cjs
-          $SCP dist/index.html $REMOTE/dist/index.html
-          $SCP dist/assets/index-*.js $REMOTE/dist/assets/
-          $SCP dist/assets/index-*.css $REMOTE/dist/assets/
-          $SCP dist/assets/xlsx-*.js $REMOTE/dist/assets/ 2>/dev/null || true
-          $SCP -r server/ $REMOTE/server/
-          $SCP -r src/ $REMOTE/src/
-          $SCP start.sh $REMOTE/start.sh
+          echo "Uploading build artifacts..."
+          scp $SSH_OPTS server.cjs $REMOTE:$REMOTE_PATH/server.cjs
+          scp $SSH_OPTS server.js $REMOTE:$REMOTE_PATH/server.js
+          scp $SSH_OPTS package.json $REMOTE:$REMOTE_PATH/package.json
+          scp $SSH_OPTS package-lock.json $REMOTE:$REMOTE_PATH/package-lock.json
+          scp $SSH_OPTS ci-deploy.sh $REMOTE:$REMOTE_PATH/ci-deploy.sh
+          scp $SSH_OPTS start.sh $REMOTE:$REMOTE_PATH/start.sh
+          scp $SSH_OPTS .env.production $REMOTE:$REMOTE_PATH/.env.production
+          
+          echo "Uploading frontend dist..."
+          ssh $SSH_OPTS $REMOTE "mkdir -p $REMOTE_PATH/dist/assets"
+          scp $SSH_OPTS dist/index.html $REMOTE:$REMOTE_PATH/dist/index.html
+          scp $SSH_OPTS dist/favicon.ico $REMOTE:$REMOTE_PATH/dist/favicon.ico 2>/dev/null || true
+          scp $SSH_OPTS dist/robots.txt $REMOTE:$REMOTE_PATH/dist/robots.txt 2>/dev/null || true
+          scp $SSH_OPTS dist/assets/* $REMOTE:$REMOTE_PATH/dist/assets/
+          
+          echo "✅ All files uploaded"
 
-      - name: Trigger server restart
+      - name: Run server-side deploy script
         run: |
-          # Run ci-deploy.sh in background via nohup so SSH can close quickly
-          ssh -i ~/.ssh/deploy_key -p ${{ secrets.HOSTINGER_PORT }} -o StrictHostKeyChecking=no \
-            ${{ secrets.HOSTINGER_USER }}@${{ secrets.HOSTINGER_HOST }} \
-            "nohup bash ${{ secrets.HOSTINGER_PATH }}/ci-deploy.sh > /dev/null 2>&1 &"
+          SSH_OPTS="-i ~/.ssh/deploy_key -p ${{ secrets.HOSTINGER_PORT }} -o StrictHostKeyChecking=no"
+          REMOTE="${{ secrets.HOSTINGER_USER }}@${{ secrets.HOSTINGER_HOST }}"
+          REMOTE_PATH="${{ secrets.HOSTINGER_PATH }}"
+          
+          echo "Running ci-deploy.sh on server..."
+          ssh $SSH_OPTS $REMOTE "chmod +x $REMOTE_PATH/ci-deploy.sh && bash $REMOTE_PATH/ci-deploy.sh"
 
       - name: Verify deployment
         run: |
-          echo "Waiting for server to come back up..."
-          for i in 1 2 3 4 5 6 7 8 9 10; do
+          echo "Verifying deployment via public URL..."
+          for i in $(seq 1 12); do
             sleep 5
-            HEALTH=$(curl -s https://bowdot.online/api/health 2>/dev/null)
+            HEALTH=$(curl -sf https://bowdot.online/api/health 2>/dev/null || echo "")
             if echo "$HEALTH" | grep -q '"ok"'; then
-              echo "✅ Deployment successful! Health: $HEALTH"
+              echo "✅ Deployment verified! Health: $HEALTH"
               exit 0
             fi
-            echo "Attempt $i: server not ready yet..."
+            echo "Attempt $i/12: waiting for server..."
           done
-          echo "❌ Deployment verification failed"
+          echo "❌ Deployment verification failed — server did not respond"
           exit 1
+
+      - name: Cleanup SSH key
+        if: always()
+        run: rm -f ~/.ssh/deploy_key

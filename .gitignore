@@ -11,7 +11,7 @@ dist-ssr/
 .env
 .env.local
 .env.*.local
-# NOTE: .env.production IS tracked since Hostinger needs it
+# Production env — generated from GitHub Secrets during CI/CD
 
 # Database files
 *.db
@@ -56,3 +56,4 @@ server/dist-server/
 # Lovable
 .lovable/
 .gstack/
+.env.production
