@@ -119845,6 +119845,7 @@ async function deployAsync() {
       PATH: `${appDir}/node_modules/.bin:/opt/alt/alt-nodejs22/root/usr/bin:/usr/local/bin:/usr/bin:/bin`,
       NODE_ENV: "production"
     };
+    await execAsync(`cd ${appDir} && git checkout -- . 2>&1`, { env });
     const { stdout: gitOut } = await execAsync(`cd ${appDir} && git pull origin main 2>&1`, { env });
     console.log("[Deploy] Git pull:", gitOut);
     if (gitOut.includes("Already up to date")) {
