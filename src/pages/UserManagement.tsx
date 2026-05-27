@@ -1,8 +1,8 @@
 import { useState, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useUsers, useEvaluations, useUpdateUser, useResetUserPassword, useCreateUser, useDeleteUser, useSystemStatus, useUpdateUserRole, usePositions } from '@/api/queries';
+import { useUsers, useEvaluations, useUpdateUser, useResetUserPassword, useCreateUser, useDeleteUser, useSystemStatus, useUpdateUserRole, usePositions, useCreatePosition, useDeletePosition } from '@/api/queries';
 import { POSITION_LABELS, PERIODS, Position, LEGAL_HIERARCHY, ADMIN_HIERARCHY, PracticeArea, PRACTICE_AREA_LABELS } from '@/types';
-import { Eye, Key, UserCheck, UserX, Search, Plus, Trash2, Star, Shield } from 'lucide-react';
+import { Eye, Key, UserCheck, UserX, Search, Plus, Trash2, Star, Shield, PlusCircle, Pencil } from 'lucide-react';
 import EvaluationViewer from '@/components/EvaluationViewer';
 import { toast } from 'sonner';
 import { POSITION_CATALOG, resolvePositionLabel } from '@/data/positionCatalog';
@@ -18,6 +18,10 @@ export default function UserManagement() {
   const updateUserRoleMut = useUpdateUserRole();
   const { data: systemStatus } = useSystemStatus();
   const { data: customPositions = [] } = usePositions();
+  const createPositionMut = useCreatePosition();
+  const deletePositionMut = useDeletePosition();
+  const [showPositionManager, setShowPositionManager] = useState(false);
+  const [newPosition, setNewPosition] = useState({ id: '', label: '', level: 'administrativo' as 'legal' | 'administrativo', practiceArea: '' as string, basePosition: 'asistente' as Position });
 
   const [search, setSearch] = useState('');
   const [showPasswordModal, setShowPasswordModal] = useState<string | null>(null);
@@ -107,11 +111,6 @@ export default function UserManagement() {
   const handleToggleAdmin = useCallback((userId: string, makeAdmin: boolean) => {
     const user = users.find(u => u.id === userId);
     if (!user) return;
-    // Managing Partner must stay admin
-    if (user.isManagingPartner && !makeAdmin) {
-      toast.error('No se puede quitar el rol de Administrador al Socio Administrador.');
-      return;
-    }
     if (makeAdmin) {
       const adminCount = users.filter(u => u.isAdmin && !u.isSuperUser).length;
       if (adminCount >= 2) {
@@ -129,23 +128,19 @@ export default function UserManagement() {
     const user = users.find(u => u.id === userId);
     if (!user) return;
     if (makeMP) {
-      const currentMP = users.find(u => u.isManagingPartner && !u.isSuperUser);
-      if (currentMP && currentMP.id !== userId) {
-        toast.error(`Solo puede haber un Socio Administrador. Actualmente es ${currentMP.name}.`);
+      // Only socios can be Socio Administrador
+      if (user.position !== 'socio') {
+        toast.error('Solo los Socios pueden ser Socio Administrador.');
         return;
       }
-      // If promoting to Socio Administrador, they also become Admin — check max 2 admins
-      if (!user.isAdmin) {
-        const adminCount = users.filter(u => u.isAdmin && !u.isSuperUser).length;
-        if (adminCount >= 2) {
-          toast.error('Máximo 2 Administradores permitidos. Quite permisos a otro primero.');
-          return;
-        }
-      }
+    } else {
+      // Can't remove MP directly — must reassign
+      toast.info('Para quitar el rol de Socio Administrador, asígnelo a otro Socio.');
+      return;
     }
     updateUserRoleMut.mutate(
-      { id: userId, isManagingPartner: makeMP, ...(makeMP ? { isAdmin: true } : {}) },
-      { onSuccess: () => toast.success(makeMP ? `${user.name} es ahora Socio Administrador` : `${user.name} ya no es Socio Administrador`), onError: (err: Error) => toast.error(err.message || 'Error al actualizar rol') }
+      { id: userId, isManagingPartner: true },
+      { onSuccess: () => toast.success(`${user.name} es ahora Socio Administrador`), onError: (err: Error) => toast.error(err.message || 'Error al actualizar rol') }
     );
   }, [users, updateUserRoleMut]);
 
@@ -162,6 +157,24 @@ export default function UserManagement() {
       { onSuccess: () => toast.success(makeSU ? `${user.name} es ahora SuperUser` : `${user.name} ya no es SuperUser`), onError: (err: Error) => toast.error(err.message || 'Error al actualizar rol') }
     );
   }, [users, updateUserRoleMut]);
+
+  const handleAddPosition = useCallback(() => {
+    if (!newPosition.id.trim() || !newPosition.label.trim()) {
+      toast.error('Código y nombre del puesto son obligatorios');
+      return;
+    }
+    createPositionMut.mutate(
+      { id: newPosition.id.trim().toUpperCase(), label: newPosition.label.trim(), level: newPosition.level, practiceArea: newPosition.level === 'legal' ? (newPosition.practiceArea || 'general') : undefined, basePosition: newPosition.basePosition },
+      { onSuccess: () => { toast.success('Puesto creado exitosamente'); setNewPosition({ id: '', label: '', level: 'administrativo', practiceArea: '', basePosition: 'asistente' }); }, onError: (err: Error) => toast.error(err.message || 'Error al crear puesto') }
+    );
+  }, [newPosition, createPositionMut]);
+
+  const handleDeletePosition = useCallback((id: string) => {
+    deletePositionMut.mutate(id, {
+      onSuccess: () => toast.success('Puesto eliminado'),
+      onError: (err: Error) => toast.error(err.message || 'Error al eliminar puesto')
+    });
+  }, [deletePositionMut]);
 
   const handleAddUser = useCallback(() => {
     if (!newUser.name.trim() || !newUser.email.trim()) {
@@ -266,13 +279,13 @@ export default function UserManagement() {
                     </td>
                     <td className="py-3 px-4 text-right">
                       <div className="flex items-center justify-end gap-1">
-                        {/* Admin (Shield) toggle — SuperUser, Socio Adm., or Admin can modify */}
-                        {(isSuperUser || currentUser.isManagingPartner || (currentUser.isAdmin && !currentUser.isManagingPartner)) && !user.isSuperUser && user.id !== currentUser.id && (
+                        {/* Admin (Shield) toggle — only SuperUser can assign/remove Admin */}
+                        {isSuperUser && !user.isSuperUser && user.id !== currentUser.id && (
                           <button
-                            disabled={!user.isAdmin && !user.isManagingPartner && users.filter(u => u.isAdmin && !u.isSuperUser).length >= 2}
+                            disabled={!user.isAdmin && users.filter(u => u.isAdmin && !u.isSuperUser).length >= 2}
                             onClick={() => handleToggleAdmin(user.id, !user.isAdmin)}
                             className={`p-1.5 rounded-lg transition-colors disabled:opacity-30 ${user.isAdmin ? 'bg-yellow-400/20 text-yellow-600' : 'hover:bg-muted text-muted-foreground'}`}
-                            title={user.isManagingPartner ? 'Socio Adm. (siempre Admin)' : user.isAdmin ? 'Administrador (clic para quitar)' : 'Asignar como Administrador'}
+                            title={user.isAdmin ? 'Administrador (clic para quitar)' : 'Asignar como Administrador'}
                           >
                             <Shield className={`h-4 w-4 ${user.isAdmin ? 'fill-current' : ''}`} />
                           </button>
@@ -293,14 +306,14 @@ export default function UserManagement() {
                             <Shield className={`h-4 w-4 ${user.isManagingPartner ? 'text-accent fill-current' : 'text-accent'}`} />
                           </span>
                         )}
-                        {/* Managing Partner (Star) toggle — SuperUser and Managing Partner can assign */}
-                        {(isSuperUser || currentUser.isManagingPartner) && user.id !== currentUser.id && (
+                        {/* Managing Partner (Star) toggle — only SuperUser, only on socios */}
+                        {isSuperUser && user.position === 'socio' && !user.isSuperUser && user.id !== currentUser.id && !user.isManagingPartner && (
                           <button
-                            onClick={() => handleToggleManagingPartner(user.id, !user.isManagingPartner)}
-                            className={`p-1.5 rounded-lg transition-colors ${user.isManagingPartner ? 'bg-accent/10 text-accent' : 'hover:bg-muted text-muted-foreground'}`}
-                            title={user.isManagingPartner ? 'Socio Administrador (clic para quitar)' : 'Asignar como Socio Administrador'}
+                            onClick={() => handleToggleManagingPartner(user.id, true)}
+                            className="p-1.5 rounded-lg transition-colors hover:bg-muted text-muted-foreground"
+                            title="Asignar como Socio Administrador"
                           >
-                            <Star className={`h-4 w-4 ${user.isManagingPartner ? 'fill-current' : ''}`} />
+                            <Star className="h-4 w-4" />
                           </button>
                         )}
                         {/* Show Star badge for non-SuperUser viewers */}
@@ -424,6 +437,101 @@ export default function UserManagement() {
               </div>
             )}
             <button onClick={() => setSelectedUser(null)} className="mt-4 w-full py-2 rounded-lg border text-sm font-medium hover:bg-muted transition-colors">Cerrar</button>
+          </div>
+        </div>
+      )}
+
+      {/* Position Manager */}
+      {showPositionManager && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/20 backdrop-blur-sm" onClick={() => setShowPositionManager(false)}>
+          <div className="smps-surface-elevated w-full max-w-lg shadow-xl max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <h3 className="smps-section-title font-display text-base font-semibold mb-3">Gestión de Puestos</h3>
+            <p className="text-xs text-muted-foreground mb-4">Crea nuevos puestos o modifica los existentes. Los puestos base (SMPS01-SMPS29) no se pueden eliminar.</p>
+            
+            <div className="space-y-3 mb-4">
+              <h4 className="text-sm font-medium text-foreground">Nuevo Puesto</h4>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-xs text-muted-foreground">Código Único</label>
+                  <input type="text" value={newPosition.id} onChange={e => setNewPosition(prev => ({ ...prev, id: e.target.value.toUpperCase() }))} placeholder="Ej. SMPS30" className="w-full px-2 py-1.5 rounded border border-input bg-background text-sm" />
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground">Nombre del Puesto</label>
+                  <input type="text" value={newPosition.label} onChange={e => setNewPosition(prev => ({ ...prev, label: e.target.value }))} placeholder="Ej. Asistente de Dirección" className="w-full px-2 py-1.5 rounded border border-input bg-background text-sm" />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-xs text-muted-foreground">Nivel</label>
+                  <select value={newPosition.level} onChange={e => setNewPosition(prev => ({ ...prev, level: e.target.value as 'legal' | 'administrativo', practiceArea: '', basePosition: e.target.value === 'legal' ? 'asociado_jr' : 'asistente' }))} className="w-full px-2 py-1.5 rounded border border-input bg-background text-sm">
+                    <option value="legal">Legal</option>
+                    <option value="administrativo">Administrativo</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground">Puesto Base</label>
+                  <select value={newPosition.basePosition} onChange={e => setNewPosition(prev => ({ ...prev, basePosition: e.target.value as Position }))} className="w-full px-2 py-1.5 rounded border border-input bg-background text-sm">
+                    {newPosition.level === 'legal' ? (
+                      <>
+                        <option value="socio">Socio</option>
+                        <option value="salary_partner">Salary Partner</option>
+                        <option value="counsel">Counsel</option>
+                        <option value="asociado_sr">Asociado Sr</option>
+                        <option value="asociado_mid">Asociado Mid</option>
+                        <option value="asociado_jr">Asociado Jr</option>
+                        <option value="pasante_carrera">Pasante con Carrera</option>
+                        <option value="pasante_corporativo">Pasante Corporativo</option>
+                      </>
+                    ) : (
+                      <>
+                        <option value="director">Director</option>
+                        <option value="gerente">Gerente</option>
+                        <option value="coordinador">Coordinador</option>
+                        <option value="analista">Analista</option>
+                        <option value="asistente">Asistente</option>
+                        <option value="archivo_soporte">Archivo y Soporte</option>
+                      </>
+                    )}
+                  </select>
+                </div>
+              </div>
+              {newPosition.level === 'legal' && (
+                <div>
+                  <label className="text-xs text-muted-foreground">Área de Práctica</label>
+                  <select value={newPosition.practiceArea} onChange={e => setNewPosition(prev => ({ ...prev, practiceArea: e.target.value }))} className="w-full px-2 py-1.5 rounded border border-input bg-background text-sm">
+                    <option value="corporativo">Corporativo</option>
+                    <option value="consultoria_fiscal">Consultoría Fiscal</option>
+                    <option value="litigio_fiscal">Litigio Fiscal</option>
+                    <option value="general">General</option>
+                  </select>
+                </div>
+              )}
+              <button onClick={handleAddPosition} disabled={!newPosition.id.trim() || !newPosition.label.trim()} className="w-full py-2 rounded-lg bg-accent text-accent-foreground text-sm font-medium disabled:opacity-40 hover:opacity-90 transition-opacity flex items-center justify-center gap-2">
+                <PlusCircle className="h-4 w-4" /> Crear Puesto
+              </button>
+            </div>
+
+            <div className="border-t pt-3">
+              <h4 className="text-sm font-medium text-foreground mb-2">Puestos Personalizados</h4>
+              {customPositions.length === 0 ? (
+                <p className="text-xs text-muted-foreground py-2">No hay puestos personalizados. Solo se muestran los del catálogo base.</p>
+              ) : (
+                <div className="space-y-1 max-h-48 overflow-y-auto">
+                  {customPositions.map(pos => (
+                    <div key={pos.id} className="flex items-center justify-between py-1.5 px-2 rounded hover:bg-muted/50 text-sm">
+                      <span><span className="font-mono text-xs text-muted-foreground">{pos.id}</span> · {pos.label}</span>
+                      <button onClick={() => handleDeletePosition(pos.id)} className="p-1 rounded hover:bg-destructive/10 text-destructive/70 hover:text-destructive transition-colors" title="Eliminar puesto">
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="flex gap-3 mt-4">
+              <button onClick={() => setShowPositionManager(false)} className="flex-1 py-2 rounded-lg border text-sm font-medium hover:bg-muted transition-colors">Cerrar</button>
+            </div>
           </div>
         </div>
       )}

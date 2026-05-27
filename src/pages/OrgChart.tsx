@@ -15,7 +15,8 @@ export default function OrgChart() {
   if (!currentUser) return null;
   const isAdmin = currentUser.isAdmin;
   const isSocio = currentUser.position === 'socio';
-  if (!isAdmin && !isSocio && !currentUser.isSuperUser) return <p className="text-center py-12 text-muted-foreground">Acceso restringido.</p>;
+  const isManagingPartner = !!currentUser.isManagingPartner;
+  if (!isAdmin && !isSocio && !currentUser.isSuperUser && !isManagingPartner) return <p className="text-center py-12 text-muted-foreground">Acceso restringido.</p>;
 
   const periodAssignments = assignments.filter(a => a.period === CURRENT_PERIOD);
   const activeUsers = users.filter(u => u.isActive && !u.isSuperUser).sort((a, b) => a.name.localeCompare(b.name, 'es'));

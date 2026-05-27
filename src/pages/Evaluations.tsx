@@ -45,8 +45,8 @@ export default function Evaluations() {
   const isAdmin = currentUser.isAdmin;
   const isSocio = currentUser.position === 'socio';
   const isSuperUser = currentUser.isSuperUser;
-  const isAdminOrSocio = isAdmin || isSocio;
-  const canViewAllDetails = isAdmin || isSocio || isSuperUser;
+  const isAdminOrSocio = isAdmin || isSocio || !!currentUser.isManagingPartner;
+  const canViewAllDetails = isAdmin || isSocio || isSuperUser || !!currentUser.isManagingPartner;
   const isSupervisor = (employeeId: string) => assignments.some(a => a.supervisorId === currentUser.id && a.employeeId === employeeId);
 
   const myAssignments = assignments.filter(a => a.supervisorId === currentUser.id && a.period === CURRENT_PERIOD);

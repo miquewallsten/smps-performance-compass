@@ -45,7 +45,7 @@ export default function Vacations() {
 
   if (!currentUser) return null;
 
-  const isAdmin = currentUser.isAdmin || currentUser.isSuperUser;
+  const isAdmin = currentUser.isAdmin || currentUser.isSuperUser || !!currentUser.isManagingPartner;
   const isSocio = currentUser.position === 'socio';
   const canApprove = isAdmin || isSocio;
 

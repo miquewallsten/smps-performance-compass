@@ -54,7 +54,9 @@ export default function Layout() {
   const isAdmin = currentUser.isAdmin;
   const isSuperUser = currentUser.isSuperUser;
   const isSocio = currentUser.position === 'socio';
+  const isManagingPartner = !!currentUser.isManagingPartner;
   const isAdminOrSuper = isAdmin || isSuperUser;
+  const canViewAll = isAdmin || isSuperUser || isManagingPartner;
 
   const hasTeam = assignments.some(a => a.supervisorId === currentUser.id && a.period === CURRENT_PERIOD);
   const myLevel = POSITION_LEVELS[currentUser.position];
@@ -78,7 +80,7 @@ export default function Layout() {
       if (a.readBy.includes(currentUser.id)) return false;
       if (a.audience === 'all') return true;
       if (a.audience === myLevel) return true;
-      if (isAdminOrSuper || isSocio) return true;
+      if (isAdminOrSuper || isManagingPartner || isSocio) return true;
       return false;
     }).length;
   })();
@@ -88,7 +90,7 @@ export default function Layout() {
     const myEvaluados = assignments.filter(a => a.supervisorId === currentUser.id && a.period === CURRENT_PERIOD).map(a => a.employeeId);
     return vacationRequests.filter(r => {
       if (r.status !== 'pending') return false;
-      if (isAdmin || isSuperUser) return true;
+      if (isAdmin || isSuperUser || isManagingPartner) return true;
       return myEvaluados.includes(r.userId);
     }).length;
   })();
@@ -102,21 +104,21 @@ export default function Layout() {
     { to: '/my-profile', icon: UserIcon, label: 'Mis Eval.', show: true },
     { to: '/self-evaluation', icon: ClipboardCheck, label: 'Mi Eval.', show: true, badge: pendingEvalCount > 0 ? 1 : 0 },
     { to: '/my-action-plan', icon: FileText, label: 'Plan Acción', show: true },
-    { to: '/evaluations', icon: ClipboardList, label: 'Evaluar', show: hasTeam || isAdminOrSuper, badge: pendingEvalCount > 1 ? pendingEvalCount - (evaluations.some(e => e.evaluatedId === currentUser.id && e.type === 'self' && e.period === CURRENT_PERIOD) ? 0 : 0) : 0 },
+    { to: '/evaluations', icon: ClipboardList, label: 'Evaluar', show: hasTeam || isAdminOrSuper || isManagingPartner, badge: pendingEvalCount > 1 ? pendingEvalCount - (evaluations.some(e => e.evaluatedId === currentUser.id && e.type === 'self' && e.period === CURRENT_PERIOD) ? 0 : 0) : 0 },
   ];
 
   const otherItems = [
-    { to: '/reports', icon: BarChart3, label: 'Reportes', show: isAdminOrSuper },
-    { to: '/orgchart', icon: Map, label: 'Organigrama', show: isAdminOrSuper },
+    { to: '/reports', icon: BarChart3, label: 'Reportes', show: isAdminOrSuper || isManagingPartner },
+    { to: '/orgchart', icon: Map, label: 'Organigrama', show: isAdminOrSuper || isManagingPartner || isSocio },
     { to: '/users', icon: Users, label: 'Usuarios', show: isAdminOrSuper },
     { to: '/assign', icon: UserCheck, label: 'Asignar', show: isAdminOrSuper },
-    { to: '/evaluation-templates', icon: BookOpen, label: 'Plantillas', show: isSuperUser },
-    { to: '/question-library', icon: BookOpen, label: 'Preguntas', show: isSuperUser },
-    { to: '/personal-objectives', icon: Target, label: 'Objetivos', show: showEvalModule && (isAdminOrSuper || hasTeam) },
+    { to: '/evaluation-templates', icon: BookOpen, label: 'Plantillas', show: isAdminOrSuper },
+    { to: '/question-library', icon: BookOpen, label: 'Preguntas', show: isAdminOrSuper },
+    { to: '/personal-objectives', icon: Target, label: 'Objetivos', show: showEvalModule && (isAdminOrSuper || isManagingPartner || isSocio || hasTeam) },
     { to: '/communications', icon: Megaphone, label: 'Comunicación', show: showCommModule, badge: unreadAnnouncementCount },
     { to: '/vacations', icon: Palmtree, label: 'Vacaciones', show: showVacModule, badge: pendingVacationCount },
-    { to: '/period-config', icon: Calendar, label: 'Periodos', show: isSuperUser },
-    { to: '/copilot', icon: Bot, label: 'Copilot', show: modules.copilot },
+    { to: '/period-config', icon: Calendar, label: 'Periodos', show: isAdminOrSuper },
+    { to: '/copilot', icon: Bot, label: 'Copilot', show: modules.copilot && (isAdminOrSuper || isManagingPartner) },
     { to: '/settings', icon: Settings, label: 'Config', show: true },
   ];
 
@@ -143,7 +145,8 @@ export default function Layout() {
           </div>
           <span className="font-display font-semibold text-sm hidden sm:block">SMPS Performance</span>
           {isSuperUser && <span className="text-[10px] bg-yellow-400/20 text-yellow-300 px-1.5 py-0.5 rounded-full font-semibold">SUPERUSER</span>}
-          {!isSuperUser && isAdmin && <span className="text-[10px] bg-accent/20 text-accent-foreground px-1.5 py-0.5 rounded-full">ADMIN</span>}
+          {!isSuperUser && isManagingPartner && <span className="text-[10px] bg-accent/20 text-accent-foreground px-1.5 py-0.5 rounded-full">SOCIO ADM</span>}
+          {!isSuperUser && !isManagingPartner && isAdmin && <span className="text-[10px] bg-yellow-400/10 text-yellow-600 px-1.5 py-0.5 rounded-full">ADMIN</span>}
         </div>
         <div className="ml-auto flex items-center gap-2">
           <span className="text-primary-foreground/60 text-xs hidden lg:block">{currentUser.name}</span>

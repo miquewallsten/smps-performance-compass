@@ -86,7 +86,7 @@ function CopilotConfigPanel({ config, onSave }: { config: any; onSave: (data: an
   const models = currentProvider.models.length > 0 ? currentProvider.models : [
     { value: form.model, label: 'Modelo personalizado' },
   ];
-  const needsBaseUrl = form.apiProvider === 'ollama' || form.apiProvider === 'custom';
+  const needsBaseUrl = form.apiProvider === 'custom';
 
   const permissions = [
     { key: 'canManageUsers' as const, label: 'Gestionar Usuarios', icon: Users, desc: 'Crear, buscar, cambiar roles' },
@@ -159,7 +159,7 @@ function CopilotConfigPanel({ config, onSave }: { config: any; onSave: (data: an
                 type="text"
                 value={form.apiBaseUrl}
                 onChange={(e) => setForm({ ...form, apiBaseUrl: e.target.value })}
-                placeholder={form.apiProvider === 'ollama' ? 'http://localhost:11434/v1/chat/completions' : 'https://api.example.com/v1/chat/completions'}
+                placeholder='https://ollama.com/v1/chat/completions'
                 className="w-full px-3 py-2 rounded-lg border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-accent"
               />
               <p className="text-xs text-muted-foreground mt-1">

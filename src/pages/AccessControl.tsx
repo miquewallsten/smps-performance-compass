@@ -322,7 +322,7 @@ export default function AccessControl() {
                 )}
               </select>
             </div>
-            {(aiProvider === 'ollama' || aiProvider === 'custom') && (
+            {(aiProvider === 'custom') && (
               <div>
                 <label className="text-sm text-muted-foreground block mb-1">URL base de API</label>
                 <input

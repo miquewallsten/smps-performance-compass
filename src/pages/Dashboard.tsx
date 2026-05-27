@@ -17,7 +17,7 @@ export default function Dashboard() {
   if (!currentUser) return null;
   const isAdmin = currentUser.isAdmin;
   const isSocio = currentUser.position === 'socio';
-  const isAdminOrSocio = isAdmin || isSocio;
+  const isAdminOrSocio = isAdmin || isSocio || !!currentUser.isManagingPartner;
 
   const periodAssignments = assignments.filter(a => a.period === CURRENT_PERIOD);
   const periodEvals = evaluations.filter(e => e.period === CURRENT_PERIOD);

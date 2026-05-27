@@ -68,7 +68,7 @@ export default function PersonalObjectivesPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   if (!currentUser) return null;
-  const isAdminUser = currentUser.isAdmin || currentUser.isSuperUser;
+  const isAdminUser = currentUser.isAdmin || currentUser.isSuperUser || !!currentUser.isManagingPartner;
   const isSupervisorOf = (userId: string) => assignments.some(a => a.employeeId === userId && a.supervisorId === currentUser.id && a.period === period);
   const canEditUser = (userId: string) => isAdminUser || userId === currentUser.id;
   const canReview = (userId: string) => isAdminUser || isSupervisorOf(userId);

@@ -6,7 +6,7 @@ export const MOCK_USERS: User[] = [
 
   // === LEGAL ===
   // Socios
-  { id: 'u1', name: 'Lic. Carlos Mendoza', email: 'cmendoza@smps.com', position: 'socio', isAdmin: true, isActive: true, password: '1234', isManagingPartner: true },
+  { id: 'u1', name: 'Lic. Carlos Mendoza', email: 'cmendoza@smps.com', position: 'socio', isAdmin: false, isActive: true, password: '1234', isManagingPartner: true },
   { id: 'u2', name: 'Lic. Patricia Salinas', email: 'psalinas@smps.com', position: 'socio', isAdmin: false, isActive: true, password: '1234' },
   // Salary Partner
   { id: 'u17', name: 'Lic. Andrés Beltrán', email: 'abeltran@smps.com', position: 'salary_partner', isAdmin: false, isActive: true, password: '1234' },

@@ -31,7 +31,8 @@ export default function Communications() {
 
   const isAdmin = currentUser.isAdmin || currentUser.isSuperUser;
   const isSocio = currentUser.position === 'socio';
-  const canPublish = isAdmin || isSocio;
+  const isManagingPartner = !!currentUser.isManagingPartner;
+  const canPublish = isAdmin || isSocio || isManagingPartner;
   const isSuperUser = !!currentUser.isSuperUser;
 
   const myLevel = POSITION_LEVELS[currentUser.position];
