@@ -113378,6 +113378,49 @@ async function migrate() {
     );
     console.log("  \u2713 positions migrated to work_area_id");
   }
+  const posCount = await getScalar("SELECT COUNT(*) AS cnt FROM custom_positions");
+  if (posCount === 0) {
+    console.log("  Seeding positions into custom_positions...");
+    const now = (/* @__PURE__ */ new Date()).toISOString();
+    const positions = [
+      ["SMPS01", "Socio Consultor\xEDa Fiscal", "consultoria_fiscal", "socio"],
+      ["SMPS02", "Socio Litigio Fiscal", "litigio_fiscal", "socio"],
+      ["SMPS03", "Socio Corporativo", "corporativo", "socio"],
+      ["SMPS04", "Counsel", "general", "counsel"],
+      ["SMPS05", "Asociado Sr Consultor\xEDa Fiscal", "consultoria_fiscal", "asociado_sr"],
+      ["SMPS06", "Asociado Sr Litigio Fiscal", "litigio_fiscal", "asociado_sr"],
+      ["SMPS07", "Asociado Sr Corporativo", "corporativo", "asociado_sr"],
+      ["SMPS08", "Asociado Mid Consultor\xEDa Fiscal", "consultoria_fiscal", "asociado_mid"],
+      ["SMPS09", "Asociado Mid Litigio Fiscal", "litigio_fiscal", "asociado_mid"],
+      ["SMPS10", "Asociado Mid Corporativo", "corporativo", "asociado_mid"],
+      ["SMPS11", "Asociado Jr Consultor\xEDa Fiscal", "consultoria_fiscal", "asociado_jr"],
+      ["SMPS12", "Asociado Jr Corporativo", "corporativo", "asociado_jr"],
+      ["SMPS13", "Pasante con Carrera Terminada Litigio Fiscal", "litigio_fiscal", "pasante_carrera"],
+      ["SMPS14", "Pasante con Carrera Terminada Corporativo", "corporativo", "pasante_carrera"],
+      ["SMPS15", "Pasante Corporativo", "corporativo", "pasante_corporativo"],
+      ["SMPS16", "Director de Marketing y BD", "administrativo", "director"],
+      ["SMPS17", "Directora de Adm\xF3n y Finanzas", "administrativo", "director"],
+      ["SMPS18", "Directora de Recursos Humanos", "administrativo", "director"],
+      ["SMPS19", "Coord. Cobranza", "administrativo", "coordinador"],
+      ["SMPS20", "Coord. Servicios Generales", "administrativo", "coordinador"],
+      ["SMPS21", "Coordinador de BD", "administrativo", "coordinador"],
+      ["SMPS22", "Coordinador de Marketing", "administrativo", "coordinador"],
+      ["SMPS23", "Coordinadora de R.H.", "administrativo", "coordinador"],
+      ["SMPS24", "Gte. Facturaci\xF3n y Cobranza", "administrativo", "gerente"],
+      ["SMPS25", "Analista Sistemas", "administrativo", "analista"],
+      ["SMPS26", "Soporte Sistemas", "administrativo", "archivo_soporte"],
+      ["SMPS27", "Archivista", "administrativo", "archivo_soporte"],
+      ["SMPS28", "Asistente Consultor\xEDa Fiscal", "administrativo", "asistente"],
+      ["SMPS29", "Asistente Corporativo", "administrativo", "asistente"]
+    ];
+    for (const [id, label, workAreaId, basePosition] of positions) {
+      await run(
+        "INSERT IGNORE INTO custom_positions (id, label, work_area_id, base_position, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)",
+        [id, label, workAreaId, basePosition, now, now]
+      );
+    }
+    console.log(`  \u2713 ${positions.length} positions seeded`);
+  }
   const tableCount = await getScalar(
     `SELECT COUNT(*) AS cnt FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = DATABASE()`
   );
