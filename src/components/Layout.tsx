@@ -164,7 +164,7 @@ export default function Layout() {
         </div>
       </header>
 
-      <div className="flex flex-1 pt-14 min-h-0">
+      <div className="flex flex-1 pt-14 min-h-0 overflow-hidden">
         <aside className={`${collapsed ? 'w-14' : 'w-52'} bg-sidebar border-r border-sidebar-border transition-all duration-200 flex-shrink-0 hidden md:flex flex-col fixed top-14 left-0 bottom-0 z-40`}>
           <nav className="flex-1 py-3 px-2 space-y-0.5 overflow-y-auto">
             {showEvalModule && (
@@ -236,9 +236,9 @@ export default function Layout() {
           ))}
         </div>
 
-        <main className={`flex-1 min-h-0 ${location.pathname === '/copilot' ? 'overflow-hidden' : 'overflow-auto'} pb-16 md:pb-0 ${collapsed ? 'md:ml-14' : 'md:ml-52'} transition-all duration-200`}>
+        <main className={`flex-1 min-h-0 ${location.pathname === '/copilot' ? 'overflow-hidden flex flex-col' : 'overflow-auto'} ${location.pathname === '/copilot' ? '' : 'pb-16 md:pb-0'} ${collapsed ? 'md:ml-14' : 'md:ml-52'} transition-all duration-200`}>
           {location.pathname === '/copilot' ? (
-            <div className="h-full smps-fade-in">
+            <div className="flex-1 min-h-0 smps-fade-in">
               <Outlet />
             </div>
           ) : (
