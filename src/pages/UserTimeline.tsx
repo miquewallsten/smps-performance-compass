@@ -47,11 +47,11 @@ const FILTERS = [
 ];
 
 /* ── Helpers ──────────────────────────────────────────────────────────────── */
-const pd = (s: string) => new Date(s + (s.length <= 10 ? 'T12:00:00' : ''));
+const pd = (s: string) => { if (!s) return new Date(); return new Date(s + (s.length <= 10 ? 'T12:00:00' : '')); };
 const fmtDay = (s: string) => pd(s).toLocaleDateString('es-MX', { day: 'numeric' });
 const fmtMon = (s: string) => pd(s).toLocaleDateString('es-MX', { month: 'short' });
 const fmtFull = (s: string) => pd(s).toLocaleDateString('es-MX', { day: 'numeric', month: 'long', year: 'numeric' });
-const fmtTime = (s: string) => new Date(s).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
+const fmtTime = (s: string) => { if (!s) return ''; try { return new Date(s).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' }); } catch { return ''; } };
 const getYear = (s: string) => pd(s).getFullYear();
 const getMonthKey = (s: string) => { const d = pd(s); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`; };
 const monthLabel = (k: string) => { const [y,m] = k.split('-'); const d = new Date(+y, +m-1, 1); return d.toLocaleDateString('es-MX', { month: 'short' }); };
@@ -95,7 +95,7 @@ export default function UserTimeline() {
 
   const events = useMemo(() => {
     const raw = (td as any)?.events || [];
-    return raw.sort((a: any, b: any) => (a.event_date||a.created_at).localeCompare(b.event_date||b.created_at));
+    return raw.sort((a: any, b: any) => { const da = a.event_date || a.created_at || ""; const db = b.event_date || b.created_at || ""; return da.localeCompare(db); });
   }, [(td as any)?.events]);
 
   const total = (td as any)?.total || 0;
@@ -104,7 +104,7 @@ export default function UserTimeline() {
   // Month groups
   const months = useMemo(() => {
     const g: Record<string, any[]> = {};
-    events.forEach((e: any) => { const k = getMonthKey(e.event_date||e.created_at); if (!g[k]) g[k] = []; g[k].push(e); });
+    events.forEach((e: any) => { const k = getMonthKey(e.event_date || e.created_at || ""); if (!g[k]) g[k] = []; g[k].push(e); });
     return g;
   }, [events]);
   const sortedMonths = useMemo(() => Object.keys(months).sort(), [months]);
@@ -305,7 +305,7 @@ export default function UserTimeline() {
                             const isExp = expanded === ev.id;
                             const meta = ev.metadata ? (typeof ev.metadata === 'string' ? JSON.parse(ev.metadata) : ev.metadata) : {};
                             const cl = changeLabel(meta);
-                            const ds = ev.event_date || ev.created_at;
+                            const ds = ev.event_date || ev.created_at || "";
                             const above = ei % 2 === 0;
 
                             return (
