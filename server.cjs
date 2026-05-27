@@ -113388,8 +113388,7 @@ async function migrate() {
   );
   if (nullWorkAreaCount && nullWorkAreaCount > 0) {
     console.log(`  Migrating ${nullWorkAreaCount} positions to work_area_id...`);
-    await run("UPDATE custom_positions SET work_area_id = 'backoffice' WHERE work_area_id IS NULL AND level = 'administrativo'");
-    await run("UPDATE custom_positions SET work_area_id = COALESCE(practice_area, 'corporativo') WHERE work_area_id IS NULL AND level = 'legal'");
+    await run("UPDATE custom_positions SET work_area_id = 'backoffice' WHERE work_area_id IS NULL");
     console.log("  \u2713 positions migrated to work_area_id");
   }
   const validAreaIds = areas.map((a) => a[0]);

@@ -538,8 +538,9 @@ export async function migrate(): Promise<void> {
   );
   if (nullWorkAreaCount && nullWorkAreaCount > 0) {
     console.log(`  Migrating ${nullWorkAreaCount} positions to work_area_id...`);
-    await run("UPDATE custom_positions SET work_area_id = 'backoffice' WHERE work_area_id IS NULL AND level = 'administrativo'");
-    await run("UPDATE custom_positions SET work_area_id = COALESCE(practice_area, 'corporativo') WHERE work_area_id IS NULL AND level = 'legal'");
+    // Set all NULL work_area_id positions to 'backoffice' as a safe default
+    // (these would be from an old schema migration and are likely admin positions)
+    await run("UPDATE custom_positions SET work_area_id = 'backoffice' WHERE work_area_id IS NULL");
     console.log('  ✓ positions migrated to work_area_id');
   }
 
