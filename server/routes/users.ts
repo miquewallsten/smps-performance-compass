@@ -148,7 +148,7 @@ router.post('/', authMiddleware, requireAdmin, async (req: Request, res: Respons
     // Default security question so admin-created users can reset
     const securityQuestion = '¿Cuál es su correo electrónico?';
     const hashedAnswer = await hashSecurityAnswer(email);
-    const now = new Date().toISOString();
+    const now = new Date().toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, '');
 
     await db.run(
       `INSERT INTO users (id, email, password_hash, security_question, security_answer, name, position, practice_area, custom_position_id, location_id, is_admin, is_super_user, is_managing_partner, is_active, must_change_password, created_at, updated_at)
@@ -283,7 +283,7 @@ router.patch('/:id', authMiddleware, requireSelfOrAdmin, async (req: Request, re
     }
 
     updates.push('updated_at = ?');
-    values.push(new Date().toISOString());
+    values.push(new Date().toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, ''));
     values.push(id);
 
     await db.run(`UPDATE users SET ${updates.join(', ')} WHERE id = ?`, values);
@@ -306,7 +306,7 @@ router.delete('/:id', authMiddleware, requireAdmin, async (req: Request, res: Re
       return res.status(404).json({ error: 'User not found' });
     }
 
-    const now = new Date().toISOString();
+    const now = new Date().toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, '');
     await db.run('UPDATE users SET is_active = 0, updated_at = ? WHERE id = ?', [now, id]);
 
     return res.json({ message: 'User deactivated successfully' });
@@ -332,7 +332,7 @@ router.post('/:id/reset-password', authMiddleware, requireAdmin, async (req: Req
     }
 
     const hashedPassword = await hashPassword(newPassword);
-    const now = new Date().toISOString();
+    const now = new Date().toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, '');
 
     await db.run('UPDATE users SET password_hash = ?, must_change_password = 1, updated_at = ? WHERE id = ?', [hashedPassword, now, id]);
 
@@ -408,7 +408,7 @@ router.patch('/:id/role', authMiddleware, requireAdmin, async (req: Request, res
     }
 
     updates.push('updated_at = ?');
-    values.push(new Date().toISOString());
+    values.push(new Date().toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, ''));
     values.push(id);
 
     await db.run(`UPDATE users SET ${updates.join(', ')} WHERE id = ?`, values);

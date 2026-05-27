@@ -105,7 +105,7 @@ router.post('/:id/submit', authMiddleware, async (req: Request, res: Response) =
     const obj = await db.get('SELECT * FROM personal_objectives WHERE id = ?', [req.params.id]);
     if (!obj) return res.status(404).json({ error: 'Objectives not found' });
 
-    const now = new Date().toISOString();
+    const now = new Date().toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, '');
     await db.run("UPDATE admin_objectives SET status = 'pending', submitted_at = ? WHERE personal_objectives_id = ? AND status = 'draft'",
       [now, req.params.id]);
 
@@ -128,7 +128,7 @@ router.post('/:id/review', authMiddleware, async (req: Request, res: Response) =
       return res.status(400).json({ error: 'objectiveId and valid status (approved/rejected) are required' });
     }
 
-    const now = new Date().toISOString();
+    const now = new Date().toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, '');
     await db.run('UPDATE admin_objectives SET status = ?, reviewed_by = ?, reviewed_at = ?, reviewer_comment = ? WHERE id = ?',
       [status, req.user!.id, now, comment || null, objectiveId]);
 

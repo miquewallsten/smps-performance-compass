@@ -36,7 +36,7 @@ router.post('/', authMiddleware, async (req: Request, res: Response) => {
     }
 
     const id = uuidv4();
-    const now = new Date().toISOString();
+    const now = new Date().toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, '');
 
     await db.transaction(async (conn) => {
       await tx.run(conn,
@@ -72,7 +72,7 @@ router.patch('/:id', authMiddleware, async (req: Request, res: Response) => {
     if (!plan) return res.status(404).json({ error: 'Action plan not found' });
 
     const { content, items } = req.body;
-    const now = new Date().toISOString();
+    const now = new Date().toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, '');
     const updates: string[] = [];
     const params: any[] = [];
 
@@ -113,7 +113,7 @@ router.post('/:id/approve', authMiddleware, async (req: Request, res: Response) 
       return res.status(400).json({ error: 'Status must be approved or rejected' });
     }
 
-    const now = new Date().toISOString();
+    const now = new Date().toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, '');
     await db.run('UPDATE action_plans SET approval_status = ?, approval_comments = ?, approved_by = ?, approved_at = ?, updated_at = ? WHERE id = ?',
       [status, comments || null, req.user!.id, now, now, req.params.id]);
 

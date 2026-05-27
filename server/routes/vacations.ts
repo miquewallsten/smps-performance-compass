@@ -36,7 +36,7 @@ router.post('/requests', authMiddleware, async (req: Request, res: Response) => 
     }
 
     const id = uuidv4();
-    const now = new Date().toISOString();
+    const now = new Date().toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, '');
     await db.run(
       'INSERT INTO vacation_requests (id, user_id, start_date, end_date, days, reason, status, created_at, period) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
       [id, userId, startDate, endDate, days, reason || '', 'pending', now, period || null]
@@ -87,7 +87,7 @@ router.post('/requests/:id/approve', authMiddleware, async (req: Request, res: R
     }
 
     const id = uuidv4();
-    const now = new Date().toISOString();
+    const now = new Date().toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, '');
     await db.run(
       'INSERT INTO vacation_approvals (id, vacation_request_id, approver_id, approved_at, action, comment) VALUES (?, ?, ?, ?, ?, ?)',
       [id, req.params.id, req.user!.id, now, action, comment || null]
@@ -164,7 +164,7 @@ router.post('/extra-days', authMiddleware, requireAdmin, async (req: Request, re
     }
 
     const id = uuidv4();
-    const now = new Date().toISOString();
+    const now = new Date().toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, '');
     await db.run(
       'INSERT INTO extra_vacation_days (id, user_id, days, reason, added_by, added_at, period) VALUES (?, ?, ?, ?, ?, ?, ?)',
       [id, userId, days, reason, req.user!.id, now, period]

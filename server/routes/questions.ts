@@ -25,7 +25,7 @@ router.post('/library', authMiddleware, requireAdmin, async (req: Request, res: 
       return res.status(400).json({ error: 'questionId, category, text, and defaultWeight are required' });
     }
     const id = uuidv4();
-    const now = new Date().toISOString();
+    const now = new Date().toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, '');
     await db.run('INSERT INTO library_questions (id, question_id, category, text, default_weight, created_at, created_by) VALUES (?, ?, ?, ?, ?, ?, ?)',
       [id, questionId, category, text, defaultWeight, now, req.user!.id]);
     const question = await db.get('SELECT * FROM library_questions WHERE id = ?', [id]);

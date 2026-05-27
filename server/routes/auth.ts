@@ -81,11 +81,11 @@ router.post('/logout', authMiddleware, requireAuthenticated, async (req: Request
     // Add token to blocklist
     await db.run(
       'INSERT INTO sessions (id, user_id, token_hash, created_at, expires_at) VALUES (?, ?, ?, ?, ?)',
-      [uuidv4(), payload.id, tokenHash, new Date().toISOString(), expiresAt]
+      [uuidv4(), payload.id, tokenHash, new Date().toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, ''), expiresAt]
     );
 
     // Clean up expired sessions
-    await db.run('DELETE FROM sessions WHERE expires_at < ?', [new Date().toISOString()]);
+    await db.run('DELETE FROM sessions WHERE expires_at < ?', [new Date().toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, '')]);
 
     return res.json({ message: 'Logged out successfully' });
   } catch (err) {
@@ -141,7 +141,7 @@ router.post('/change-password', authMiddleware, requireAuthenticated, async (req
     }
 
     const hashedPassword = await hashPassword(newPassword);
-    const now = new Date().toISOString();
+    const now = new Date().toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, '');
 
     if (securityQuestion && securityAnswer) {
       const hashedAnswer = await hashSecurityAnswer(securityAnswer);
@@ -215,7 +215,7 @@ router.post('/reset-password', async (req: Request, res: Response) => {
     }
 
     const hashedPassword = await hashPassword(newPassword);
-    const now = new Date().toISOString();
+    const now = new Date().toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, '');
 
     await db.run(
       'UPDATE users SET password_hash = ?, must_change_password = 0, updated_at = ? WHERE id = ?',

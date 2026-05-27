@@ -361,7 +361,7 @@ function getTools(cfg: Record<string, unknown>): Tool[] {
           const isMP = typeof args.is_managing_partner === 'string' ? (args.is_managing_partner === 'true' || args.is_managing_partner === '1') : !!args.is_managing_partner;
           if (isMP) { const currentMPs = await db.all('SELECT id, name FROM users WHERE is_managing_partner = 1 AND is_super_user = 0'); if (currentMPs.length >= 1) return JSON.stringify({ error: `Solo puede haber 1 Socio Administrador. Actualmente es ${currentMPs[0].name}` }); }
           if (isAdmin && !isMP) { const currentAdmins = await db.all('SELECT id FROM users WHERE is_admin = 1 AND is_super_user = 0'); if (currentAdmins.length >= 2) return JSON.stringify({ error: 'Máximo 2 Usuario Administrador permitidos' }); }
-          const id = uuidv4(), hp = await hashPassword(args.password as string), now = new Date().toISOString();
+          const id = uuidv4(), hp = await hashPassword(args.password as string), now = new Date().toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, '');
           // Derive practice_area and position from custom_position_id if provided
           let derivedPosition = args.position as string;
           let derivedArea = (args.practice_area as string) || null;
@@ -380,7 +380,7 @@ function getTools(cfg: Record<string, unknown>): Tool[] {
             if (!u.name || !u.email || !u.position || !u.password) { r.push({ email: u.email, error: 'Faltan campos' }); continue; }
             const ex = await db.get('SELECT id FROM users WHERE email=?', [u.email]);
             if (ex) { r.push({ email: u.email, error: 'Ya existe' }); continue; }
-            const id = uuidv4(), hp = await hashPassword(u.password as string), now = new Date().toISOString();
+            const id = uuidv4(), hp = await hashPassword(u.password as string), now = new Date().toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, '');
             // Derive from custom_position_id if provided
             let bPosition = u.position as string;
             let bArea = (u.practice_area as string) || null;
@@ -413,12 +413,12 @@ function getTools(cfg: Record<string, unknown>): Tool[] {
             updates.push('is_admin=?'); vals.push(newAdmin ? 1 : 0);
           }
           if (updates.length === 0) return JSON.stringify({ error: 'Sin cambios' });
-          vals.push(new Date().toISOString(), args.id);
+          vals.push(new Date().toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, ''), args.id);
           await db.run(`UPDATE users SET ${updates.join(', ')}, updated_at=? WHERE id=?`, vals);
           return JSON.stringify({ ok: true, msg: 'Rol actualizado' });
         }
-        if (act === 'deactivate') { await db.run('UPDATE users SET is_active=0, updated_at=? WHERE id=?', [new Date().toISOString(), args.id]); return JSON.stringify({ ok: true, msg: 'Usuario desactivado' }); }
-        if (act === 'activate') { await db.run('UPDATE users SET is_active=1, updated_at=? WHERE id=?', [new Date().toISOString(), args.id]); return JSON.stringify({ ok: true, msg: 'Usuario activado' }); }
+        if (act === 'deactivate') { await db.run('UPDATE users SET is_active=0, updated_at=? WHERE id=?', [new Date().toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, ''), args.id]); return JSON.stringify({ ok: true, msg: 'Usuario desactivado' }); }
+        if (act === 'activate') { await db.run('UPDATE users SET is_active=1, updated_at=? WHERE id=?', [new Date().toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, ''), args.id]); return JSON.stringify({ ok: true, msg: 'Usuario activado' }); }
         if (act === 'assign_supervisor') {
           if (!args.employee_id || !args.supervisor_id || !args.period) return JSON.stringify({ error: 'Falta employee_id, supervisor_id, period' });
           const id = uuidv4();
@@ -570,7 +570,7 @@ function getTools(cfg: Record<string, unknown>): Tool[] {
         }
         if (act === 'complete_eval') {
           if (!args.id) return JSON.stringify({ error: 'Falta id' });
-          await db.run('UPDATE evaluations SET completed_at=? WHERE id=?', [new Date().toISOString(), args.id]);
+          await db.run('UPDATE evaluations SET completed_at=? WHERE id=?', [new Date().toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, ''), args.id]);
           // Recalculate score
           const responses = await db.all('SELECT score, weight, not_applicable, no_elements FROM evaluation_responses WHERE evaluation_id=?', [args.id]);
           const applicable = responses.filter((r: any) => !r.not_applicable && !r.no_elements);
@@ -580,7 +580,7 @@ function getTools(cfg: Record<string, unknown>): Tool[] {
         }
         if (act === 'complete_feedback') {
           if (!args.id) return JSON.stringify({ error: 'Falta id' });
-          await db.run('UPDATE evaluations SET feedback_completed=1, feedback_completed_at=?, feedback_completed_by=? WHERE id=?', [new Date().toISOString(), uid, args.id]);
+          await db.run('UPDATE evaluations SET feedback_completed=1, feedback_completed_at=?, feedback_completed_by=? WHERE id=?', [new Date().toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, ''), uid, args.id]);
           return JSON.stringify({ ok: true, msg: 'Feedback completado' });
         }
         if (act === 'questions') {
@@ -596,7 +596,7 @@ function getTools(cfg: Record<string, unknown>): Tool[] {
           if (!args.text || !args.category) return JSON.stringify({ error: 'Falta text y category' });
           const id = uuidv4(), qid = args.question_id || 'q_' + Date.now();
           await db.run('INSERT INTO library_questions (id,question_id,category,text,default_weight,created_at,created_by) VALUES(?,?,?,?,?,?,?)',
-            [id, qid, args.category, args.text, Number(args.weight) || 1, new Date().toISOString(), uid]);
+            [id, qid, args.category, args.text, Number(args.weight) || 1, new Date().toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, ''), uid]);
           return JSON.stringify({ ok: true, qid, msg: 'Pregunta creada en biblioteca' });
         }
         if (act === 'batch_questions') {
@@ -604,7 +604,7 @@ function getTools(cfg: Record<string, unknown>): Tool[] {
           const r: Record<string, unknown>[] = [];
           for (const q of qs) {
             if (!q.category || !q.text) { r.push({ text: q.text, error: 'Faltan campos' }); continue; }
-            try { const id = uuidv4(), qid = 'q_' + Date.now() + '_' + Math.random().toString(36).slice(2,6); await db.run('INSERT INTO library_questions (id,question_id,category,text,default_weight,created_at,created_by) VALUES(?,?,?,?,?,?,?)', [id, qid, q.category, q.text, Number(q.weight) || 1, new Date().toISOString(), uid]); r.push({ qid, ok: true }); } catch (e) { r.push({ text: q.text, error: String(e) }); }
+            try { const id = uuidv4(), qid = 'q_' + Date.now() + '_' + Math.random().toString(36).slice(2,6); await db.run('INSERT INTO library_questions (id,question_id,category,text,default_weight,created_at,created_by) VALUES(?,?,?,?,?,?,?)', [id, qid, q.category, q.text, Number(q.weight) || 1, new Date().toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, ''), uid]); r.push({ qid, ok: true }); } catch (e) { r.push({ text: q.text, error: String(e) }); }
           }
           return JSON.stringify({ msg: `${r.filter(x => x.ok).length}/${qs.length} creadas`, results: r });
         }
@@ -689,11 +689,11 @@ function getTools(cfg: Record<string, unknown>): Tool[] {
           return JSON.stringify(await db.all('SELECT v.*, u.name as user_name FROM vacation_requests v JOIN users u ON v.user_id=u.id WHERE v.status=? ORDER BY v.created_at DESC LIMIT 50', [status]));
         }
         if (args.action === 'approve') {
-          await db.run('UPDATE vacation_requests SET status=?, processed_by=?, processed_at=? WHERE id=?', ['approved', uid, new Date().toISOString(), args.id]);
+          await db.run('UPDATE vacation_requests SET status=?, processed_by=?, processed_at=? WHERE id=?', ['approved', uid, new Date().toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, ''), args.id]);
           return JSON.stringify({ ok: true, msg: 'Aprobada' });
         }
         if (args.action === 'reject') {
-          await db.run('UPDATE vacation_requests SET status=?, processed_by=?, processed_at=? WHERE id=?', ['rejected', uid, new Date().toISOString(), args.id]);
+          await db.run('UPDATE vacation_requests SET status=?, processed_by=?, processed_at=? WHERE id=?', ['rejected', uid, new Date().toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, ''), args.id]);
           return JSON.stringify({ ok: true, msg: 'Rechazada' });
         }
         return JSON.stringify({ error: 'Acción desconocida' });
@@ -723,7 +723,7 @@ function getTools(cfg: Record<string, unknown>): Tool[] {
           if (!args.title || !args.content) return JSON.stringify({ error: 'Falta title y content' });
           const id = uuidv4();
           await db.run('INSERT INTO announcements (id,author_id,title,content,audience,priority,archived,created_at) VALUES(?,?,?,?,?,?,?,?)',
-            [id, uid, args.title, args.content, (args.audience as string) || 'all', (args.priority as string) || 'normal', 0, new Date().toISOString()]);
+            [id, uid, args.title, args.content, (args.audience as string) || 'all', (args.priority as string) || 'normal', 0, new Date().toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, '')]);
           return JSON.stringify({ ok: true, msg: 'Comunicado creado', id });
         }
         return JSON.stringify({ error: 'Acción desconocida' });
@@ -749,7 +749,7 @@ function getTools(cfg: Record<string, unknown>): Tool[] {
       execute: async (args, uid) => {
         const act = args.action as string;
         if (act === 'status') return JSON.stringify({ status: await db.get('SELECT * FROM system_status WHERE id=1'), modules: await db.get('SELECT * FROM module_config WHERE id=1') });
-        if (act === 'toggle_system') { if (!['active','inactive'].includes(args.status as string)) return JSON.stringify({ error: 'Inválido' }); await db.run('UPDATE system_status SET status=? WHERE id=1', [args.status]); await db.run('INSERT INTO activation_history (id,action,date,by_user_id) VALUES(?,?,?,?)', [uuidv4(), args.status === 'active' ? 'activated' : 'deactivated', new Date().toISOString(), uid]); return JSON.stringify({ ok: true, msg: `Sistema ${args.status}` }); }
+        if (act === 'toggle_system') { if (!['active','inactive'].includes(args.status as string)) return JSON.stringify({ error: 'Inválido' }); await db.run('UPDATE system_status SET status=? WHERE id=1', [args.status]); await db.run('INSERT INTO activation_history (id,action,date,by_user_id) VALUES(?,?,?,?)', [uuidv4(), args.status === 'active' ? 'activated' : 'deactivated', new Date().toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, ''), uid]); return JSON.stringify({ ok: true, msg: `Sistema ${args.status}` }); }
         if (act === 'toggle_module') { if (!['evaluations','communications','vacations','copilot'].includes(args.module as string)) return JSON.stringify({ error: 'Inválido' }); await db.run(`UPDATE module_config SET ${args.module}=? WHERE id=1`, [args.enabled ? 1 : 0]); return JSON.stringify({ ok: true, msg: `${args.module} ${args.enabled ? 'activado' : 'desactivado'}` }); }
         return JSON.stringify({ error: 'Acción desconocida' });
       },
@@ -924,10 +924,10 @@ router.post('/chat', upload.single('file'), async (req: Request, res: Response) 
     if (!convId) {
       convId = uuidv4();
       const title = fullMessage.slice(0, 50) || 'Nueva conversación';
-      await db.run('INSERT INTO copilot_conversations (id,user_id,title,created_at,updated_at) VALUES(?,?,?,?,?)', [convId, req.user!.id, title, new Date().toISOString(), new Date().toISOString()]);
+      await db.run('INSERT INTO copilot_conversations (id,user_id,title,created_at,updated_at) VALUES(?,?,?,?,?)', [convId, req.user!.id, title, new Date().toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, ''), new Date().toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, '')]);
     }
 
-    await db.run('INSERT INTO copilot_messages (id,conversation_id,role,content,created_at) VALUES(?,?,?,?,?)', [uuidv4(), convId, 'user', fileContent ? `${fullMessage}\n\n[Archivo: ${fileName}]\n${fileContent}` : fullMessage, new Date().toISOString()]);
+    await db.run('INSERT INTO copilot_messages (id,conversation_id,role,content,created_at) VALUES(?,?,?,?,?)', [uuidv4(), convId, 'user', fileContent ? `${fullMessage}\n\n[Archivo: ${fileName}]\n${fileContent}` : fullMessage, new Date().toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, '')]);
 
     const history = (await db.all('SELECT role, content FROM copilot_messages WHERE conversation_id=? ORDER BY created_at DESC LIMIT 20', [convId])).reverse() as Record<string, unknown>[];
 
@@ -1005,8 +1005,8 @@ router.post('/chat', upload.single('file'), async (req: Request, res: Response) 
       }
     }
 
-    await db.run('INSERT INTO copilot_messages (id,conversation_id,role,content,tool_calls,tool_results,created_at) VALUES(?,?,?,?,?,?,?)', [uuidv4(), convId, 'assistant', finalResponse, toolCallsData, toolResultsData, new Date().toISOString()]);
-    await db.run('UPDATE copilot_conversations SET updated_at=? WHERE id=?', [new Date().toISOString(), convId]);
+    await db.run('INSERT INTO copilot_messages (id,conversation_id,role,content,tool_calls,tool_results,created_at) VALUES(?,?,?,?,?,?,?)', [uuidv4(), convId, 'assistant', finalResponse, toolCallsData, toolResultsData, new Date().toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, '')]);
+    await db.run('UPDATE copilot_conversations SET updated_at=? WHERE id=?', [new Date().toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, ''), convId]);
 
     return res.json({ conversationId: convId, message: { id: uuidv4(), role: 'assistant', content: finalResponse } });
   } catch (e) { console.error('Chat error:', e); return res.status(500).json({ error: 'Internal server error' }); }

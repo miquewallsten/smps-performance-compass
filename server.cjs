@@ -1040,12 +1040,12 @@ var require_depd = __commonJS({
       if ("value" in descriptor) {
         descriptor = convertDataDescriptorToAccessor(obj, prop, message);
       }
-      var get2 = descriptor.get;
+      var get3 = descriptor.get;
       var set = descriptor.set;
-      if (typeof get2 === "function") {
+      if (typeof get3 === "function") {
         descriptor.get = function getter() {
           log.call(deprecate, message, site);
-          return get2.apply(this, arguments);
+          return get3.apply(this, arguments);
         };
       }
       if (typeof set === "function") {
@@ -57369,7 +57369,7 @@ var require_denque = __commonJS({
       i = this._head + i & this._capacityMask;
       return this._list[i];
     };
-    Denque.prototype.get = function get2(i) {
+    Denque.prototype.get = function get3(i) {
       return this.peekAt(i);
     };
     Denque.prototype.peek = function peek() {
@@ -87711,10 +87711,10 @@ var require_xlsx = __commonJS({
       function parse_StrRun(data) {
         return { ich: data.read_shift(2), ifnt: data.read_shift(2) };
       }
-      function write_StrRun(run3, o) {
+      function write_StrRun(run2, o) {
         if (!o) o = new_buf(4);
-        o.write_shift(2, run3.ich || 0);
-        o.write_shift(2, run3.ifnt || 0);
+        o.write_shift(2, run2.ich || 0);
+        o.write_shift(2, run2.ifnt || 0);
         return o;
       }
       function parse_RichStr(data, length) {
@@ -112861,7 +112861,7 @@ async function all(sql, params) {
   const [rows] = await pool.execute(sql, params);
   return rows;
 }
-async function run2(sql, params) {
+async function run(sql, params) {
   const [result] = await pool.execute(sql, params);
   return result;
 }
@@ -112909,7 +112909,7 @@ async function tableExists(tableName) {
   );
   return rows[0].cnt > 0;
 }
-var db = { get, all, run: run2, exec, getScalar, transaction, tableExists, tx };
+var db = { get, all, run, exec, getScalar, transaction, tableExists, tx };
 
 // server/db/migrate.ts
 async function migrate() {
@@ -113035,7 +113035,7 @@ async function migrate() {
       employee_id VARCHAR(36) NOT NULL,
       supervisor_id VARCHAR(36) NOT NULL,
       period VARCHAR(50) NOT NULL,
-      content TEXT NOT NULL DEFAULT '',
+      content TEXT NOT NULL,
       approval_status VARCHAR(50) NOT NULL DEFAULT 'pending',
       approval_comments TEXT,
       approved_by VARCHAR(36),
@@ -113052,9 +113052,9 @@ async function migrate() {
       competencia VARCHAR(255) NOT NULL DEFAULT '',
       objetivo TEXT NOT NULL,
       acciones TEXT NOT NULL,
-      que_evitar TEXT NOT NULL DEFAULT '',
+      que_evitar TEXT NOT NULL,
       fecha_revision VARCHAR(50) NOT NULL DEFAULT '',
-      apoyos TEXT NOT NULL DEFAULT '',
+      apoyos TEXT NOT NULL,
       created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
       INDEX idx_sai_plan (action_plan_id)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
@@ -113256,58 +113256,58 @@ async function migrate() {
   }
   const alterMigrations = [
     // evaluation_responses: add not_applicable and no_elements
-    `ALTER TABLE evaluation_responses ADD COLUMN IF NOT EXISTS not_applicable TINYINT(1) NOT NULL DEFAULT 0 AFTER score`,
-    `ALTER TABLE evaluation_responses ADD COLUMN IF NOT EXISTS no_elements TINYINT(1) NOT NULL DEFAULT 0 AFTER not_applicable`,
+    `ALTER TABLE evaluation_responses ADD COLUMN not_applicable TINYINT(1) NOT NULL DEFAULT 0 AFTER score`,
+    `ALTER TABLE evaluation_responses ADD COLUMN no_elements TINYINT(1) NOT NULL DEFAULT 0 AFTER not_applicable`,
     // evaluation_na_approvals: add approved column and unique key
-    `ALTER TABLE evaluation_na_approvals ADD COLUMN IF NOT EXISTS approved TINYINT(1) NOT NULL DEFAULT 0 AFTER question_id`,
+    `ALTER TABLE evaluation_na_approvals ADD COLUMN approved TINYINT(1) NOT NULL DEFAULT 0 AFTER question_id`,
     `ALTER TABLE evaluation_na_approvals ADD UNIQUE INDEX IF NOT EXISTS ena_eval_question_unique (evaluation_id, question_id)`,
     // action_plans: add missing columns
-    `ALTER TABLE action_plans ADD COLUMN IF NOT EXISTS content TEXT NOT NULL DEFAULT '' AFTER period`,
-    `ALTER TABLE action_plans ADD COLUMN IF NOT EXISTS approval_status VARCHAR(50) NOT NULL DEFAULT 'pending' AFTER content`,
-    `ALTER TABLE action_plans ADD COLUMN IF NOT EXISTS approval_comments TEXT AFTER approval_status`,
-    `ALTER TABLE action_plans ADD COLUMN IF NOT EXISTS approved_by VARCHAR(36) AFTER approval_comments`,
-    `ALTER TABLE action_plans ADD COLUMN IF NOT EXISTS approved_at DATETIME AFTER approved_by`,
+    `ALTER TABLE action_plans ADD COLUMN content TEXT NOT NULL AFTER period`,
+    `ALTER TABLE action_plans ADD COLUMN approval_status VARCHAR(50) NOT NULL DEFAULT 'pending' AFTER content`,
+    `ALTER TABLE action_plans ADD COLUMN approval_comments TEXT AFTER approval_status`,
+    `ALTER TABLE action_plans ADD COLUMN approved_by VARCHAR(36) AFTER approval_comments`,
+    `ALTER TABLE action_plans ADD COLUMN approved_at DATETIME AFTER approved_by`,
     // smart_action_items: add missing SMART columns
-    `ALTER TABLE smart_action_items ADD COLUMN IF NOT EXISTS competencia VARCHAR(255) NOT NULL DEFAULT '' AFTER action_plan_id`,
-    `ALTER TABLE smart_action_items ADD COLUMN IF NOT EXISTS objetivo TEXT NOT NULL AFTER competencia`,
-    `ALTER TABLE smart_action_items ADD COLUMN IF NOT EXISTS acciones TEXT NOT NULL AFTER objetivo`,
-    `ALTER TABLE smart_action_items ADD COLUMN IF NOT EXISTS que_evitar TEXT NOT NULL DEFAULT '' AFTER acciones`,
-    `ALTER TABLE smart_action_items ADD COLUMN IF NOT EXISTS fecha_revision VARCHAR(50) NOT NULL DEFAULT '' AFTER que_evitar`,
-    `ALTER TABLE smart_action_items ADD COLUMN IF NOT EXISTS apoyos TEXT NOT NULL DEFAULT '' AFTER fecha_revision`,
+    `ALTER TABLE smart_action_items ADD COLUMN competencia VARCHAR(255) NOT NULL DEFAULT '' AFTER action_plan_id`,
+    `ALTER TABLE smart_action_items ADD COLUMN objetivo TEXT NOT NULL AFTER competencia`,
+    `ALTER TABLE smart_action_items ADD COLUMN acciones TEXT NOT NULL AFTER objetivo`,
+    `ALTER TABLE smart_action_items ADD COLUMN que_evitar TEXT NOT NULL AFTER acciones`,
+    `ALTER TABLE smart_action_items ADD COLUMN fecha_revision VARCHAR(50) NOT NULL DEFAULT '' AFTER que_evitar`,
+    `ALTER TABLE smart_action_items ADD COLUMN apoyos TEXT NOT NULL AFTER fecha_revision`,
     // personal_objectives: make pilares_estrategicos and alcance nullable (code doesn't always provide them)
     `ALTER TABLE personal_objectives MODIFY COLUMN pilares_estrategicos TEXT NULL`,
     `ALTER TABLE personal_objectives MODIFY COLUMN alcance TEXT NULL`,
     // admin_objectives: add missing columns
-    `ALTER TABLE admin_objectives ADD COLUMN IF NOT EXISTS personal_objectives_id VARCHAR(36) AFTER id`,
-    `ALTER TABLE admin_objectives ADD COLUMN IF NOT EXISTS tipo_objetivo VARCHAR(255) NOT NULL DEFAULT '' AFTER personal_objectives_id`,
-    `ALTER TABLE admin_objectives ADD COLUMN IF NOT EXISTS nombre_objetivo VARCHAR(255) NOT NULL DEFAULT '' AFTER tipo_objetivo`,
-    `ALTER TABLE admin_objectives ADD COLUMN IF NOT EXISTS pilares_estrategicos TEXT AFTER nombre_objetivo`,
-    `ALTER TABLE admin_objectives ADD COLUMN IF NOT EXISTS alcance TEXT AFTER pilares_estrategicos`,
-    `ALTER TABLE admin_objectives ADD COLUMN IF NOT EXISTS porcentaje_avance DOUBLE NOT NULL DEFAULT 0 AFTER alcance`,
-    `ALTER TABLE admin_objectives ADD COLUMN IF NOT EXISTS status VARCHAR(50) NOT NULL DEFAULT 'draft' AFTER porcentaje_avance`,
-    `ALTER TABLE admin_objectives ADD COLUMN IF NOT EXISTS submitted_at DATETIME AFTER status`,
-    `ALTER TABLE admin_objectives ADD COLUMN IF NOT EXISTS reviewed_by VARCHAR(36) AFTER submitted_at`,
-    `ALTER TABLE admin_objectives ADD COLUMN IF NOT EXISTS reviewed_at DATETIME AFTER reviewed_by`,
-    `ALTER TABLE admin_objectives ADD COLUMN IF NOT EXISTS reviewer_comment TEXT AFTER reviewed_at`,
+    `ALTER TABLE admin_objectives ADD COLUMN personal_objectives_id VARCHAR(36) AFTER id`,
+    `ALTER TABLE admin_objectives ADD COLUMN tipo_objetivo VARCHAR(255) NOT NULL DEFAULT '' AFTER personal_objectives_id`,
+    `ALTER TABLE admin_objectives ADD COLUMN nombre_objetivo VARCHAR(255) NOT NULL DEFAULT '' AFTER tipo_objetivo`,
+    `ALTER TABLE admin_objectives ADD COLUMN pilares_estrategicos TEXT AFTER nombre_objetivo`,
+    `ALTER TABLE admin_objectives ADD COLUMN alcance TEXT AFTER pilares_estrategicos`,
+    `ALTER TABLE admin_objectives ADD COLUMN porcentaje_avance DOUBLE NOT NULL DEFAULT 0 AFTER alcance`,
+    `ALTER TABLE admin_objectives ADD COLUMN status VARCHAR(50) NOT NULL DEFAULT 'draft' AFTER porcentaje_avance`,
+    `ALTER TABLE admin_objectives ADD COLUMN submitted_at DATETIME AFTER status`,
+    `ALTER TABLE admin_objectives ADD COLUMN reviewed_by VARCHAR(36) AFTER submitted_at`,
+    `ALTER TABLE admin_objectives ADD COLUMN reviewed_at DATETIME AFTER reviewed_by`,
+    `ALTER TABLE admin_objectives ADD COLUMN reviewer_comment TEXT AFTER reviewed_at`,
     // legal_objectives: add missing columns
-    `ALTER TABLE legal_objectives ADD COLUMN IF NOT EXISTS personal_objectives_id VARCHAR(36) AFTER id`,
-    `ALTER TABLE legal_objectives ADD COLUMN IF NOT EXISTS horas_meta DOUBLE NOT NULL DEFAULT 0 AFTER personal_objectives_id`,
-    `ALTER TABLE legal_objectives ADD COLUMN IF NOT EXISTS horas_ajustadas DOUBLE NOT NULL DEFAULT 0 AFTER horas_meta`,
-    `ALTER TABLE legal_objectives ADD COLUMN IF NOT EXISTS porcentaje_horas_vs_meta DOUBLE NOT NULL DEFAULT 0 AFTER horas_ajustadas`,
-    `ALTER TABLE legal_objectives ADD COLUMN IF NOT EXISTS porcentaje_eficiencia DOUBLE NOT NULL DEFAULT 0 AFTER porcentaje_horas_vs_meta`,
-    `ALTER TABLE legal_objectives ADD COLUMN IF NOT EXISTS meta_pro_bono DOUBLE NOT NULL DEFAULT 0 AFTER porcentaje_eficiencia`,
-    `ALTER TABLE legal_objectives ADD COLUMN IF NOT EXISTS realizado_pro_bono DOUBLE NOT NULL DEFAULT 0 AFTER meta_pro_bono`,
-    `ALTER TABLE legal_objectives ADD COLUMN IF NOT EXISTS meta_marketing DOUBLE NOT NULL DEFAULT 0 AFTER realizado_pro_bono`,
-    `ALTER TABLE legal_objectives ADD COLUMN IF NOT EXISTS realizado_marketing DOUBLE NOT NULL DEFAULT 0 AFTER meta_marketing`,
-    `ALTER TABLE legal_objectives ADD COLUMN IF NOT EXISTS meta_business_dev DOUBLE NOT NULL DEFAULT 0 AFTER realizado_marketing`,
-    `ALTER TABLE legal_objectives ADD COLUMN IF NOT EXISTS realizado_business_dev DOUBLE NOT NULL DEFAULT 0 AFTER meta_business_dev`,
-    `ALTER TABLE legal_objectives ADD COLUMN IF NOT EXISTS meta_mentoring DOUBLE NOT NULL DEFAULT 0 AFTER realizado_business_dev`,
-    `ALTER TABLE legal_objectives ADD COLUMN IF NOT EXISTS realizado_mentoring DOUBLE NOT NULL DEFAULT 0 AFTER meta_mentoring`,
-    `ALTER TABLE legal_objectives ADD COLUMN IF NOT EXISTS resultado_area DOUBLE NOT NULL DEFAULT 0 AFTER realizado_mentoring`,
-    `ALTER TABLE legal_objectives ADD COLUMN IF NOT EXISTS resultado_firma DOUBLE NOT NULL DEFAULT 0 AFTER resultado_area`,
-    `ALTER TABLE legal_objectives ADD COLUMN IF NOT EXISTS porcentaje_total_bono DOUBLE NOT NULL DEFAULT 0 AFTER resultado_firma`,
+    `ALTER TABLE legal_objectives ADD COLUMN personal_objectives_id VARCHAR(36) AFTER id`,
+    `ALTER TABLE legal_objectives ADD COLUMN horas_meta DOUBLE NOT NULL DEFAULT 0 AFTER personal_objectives_id`,
+    `ALTER TABLE legal_objectives ADD COLUMN horas_ajustadas DOUBLE NOT NULL DEFAULT 0 AFTER horas_meta`,
+    `ALTER TABLE legal_objectives ADD COLUMN porcentaje_horas_vs_meta DOUBLE NOT NULL DEFAULT 0 AFTER horas_ajustadas`,
+    `ALTER TABLE legal_objectives ADD COLUMN porcentaje_eficiencia DOUBLE NOT NULL DEFAULT 0 AFTER porcentaje_horas_vs_meta`,
+    `ALTER TABLE legal_objectives ADD COLUMN meta_pro_bono DOUBLE NOT NULL DEFAULT 0 AFTER porcentaje_eficiencia`,
+    `ALTER TABLE legal_objectives ADD COLUMN realizado_pro_bono DOUBLE NOT NULL DEFAULT 0 AFTER meta_pro_bono`,
+    `ALTER TABLE legal_objectives ADD COLUMN meta_marketing DOUBLE NOT NULL DEFAULT 0 AFTER realizado_pro_bono`,
+    `ALTER TABLE legal_objectives ADD COLUMN realizado_marketing DOUBLE NOT NULL DEFAULT 0 AFTER meta_marketing`,
+    `ALTER TABLE legal_objectives ADD COLUMN meta_business_dev DOUBLE NOT NULL DEFAULT 0 AFTER realizado_marketing`,
+    `ALTER TABLE legal_objectives ADD COLUMN realizado_business_dev DOUBLE NOT NULL DEFAULT 0 AFTER meta_business_dev`,
+    `ALTER TABLE legal_objectives ADD COLUMN meta_mentoring DOUBLE NOT NULL DEFAULT 0 AFTER realizado_business_dev`,
+    `ALTER TABLE legal_objectives ADD COLUMN realizado_mentoring DOUBLE NOT NULL DEFAULT 0 AFTER meta_mentoring`,
+    `ALTER TABLE legal_objectives ADD COLUMN resultado_area DOUBLE NOT NULL DEFAULT 0 AFTER realizado_mentoring`,
+    `ALTER TABLE legal_objectives ADD COLUMN resultado_firma DOUBLE NOT NULL DEFAULT 0 AFTER resultado_area`,
+    `ALTER TABLE legal_objectives ADD COLUMN porcentaje_total_bono DOUBLE NOT NULL DEFAULT 0 AFTER resultado_firma`,
     // vacation_requests: add days column if missing
-    `ALTER TABLE vacation_requests ADD COLUMN IF NOT EXISTS days INT NOT NULL DEFAULT 0 AFTER end_date`,
+    `ALTER TABLE vacation_requests ADD COLUMN days INT NOT NULL DEFAULT 0 AFTER end_date`,
     // ─── Work Areas & Positions & Locations ──────────────────────────────────
     // work_areas: create table
     `CREATE TABLE IF NOT EXISTS work_areas (
@@ -113331,16 +113331,16 @@ async function migrate() {
       updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
     // custom_positions: add work_area_id and updated_at
-    `ALTER TABLE custom_positions ADD COLUMN IF NOT EXISTS work_area_id VARCHAR(50) AFTER label`,
-    `ALTER TABLE custom_positions ADD COLUMN IF NOT EXISTS updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP`,
+    `ALTER TABLE custom_positions ADD COLUMN work_area_id VARCHAR(50) AFTER label`,
+    `ALTER TABLE custom_positions ADD COLUMN updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP`,
     // users: add location_id
-    `ALTER TABLE users ADD COLUMN IF NOT EXISTS location_id VARCHAR(50) AFTER must_change_password`
+    `ALTER TABLE users ADD COLUMN location_id VARCHAR(50) AFTER must_change_password`
   ];
   for (const sql of alterMigrations) {
     try {
       await exec(sql);
     } catch (err) {
-      if (/already exists/i.test(err?.message) || /Duplicate column/i.test(err?.message) || /Duplicate key/i.test(err?.message)) {
+      if (/already exists/i.test(err?.message) || /Duplicate column/i.test(err?.message) || /Duplicate key/i.test(err?.message) || /duplicate column name/i.test(err?.message)) {
       } else {
         console.error("Alter table warning:", err?.message || err);
       }
@@ -115203,7 +115203,7 @@ var ASSIGNMENTS = [
 ];
 async function seed() {
   console.log("Seeding database...");
-  const now = () => (/* @__PURE__ */ new Date()).toISOString().slice(0, 19).replace("T", " ");
+  const now = () => (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "").slice(0, 19).replace("T", " ");
   await db.transaction(async (conn) => {
     const existingSuper = await tx.get(conn, "SELECT id FROM users WHERE email = ?", [SUPERADMIN_EMAIL]);
     if (existingSuper) {
@@ -115498,9 +115498,9 @@ router.post("/logout", authMiddleware, requireAuthenticated, async (req, res) =>
     const payload = req.user;
     await db.run(
       "INSERT INTO sessions (id, user_id, token_hash, created_at, expires_at) VALUES (?, ?, ?, ?, ?)",
-      [v4_default(), payload.id, tokenHash, (/* @__PURE__ */ new Date()).toISOString(), expiresAt]
+      [v4_default(), payload.id, tokenHash, (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, ""), expiresAt]
     );
-    await db.run("DELETE FROM sessions WHERE expires_at < ?", [(/* @__PURE__ */ new Date()).toISOString()]);
+    await db.run("DELETE FROM sessions WHERE expires_at < ?", [(/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "")]);
     return res.json({ message: "Logged out successfully" });
   } catch (err) {
     console.error("Logout error:", err);
@@ -115539,7 +115539,7 @@ router.post("/change-password", authMiddleware, requireAuthenticated, async (req
       return res.status(400).json({ error: "New password must be at least 6 characters" });
     }
     const hashedPassword = await hashPassword(newPassword);
-    const now = (/* @__PURE__ */ new Date()).toISOString();
+    const now = (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "");
     if (securityQuestion && securityAnswer) {
       const hashedAnswer = await hashSecurityAnswer(securityAnswer);
       await db.run(
@@ -115592,7 +115592,7 @@ router.post("/reset-password", async (req, res) => {
       return res.status(401).json({ error: "Incorrect security answer" });
     }
     const hashedPassword = await hashPassword(newPassword);
-    const now = (/* @__PURE__ */ new Date()).toISOString();
+    const now = (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "");
     await db.run(
       "UPDATE users SET password_hash = ?, must_change_password = 0, updated_at = ? WHERE id = ?",
       [hashedPassword, now, user.id]
@@ -115699,7 +115699,7 @@ router2.post("/", authMiddleware, requireAdmin, async (req, res) => {
     const hashedPassword = await hashPassword(password);
     const securityQuestion = "\xBFCu\xE1l es su correo electr\xF3nico?";
     const hashedAnswer = await hashSecurityAnswer(email);
-    const now = (/* @__PURE__ */ new Date()).toISOString();
+    const now = (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "");
     await db.run(
       `INSERT INTO users (id, email, password_hash, security_question, security_answer, name, position, practice_area, custom_position_id, location_id, is_admin, is_super_user, is_managing_partner, is_active, must_change_password, created_at, updated_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -115836,7 +115836,7 @@ router2.patch("/:id", authMiddleware, requireSelfOrAdmin, async (req, res) => {
       return res.status(400).json({ error: "No fields to update" });
     }
     updates.push("updated_at = ?");
-    values.push((/* @__PURE__ */ new Date()).toISOString());
+    values.push((/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, ""));
     values.push(id);
     await db.run(`UPDATE users SET ${updates.join(", ")} WHERE id = ?`, values);
     const updatedUser = await db.get(`SELECT ${SAFE_USER_COLUMNS} FROM users WHERE id = ?`, [id]);
@@ -115853,7 +115853,7 @@ router2.delete("/:id", authMiddleware, requireAdmin, async (req, res) => {
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
-    const now = (/* @__PURE__ */ new Date()).toISOString();
+    const now = (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "");
     await db.run("UPDATE users SET is_active = 0, updated_at = ? WHERE id = ?", [now, id]);
     return res.json({ message: "User deactivated successfully" });
   } catch (err) {
@@ -115873,7 +115873,7 @@ router2.post("/:id/reset-password", authMiddleware, requireAdmin, async (req, re
       return res.status(404).json({ error: "User not found" });
     }
     const hashedPassword = await hashPassword(newPassword);
-    const now = (/* @__PURE__ */ new Date()).toISOString();
+    const now = (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "");
     await db.run("UPDATE users SET password_hash = ?, must_change_password = 1, updated_at = ? WHERE id = ?", [hashedPassword, now, id]);
     return res.json({ message: "Password reset successfully" });
   } catch (err) {
@@ -115932,7 +115932,7 @@ router2.patch("/:id/role", authMiddleware, requireAdmin, async (req, res) => {
       return res.status(400).json({ error: "No fields to update" });
     }
     updates.push("updated_at = ?");
-    values.push((/* @__PURE__ */ new Date()).toISOString());
+    values.push((/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, ""));
     values.push(id);
     await db.run(`UPDATE users SET ${updates.join(", ")} WHERE id = ?`, values);
     const updatedUser = await db.get(`SELECT ${SAFE_USER_COLUMNS} FROM users WHERE id = ?`, [id]);
@@ -116100,7 +116100,7 @@ router4.post("/init", async (req, res) => {
     if (existingUser) {
       return res.status(409).json({ error: "Email is already registered" });
     }
-    const now = (/* @__PURE__ */ new Date()).toISOString();
+    const now = (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "").replace("T", " ").replace(/\.\d{3}Z$/, "");
     const userId = v4_default();
     const hashedPassword = await hashPassword(password);
     const hashedAnswer = await hashSecurityAnswer(securityAnswer);
@@ -116180,7 +116180,7 @@ router4.patch("/status", authMiddleware, requireSuperUser, async (req, res) => {
     if (!status || !["active", "inactive"].includes(status)) {
       return res.status(400).json({ error: 'Status must be "active" or "inactive"' });
     }
-    const now = (/* @__PURE__ */ new Date()).toISOString();
+    const now = (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "").replace("T", " ").replace(/\.\d{3}Z$/, "");
     const action = status === "active" ? "activated" : "deactivated";
     await db.run("UPDATE system_status SET status = ? WHERE id = 1", [status]);
     await db.run(
@@ -116329,7 +116329,7 @@ router5.post("/", authMiddleware, async (req, res) => {
       return res.status(400).json({ error: "evaluatorId, evaluatedId, period, and type are required" });
     }
     const id = v4_default();
-    const now = (/* @__PURE__ */ new Date()).toISOString();
+    const now = (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "");
     const respArr = responses || [];
     const totalScore = req.body.totalScore !== void 0 ? Number(req.body.totalScore) : respArr.length > 0 ? respArr.reduce((sum, r) => sum + (r.score || 0), 0) / respArr.length : 0;
     await db.transaction(async (conn) => {
@@ -116363,7 +116363,7 @@ router5.patch("/:id", authMiddleware, async (req, res) => {
     const evaluation = await db.get("SELECT * FROM evaluations WHERE id = ?", [req.params.id]);
     if (!evaluation) return res.status(404).json({ error: "Evaluation not found" });
     const { comments, supervisorComments, totalScore, responses } = req.body;
-    const now = (/* @__PURE__ */ new Date()).toISOString();
+    const now = (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "");
     const updates = [];
     const params = [];
     if (comments !== void 0) {
@@ -116409,7 +116409,7 @@ router5.patch("/:id/feedback", authMiddleware, async (req, res) => {
   try {
     const evaluation = await db.get("SELECT * FROM evaluations WHERE id = ?", [req.params.id]);
     if (!evaluation) return res.status(404).json({ error: "Evaluation not found" });
-    const now = (/* @__PURE__ */ new Date()).toISOString();
+    const now = (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "");
     await db.run(
       "UPDATE evaluations SET feedback_completed = 1, feedback_completed_at = ?, feedback_completed_by = ? WHERE id = ?",
       [now, req.user.id, req.params.id]
@@ -116431,7 +116431,7 @@ router5.patch("/:id/na-approval", authMiddleware, async (req, res) => {
       `INSERT INTO evaluation_na_approvals (id, evaluation_id, question_id, approved, approved_by, approved_at)
        VALUES (?, ?, ?, ?, ?, ?)
        ON DUPLICATE KEY UPDATE approved = VALUES(approved), approved_by = VALUES(approved_by), approved_at = VALUES(approved_at)`,
-      [v4_default(), req.params.id, questionId, approved ? 1 : 0, req.user.id, (/* @__PURE__ */ new Date()).toISOString()]
+      [v4_default(), req.params.id, questionId, approved ? 1 : 0, req.user.id, (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "")]
     );
     const approvals = await db.all("SELECT * FROM evaluation_na_approvals WHERE evaluation_id = ?", [req.params.id]);
     return res.json(approvals);
@@ -116477,7 +116477,7 @@ router6.post("/", authMiddleware, async (req, res) => {
       return res.status(400).json({ error: "employeeId, supervisorId, and period are required" });
     }
     const id = v4_default();
-    const now = (/* @__PURE__ */ new Date()).toISOString();
+    const now = (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "");
     await db.transaction(async (conn) => {
       await tx.run(
         conn,
@@ -116512,7 +116512,7 @@ router6.patch("/:id", authMiddleware, async (req, res) => {
     const plan = await db.get("SELECT * FROM action_plans WHERE id = ?", [req.params.id]);
     if (!plan) return res.status(404).json({ error: "Action plan not found" });
     const { content, items } = req.body;
-    const now = (/* @__PURE__ */ new Date()).toISOString();
+    const now = (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "");
     const updates = [];
     const params = [];
     if (content !== void 0) {
@@ -116552,7 +116552,7 @@ router6.post("/:id/approve", authMiddleware, async (req, res) => {
     if (!["approved", "rejected"].includes(status)) {
       return res.status(400).json({ error: "Status must be approved or rejected" });
     }
-    const now = (/* @__PURE__ */ new Date()).toISOString();
+    const now = (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "");
     await db.run(
       "UPDATE action_plans SET approval_status = ?, approval_comments = ?, approved_by = ?, approved_at = ?, updated_at = ? WHERE id = ?",
       [status, comments || null, req.user.id, now, now, req.params.id]
@@ -116680,7 +116680,7 @@ router7.post("/:id/submit", authMiddleware, async (req, res) => {
   try {
     const obj = await db.get("SELECT * FROM personal_objectives WHERE id = ?", [req.params.id]);
     if (!obj) return res.status(404).json({ error: "Objectives not found" });
-    const now = (/* @__PURE__ */ new Date()).toISOString();
+    const now = (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "");
     await db.run(
       "UPDATE admin_objectives SET status = 'pending', submitted_at = ? WHERE personal_objectives_id = ? AND status = 'draft'",
       [now, req.params.id]
@@ -116700,7 +116700,7 @@ router7.post("/:id/review", authMiddleware, async (req, res) => {
     if (!objectiveId || !["approved", "rejected"].includes(status)) {
       return res.status(400).json({ error: "objectiveId and valid status (approved/rejected) are required" });
     }
-    const now = (/* @__PURE__ */ new Date()).toISOString();
+    const now = (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "");
     await db.run(
       "UPDATE admin_objectives SET status = ?, reviewed_by = ?, reviewed_at = ?, reviewer_comment = ? WHERE id = ?",
       [status, req.user.id, now, comment || null, objectiveId]
@@ -116752,7 +116752,7 @@ router8.post("/", authMiddleware, requireAdmin, async (req, res) => {
     if (!title || !body || !audience) return res.status(400).json({ error: "title, body, and audience required" });
     if (!["all", "legal", "administrativo"].includes(audience)) return res.status(400).json({ error: "Invalid audience" });
     const id = v4_default();
-    const now = (/* @__PURE__ */ new Date()).toISOString();
+    const now = (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "");
     await db.run(
       "INSERT INTO announcements (id, author_id, title, body, audience, created_at, expires_at, archived) VALUES (?, ?, ?, ?, ?, ?, ?, 0)",
       [id, req.user.id, title, body, audience, now, expiresAt || null]
@@ -116853,7 +116853,7 @@ router9.post("/requests", authMiddleware, async (req, res) => {
       return res.status(400).json({ error: "userId, startDate, endDate, and days are required" });
     }
     const id = v4_default();
-    const now = (/* @__PURE__ */ new Date()).toISOString();
+    const now = (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "");
     await db.run(
       "INSERT INTO vacation_requests (id, user_id, start_date, end_date, days, reason, status, created_at, period) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
       [id, userId, startDate, endDate, days, reason || "", "pending", now, period || null]
@@ -116900,7 +116900,7 @@ router9.post("/requests/:id/approve", authMiddleware, async (req, res) => {
       return res.status(400).json({ error: "Action must be approved or rejected" });
     }
     const id = v4_default();
-    const now = (/* @__PURE__ */ new Date()).toISOString();
+    const now = (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "");
     await db.run(
       "INSERT INTO vacation_approvals (id, vacation_request_id, approver_id, approved_at, action, comment) VALUES (?, ?, ?, ?, ?, ?)",
       [id, req.params.id, req.user.id, now, action, comment || null]
@@ -116964,7 +116964,7 @@ router9.post("/extra-days", authMiddleware, requireAdmin, async (req, res) => {
       return res.status(400).json({ error: "userId, days, reason, and period are required" });
     }
     const id = v4_default();
-    const now = (/* @__PURE__ */ new Date()).toISOString();
+    const now = (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "");
     await db.run(
       "INSERT INTO extra_vacation_days (id, user_id, days, reason, added_by, added_at, period) VALUES (?, ?, ?, ?, ?, ?, ?)",
       [id, userId, days, reason, req.user.id, now, period]
@@ -116997,7 +116997,7 @@ router10.post("/library", authMiddleware, requireAdmin, async (req, res) => {
       return res.status(400).json({ error: "questionId, category, text, and defaultWeight are required" });
     }
     const id = v4_default();
-    const now = (/* @__PURE__ */ new Date()).toISOString();
+    const now = (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "");
     await db.run(
       "INSERT INTO library_questions (id, question_id, category, text, default_weight, created_at, created_by) VALUES (?, ?, ?, ?, ?, ?, ?)",
       [id, questionId, category, text, defaultWeight, now, req.user.id]
@@ -117184,7 +117184,7 @@ router11.post("/", authMiddleware, requireAdmin, async (req, res) => {
     }
     const area = await db.get("SELECT id FROM work_areas WHERE id = ?", [workAreaId]);
     if (!area) return res.status(400).json({ error: "Work area not found" });
-    const now = (/* @__PURE__ */ new Date()).toISOString();
+    const now = (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "");
     await db.run(
       "INSERT INTO custom_positions (id, label, work_area_id, base_position, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)",
       [id, label, workAreaId, basePosition, now, now]
@@ -117240,7 +117240,7 @@ router11.patch("/:id", authMiddleware, requireAdmin, async (req, res) => {
     }
     if (updates.length === 0) return res.status(400).json({ error: "No fields to update" });
     updates.push("updated_at = ?");
-    values.push((/* @__PURE__ */ new Date()).toISOString());
+    values.push((/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, ""));
     values.push(id);
     await db.run(`UPDATE custom_positions SET ${updates.join(", ")} WHERE id = ?`, values);
     const finalId = newId && newId !== id ? newId : id;
@@ -117314,7 +117314,7 @@ router12.post("/", authMiddleware, requireAdmin, async (req, res) => {
     if (!["legal", "administrativo"].includes(level)) {
       return res.status(400).json({ error: 'Level must be "legal" or "administrativo"' });
     }
-    const now = (/* @__PURE__ */ new Date()).toISOString();
+    const now = (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "");
     await db.run(
       "INSERT INTO work_areas (id, label, level, sort_order, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)",
       [id, label, level, sortOrder || 0, now, now]
@@ -117354,7 +117354,7 @@ router12.patch("/:id", authMiddleware, requireAdmin, async (req, res) => {
     }
     if (updates.length === 0) return res.status(400).json({ error: "No fields to update" });
     updates.push("updated_at = ?");
-    values.push((/* @__PURE__ */ new Date()).toISOString());
+    values.push((/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, ""));
     values.push(id);
     await db.run(`UPDATE work_areas SET ${updates.join(", ")} WHERE id = ?`, values);
     const updated = await db.get("SELECT * FROM work_areas WHERE id = ?", [id]);
@@ -117407,7 +117407,7 @@ router13.post("/", authMiddleware, requireAdmin, async (req, res) => {
     if (!id || !label) {
       return res.status(400).json({ error: "id and label are required" });
     }
-    const now = (/* @__PURE__ */ new Date()).toISOString();
+    const now = (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "");
     await db.run(
       "INSERT INTO locations (id, label, city, office, floor, desk, sort_order, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
       [id, label, city || null, office || null, floor || null, desk || null, sortOrder || 0, now, now]
@@ -117456,7 +117456,7 @@ router13.patch("/:id", authMiddleware, requireAdmin, async (req, res) => {
     }
     if (updates.length === 0) return res.status(400).json({ error: "No fields to update" });
     updates.push("updated_at = ?");
-    values.push((/* @__PURE__ */ new Date()).toISOString());
+    values.push((/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, ""));
     values.push(id);
     await db.run(`UPDATE locations SET ${updates.join(", ")} WHERE id = ?`, values);
     const updated = await db.get("SELECT * FROM locations WHERE id = ?", [id]);
@@ -117871,7 +117871,7 @@ function getTools(cfg) {
             const currentAdmins = await db.all("SELECT id FROM users WHERE is_admin = 1 AND is_super_user = 0");
             if (currentAdmins.length >= 2) return JSON.stringify({ error: "M\xE1ximo 2 Usuario Administrador permitidos" });
           }
-          const id = v4_default(), hp = await hashPassword(args.password), now = (/* @__PURE__ */ new Date()).toISOString();
+          const id = v4_default(), hp = await hashPassword(args.password), now = (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "");
           let derivedPosition = args.position;
           let derivedArea = args.practice_area || null;
           if (args.custom_position_id) {
@@ -117900,7 +117900,7 @@ function getTools(cfg) {
               r.push({ email: u.email, error: "Ya existe" });
               continue;
             }
-            const id = v4_default(), hp = await hashPassword(u.password), now = (/* @__PURE__ */ new Date()).toISOString();
+            const id = v4_default(), hp = await hashPassword(u.password), now = (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "");
             let bPosition = u.position;
             let bArea = u.practice_area || null;
             if (u.custom_position_id) {
@@ -117948,16 +117948,16 @@ function getTools(cfg) {
             vals.push(newAdmin ? 1 : 0);
           }
           if (updates.length === 0) return JSON.stringify({ error: "Sin cambios" });
-          vals.push((/* @__PURE__ */ new Date()).toISOString(), args.id);
+          vals.push((/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, ""), args.id);
           await db.run(`UPDATE users SET ${updates.join(", ")}, updated_at=? WHERE id=?`, vals);
           return JSON.stringify({ ok: true, msg: "Rol actualizado" });
         }
         if (act === "deactivate") {
-          await db.run("UPDATE users SET is_active=0, updated_at=? WHERE id=?", [(/* @__PURE__ */ new Date()).toISOString(), args.id]);
+          await db.run("UPDATE users SET is_active=0, updated_at=? WHERE id=?", [(/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, ""), args.id]);
           return JSON.stringify({ ok: true, msg: "Usuario desactivado" });
         }
         if (act === "activate") {
-          await db.run("UPDATE users SET is_active=1, updated_at=? WHERE id=?", [(/* @__PURE__ */ new Date()).toISOString(), args.id]);
+          await db.run("UPDATE users SET is_active=1, updated_at=? WHERE id=?", [(/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, ""), args.id]);
           return JSON.stringify({ ok: true, msg: "Usuario activado" });
         }
         if (act === "assign_supervisor") {
@@ -118138,7 +118138,7 @@ function getTools(cfg) {
         }
         if (act === "complete_eval") {
           if (!args.id) return JSON.stringify({ error: "Falta id" });
-          await db.run("UPDATE evaluations SET completed_at=? WHERE id=?", [(/* @__PURE__ */ new Date()).toISOString(), args.id]);
+          await db.run("UPDATE evaluations SET completed_at=? WHERE id=?", [(/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, ""), args.id]);
           const responses = await db.all("SELECT score, weight, not_applicable, no_elements FROM evaluation_responses WHERE evaluation_id=?", [args.id]);
           const applicable = responses.filter((r) => !r.not_applicable && !r.no_elements);
           const totalScore = applicable.length ? Math.round(applicable.reduce((s, r) => s + r.score * r.weight, 0) / applicable.reduce((s, r) => s + r.weight, 0) * 20 * 10) / 10 : 0;
@@ -118147,7 +118147,7 @@ function getTools(cfg) {
         }
         if (act === "complete_feedback") {
           if (!args.id) return JSON.stringify({ error: "Falta id" });
-          await db.run("UPDATE evaluations SET feedback_completed=1, feedback_completed_at=?, feedback_completed_by=? WHERE id=?", [(/* @__PURE__ */ new Date()).toISOString(), uid, args.id]);
+          await db.run("UPDATE evaluations SET feedback_completed=1, feedback_completed_at=?, feedback_completed_by=? WHERE id=?", [(/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, ""), uid, args.id]);
           return JSON.stringify({ ok: true, msg: "Feedback completado" });
         }
         if (act === "questions") {
@@ -118164,7 +118164,7 @@ function getTools(cfg) {
           const id = v4_default(), qid = args.question_id || "q_" + Date.now();
           await db.run(
             "INSERT INTO library_questions (id,question_id,category,text,default_weight,created_at,created_by) VALUES(?,?,?,?,?,?,?)",
-            [id, qid, args.category, args.text, Number(args.weight) || 1, (/* @__PURE__ */ new Date()).toISOString(), uid]
+            [id, qid, args.category, args.text, Number(args.weight) || 1, (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, ""), uid]
           );
           return JSON.stringify({ ok: true, qid, msg: "Pregunta creada en biblioteca" });
         }
@@ -118178,7 +118178,7 @@ function getTools(cfg) {
             }
             try {
               const id = v4_default(), qid = "q_" + Date.now() + "_" + Math.random().toString(36).slice(2, 6);
-              await db.run("INSERT INTO library_questions (id,question_id,category,text,default_weight,created_at,created_by) VALUES(?,?,?,?,?,?,?)", [id, qid, q.category, q.text, Number(q.weight) || 1, (/* @__PURE__ */ new Date()).toISOString(), uid]);
+              await db.run("INSERT INTO library_questions (id,question_id,category,text,default_weight,created_at,created_by) VALUES(?,?,?,?,?,?,?)", [id, qid, q.category, q.text, Number(q.weight) || 1, (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, ""), uid]);
               r.push({ qid, ok: true });
             } catch (e) {
               r.push({ text: q.text, error: String(e) });
@@ -118304,11 +118304,11 @@ function getTools(cfg) {
           return JSON.stringify(await db.all("SELECT v.*, u.name as user_name FROM vacation_requests v JOIN users u ON v.user_id=u.id WHERE v.status=? ORDER BY v.created_at DESC LIMIT 50", [status]));
         }
         if (args.action === "approve") {
-          await db.run("UPDATE vacation_requests SET status=?, processed_by=?, processed_at=? WHERE id=?", ["approved", uid, (/* @__PURE__ */ new Date()).toISOString(), args.id]);
+          await db.run("UPDATE vacation_requests SET status=?, processed_by=?, processed_at=? WHERE id=?", ["approved", uid, (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, ""), args.id]);
           return JSON.stringify({ ok: true, msg: "Aprobada" });
         }
         if (args.action === "reject") {
-          await db.run("UPDATE vacation_requests SET status=?, processed_by=?, processed_at=? WHERE id=?", ["rejected", uid, (/* @__PURE__ */ new Date()).toISOString(), args.id]);
+          await db.run("UPDATE vacation_requests SET status=?, processed_by=?, processed_at=? WHERE id=?", ["rejected", uid, (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, ""), args.id]);
           return JSON.stringify({ ok: true, msg: "Rechazada" });
         }
         return JSON.stringify({ error: "Acci\xF3n desconocida" });
@@ -118339,7 +118339,7 @@ function getTools(cfg) {
           const id = v4_default();
           await db.run(
             "INSERT INTO announcements (id,author_id,title,content,audience,priority,archived,created_at) VALUES(?,?,?,?,?,?,?,?)",
-            [id, uid, args.title, args.content, args.audience || "all", args.priority || "normal", 0, (/* @__PURE__ */ new Date()).toISOString()]
+            [id, uid, args.title, args.content, args.audience || "all", args.priority || "normal", 0, (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "")]
           );
           return JSON.stringify({ ok: true, msg: "Comunicado creado", id });
         }
@@ -118374,7 +118374,7 @@ function getTools(cfg) {
         if (act === "toggle_system") {
           if (!["active", "inactive"].includes(args.status)) return JSON.stringify({ error: "Inv\xE1lido" });
           await db.run("UPDATE system_status SET status=? WHERE id=1", [args.status]);
-          await db.run("INSERT INTO activation_history (id,action,date,by_user_id) VALUES(?,?,?,?)", [v4_default(), args.status === "active" ? "activated" : "deactivated", (/* @__PURE__ */ new Date()).toISOString(), uid]);
+          await db.run("INSERT INTO activation_history (id,action,date,by_user_id) VALUES(?,?,?,?)", [v4_default(), args.status === "active" ? "activated" : "deactivated", (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, ""), uid]);
           return JSON.stringify({ ok: true, msg: `Sistema ${args.status}` });
         }
         if (act === "toggle_module") {
@@ -118561,12 +118561,12 @@ router15.post("/chat", upload.single("file"), async (req, res) => {
     if (!convId) {
       convId = v4_default();
       const title = fullMessage.slice(0, 50) || "Nueva conversaci\xF3n";
-      await db.run("INSERT INTO copilot_conversations (id,user_id,title,created_at,updated_at) VALUES(?,?,?,?,?)", [convId, req.user.id, title, (/* @__PURE__ */ new Date()).toISOString(), (/* @__PURE__ */ new Date()).toISOString()]);
+      await db.run("INSERT INTO copilot_conversations (id,user_id,title,created_at,updated_at) VALUES(?,?,?,?,?)", [convId, req.user.id, title, (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, ""), (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "")]);
     }
     await db.run("INSERT INTO copilot_messages (id,conversation_id,role,content,created_at) VALUES(?,?,?,?,?)", [v4_default(), convId, "user", fileContent ? `${fullMessage}
 
 [Archivo: ${fileName}]
-${fileContent}` : fullMessage, (/* @__PURE__ */ new Date()).toISOString()]);
+${fileContent}` : fullMessage, (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "")]);
     const history = (await db.all("SELECT role, content FROM copilot_messages WHERE conversation_id=? ORDER BY created_at DESC LIMIT 20", [convId])).reverse();
     const useTools = needsTools(fullMessage, !!fileContent);
     const messages = [{ role: "system", content: await buildSystemPrompt(cfg, userName, useTools) }];
@@ -118651,8 +118651,8 @@ ${fileContent}` : fullMessage, (/* @__PURE__ */ new Date()).toISOString()]);
         break;
       }
     }
-    await db.run("INSERT INTO copilot_messages (id,conversation_id,role,content,tool_calls,tool_results,created_at) VALUES(?,?,?,?,?,?,?)", [v4_default(), convId, "assistant", finalResponse, toolCallsData, toolResultsData, (/* @__PURE__ */ new Date()).toISOString()]);
-    await db.run("UPDATE copilot_conversations SET updated_at=? WHERE id=?", [(/* @__PURE__ */ new Date()).toISOString(), convId]);
+    await db.run("INSERT INTO copilot_messages (id,conversation_id,role,content,tool_calls,tool_results,created_at) VALUES(?,?,?,?,?,?,?)", [v4_default(), convId, "assistant", finalResponse, toolCallsData, toolResultsData, (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "")]);
+    await db.run("UPDATE copilot_conversations SET updated_at=? WHERE id=?", [(/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, ""), convId]);
     return res.json({ conversationId: convId, message: { id: v4_default(), role: "assistant", content: finalResponse } });
   } catch (e) {
     console.error("Chat error:", e);

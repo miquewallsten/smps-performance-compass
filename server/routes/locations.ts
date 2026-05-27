@@ -27,7 +27,7 @@ router.post('/', authMiddleware, requireAdmin, async (req: Request, res: Respons
     if (!id || !label) {
       return res.status(400).json({ error: 'id and label are required' });
     }
-    const now = new Date().toISOString();
+    const now = new Date().toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, '');
     await db.run(
       'INSERT INTO locations (id, label, city, office, floor, desk, sort_order, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
       [id, label, city || null, office || null, floor || null, desk || null, sortOrder || 0, now, now]
@@ -62,7 +62,7 @@ router.patch('/:id', authMiddleware, requireAdmin, async (req: Request, res: Res
     if (updates.length === 0) return res.status(400).json({ error: 'No fields to update' });
 
     updates.push('updated_at = ?');
-    values.push(new Date().toISOString());
+    values.push(new Date().toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, ''));
     values.push(id);
     await db.run(`UPDATE locations SET ${updates.join(', ')} WHERE id = ?`, values);
 

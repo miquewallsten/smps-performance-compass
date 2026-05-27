@@ -55,7 +55,7 @@ router.post('/', authMiddleware, requireAdmin, async (req: Request, res: Respons
     const area = await db.get('SELECT id FROM work_areas WHERE id = ?', [workAreaId]);
     if (!area) return res.status(400).json({ error: 'Work area not found' });
 
-    const now = new Date().toISOString();
+    const now = new Date().toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, '');
     await db.run(
       'INSERT INTO custom_positions (id, label, work_area_id, base_position, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)',
       [id, label, workAreaId, basePosition, now, now]
@@ -109,7 +109,7 @@ router.patch('/:id', authMiddleware, requireAdmin, async (req: Request, res: Res
     if (updates.length === 0) return res.status(400).json({ error: 'No fields to update' });
 
     updates.push('updated_at = ?');
-    values.push(new Date().toISOString());
+    values.push(new Date().toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, ''));
     values.push(id);
 
     await db.run(`UPDATE custom_positions SET ${updates.join(', ')} WHERE id = ?`, values);

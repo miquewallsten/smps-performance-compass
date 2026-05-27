@@ -75,7 +75,7 @@ router.post('/init', async (req: Request, res: Response) => {
       return res.status(409).json({ error: 'Email is already registered' });
     }
 
-    const now = new Date().toISOString();
+    const now = new Date().toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, '').replace('T', ' ').replace(/\.\d{3}Z$/, '');
     const userId = uuidv4();
 
     // Hash password and security answer
@@ -169,7 +169,7 @@ router.patch('/status', authMiddleware, requireSuperUser, async (req: Request, r
       return res.status(400).json({ error: 'Status must be "active" or "inactive"' });
     }
 
-    const now = new Date().toISOString();
+    const now = new Date().toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, '').replace('T', ' ').replace(/\.\d{3}Z$/, '');
     const action = status === 'active' ? 'activated' : 'deactivated';
 
     await db.run('UPDATE system_status SET status = ? WHERE id = 1', [status]);

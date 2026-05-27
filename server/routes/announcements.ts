@@ -47,7 +47,7 @@ router.post('/', authMiddleware, requireAdmin, async (req: Request, res: Respons
     if (!['all', 'legal', 'administrativo'].includes(audience)) return res.status(400).json({ error: 'Invalid audience' });
 
     const id = uuidv4();
-    const now = new Date().toISOString();
+    const now = new Date().toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, '');
     await db.run(
       'INSERT INTO announcements (id, author_id, title, body, audience, created_at, expires_at, archived) VALUES (?, ?, ?, ?, ?, ?, ?, 0)',
       [id, req.user!.id, title, body, audience, now, expiresAt || null]

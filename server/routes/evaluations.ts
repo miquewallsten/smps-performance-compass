@@ -82,7 +82,7 @@ router.post('/', authMiddleware, async (req: Request, res: Response) => {
     }
 
     const id = uuidv4();
-    const now = new Date().toISOString();
+    const now = new Date().toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, '');
     const respArr = responses || [];
     // Use totalScore from the frontend (weighted calculation with section weights, NA, etc.)
     // Fall back to simple average only if not provided
@@ -125,7 +125,7 @@ router.patch('/:id', authMiddleware, async (req: Request, res: Response) => {
     if (!evaluation) return res.status(404).json({ error: 'Evaluation not found' });
 
     const { comments, supervisorComments, totalScore, responses } = req.body;
-    const now = new Date().toISOString();
+    const now = new Date().toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, '');
 
     const updates: string[] = [];
     const params: any[] = [];
@@ -166,7 +166,7 @@ router.patch('/:id/feedback', authMiddleware, async (req: Request, res: Response
   try {
     const evaluation = await db.get('SELECT * FROM evaluations WHERE id = ?', [req.params.id]);
     if (!evaluation) return res.status(404).json({ error: 'Evaluation not found' });
-    const now = new Date().toISOString();
+    const now = new Date().toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, '');
     await db.run('UPDATE evaluations SET feedback_completed = 1, feedback_completed_at = ?, feedback_completed_by = ? WHERE id = ?',
       [now, req.user!.id, req.params.id]);
     const updated = await db.get('SELECT * FROM evaluations WHERE id = ?', [req.params.id]);
@@ -190,7 +190,7 @@ router.patch('/:id/na-approval', authMiddleware, async (req: Request, res: Respo
       `INSERT INTO evaluation_na_approvals (id, evaluation_id, question_id, approved, approved_by, approved_at)
        VALUES (?, ?, ?, ?, ?, ?)
        ON DUPLICATE KEY UPDATE approved = VALUES(approved), approved_by = VALUES(approved_by), approved_at = VALUES(approved_at)`,
-      [uuidv4(), req.params.id, questionId, approved ? 1 : 0, req.user!.id, new Date().toISOString()]
+      [uuidv4(), req.params.id, questionId, approved ? 1 : 0, req.user!.id, new Date().toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, '')]
     );
 
     const approvals = await db.all('SELECT * FROM evaluation_na_approvals WHERE evaluation_id = ?', [req.params.id]);

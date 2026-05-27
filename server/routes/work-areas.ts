@@ -42,7 +42,7 @@ router.post('/', authMiddleware, requireAdmin, async (req: Request, res: Respons
     if (!['legal', 'administrativo'].includes(level)) {
       return res.status(400).json({ error: 'Level must be "legal" or "administrativo"' });
     }
-    const now = new Date().toISOString();
+    const now = new Date().toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, '');
     await db.run(
       'INSERT INTO work_areas (id, label, level, sort_order, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)',
       [id, label, level, sortOrder || 0, now, now]
@@ -79,7 +79,7 @@ router.patch('/:id', authMiddleware, requireAdmin, async (req: Request, res: Res
     if (updates.length === 0) return res.status(400).json({ error: 'No fields to update' });
 
     updates.push('updated_at = ?');
-    values.push(new Date().toISOString());
+    values.push(new Date().toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, ''));
     values.push(id);
     await db.run(`UPDATE work_areas SET ${updates.join(', ')} WHERE id = ?`, values);
 

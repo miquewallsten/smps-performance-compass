@@ -1,4 +1,4 @@
-import { pool, exec, getScalar } from './connection.js';
+import { pool, exec, getScalar, run, get } from './connection.js';
 
 /**
  * Run all database migrations — creates every table and index if they don't exist.
@@ -137,7 +137,7 @@ export async function migrate(): Promise<void> {
       employee_id VARCHAR(36) NOT NULL,
       supervisor_id VARCHAR(36) NOT NULL,
       period VARCHAR(50) NOT NULL,
-      content TEXT NOT NULL DEFAULT '',
+      content TEXT NOT NULL,
       approval_status VARCHAR(50) NOT NULL DEFAULT 'pending',
       approval_comments TEXT,
       approved_by VARCHAR(36),
@@ -155,9 +155,9 @@ export async function migrate(): Promise<void> {
       competencia VARCHAR(255) NOT NULL DEFAULT '',
       objetivo TEXT NOT NULL,
       acciones TEXT NOT NULL,
-      que_evitar TEXT NOT NULL DEFAULT '',
+      que_evitar TEXT NOT NULL,
       fecha_revision VARCHAR(50) NOT NULL DEFAULT '',
-      apoyos TEXT NOT NULL DEFAULT '',
+      apoyos TEXT NOT NULL,
       created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
       INDEX idx_sai_plan (action_plan_id)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
@@ -382,65 +382,65 @@ export async function migrate(): Promise<void> {
   // ─── ALTER TABLE migrations for existing databases ──────────────────────────
   const alterMigrations: string[] = [
     // evaluation_responses: add not_applicable and no_elements
-    `ALTER TABLE evaluation_responses ADD COLUMN IF NOT EXISTS not_applicable TINYINT(1) NOT NULL DEFAULT 0 AFTER score`,
-    `ALTER TABLE evaluation_responses ADD COLUMN IF NOT EXISTS no_elements TINYINT(1) NOT NULL DEFAULT 0 AFTER not_applicable`,
+    `ALTER TABLE evaluation_responses ADD COLUMN not_applicable TINYINT(1) NOT NULL DEFAULT 0 AFTER score`,
+    `ALTER TABLE evaluation_responses ADD COLUMN no_elements TINYINT(1) NOT NULL DEFAULT 0 AFTER not_applicable`,
 
     // evaluation_na_approvals: add approved column and unique key
-    `ALTER TABLE evaluation_na_approvals ADD COLUMN IF NOT EXISTS approved TINYINT(1) NOT NULL DEFAULT 0 AFTER question_id`,
+    `ALTER TABLE evaluation_na_approvals ADD COLUMN approved TINYINT(1) NOT NULL DEFAULT 0 AFTER question_id`,
     `ALTER TABLE evaluation_na_approvals ADD UNIQUE INDEX IF NOT EXISTS ena_eval_question_unique (evaluation_id, question_id)`,
 
     // action_plans: add missing columns
-    `ALTER TABLE action_plans ADD COLUMN IF NOT EXISTS content TEXT NOT NULL DEFAULT '' AFTER period`,
-    `ALTER TABLE action_plans ADD COLUMN IF NOT EXISTS approval_status VARCHAR(50) NOT NULL DEFAULT 'pending' AFTER content`,
-    `ALTER TABLE action_plans ADD COLUMN IF NOT EXISTS approval_comments TEXT AFTER approval_status`,
-    `ALTER TABLE action_plans ADD COLUMN IF NOT EXISTS approved_by VARCHAR(36) AFTER approval_comments`,
-    `ALTER TABLE action_plans ADD COLUMN IF NOT EXISTS approved_at DATETIME AFTER approved_by`,
+    `ALTER TABLE action_plans ADD COLUMN content TEXT NOT NULL AFTER period`,
+    `ALTER TABLE action_plans ADD COLUMN approval_status VARCHAR(50) NOT NULL DEFAULT 'pending' AFTER content`,
+    `ALTER TABLE action_plans ADD COLUMN approval_comments TEXT AFTER approval_status`,
+    `ALTER TABLE action_plans ADD COLUMN approved_by VARCHAR(36) AFTER approval_comments`,
+    `ALTER TABLE action_plans ADD COLUMN approved_at DATETIME AFTER approved_by`,
 
     // smart_action_items: add missing SMART columns
-    `ALTER TABLE smart_action_items ADD COLUMN IF NOT EXISTS competencia VARCHAR(255) NOT NULL DEFAULT '' AFTER action_plan_id`,
-    `ALTER TABLE smart_action_items ADD COLUMN IF NOT EXISTS objetivo TEXT NOT NULL AFTER competencia`,
-    `ALTER TABLE smart_action_items ADD COLUMN IF NOT EXISTS acciones TEXT NOT NULL AFTER objetivo`,
-    `ALTER TABLE smart_action_items ADD COLUMN IF NOT EXISTS que_evitar TEXT NOT NULL DEFAULT '' AFTER acciones`,
-    `ALTER TABLE smart_action_items ADD COLUMN IF NOT EXISTS fecha_revision VARCHAR(50) NOT NULL DEFAULT '' AFTER que_evitar`,
-    `ALTER TABLE smart_action_items ADD COLUMN IF NOT EXISTS apoyos TEXT NOT NULL DEFAULT '' AFTER fecha_revision`,
+    `ALTER TABLE smart_action_items ADD COLUMN competencia VARCHAR(255) NOT NULL DEFAULT '' AFTER action_plan_id`,
+    `ALTER TABLE smart_action_items ADD COLUMN objetivo TEXT NOT NULL AFTER competencia`,
+    `ALTER TABLE smart_action_items ADD COLUMN acciones TEXT NOT NULL AFTER objetivo`,
+    `ALTER TABLE smart_action_items ADD COLUMN que_evitar TEXT NOT NULL AFTER acciones`,
+    `ALTER TABLE smart_action_items ADD COLUMN fecha_revision VARCHAR(50) NOT NULL DEFAULT '' AFTER que_evitar`,
+    `ALTER TABLE smart_action_items ADD COLUMN apoyos TEXT NOT NULL AFTER fecha_revision`,
 
     // personal_objectives: make pilares_estrategicos and alcance nullable (code doesn't always provide them)
     `ALTER TABLE personal_objectives MODIFY COLUMN pilares_estrategicos TEXT NULL`,
     `ALTER TABLE personal_objectives MODIFY COLUMN alcance TEXT NULL`,
 
     // admin_objectives: add missing columns
-    `ALTER TABLE admin_objectives ADD COLUMN IF NOT EXISTS personal_objectives_id VARCHAR(36) AFTER id`,
-    `ALTER TABLE admin_objectives ADD COLUMN IF NOT EXISTS tipo_objetivo VARCHAR(255) NOT NULL DEFAULT '' AFTER personal_objectives_id`,
-    `ALTER TABLE admin_objectives ADD COLUMN IF NOT EXISTS nombre_objetivo VARCHAR(255) NOT NULL DEFAULT '' AFTER tipo_objetivo`,
-    `ALTER TABLE admin_objectives ADD COLUMN IF NOT EXISTS pilares_estrategicos TEXT AFTER nombre_objetivo`,
-    `ALTER TABLE admin_objectives ADD COLUMN IF NOT EXISTS alcance TEXT AFTER pilares_estrategicos`,
-    `ALTER TABLE admin_objectives ADD COLUMN IF NOT EXISTS porcentaje_avance DOUBLE NOT NULL DEFAULT 0 AFTER alcance`,
-    `ALTER TABLE admin_objectives ADD COLUMN IF NOT EXISTS status VARCHAR(50) NOT NULL DEFAULT 'draft' AFTER porcentaje_avance`,
-    `ALTER TABLE admin_objectives ADD COLUMN IF NOT EXISTS submitted_at DATETIME AFTER status`,
-    `ALTER TABLE admin_objectives ADD COLUMN IF NOT EXISTS reviewed_by VARCHAR(36) AFTER submitted_at`,
-    `ALTER TABLE admin_objectives ADD COLUMN IF NOT EXISTS reviewed_at DATETIME AFTER reviewed_by`,
-    `ALTER TABLE admin_objectives ADD COLUMN IF NOT EXISTS reviewer_comment TEXT AFTER reviewed_at`,
+    `ALTER TABLE admin_objectives ADD COLUMN personal_objectives_id VARCHAR(36) AFTER id`,
+    `ALTER TABLE admin_objectives ADD COLUMN tipo_objetivo VARCHAR(255) NOT NULL DEFAULT '' AFTER personal_objectives_id`,
+    `ALTER TABLE admin_objectives ADD COLUMN nombre_objetivo VARCHAR(255) NOT NULL DEFAULT '' AFTER tipo_objetivo`,
+    `ALTER TABLE admin_objectives ADD COLUMN pilares_estrategicos TEXT AFTER nombre_objetivo`,
+    `ALTER TABLE admin_objectives ADD COLUMN alcance TEXT AFTER pilares_estrategicos`,
+    `ALTER TABLE admin_objectives ADD COLUMN porcentaje_avance DOUBLE NOT NULL DEFAULT 0 AFTER alcance`,
+    `ALTER TABLE admin_objectives ADD COLUMN status VARCHAR(50) NOT NULL DEFAULT 'draft' AFTER porcentaje_avance`,
+    `ALTER TABLE admin_objectives ADD COLUMN submitted_at DATETIME AFTER status`,
+    `ALTER TABLE admin_objectives ADD COLUMN reviewed_by VARCHAR(36) AFTER submitted_at`,
+    `ALTER TABLE admin_objectives ADD COLUMN reviewed_at DATETIME AFTER reviewed_by`,
+    `ALTER TABLE admin_objectives ADD COLUMN reviewer_comment TEXT AFTER reviewed_at`,
 
     // legal_objectives: add missing columns
-    `ALTER TABLE legal_objectives ADD COLUMN IF NOT EXISTS personal_objectives_id VARCHAR(36) AFTER id`,
-    `ALTER TABLE legal_objectives ADD COLUMN IF NOT EXISTS horas_meta DOUBLE NOT NULL DEFAULT 0 AFTER personal_objectives_id`,
-    `ALTER TABLE legal_objectives ADD COLUMN IF NOT EXISTS horas_ajustadas DOUBLE NOT NULL DEFAULT 0 AFTER horas_meta`,
-    `ALTER TABLE legal_objectives ADD COLUMN IF NOT EXISTS porcentaje_horas_vs_meta DOUBLE NOT NULL DEFAULT 0 AFTER horas_ajustadas`,
-    `ALTER TABLE legal_objectives ADD COLUMN IF NOT EXISTS porcentaje_eficiencia DOUBLE NOT NULL DEFAULT 0 AFTER porcentaje_horas_vs_meta`,
-    `ALTER TABLE legal_objectives ADD COLUMN IF NOT EXISTS meta_pro_bono DOUBLE NOT NULL DEFAULT 0 AFTER porcentaje_eficiencia`,
-    `ALTER TABLE legal_objectives ADD COLUMN IF NOT EXISTS realizado_pro_bono DOUBLE NOT NULL DEFAULT 0 AFTER meta_pro_bono`,
-    `ALTER TABLE legal_objectives ADD COLUMN IF NOT EXISTS meta_marketing DOUBLE NOT NULL DEFAULT 0 AFTER realizado_pro_bono`,
-    `ALTER TABLE legal_objectives ADD COLUMN IF NOT EXISTS realizado_marketing DOUBLE NOT NULL DEFAULT 0 AFTER meta_marketing`,
-    `ALTER TABLE legal_objectives ADD COLUMN IF NOT EXISTS meta_business_dev DOUBLE NOT NULL DEFAULT 0 AFTER realizado_marketing`,
-    `ALTER TABLE legal_objectives ADD COLUMN IF NOT EXISTS realizado_business_dev DOUBLE NOT NULL DEFAULT 0 AFTER meta_business_dev`,
-    `ALTER TABLE legal_objectives ADD COLUMN IF NOT EXISTS meta_mentoring DOUBLE NOT NULL DEFAULT 0 AFTER realizado_business_dev`,
-    `ALTER TABLE legal_objectives ADD COLUMN IF NOT EXISTS realizado_mentoring DOUBLE NOT NULL DEFAULT 0 AFTER meta_mentoring`,
-    `ALTER TABLE legal_objectives ADD COLUMN IF NOT EXISTS resultado_area DOUBLE NOT NULL DEFAULT 0 AFTER realizado_mentoring`,
-    `ALTER TABLE legal_objectives ADD COLUMN IF NOT EXISTS resultado_firma DOUBLE NOT NULL DEFAULT 0 AFTER resultado_area`,
-    `ALTER TABLE legal_objectives ADD COLUMN IF NOT EXISTS porcentaje_total_bono DOUBLE NOT NULL DEFAULT 0 AFTER resultado_firma`,
+    `ALTER TABLE legal_objectives ADD COLUMN personal_objectives_id VARCHAR(36) AFTER id`,
+    `ALTER TABLE legal_objectives ADD COLUMN horas_meta DOUBLE NOT NULL DEFAULT 0 AFTER personal_objectives_id`,
+    `ALTER TABLE legal_objectives ADD COLUMN horas_ajustadas DOUBLE NOT NULL DEFAULT 0 AFTER horas_meta`,
+    `ALTER TABLE legal_objectives ADD COLUMN porcentaje_horas_vs_meta DOUBLE NOT NULL DEFAULT 0 AFTER horas_ajustadas`,
+    `ALTER TABLE legal_objectives ADD COLUMN porcentaje_eficiencia DOUBLE NOT NULL DEFAULT 0 AFTER porcentaje_horas_vs_meta`,
+    `ALTER TABLE legal_objectives ADD COLUMN meta_pro_bono DOUBLE NOT NULL DEFAULT 0 AFTER porcentaje_eficiencia`,
+    `ALTER TABLE legal_objectives ADD COLUMN realizado_pro_bono DOUBLE NOT NULL DEFAULT 0 AFTER meta_pro_bono`,
+    `ALTER TABLE legal_objectives ADD COLUMN meta_marketing DOUBLE NOT NULL DEFAULT 0 AFTER realizado_pro_bono`,
+    `ALTER TABLE legal_objectives ADD COLUMN realizado_marketing DOUBLE NOT NULL DEFAULT 0 AFTER meta_marketing`,
+    `ALTER TABLE legal_objectives ADD COLUMN meta_business_dev DOUBLE NOT NULL DEFAULT 0 AFTER realizado_marketing`,
+    `ALTER TABLE legal_objectives ADD COLUMN realizado_business_dev DOUBLE NOT NULL DEFAULT 0 AFTER meta_business_dev`,
+    `ALTER TABLE legal_objectives ADD COLUMN meta_mentoring DOUBLE NOT NULL DEFAULT 0 AFTER realizado_business_dev`,
+    `ALTER TABLE legal_objectives ADD COLUMN realizado_mentoring DOUBLE NOT NULL DEFAULT 0 AFTER meta_mentoring`,
+    `ALTER TABLE legal_objectives ADD COLUMN resultado_area DOUBLE NOT NULL DEFAULT 0 AFTER realizado_mentoring`,
+    `ALTER TABLE legal_objectives ADD COLUMN resultado_firma DOUBLE NOT NULL DEFAULT 0 AFTER resultado_area`,
+    `ALTER TABLE legal_objectives ADD COLUMN porcentaje_total_bono DOUBLE NOT NULL DEFAULT 0 AFTER resultado_firma`,
 
     // vacation_requests: add days column if missing
-    `ALTER TABLE vacation_requests ADD COLUMN IF NOT EXISTS days INT NOT NULL DEFAULT 0 AFTER end_date`,
+    `ALTER TABLE vacation_requests ADD COLUMN days INT NOT NULL DEFAULT 0 AFTER end_date`,
 
     // ─── Work Areas & Positions & Locations ──────────────────────────────────
     // work_areas: create table
@@ -467,18 +467,18 @@ export async function migrate(): Promise<void> {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
 
     // custom_positions: add work_area_id and updated_at
-    `ALTER TABLE custom_positions ADD COLUMN IF NOT EXISTS work_area_id VARCHAR(50) AFTER label`,
-    `ALTER TABLE custom_positions ADD COLUMN IF NOT EXISTS updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP`,
+    `ALTER TABLE custom_positions ADD COLUMN work_area_id VARCHAR(50) AFTER label`,
+    `ALTER TABLE custom_positions ADD COLUMN updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP`,
 
     // users: add location_id
-    `ALTER TABLE users ADD COLUMN IF NOT EXISTS location_id VARCHAR(50) AFTER must_change_password`,
+    `ALTER TABLE users ADD COLUMN location_id VARCHAR(50) AFTER must_change_password`,
   ];
 
   for (const sql of alterMigrations) {
     try {
       await exec(sql);
     } catch (err: any) {
-      if (/already exists/i.test(err?.message) || /Duplicate column/i.test(err?.message) || /Duplicate key/i.test(err?.message)) {
+      if (/already exists/i.test(err?.message) || /Duplicate column/i.test(err?.message) || /Duplicate key/i.test(err?.message) || /duplicate column name/i.test(err?.message)) {
         // Already exists — fine, skip
       } else {
         console.error('Alter table warning:', err?.message || err);

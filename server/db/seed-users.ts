@@ -75,7 +75,7 @@ const ASSIGNMENTS: SeedAssignment[] = [
 export async function seed() {
   console.log('Seeding database...');
 
-  const now = () => new Date().toISOString().slice(0, 19).replace('T', ' ');
+  const now = () => new Date().toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, '').slice(0, 19).replace('T', ' ');
 
   // ─── 1. Create SuperAdmin ────────────────────────────────────────────
   await db.transaction(async (conn) => {
