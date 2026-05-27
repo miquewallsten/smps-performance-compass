@@ -161,3 +161,168 @@
 @keyframes smps-fade-up { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes smps-slide-in { from { opacity: 0; transform: translateX(-8px); } to { opacity: 1; transform: translateX(0); } }
 @keyframes smps-scale-in { from { opacity: 0; transform: scale(0.97); } to { opacity: 1; transform: scale(1); } }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   TIME MACHINE — UserTimeline horizontal timeline
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Scroll container — hide scrollbar for clean look */
+.tm-scroll-container {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--border)) transparent;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+.tm-scroll-container::-webkit-scrollbar {
+  height: 4px;
+}
+.tm-scroll-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+.tm-scroll-container::-webkit-scrollbar-thumb {
+  background: hsl(var(--border));
+  border-radius: 999px;
+}
+
+/* Month section entrance */
+.tm-month-section {
+  animation: tm-month-reveal 450ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+@keyframes tm-month-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Event node entrance */
+.tm-event-node {
+  animation: tm-node-appear 350ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+@keyframes tm-node-appear {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Rail dot pulse on appear */
+.tm-rail-dot {
+  animation: tm-dot-pulse 600ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+@keyframes tm-dot-pulse {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.4);
+    opacity: 0.6;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Event card */
+.tm-event-card {
+  transition: transform 150ms cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 200ms ease-out,
+              border-color 150ms ease-out;
+  box-shadow: 0 1px 3px hsl(215 50% 15% / 0.04);
+}
+@media (hover: hover) and (pointer: fine) {
+  .tm-event-card:hover {
+    transform: translateY(-2px) scale(1.02);
+    box-shadow: 0 4px 12px -2px hsl(215 50% 15% / 0.08);
+  }
+}
+.tm-event-card:active {
+  transform: scale(0.97);
+}
+
+/* Expanded section reveal */
+.tm-expand-section {
+  animation: tm-expand 200ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+@keyframes tm-expand {
+  from {
+    opacity: 0;
+    max-height: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    max-height: 300px;
+    transform: translateY(0);
+  }
+}
+
+/* Score ring animation */
+.tm-score-ring {
+  transition: stroke-dashoffset 700ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Slide-down for add note */
+.tm-slide-down {
+  animation: tm-slide-down 200ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+@keyframes tm-slide-down {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Filters bar entrance */
+.tm-filters-bar {
+  animation: tm-filters-in 200ms ease-out both;
+}
+@keyframes tm-filters-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Scroll arrows */
+.tm-arrow-left,
+.tm-arrow-right {
+  animation: tm-arrow-fade 200ms ease-out both;
+}
+@keyframes tm-arrow-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .tm-month-section,
+  .tm-event-node,
+  .tm-rail-dot,
+  .tm-expand-section,
+  .tm-slide-down,
+  .tm-filters-bar,
+  .tm-arrow-left,
+  .tm-arrow-right {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+  .tm-event-card {
+    transition-duration: 0.01ms !important;
+  }
+  .tm-score-ring {
+    transition-duration: 0.01ms !important;
+  }
+}
