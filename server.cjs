@@ -115079,7 +115079,7 @@ var SUPERADMIN_PASSWORD = "3791";
 var SUPERADMIN_NAME = "SuperAdmin";
 var USERS = [
   // === LEGAL ===
-  { name: "Lic. Carlos Mendoza", email: "cmendoza@smps.com", position: "socio", isAdmin: false, isManagingPartner: true, isActive: true, password: "1234" },
+  { name: "Lic. Carlos Mendoza", email: "cmendoza@smps.com", position: "socio", isAdmin: true, isManagingPartner: true, isActive: true, password: "1234" },
   { name: "Lic. Patricia Salinas", email: "psalinas@smps.com", position: "socio", isAdmin: false, isManagingPartner: false, isActive: true, password: "1234" },
   { name: "Lic. Andr\xE9s Beltr\xE1n", email: "abeltran@smps.com", position: "salary_partner", isAdmin: false, isManagingPartner: false, isActive: true, password: "1234" },
   { name: "Lic. Roberto Figueroa", email: "rfigueroa@smps.com", position: "asociado_sr", practiceArea: "corporativo", isAdmin: false, isManagingPartner: false, isActive: true, password: "1234" },
@@ -115690,21 +115690,30 @@ router2.patch("/:id", authMiddleware, requireSelfOrAdmin, async (req, res) => {
         const newMP = !!isManagingPartner;
         if (newMP !== currentIsMP) {
           if (newMP) {
-            // Auto-remove previous Managing Partner — only one Socio Administrador allowed
-            await db.run("UPDATE users SET is_managing_partner = 0, updated_at = ? WHERE is_managing_partner = 1 AND is_super_user = 0 AND id != ?", [new Date().toISOString(), id]);
+            const currentMPs = await db.all("SELECT id, name FROM users WHERE is_managing_partner = 1 AND is_super_user = 0 AND id != ?", [id]);
+            if (currentMPs.length >= 1) {
+              const mpName = currentMPs[0]?.name || "otro usuario";
+              return res.status(409).json({ error: `Solo puede haber un Socio Administrador. Actualmente es ${mpName}.` });
+            }
           }
         }
         updates.push("is_managing_partner = ?");
         values.push(newMP ? 1 : 0);
-        // Socio Administrador does NOT automatically become Admin
+        if (newMP && isAdmin === void 0) {
+          updates.push("is_admin = ?");
+          values.push(1);
+        }
       }
       if (isAdmin !== void 0) {
         const newAdmin = !!isAdmin;
         if (newAdmin !== currentIsAdmin) {
+          if (!newAdmin && currentIsMP) {
+            return res.status(409).json({ error: "No se puede quitar el rol de Administrador al Socio Administrador. Quite primero el rol de Socio Administrador." });
+          }
           if (newAdmin) {
             const currentAdmins = await db.all("SELECT id FROM users WHERE is_admin = 1 AND is_super_user = 0 AND id != ?", [id]);
             if (currentAdmins.length >= 2) {
-              return res.status(409).json({ error: "M\u00E1ximo 2 Usuario Administrador permitidos. Quite permisos a otro primero." });
+              return res.status(409).json({ error: "M\xE1ximo 2 Usuario Administrador permitidos. Quite permisos a otro primero." });
             }
           }
         }
@@ -115792,20 +115801,27 @@ router2.patch("/:id/role", authMiddleware, requireAdmin, async (req, res) => {
     const updates = [];
     const values = [];
     if (isManagingPartner !== void 0 && isManagingPartner) {
-      // Auto-remove previous Managing Partner — only one Socio Administrador allowed
-      await db.run("UPDATE users SET is_managing_partner = 0, updated_at = ? WHERE is_managing_partner = 1 AND is_super_user = 0 AND id != ?", [(/* @__PURE__ */ new Date()).toISOString(), id]);
+      const currentMPs = await db.all("SELECT id, name FROM users WHERE is_managing_partner = 1 AND is_super_user = 0 AND id != ?", [id]);
+      if (currentMPs.length >= 1) {
+        const mpName = currentMPs[0]?.name || "otro usuario";
+        return res.status(409).json({ error: `Solo puede haber un Socio Administrador. Actualmente es ${mpName}.` });
+      }
       updates.push("is_managing_partner = ?");
       values.push(1);
-      // Socio Administrador does NOT automatically become Admin — visibility and management are separate roles
+      updates.push("is_admin = ?");
+      values.push(1);
     } else if (isManagingPartner !== void 0 && !isManagingPartner) {
       updates.push("is_managing_partner = ?");
       values.push(0);
     }
     if (isAdmin !== void 0) {
+      if (!isAdmin && (user.is_managing_partner === 1 || user.is_managing_partner === true)) {
+        return res.status(409).json({ error: "No se puede quitar el rol de Administrador al Socio Administrador. Quite primero el rol de Socio Administrador." });
+      }
       if (isAdmin) {
         const currentAdmins = await db.all("SELECT id FROM users WHERE is_admin = 1 AND is_super_user = 0 AND id != ?", [id]);
         if (currentAdmins.length >= 2) {
-          return res.status(409).json({ error: "M\u00E1ximo 2 Usuario Administrador permitidos. Quite permisos a otro primero." });
+          return res.status(409).json({ error: "M\xE1ximo 2 Usuario Administrador permitidos. Quite permisos a otro primero." });
         }
       }
       updates.push("is_admin = ?");
@@ -117485,19 +117501,23 @@ function getTools(cfg) {
           if (args.is_managing_partner !== void 0) {
             const newMP = args.is_managing_partner === "true" || args.is_managing_partner === "1";
             if (newMP) {
-              // Auto-remove previous Managing Partner — only one Socio Administrador allowed
-              await db.run("UPDATE users SET is_managing_partner = 0, updated_at = ? WHERE is_managing_partner = 1 AND is_super_user = 0 AND id != ?", [(/* @__PURE__ */ new Date()).toISOString(), args.id]);
+              const currentMPs = await db.all("SELECT id, name FROM users WHERE is_managing_partner = 1 AND is_super_user = 0 AND id != ?", [args.id]);
+              if (currentMPs.length >= 1) return JSON.stringify({ error: `Solo puede haber 1 Socio Administrador. Actualmente es ${currentMPs[0].name}` });
             }
             updates.push("is_managing_partner=?");
             vals.push(newMP ? 1 : 0);
-            // Socio Administrador does NOT automatically become Admin
+            if (newMP) {
+              updates.push("is_admin=?");
+              vals.push(1);
+            }
           }
           if (args.is_admin !== void 0) {
             const newAdmin = args.is_admin === "true" || args.is_admin === "1";
-            if (newAdmin) {
+            if (newAdmin && !user.is_managing_partner) {
               const currentAdmins = await db.all("SELECT id FROM users WHERE is_admin = 1 AND is_super_user = 0 AND id != ?", [args.id]);
-              if (currentAdmins.length >= 2) return JSON.stringify({ error: "M\u00E1ximo 2 Usuario Administrador" });
+              if (currentAdmins.length >= 2) return JSON.stringify({ error: "M\xE1ximo 2 Usuario Administrador" });
             }
+            if (!newAdmin && user.is_managing_partner) return JSON.stringify({ error: "No se puede quitar admin al Socio Administrador" });
             updates.push("is_admin=?");
             vals.push(newAdmin ? 1 : 0);
           }
