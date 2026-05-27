@@ -2,6 +2,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useAssignments, useEvaluations, useAnnouncements, useVacationRequests, useSystemStatus, useSystemModules } from '@/api/queries';
 import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 import {
+  Clock,
   LayoutDashboard, ClipboardCheck, Users, BarChart3, Settings, LogOut,
   UserCheck, ClipboardList, ChevronLeft, ChevronRight, Menu, Map, Shield, FileText, Target, Bot,
   Megaphone, Palmtree, ChevronDown, HelpCircle, BookOpen, Calendar, User as UserIcon, Briefcase
@@ -103,6 +104,7 @@ export default function Layout() {
   const evalItems = [
     { to: '/dashboard', icon: LayoutDashboard, label: 'Panel', show: true },
     { to: '/my-profile', icon: UserIcon, label: 'Mis Eval.', show: true },
+    { to: `/users/${currentUser.id}/timeline`, icon: Clock, label: 'Mi Historial', show: true },
     { to: '/self-evaluation', icon: ClipboardCheck, label: 'Mi Eval.', show: true, badge: pendingEvalCount > 0 ? 1 : 0 },
     { to: '/my-action-plan', icon: FileText, label: 'Plan Acción', show: true },
     { to: '/evaluations', icon: ClipboardList, label: 'Evaluar', show: hasTeam || isAdminOrSuper || isManagingPartner, badge: pendingEvalCount > 1 ? pendingEvalCount - (evaluations.some(e => e.evaluatedId === currentUser.id && e.type === 'self' && e.period === CURRENT_PERIOD) ? 0 : 0) : 0 },

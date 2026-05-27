@@ -321,6 +321,24 @@ export async function migrate(): Promise<void> {
       tickets INT NOT NULL DEFAULT 0
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
 
+    
+    `CREATE TABLE IF NOT EXISTS user_timeline (
+      id VARCHAR(36) PRIMARY KEY,
+      user_id VARCHAR(36) NOT NULL,
+      event_type VARCHAR(50) NOT NULL,
+      event_date DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      old_value TEXT,
+      new_value TEXT,
+      metadata TEXT,
+      note TEXT,
+      created_by VARCHAR(36),
+      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+      FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL,
+      INDEX idx_timeline_user_date (user_id, event_date DESC),
+      INDEX idx_timeline_type (event_type)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
     `CREATE TABLE IF NOT EXISTS activation_history (
       id VARCHAR(36) PRIMARY KEY,
       action VARCHAR(255) NOT NULL,
@@ -611,6 +629,36 @@ export async function migrate(): Promise<void> {
       );
     }
     console.log(`  ✓ ${positions.length} positions seeded`);
+  }
+
+
+  // ─── Add user_timeline table if missing ──────────────────────────────────
+  try {
+    const timelineCheck = await getScalar<number>(
+      `SELECT COUNT(*) AS cnt FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'user_timeline'`
+    );
+    if (timelineCheck === 0) {
+      await run(`CREATE TABLE IF NOT EXISTS user_timeline (
+        id VARCHAR(36) PRIMARY KEY,
+        user_id VARCHAR(36) NOT NULL,
+        event_type VARCHAR(50) NOT NULL,
+        event_date DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        old_value TEXT,
+        new_value TEXT,
+        metadata TEXT,
+        note TEXT,
+        created_by VARCHAR(36),
+        created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+        FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL,
+        INDEX idx_timeline_user_date (user_id, event_date DESC),
+        INDEX idx_timeline_type (event_type)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`);
+      console.log('  ✓ Created user_timeline table');
+    }
+  } catch (e) {
+    console.log('  ⚠ Could not create user_timeline table (may already exist):', (e as Error).message);
   }
 
   // ─── Verify ──────────────────────────────────────────────────────────────────

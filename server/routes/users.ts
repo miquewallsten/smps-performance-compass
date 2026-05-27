@@ -190,6 +190,13 @@ router.post('/', authMiddleware, requireAdmin, async (req: Request, res: Respons
     );
 
     const user = await db.get(`SELECT ${SAFE_USER_COLUMNS} FROM users WHERE id = ?`, [id]) as Record<string, unknown>;
+    // Log hire event to timeline
+    await logTimelineEvent(id, 'hire', {
+      newValue: position,
+      metadata: { practiceArea: practiceArea || null, customPositionId: customPositionId || null, locationId: locationId || null, isAdmin: !!finalIsAdmin, isManagingPartner: !!finalIsMP },
+      note: 'Usuario creado',
+      createdBy: req.user!.id
+    });
     return res.status(201).json(sanitizeUser(user));
   } catch (err) {
     console.error('Create user error:', err);
@@ -305,6 +312,25 @@ router.patch('/:id', authMiddleware, requireSelfOrAdmin, async (req: Request, re
     await db.run(`UPDATE users SET ${updates.join(', ')} WHERE id = ?`, values);
 
     const updatedUser = await db.get(`SELECT ${SAFE_USER_COLUMNS} FROM users WHERE id = ?`, [id]) as Record<string, unknown>;
+    // Log position changes and reactivation to timeline
+    if (isAdminUser && updates.length > 0) {
+      if (position !== undefined && position !== user.position) {
+        const changeType = /* rank comparison */ 'lateral_move'; // simplified
+        await logTimelineEvent(id, 'position_change', {
+          oldValue: user.position as string,
+          newValue: position,
+          metadata: { customPositionId: customPositionId || null, changeType },
+          note: `Posición cambiada: ${(user.position as string)} → ${position}`,
+          createdBy: req.user!.id
+        });
+      }
+      if (isActive === true && (user.is_active === 0 || user.is_active === false)) {
+        await logTimelineEvent(id, 'reactivation', {
+          note: 'Usuario reactivado',
+          createdBy: req.user!.id
+        });
+      }
+    }
     return res.json(sanitizeUser(updatedUser));
   } catch (err) {
     console.error('Update user error:', err);
@@ -324,6 +350,8 @@ router.delete('/:id', authMiddleware, requireAdmin, async (req: Request, res: Re
 
     const now = new Date().toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, '');
     await db.run('UPDATE users SET is_active = 0, updated_at = ? WHERE id = ?', [now, id]);
+    // Log termination event
+    await logTimelineEvent(id, 'termination', { note: 'Usuario desactivado', createdBy: req.user!.id });
 
     return res.json({ message: 'User deactivated successfully' });
   } catch (err) {
@@ -351,6 +379,8 @@ router.post('/:id/reset-password', authMiddleware, requireAdmin, async (req: Req
     const now = new Date().toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, '');
 
     await db.run('UPDATE users SET password_hash = ?, must_change_password = 1, updated_at = ? WHERE id = ?', [hashedPassword, now, id]);
+    // Log password reset event
+    await logTimelineEvent(id, 'password_reset', { note: 'Contraseña restablecida por administrador', createdBy: req.user!.id });
 
     return res.json({ message: 'Password reset successfully' });
   } catch (err) {
@@ -430,6 +460,25 @@ router.patch('/:id/role', authMiddleware, requireAdmin, async (req: Request, res
 
     await db.run(`UPDATE users SET ${updates.join(', ')} WHERE id = ?`, values);
 
+    // Log role changes
+    const roleChanges: string[] = [];
+    if (isManagingPartner !== undefined) {
+      roleChanges.push(isManagingPartner ? 'Socio Administrador' : 'Removido como Socio Administrador');
+    }
+    if (isAdmin !== undefined) {
+      roleChanges.push(isAdmin ? 'Usuario Administrador' : 'Removido como Administrador');
+    }
+    if (isSuperUser !== undefined && req.user!.role === 'super_user') {
+      roleChanges.push(isSuperUser ? 'SuperUser' : 'Removido como SuperUser');
+    }
+    if (roleChanges.length > 0) {
+      await logTimelineEvent(id, 'role_change', {
+        metadata: { changes: roleChanges },
+        note: roleChanges.join(', '),
+        createdBy: req.user!.id
+      });
+    }
+
     const updatedUser = await db.get(`SELECT ${SAFE_USER_COLUMNS} FROM users WHERE id = ?`, [id]) as Record<string, unknown>;
     return res.json(sanitizeUser(updatedUser));
   } catch (err) {
@@ -439,3 +488,42 @@ router.patch('/:id/role', authMiddleware, requireAdmin, async (req: Request, res
 });
 
 export default router;
+
+// ─── Timeline event logging helpers ────────────────────────────────────────
+// These are exported so other route files can call them to auto-log events
+
+export async function logTimelineEvent(
+  userId: string,
+  eventType: string,
+  options: {
+    oldValue?: string;
+    newValue?: string;
+    metadata?: Record<string, unknown>;
+    note?: string;
+    createdBy?: string;
+  } = {}
+): Promise<void> {
+  try {
+    const now = new Date().toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, '');
+    await db.run(
+      `INSERT INTO user_timeline (id, user_id, event_type, event_date, old_value, new_value, metadata, note, created_by, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        uuidv4(),
+        userId,
+        eventType,
+        now,
+        options.oldValue || null,
+        options.newValue || null,
+        options.metadata ? JSON.stringify(options.metadata) : null,
+        options.note || '',
+        options.createdBy || 'system',
+        now,
+        now
+      ]
+    );
+  } catch (err) {
+    console.error('Timeline log error:', err);
+    // Don't fail the parent request if timeline logging fails
+  }
+}

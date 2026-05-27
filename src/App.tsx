@@ -22,6 +22,7 @@ import Help from "./pages/Help";
 import QuestionLibrary from "./pages/QuestionLibrary";
 import MyActionPlan from "./pages/MyActionPlan";
 import MyProfile from "./pages/MyProfile";
+import UserTimeline from "./pages/UserTimeline";
 import CopilotChat from "./pages/CopilotChat";
 import PositionManagement from "./pages/PositionManagement";
 import NotFound from "./pages/NotFound";
@@ -103,6 +104,7 @@ function AppRoutes() {
         <Route path="question-library" element={<QuestionLibrary />} />
         <Route path="my-action-plan" element={<MyActionPlan />} />
         <Route path="my-profile" element={<MyProfile />} />
+        <Route path="users/:id/timeline" element={<UserTimeline />} />
         <Route path="copilot" element={moduleConfig?.copilot && isSuperUser ? <CopilotChat /> : <Navigate to="/dashboard" replace />} />
       </Route>
       <Route path="/help" element={<Help />} />

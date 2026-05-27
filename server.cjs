@@ -498,9 +498,9 @@ var require_has_flag = __commonJS({
     "use strict";
     module2.exports = (flag, argv = process.argv) => {
       const prefix = flag.startsWith("-") ? "" : flag.length === 1 ? "-" : "--";
-      const position = argv.indexOf(prefix + flag);
+      const position2 = argv.indexOf(prefix + flag);
       const terminatorPosition = argv.indexOf("--");
-      return position !== -1 && (terminatorPosition === -1 || position < terminatorPosition);
+      return position2 !== -1 && (terminatorPosition === -1 || position2 < terminatorPosition);
     };
   }
 });
@@ -1194,11 +1194,11 @@ var require_statuses = __commonJS({
   "node_modules/statuses/index.js"(exports2, module2) {
     "use strict";
     var codes = require_codes();
-    module2.exports = status;
-    status.message = codes;
-    status.code = createMessageToStatusCodeMap(codes);
-    status.codes = createStatusCodeList(codes);
-    status.redirect = {
+    module2.exports = status2;
+    status2.message = codes;
+    status2.code = createMessageToStatusCodeMap(codes);
+    status2.codes = createStatusCodeList(codes);
+    status2.redirect = {
       300: true,
       301: true,
       302: true,
@@ -1207,12 +1207,12 @@ var require_statuses = __commonJS({
       307: true,
       308: true
     };
-    status.empty = {
+    status2.empty = {
       204: true,
       205: true,
       304: true
     };
-    status.retry = {
+    status2.retry = {
       502: true,
       503: true,
       504: true
@@ -1221,8 +1221,8 @@ var require_statuses = __commonJS({
       var map = {};
       Object.keys(codes2).forEach(function forEachCode(code) {
         var message = codes2[code];
-        var status2 = Number(code);
-        map[message.toLowerCase()] = status2;
+        var status3 = Number(code);
+        map[message.toLowerCase()] = status3;
       });
       return map;
     }
@@ -1233,18 +1233,18 @@ var require_statuses = __commonJS({
     }
     function getStatusCode(message) {
       var msg = message.toLowerCase();
-      if (!Object.prototype.hasOwnProperty.call(status.code, msg)) {
+      if (!Object.prototype.hasOwnProperty.call(status2.code, msg)) {
         throw new Error('invalid status message: "' + message + '"');
       }
-      return status.code[msg];
+      return status2.code[msg];
     }
     function getStatusMessage(code) {
-      if (!Object.prototype.hasOwnProperty.call(status.message, code)) {
+      if (!Object.prototype.hasOwnProperty.call(status2.message, code)) {
         throw new Error("invalid status code: " + code);
       }
-      return status.message[code];
+      return status2.message[code];
     }
-    function status(code) {
+    function status2(code) {
       if (typeof code === "number") {
         return getStatusMessage(code);
       }
@@ -1332,22 +1332,22 @@ var require_http_errors = __commonJS({
     module2.exports.HttpError = createHttpErrorConstructor();
     module2.exports.isHttpError = createIsHttpErrorFunction(module2.exports.HttpError);
     populateConstructorExports(module2.exports, statuses.codes, module2.exports.HttpError);
-    function codeClass(status) {
-      return Number(String(status).charAt(0) + "00");
+    function codeClass(status2) {
+      return Number(String(status2).charAt(0) + "00");
     }
     function createError() {
       var err;
       var msg;
-      var status = 500;
+      var status2 = 500;
       var props = {};
       for (var i = 0; i < arguments.length; i++) {
         var arg = arguments[i];
         var type = typeof arg;
         if (type === "object" && arg instanceof Error) {
           err = arg;
-          status = err.status || err.statusCode || status;
+          status2 = err.status || err.statusCode || status2;
         } else if (type === "number" && i === 0) {
-          status = arg;
+          status2 = arg;
         } else if (type === "string") {
           msg = arg;
         } else if (type === "object") {
@@ -1356,20 +1356,20 @@ var require_http_errors = __commonJS({
           throw new TypeError("argument #" + (i + 1) + " unsupported type " + type);
         }
       }
-      if (typeof status === "number" && (status < 400 || status >= 600)) {
+      if (typeof status2 === "number" && (status2 < 400 || status2 >= 600)) {
         deprecate("non-error status code; use only 4xx or 5xx status codes");
       }
-      if (typeof status !== "number" || !statuses.message[status] && (status < 400 || status >= 600)) {
-        status = 500;
+      if (typeof status2 !== "number" || !statuses.message[status2] && (status2 < 400 || status2 >= 600)) {
+        status2 = 500;
       }
-      var HttpError = createError[status] || createError[codeClass(status)];
+      var HttpError = createError[status2] || createError[codeClass(status2)];
       if (!err) {
-        err = HttpError ? new HttpError(msg) : new Error(msg || statuses.message[status]);
+        err = HttpError ? new HttpError(msg) : new Error(msg || statuses.message[status2]);
         Error.captureStackTrace(err, createError);
       }
-      if (!HttpError || !(err instanceof HttpError) || err.status !== status) {
-        err.expose = status < 500;
-        err.status = err.statusCode = status;
+      if (!HttpError || !(err instanceof HttpError) || err.status !== status2) {
+        err.expose = status2 < 500;
+        err.status = err.statusCode = status2;
       }
       for (var key in props) {
         if (key !== "status" && key !== "statusCode") {
@@ -22533,35 +22533,35 @@ var require_finalhandler = __commonJS({
       return function(err) {
         var headers;
         var msg;
-        var status;
+        var status2;
         if (!err && res.headersSent) {
           debug("cannot 404 after headers sent");
           return;
         }
         if (err) {
-          status = getErrorStatusCode(err);
-          if (status === void 0) {
-            status = getResponseStatusCode(res);
+          status2 = getErrorStatusCode(err);
+          if (status2 === void 0) {
+            status2 = getResponseStatusCode(res);
           } else {
             headers = getErrorHeaders(err);
           }
-          msg = getErrorMessage(err, status, env);
+          msg = getErrorMessage(err, status2, env);
         } else {
-          status = 404;
+          status2 = 404;
           msg = "Cannot " + req.method + " " + encodeUrl(getResourceName(req));
         }
-        debug("default %s", status);
+        debug("default %s", status2);
         if (err && onerror) {
           setImmediate(onerror, err, req, res);
         }
         if (res.headersSent) {
-          debug("cannot %d after headers sent", status);
+          debug("cannot %d after headers sent", status2);
           if (req.socket) {
             req.socket.destroy();
           }
           return;
         }
-        send(req, res, status, headers, msg);
+        send(req, res, status2, headers, msg);
       };
     }
     function getErrorHeaders(err) {
@@ -22570,7 +22570,7 @@ var require_finalhandler = __commonJS({
       }
       return { ...err.headers };
     }
-    function getErrorMessage(err, status, env) {
+    function getErrorMessage(err, status2, env) {
       var msg;
       if (env !== "production") {
         msg = err.stack;
@@ -22578,7 +22578,7 @@ var require_finalhandler = __commonJS({
           msg = err.toString();
         }
       }
-      return msg || statuses.message[status];
+      return msg || statuses.message[status2];
     }
     function getErrorStatusCode(err) {
       if (typeof err.status === "number" && err.status >= 400 && err.status < 600) {
@@ -22597,18 +22597,18 @@ var require_finalhandler = __commonJS({
       }
     }
     function getResponseStatusCode(res) {
-      var status = res.statusCode;
-      if (typeof status !== "number" || status < 400 || status > 599) {
-        status = 500;
+      var status2 = res.statusCode;
+      if (typeof status2 !== "number" || status2 < 400 || status2 > 599) {
+        status2 = 500;
       }
-      return status;
+      return status2;
     }
-    function send(req, res, status, headers, message) {
+    function send(req, res, status2, headers, message) {
       function write() {
         var body = createHtmlDocument(message);
-        res.statusCode = status;
+        res.statusCode = status2;
         if (req.httpVersionMajor < 2) {
-          res.statusMessage = statuses.message[status];
+          res.statusMessage = statuses.message[status2];
         }
         res.removeHeader("Content-Encoding");
         res.removeHeader("Content-Language");
@@ -33971,27 +33971,27 @@ var require_router = __commonJS({
     var slice = Array.prototype.slice;
     var flatten = Array.prototype.flat;
     var methods = METHODS.map((method) => method.toLowerCase());
-    module2.exports = Router16;
+    module2.exports = Router17;
     module2.exports.Route = Route;
-    function Router16(options) {
-      if (!(this instanceof Router16)) {
-        return new Router16(options);
+    function Router17(options) {
+      if (!(this instanceof Router17)) {
+        return new Router17(options);
       }
       const opts = options || {};
-      function router16(req, res, next) {
-        router16.handle(req, res, next);
+      function router17(req, res, next) {
+        router17.handle(req, res, next);
       }
-      Object.setPrototypeOf(router16, this);
-      router16.caseSensitive = opts.caseSensitive;
-      router16.mergeParams = opts.mergeParams;
-      router16.params = {};
-      router16.strict = opts.strict;
-      router16.stack = [];
-      return router16;
+      Object.setPrototypeOf(router17, this);
+      router17.caseSensitive = opts.caseSensitive;
+      router17.mergeParams = opts.mergeParams;
+      router17.params = {};
+      router17.strict = opts.strict;
+      router17.stack = [];
+      return router17;
     }
-    Router16.prototype = function() {
+    Router17.prototype = function() {
     };
-    Router16.prototype.param = function param(name, fn) {
+    Router17.prototype.param = function param(name, fn) {
       if (!name) {
         throw new TypeError("argument name is required");
       }
@@ -34011,7 +34011,7 @@ var require_router = __commonJS({
       params.push(fn);
       return this;
     };
-    Router16.prototype.handle = function handle(req, res, callback) {
+    Router17.prototype.handle = function handle(req, res, callback) {
       if (!callback) {
         throw new TypeError("argument callback is required");
       }
@@ -34138,7 +34138,7 @@ var require_router = __commonJS({
         }
       }
     };
-    Router16.prototype.use = function use(handler) {
+    Router17.prototype.use = function use(handler) {
       let offset = 0;
       let path2 = "/";
       if (typeof handler !== "function") {
@@ -34171,7 +34171,7 @@ var require_router = __commonJS({
       }
       return this;
     };
-    Router16.prototype.route = function route(path2) {
+    Router17.prototype.route = function route(path2) {
       const route2 = new Route(path2);
       const layer = new Layer(path2, {
         sensitive: this.caseSensitive,
@@ -34186,7 +34186,7 @@ var require_router = __commonJS({
       return route2;
     };
     methods.concat("all").forEach(function(method) {
-      Router16.prototype[method] = function(path2) {
+      Router17.prototype[method] = function(path2) {
         const route = this.route(path2);
         route[method].apply(route, slice.call(arguments, 1));
         return this;
@@ -34369,13 +34369,13 @@ var require_application = __commonJS({
     var compileTrust = require_utils3().compileTrust;
     var resolve = require("node:path").resolve;
     var once = require_once();
-    var Router16 = require_router();
+    var Router17 = require_router();
     var slice = Array.prototype.slice;
     var flatten = Array.prototype.flat;
     var app2 = exports2 = module2.exports = {};
     var trustProxyDefaultSymbol = "@@symbol:trust_proxy_default";
     app2.init = function init() {
-      var router16 = null;
+      var router17 = null;
       this.cache = /* @__PURE__ */ Object.create(null);
       this.engines = /* @__PURE__ */ Object.create(null);
       this.settings = /* @__PURE__ */ Object.create(null);
@@ -34384,13 +34384,13 @@ var require_application = __commonJS({
         configurable: true,
         enumerable: true,
         get: function getrouter() {
-          if (router16 === null) {
-            router16 = new Router16({
+          if (router17 === null) {
+            router17 = new Router17({
               caseSensitive: this.enabled("case sensitive routing"),
               strict: this.enabled("strict routing")
             });
           }
-          return router16;
+          return router17;
         }
       });
     };
@@ -34461,15 +34461,15 @@ var require_application = __commonJS({
       if (fns.length === 0) {
         throw new TypeError("app.use() requires a middleware function");
       }
-      var router16 = this.router;
+      var router17 = this.router;
       fns.forEach(function(fn2) {
         if (!fn2 || !fn2.handle || !fn2.set) {
-          return router16.use(path2, fn2);
+          return router17.use(path2, fn2);
         }
         debug(".use app under %s", path2);
         fn2.mountpath = path2;
         fn2.parent = this;
-        router16.use(path2, function mounted_app(req, res, next) {
+        router17.use(path2, function mounted_app(req, res, next) {
           var orig = req.app;
           fn2.handle(req, res, function(err) {
             Object.setPrototypeOf(req, orig.request);
@@ -44989,9 +44989,9 @@ var require_request = __commonJS({
     defineGetter(req, "fresh", function() {
       var method = this.method;
       var res = this.res;
-      var status = res.statusCode;
+      var status2 = res.statusCode;
       if ("GET" !== method && "HEAD" !== method) return false;
-      if (status >= 200 && status < 300 || 304 === status) {
+      if (status2 >= 200 && status2 < 300 || 304 === status2) {
         return fresh(this.headers, {
           "etag": res.get("ETag"),
           "last-modified": res.get("Last-Modified")
@@ -54968,18 +54968,18 @@ var require_send = __commonJS({
       this._root = opts.root ? resolve(opts.root) : null;
     }
     util.inherits(SendStream, Stream);
-    SendStream.prototype.error = function error(status, err) {
+    SendStream.prototype.error = function error(status2, err) {
       if (hasListeners(this, "error")) {
-        return this.emit("error", createHttpError(status, err));
+        return this.emit("error", createHttpError(status2, err));
       }
       var res = this.res;
-      var msg = statuses.message[status] || String(status);
+      var msg = statuses.message[status2] || String(status2);
       var doc = createHtmlDocument("Error", escapeHtml(msg));
       clearHeaders(res);
       if (err && err.headers) {
         setHeaders(res, err.headers);
       }
-      res.statusCode = status;
+      res.statusCode = status2;
       res.setHeader("Content-Type", "text/html; charset=UTF-8");
       res.setHeader("Content-Length", Buffer.byteLength(doc));
       res.setHeader("Content-Security-Policy", "default-src 'none'");
@@ -55330,11 +55330,11 @@ var require_send = __commonJS({
     function createHtmlDocument(title, body) {
       return '<!DOCTYPE html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n<title>' + title + "</title>\n</head>\n<body>\n<pre>" + body + "</pre>\n</body>\n</html>\n";
     }
-    function createHttpError(status, err) {
+    function createHttpError(status2, err) {
       if (!err) {
-        return createError(status);
+        return createError(status2);
       }
-      return err instanceof Error ? createError(status, err, { expose: false }) : createError(status, err);
+      return err instanceof Error ? createError(status2, err, { expose: false }) : createError(status2, err);
     }
     function decode(path3) {
       try {
@@ -55497,7 +55497,7 @@ var require_response = __commonJS({
     var { Buffer: Buffer2 } = require("node:buffer");
     var res = Object.create(http.ServerResponse.prototype);
     module2.exports = res;
-    res.status = function status(code) {
+    res.status = function status2(code) {
       if (!Number.isInteger(code)) {
         throw new TypeError(`Invalid status code: ${JSON.stringify(code)}. Status code must be an integer.`);
       }
@@ -55797,9 +55797,9 @@ var require_response = __commonJS({
     res.redirect = function redirect(url) {
       var address = url;
       var body;
-      var status = 302;
+      var status2 = 302;
       if (arguments.length === 2) {
-        status = arguments[0];
+        status2 = arguments[0];
         address = arguments[1];
       }
       if (!address) {
@@ -55808,23 +55808,23 @@ var require_response = __commonJS({
       if (typeof address !== "string") {
         deprecate("Url must be a string");
       }
-      if (typeof status !== "number") {
+      if (typeof status2 !== "number") {
         deprecate("Status must be a number");
       }
       address = this.location(address).get("Location");
       this.format({
         text: function() {
-          body = statuses.message[status] + ". Redirecting to " + address;
+          body = statuses.message[status2] + ". Redirecting to " + address;
         },
         html: function() {
           var u = escapeHtml(address);
-          body = "<p>" + statuses.message[status] + ". Redirecting to " + u + "</p>";
+          body = "<p>" + statuses.message[status2] + ". Redirecting to " + u + "</p>";
         },
         default: function() {
           body = "";
         }
       });
-      this.status(status);
+      this.status(status2);
       this.set("Content-Length", Buffer2.byteLength(body));
       if (this.req.method === "HEAD") {
         this.end();
@@ -56052,7 +56052,7 @@ var require_express = __commonJS({
     var EventEmitter = require("node:events").EventEmitter;
     var mixin = require_merge_descriptors();
     var proto = require_application();
-    var Router16 = require_router();
+    var Router17 = require_router();
     var req = require_request();
     var res = require_response();
     exports2 = module2.exports = createApplication;
@@ -56074,8 +56074,8 @@ var require_express = __commonJS({
     exports2.application = proto;
     exports2.request = req;
     exports2.response = res;
-    exports2.Route = Router16.Route;
-    exports2.Router = Router16;
+    exports2.Route = Router17.Route;
+    exports2.Router = Router17;
     exports2.json = bodyParser.json;
     exports2.raw = bodyParser.raw;
     exports2.static = require_serve_static();
@@ -56740,17 +56740,17 @@ var require_lib5 = __commonJS({
       return true;
     };
     var toLower = (code) => code | 32;
-    var matchesWord = (sql, position, word, length) => {
+    var matchesWord = (sql, position2, word, length) => {
       for (let offset = 0; offset < word.length; offset++)
-        if (toLower(sql.charCodeAt(position + offset)) !== word.charCodeAt(offset))
+        if (toLower(sql.charCodeAt(position2 + offset)) !== word.charCodeAt(offset))
           return false;
-      return (position === 0 || !isWordChar(sql.charCodeAt(position - 1))) && (position + word.length >= length || !isWordChar(sql.charCodeAt(position + word.length)));
+      return (position2 === 0 || !isWordChar(sql.charCodeAt(position2 - 1))) && (position2 + word.length >= length || !isWordChar(sql.charCodeAt(position2 + word.length)));
     };
-    var skipSqlContext = (sql, position) => {
-      const currentChar = sql.charCodeAt(position);
-      const nextChar = sql.charCodeAt(position + 1);
+    var skipSqlContext = (sql, position2) => {
+      const currentChar = sql.charCodeAt(position2);
+      const nextChar = sql.charCodeAt(position2 + 1);
       if (currentChar === charCode.singleQuote) {
-        for (let cursor = position + 1; cursor < sql.length; cursor++) {
+        for (let cursor = position2 + 1; cursor < sql.length; cursor++) {
           if (sql.charCodeAt(cursor) === charCode.backslash)
             cursor++;
           else if (sql.charCodeAt(cursor) === charCode.singleQuote)
@@ -56760,7 +56760,7 @@ var require_lib5 = __commonJS({
       }
       if (currentChar === charCode.backtick) {
         const length = sql.length;
-        for (let cursor = position + 1; cursor < length; cursor++) {
+        for (let cursor = position2 + 1; cursor < length; cursor++) {
           if (sql.charCodeAt(cursor) !== charCode.backtick)
             continue;
           if (sql.charCodeAt(cursor + 1) === charCode.backtick) {
@@ -56772,45 +56772,45 @@ var require_lib5 = __commonJS({
         return length;
       }
       if (currentChar === charCode.dash && nextChar === charCode.dash) {
-        const lineBreak = sql.indexOf("\n", position + 2);
+        const lineBreak = sql.indexOf("\n", position2 + 2);
         return lineBreak === -1 ? sql.length : lineBreak + 1;
       }
       if (currentChar === charCode.slash && nextChar === charCode.asterisk) {
-        const commentEnd = sql.indexOf("*/", position + 2);
+        const commentEnd = sql.indexOf("*/", position2 + 2);
         return commentEnd === -1 ? sql.length : commentEnd + 2;
       }
       return -1;
     };
     var findNextPlaceholder = (sql, start) => {
       const sqlLength = sql.length;
-      for (let position = start; position < sqlLength; position++) {
-        const code = sql.charCodeAt(position);
+      for (let position2 = start; position2 < sqlLength; position2++) {
+        const code = sql.charCodeAt(position2);
         if (code === charCode.questionMark)
-          return position;
+          return position2;
         if (code === charCode.singleQuote || code === charCode.backtick || code === charCode.dash || code === charCode.slash) {
-          const contextEnd = skipSqlContext(sql, position);
+          const contextEnd = skipSqlContext(sql, position2);
           if (contextEnd !== -1)
-            position = contextEnd - 1;
+            position2 = contextEnd - 1;
         }
       }
       return -1;
     };
     var findSetKeyword = (sql, startFrom = 0) => {
       const length = sql.length;
-      for (let position = startFrom; position < length; position++) {
-        const code = sql.charCodeAt(position);
+      for (let position2 = startFrom; position2 < length; position2++) {
+        const code = sql.charCodeAt(position2);
         const lower = code | 32;
         if (code === charCode.singleQuote || code === charCode.backtick || code === charCode.dash || code === charCode.slash) {
-          const contextEnd = skipSqlContext(sql, position);
+          const contextEnd = skipSqlContext(sql, position2);
           if (contextEnd !== -1) {
-            position = contextEnd - 1;
+            position2 = contextEnd - 1;
             continue;
           }
         }
-        if (lower === 115 && matchesWord(sql, position, "set", length))
-          return position + 3;
-        if (lower === 107 && matchesWord(sql, position, "key", length)) {
-          let cursor = position + 3;
+        if (lower === 115 && matchesWord(sql, position2, "set", length))
+          return position2 + 3;
+        if (lower === 107 && matchesWord(sql, position2, "key", length)) {
+          let cursor = position2 + 3;
           while (cursor < length && isWhitespace(sql.charCodeAt(cursor)))
             cursor++;
           if (matchesWord(sql, cursor, "update", length))
@@ -71590,8 +71590,8 @@ var require_query2 = __commonJS({
       }
       row(packet, _connection) {
         if (packet.isEOF()) {
-          const status = packet.eofStatusFlags();
-          const moreResults = status & ServerStatus.SERVER_MORE_RESULTS_EXISTS;
+          const status2 = packet.eofStatusFlags();
+          const moreResults = status2 & ServerStatus.SERVER_MORE_RESULTS_EXISTS;
           if (moreResults) {
             this._resultIndex++;
             return _Query.prototype.resultsetHeader;
@@ -73288,9 +73288,9 @@ var require_tracing = __commonJS({
       }
       return channel.hasSubscribers ?? channel.start?.hasSubscribers ?? false;
     }
-    function traceCallback(channel, fn, position, context, thisArg, ...args) {
+    function traceCallback(channel, fn, position2, context, thisArg, ...args) {
       if (shouldTrace(channel)) {
-        return channel.traceCallback(fn, position, context(), thisArg, ...args);
+        return channel.traceCallback(fn, position2, context(), thisArg, ...args);
       }
       return fn.apply(thisArg, args);
     }
@@ -112833,7 +112833,7 @@ __export(index_exports, {
   default: () => index_default
 });
 module.exports = __toCommonJS(index_exports);
-var import_express16 = __toESM(require_express2(), 1);
+var import_express17 = __toESM(require_express2(), 1);
 var import_cors = __toESM(require_lib4(), 1);
 var import_path = __toESM(require("path"), 1);
 var import_dotenv = __toESM(require_main(), 1);
@@ -113203,6 +113203,23 @@ async function migrate() {
       max_admin_users INT NOT NULL DEFAULT 3,
       tickets INT NOT NULL DEFAULT 0
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+    `CREATE TABLE IF NOT EXISTS user_timeline (
+      id VARCHAR(36) PRIMARY KEY,
+      user_id VARCHAR(36) NOT NULL,
+      event_type VARCHAR(50) NOT NULL,
+      event_date DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      old_value TEXT,
+      new_value TEXT,
+      metadata TEXT,
+      note TEXT,
+      created_by VARCHAR(36),
+      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+      FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL,
+      INDEX idx_timeline_user_date (user_id, event_date DESC),
+      INDEX idx_timeline_type (event_type)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
     `CREATE TABLE IF NOT EXISTS activation_history (
       id VARCHAR(36) PRIMARY KEY,
       action VARCHAR(255) NOT NULL,
@@ -113454,6 +113471,33 @@ async function migrate() {
       );
     }
     console.log(`  \u2713 ${positions.length} positions seeded`);
+  }
+  try {
+    const timelineCheck = await getScalar(
+      `SELECT COUNT(*) AS cnt FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'user_timeline'`
+    );
+    if (timelineCheck === 0) {
+      await run(`CREATE TABLE IF NOT EXISTS user_timeline (
+        id VARCHAR(36) PRIMARY KEY,
+        user_id VARCHAR(36) NOT NULL,
+        event_type VARCHAR(50) NOT NULL,
+        event_date DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        old_value TEXT,
+        new_value TEXT,
+        metadata TEXT,
+        note TEXT,
+        created_by VARCHAR(36),
+        created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+        FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL,
+        INDEX idx_timeline_user_date (user_id, event_date DESC),
+        INDEX idx_timeline_type (event_type)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`);
+      console.log("  \u2713 Created user_timeline table");
+    }
+  } catch (e) {
+    console.log("  \u26A0 Could not create user_timeline table (may already exist):", e.message);
   }
   try {
     const colCheck = await getScalar(
@@ -115766,8 +115810,8 @@ router2.get("/:id", authMiddleware, async (req, res) => {
 });
 router2.post("/", authMiddleware, requireAdmin, async (req, res) => {
   try {
-    const { name, email, position, password, practiceArea, customPositionId, locationId, isAdmin, isManagingPartner } = req.body;
-    if (!name || !email || !position || !password) {
+    const { name, email, position: position2, password, practiceArea, customPositionId: customPositionId2, locationId, isAdmin, isManagingPartner } = req.body;
+    if (!name || !email || !position2 || !password) {
       return res.status(400).json({ error: "Name, email, position, and password are required" });
     }
     if (password.length < 6) {
@@ -115808,9 +115852,9 @@ router2.post("/", authMiddleware, requireAdmin, async (req, res) => {
         securityQuestion,
         hashedAnswer,
         name,
-        position,
+        position2,
         practiceArea ?? null,
-        customPositionId ?? null,
+        customPositionId2 ?? null,
         locationId ?? null,
         finalIsAdmin,
         0,
@@ -115825,6 +115869,12 @@ router2.post("/", authMiddleware, requireAdmin, async (req, res) => {
       ]
     );
     const user = await db.get(`SELECT ${SAFE_USER_COLUMNS} FROM users WHERE id = ?`, [id]);
+    await logTimelineEvent(id, "hire", {
+      newValue: position2,
+      metadata: { practiceArea: practiceArea || null, customPositionId: customPositionId2 || null, locationId: locationId || null, isAdmin: !!finalIsAdmin, isManagingPartner: !!finalIsMP },
+      note: "Usuario creado",
+      createdBy: req.user.id
+    });
     return res.status(201).json(sanitizeUser2(user));
   } catch (err) {
     console.error("Create user error:", err);
@@ -115843,7 +115893,7 @@ router2.patch("/:id", authMiddleware, requireSelfOrAdmin, async (req, res) => {
     const updates = [];
     const values = [];
     if (isAdminUser) {
-      const { name, email, position, practiceArea, customPositionId, locationId, isActive, isAdmin, isManagingPartner, isSuperUser } = req.body;
+      const { name, email, position: position2, practiceArea, customPositionId: customPositionId2, locationId, isActive: isActive2, isAdmin, isManagingPartner, isSuperUser } = req.body;
       if (name !== void 0) {
         updates.push("name = ?");
         values.push(name);
@@ -115852,25 +115902,25 @@ router2.patch("/:id", authMiddleware, requireSelfOrAdmin, async (req, res) => {
         updates.push("email = ?");
         values.push(email);
       }
-      if (position !== void 0) {
+      if (position2 !== void 0) {
         updates.push("position = ?");
-        values.push(position);
+        values.push(position2);
       }
       if (practiceArea !== void 0) {
         updates.push("practice_area = ?");
         values.push(practiceArea);
       }
-      if (customPositionId !== void 0) {
+      if (customPositionId2 !== void 0) {
         updates.push("custom_position_id = ?");
-        values.push(customPositionId);
+        values.push(customPositionId2);
       }
       if (locationId !== void 0) {
         updates.push("location_id = ?");
         values.push(locationId);
       }
-      if (isActive !== void 0) {
+      if (isActive2 !== void 0) {
         updates.push("is_active = ?");
-        values.push(isActive ? 1 : 0);
+        values.push(isActive2 ? 1 : 0);
       }
       const currentIsMP = !!(user.is_managing_partner === 1 || user.is_managing_partner === true);
       const currentIsAdmin = !!(user.is_admin === 1 || user.is_admin === true);
@@ -115939,6 +115989,27 @@ router2.patch("/:id", authMiddleware, requireSelfOrAdmin, async (req, res) => {
     values.push(id);
     await db.run(`UPDATE users SET ${updates.join(", ")} WHERE id = ?`, values);
     const updatedUser = await db.get(`SELECT ${SAFE_USER_COLUMNS} FROM users WHERE id = ?`, [id]);
+    if (isAdminUser && updates.length > 0) {
+      if (position !== void 0 && position !== user.position) {
+        const changeType = (
+          /* rank comparison */
+          "lateral_move"
+        );
+        await logTimelineEvent(id, "position_change", {
+          oldValue: user.position,
+          newValue: position,
+          metadata: { customPositionId: customPositionId || null, changeType },
+          note: `Posici\xF3n cambiada: ${user.position} \u2192 ${position}`,
+          createdBy: req.user.id
+        });
+      }
+      if (isActive === true && (user.is_active === 0 || user.is_active === false)) {
+        await logTimelineEvent(id, "reactivation", {
+          note: "Usuario reactivado",
+          createdBy: req.user.id
+        });
+      }
+    }
     return res.json(sanitizeUser2(updatedUser));
   } catch (err) {
     console.error("Update user error:", err);
@@ -115954,6 +116025,7 @@ router2.delete("/:id", authMiddleware, requireAdmin, async (req, res) => {
     }
     const now = (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "");
     await db.run("UPDATE users SET is_active = 0, updated_at = ? WHERE id = ?", [now, id]);
+    await logTimelineEvent(id, "termination", { note: "Usuario desactivado", createdBy: req.user.id });
     return res.json({ message: "User deactivated successfully" });
   } catch (err) {
     console.error("Delete user error:", err);
@@ -115974,6 +116046,7 @@ router2.post("/:id/reset-password", authMiddleware, requireAdmin, async (req, re
     const hashedPassword = await hashPassword(newPassword);
     const now = (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "");
     await db.run("UPDATE users SET password_hash = ?, must_change_password = 1, updated_at = ? WHERE id = ?", [hashedPassword, now, id]);
+    await logTimelineEvent(id, "password_reset", { note: "Contrase\xF1a restablecida por administrador", createdBy: req.user.id });
     return res.json({ message: "Password reset successfully" });
   } catch (err) {
     console.error("Reset password error:", err);
@@ -116035,6 +116108,23 @@ router2.patch("/:id/role", authMiddleware, requireAdmin, async (req, res) => {
     values.push((/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, ""));
     values.push(id);
     await db.run(`UPDATE users SET ${updates.join(", ")} WHERE id = ?`, values);
+    const roleChanges = [];
+    if (isManagingPartner !== void 0) {
+      roleChanges.push(isManagingPartner ? "Socio Administrador" : "Removido como Socio Administrador");
+    }
+    if (isAdmin !== void 0) {
+      roleChanges.push(isAdmin ? "Usuario Administrador" : "Removido como Administrador");
+    }
+    if (isSuperUser !== void 0 && req.user.role === "super_user") {
+      roleChanges.push(isSuperUser ? "SuperUser" : "Removido como SuperUser");
+    }
+    if (roleChanges.length > 0) {
+      await logTimelineEvent(id, "role_change", {
+        metadata: { changes: roleChanges },
+        note: roleChanges.join(", "),
+        createdBy: req.user.id
+      });
+    }
     const updatedUser = await db.get(`SELECT ${SAFE_USER_COLUMNS} FROM users WHERE id = ?`, [id]);
     return res.json(sanitizeUser2(updatedUser));
   } catch (err) {
@@ -116043,6 +116133,30 @@ router2.patch("/:id/role", authMiddleware, requireAdmin, async (req, res) => {
   }
 });
 var users_default = router2;
+async function logTimelineEvent(userId, eventType, options = {}) {
+  try {
+    const now = (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "");
+    await db.run(
+      `INSERT INTO user_timeline (id, user_id, event_type, event_date, old_value, new_value, metadata, note, created_by, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        v4_default(),
+        userId,
+        eventType,
+        now,
+        options.oldValue || null,
+        options.newValue || null,
+        options.metadata ? JSON.stringify(options.metadata) : null,
+        options.note || "",
+        options.createdBy || "system",
+        now,
+        now
+      ]
+    );
+  } catch (err) {
+    console.error("Timeline log error:", err);
+  }
+}
 
 // server/routes/assignments.ts
 var import_express3 = __toESM(require_express2(), 1);
@@ -116084,6 +116198,12 @@ router3.post("/", authMiddleware, requireAdmin, async (req, res) => {
       [id, employeeId, supervisorId, period]
     );
     const assignment = await db.get("SELECT * FROM supervisor_assignments WHERE id = ?", [id]);
+    const supervisor = await db.get("SELECT name FROM users WHERE id = ?", [supervisorId]);
+    await logTimelineEvent(employeeId, "supervisor_assigned", {
+      metadata: { supervisorName: supervisor?.name || supervisorId, period },
+      note: `Asignado a supervisor: ${supervisor?.name || supervisorId} \u2014 Periodo: ${period}`,
+      createdBy: req.user.id
+    });
     return res.status(201).json(assignment);
   } catch (err) {
     if (err.code === "ER_DUP_ENTRY") {
@@ -116100,7 +116220,16 @@ router3.delete("/:id", authMiddleware, requireAdmin, async (req, res) => {
     if (!assignment) {
       return res.status(404).json({ error: "Assignment not found" });
     }
+    const assignmentDetails = await db.get("SELECT * FROM supervisor_assignments WHERE id = ?", [id]);
     await db.run("DELETE FROM supervisor_assignments WHERE id = ?", [id]);
+    if (assignmentDetails) {
+      const supervisor = await db.get("SELECT name FROM users WHERE id = ?", [assignmentDetails.supervisor_id]);
+      await logTimelineEvent(assignmentDetails.employee_id, "supervisor_removed", {
+        metadata: { supervisorName: supervisor?.name || assignmentDetails.supervisor_id, period: assignmentDetails.period },
+        note: `Removido supervisor: ${supervisor?.name || assignmentDetails.supervisor_id} \u2014 Periodo: ${assignmentDetails.period}`,
+        createdBy: req.user.id
+      });
+    }
     return res.json({ message: "Assignment deleted successfully" });
   } catch (err) {
     console.error("Delete assignment error:", err);
@@ -116239,11 +116368,11 @@ router4.post("/init", async (req, res) => {
           [pos.cve, pos.label, pos.workAreaId, pos.basePosition, now, now]
         );
       }
-      for (const [position, days] of Object.entries(VACATION_DEFAULTS)) {
+      for (const [position2, days] of Object.entries(VACATION_DEFAULTS)) {
         await tx.run(
           conn,
           `INSERT INTO vacation_config (position, days) VALUES (?, ?)`,
-          [position, days]
+          [position2, days]
         );
       }
       await tx.run(
@@ -116289,17 +116418,17 @@ router4.get("/status", authMiddleware, async (req, res) => {
 });
 router4.patch("/status", authMiddleware, requireSuperUser, async (req, res) => {
   try {
-    const { status, activationDate, paymentPlan, maxUsers, tickets, maxAdminUsers } = req.body;
+    const { status: status2, activationDate, paymentPlan, maxUsers, tickets, maxAdminUsers } = req.body;
     const updates = [];
     const values = [];
-    if (status !== void 0) {
-      if (!["active", "inactive"].includes(status)) {
+    if (status2 !== void 0) {
+      if (!["active", "inactive"].includes(status2)) {
         return res.status(400).json({ error: 'Status must be "active" or "inactive"' });
       }
       updates.push("status = ?");
-      values.push(status);
+      values.push(status2);
       const now = (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "");
-      const action = status === "active" ? "activated" : "deactivated";
+      const action = status2 === "active" ? "activated" : "deactivated";
       await db.run(
         `INSERT INTO activation_history (id, action, date, by_user_id) VALUES (?, ?, ?, ?)`,
         [v4_default(), action, now, req.user.id]
@@ -116553,6 +116682,14 @@ router5.patch("/:id", authMiddleware, async (req, res) => {
     }
     const updated = await db.get("SELECT * FROM evaluations WHERE id = ?", [req.params.id]);
     const evalResponses = await db.all("SELECT * FROM evaluation_responses WHERE evaluation_id = ?", [req.params.id]);
+    if (updated && updated.completed_at) {
+      const evalType = updated.type === "self" ? "self" : "supervisor";
+      await logTimelineEvent(updated.evaluated_id, "evaluation_completed", {
+        metadata: { period: updated.period, evalType, score: updated.total_score, evaluatorId: updated.evaluator_id },
+        note: `${evalType === "self" ? "Autoevaluaci\xF3n" : "Evaluaci\xF3n de supervisor"} completada \u2014 Periodo: ${updated.period}, Calificaci\xF3n: ${updated.total_score}%`,
+        createdBy: req.user.id
+      });
+    }
     return res.json({ ...updated, responses: evalResponses });
   } catch (err) {
     console.error("Update evaluation error:", err);
@@ -116569,6 +116706,13 @@ router5.patch("/:id/feedback", authMiddleware, async (req, res) => {
       [now, req.user.id, req.params.id]
     );
     const updated = await db.get("SELECT * FROM evaluations WHERE id = ?", [req.params.id]);
+    if (updated) {
+      await logTimelineEvent(updated.evaluated_id, "evaluation_completed", {
+        metadata: { period: updated.period, evalType: "feedback", score: updated.total_score },
+        note: `Sesi\xF3n de feedback completada \u2014 Periodo: ${updated.period}`,
+        createdBy: req.user.id
+      });
+    }
     return res.json(updated);
   } catch (err) {
     console.error("Feedback error:", err);
@@ -116692,6 +116836,14 @@ router6.patch("/:id", authMiddleware, async (req, res) => {
     }
     const updated = await db.get("SELECT * FROM action_plans WHERE id = ?", [req.params.id]);
     const planItems = await db.all("SELECT * FROM smart_action_items WHERE action_plan_id = ?", [req.params.id]);
+    if (updated) {
+      const statusLabel = status === "approved" ? "aprobado" : "rechazado";
+      await logTimelineEvent(updated.employee_id, "action_plan_milestone", {
+        metadata: { planId: req.params.id, status, period: updated.period },
+        note: `Plan de acci\xF3n ${statusLabel} \u2014 Periodo: ${updated.period}`,
+        createdBy: req.user.id
+      });
+    }
     return res.json({ ...updated, items: planItems });
   } catch (err) {
     console.error("Update action plan error:", err);
@@ -116702,17 +116854,25 @@ router6.post("/:id/approve", authMiddleware, async (req, res) => {
   try {
     const plan = await db.get("SELECT * FROM action_plans WHERE id = ?", [req.params.id]);
     if (!plan) return res.status(404).json({ error: "Action plan not found" });
-    const { status, comments } = req.body;
-    if (!["approved", "rejected"].includes(status)) {
+    const { status: status2, comments } = req.body;
+    if (!["approved", "rejected"].includes(status2)) {
       return res.status(400).json({ error: "Status must be approved or rejected" });
     }
     const now = (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "");
     await db.run(
       "UPDATE action_plans SET approval_status = ?, approval_comments = ?, approved_by = ?, approved_at = ?, updated_at = ? WHERE id = ?",
-      [status, comments || null, req.user.id, now, now, req.params.id]
+      [status2, comments || null, req.user.id, now, now, req.params.id]
     );
     const updated = await db.get("SELECT * FROM action_plans WHERE id = ?", [req.params.id]);
     const planItems = await db.all("SELECT * FROM smart_action_items WHERE action_plan_id = ?", [req.params.id]);
+    if (updated) {
+      const statusLabel = status2 === "approved" ? "aprobado" : "rechazado";
+      await logTimelineEvent(updated.employee_id, "action_plan_milestone", {
+        metadata: { planId: req.params.id, status: status2, period: updated.period },
+        note: `Plan de acci\xF3n ${statusLabel} \u2014 Periodo: ${updated.period}`,
+        createdBy: req.user.id
+      });
+    }
     return res.json({ ...updated, items: planItems });
   } catch (err) {
     console.error("Approve action plan error:", err);
@@ -116850,14 +117010,14 @@ router7.post("/:id/review", authMiddleware, async (req, res) => {
   try {
     const obj = await db.get("SELECT * FROM personal_objectives WHERE id = ?", [req.params.id]);
     if (!obj) return res.status(404).json({ error: "Objectives not found" });
-    const { objectiveId, status, comment } = req.body;
-    if (!objectiveId || !["approved", "rejected"].includes(status)) {
+    const { objectiveId, status: status2, comment } = req.body;
+    if (!objectiveId || !["approved", "rejected"].includes(status2)) {
       return res.status(400).json({ error: "objectiveId and valid status (approved/rejected) are required" });
     }
     const now = (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "");
     await db.run(
       "UPDATE admin_objectives SET status = ?, reviewed_by = ?, reviewed_at = ?, reviewer_comment = ? WHERE id = ?",
-      [status, req.user.id, now, comment || null, objectiveId]
+      [status2, req.user.id, now, comment || null, objectiveId]
     );
     const adminObjs = await db.all("SELECT * FROM admin_objectives WHERE personal_objectives_id = ?", [req.params.id]);
     return res.json({ ...obj, adminObjectives: adminObjs, legalObjective: null });
@@ -116978,16 +117138,16 @@ var import_express9 = __toESM(require_express2(), 1);
 var router9 = (0, import_express9.Router)();
 router9.get("/requests", authMiddleware, async (req, res) => {
   try {
-    const { userId, status } = req.query;
+    const { userId, status: status2 } = req.query;
     let sql = "SELECT * FROM vacation_requests WHERE 1=1";
     const params = [];
     if (userId) {
       sql += " AND user_id = ?";
       params.push(userId);
     }
-    if (status) {
+    if (status2) {
       sql += " AND status = ?";
-      params.push(status);
+      params.push(status2);
     }
     const requests = await db.all(sql, params);
     const result = await Promise.all(requests.map(async (r) => {
@@ -117023,12 +117183,12 @@ router9.patch("/requests/:id", authMiddleware, async (req, res) => {
   try {
     const request = await db.get("SELECT * FROM vacation_requests WHERE id = ?", [req.params.id]);
     if (!request) return res.status(404).json({ error: "Request not found" });
-    const { status, reason } = req.body;
+    const { status: status2, reason } = req.body;
     const updates = [];
     const params = [];
-    if (status) {
+    if (status2) {
       updates.push("status = ?");
-      params.push(status);
+      params.push(status2);
     }
     if (reason !== void 0) {
       updates.push("reason = ?");
@@ -117206,12 +117366,12 @@ router10.delete("/library/:id", authMiddleware, requireAdmin, async (req, res) =
 });
 router10.get("/custom", authMiddleware, async (req, res) => {
   try {
-    const { position } = req.query;
+    const { position: position2 } = req.query;
     let sql = "SELECT * FROM custom_eval_questions WHERE 1=1";
     const params = [];
-    if (position) {
+    if (position2) {
       sql += " AND position = ?";
-      params.push(position);
+      params.push(position2);
     }
     const questions = await db.all(sql, params);
     return res.json(questions);
@@ -117222,20 +117382,20 @@ router10.get("/custom", authMiddleware, async (req, res) => {
 });
 router10.post("/custom", authMiddleware, requireAdmin, async (req, res) => {
   try {
-    const { position, questions } = req.body;
-    if (!position) return res.status(400).json({ error: "position is required" });
+    const { position: position2, questions } = req.body;
+    if (!position2) return res.status(400).json({ error: "position is required" });
     if (!Array.isArray(questions)) return res.status(400).json({ error: "questions array is required" });
     await db.transaction(async (conn) => {
-      await tx.run(conn, "DELETE FROM custom_eval_questions WHERE position = ?", [position]);
+      await tx.run(conn, "DELETE FROM custom_eval_questions WHERE position = ?", [position2]);
       for (const q of questions) {
         await tx.run(
           conn,
           "INSERT INTO custom_eval_questions (id, position, question_id, category, text, weight, section, practice_area) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-          [v4_default(), position, q.questionId, q.category, q.text, q.weight, q.section || null, q.practiceArea || null]
+          [v4_default(), position2, q.questionId, q.category, q.text, q.weight, q.section || null, q.practiceArea || null]
         );
       }
     });
-    const result = await db.all("SELECT * FROM custom_eval_questions WHERE position = ?", [position]);
+    const result = await db.all("SELECT * FROM custom_eval_questions WHERE position = ?", [position2]);
     return res.json(result);
   } catch (err) {
     console.error("Set custom questions error:", err);
@@ -117316,15 +117476,15 @@ router11.get("/", authMiddleware, async (req, res) => {
 });
 router11.get("/:id", authMiddleware, async (req, res) => {
   try {
-    const position = await db.get(
+    const position2 = await db.get(
       `SELECT cp.*, wa.label AS work_area_label, wa.level AS work_area_level
        FROM custom_positions cp
        JOIN work_areas wa ON cp.work_area_id = wa.id
        WHERE cp.id = ?`,
       [req.params.id]
     );
-    if (!position) return res.status(404).json({ error: "Position not found" });
-    return res.json(position);
+    if (!position2) return res.status(404).json({ error: "Position not found" });
+    return res.json(position2);
   } catch (err) {
     console.error("Get position error:", err);
     return res.status(500).json({ error: "Internal server error" });
@@ -117343,12 +117503,12 @@ router11.post("/", authMiddleware, requireAdmin, async (req, res) => {
       "INSERT INTO custom_positions (id, label, work_area_id, base_position, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)",
       [id, label, workAreaId, basePosition, now, now]
     );
-    const position = await db.get(
+    const position2 = await db.get(
       `SELECT cp.*, wa.label AS work_area_label, wa.level AS work_area_level
        FROM custom_positions cp JOIN work_areas wa ON cp.work_area_id = wa.id WHERE cp.id = ?`,
       [id]
     );
-    return res.status(201).json(position);
+    return res.status(201).json(position2);
   } catch (err) {
     if (err.code === "ER_DUP_ENTRY") {
       return res.status(409).json({ error: "Position ID already exists" });
@@ -117361,8 +117521,8 @@ router11.patch("/:id", authMiddleware, requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     const { label, workAreaId, basePosition, newId } = req.body;
-    const position = await db.get("SELECT * FROM custom_positions WHERE id = ?", [id]);
-    if (!position) return res.status(404).json({ error: "Position not found" });
+    const position2 = await db.get("SELECT * FROM custom_positions WHERE id = ?", [id]);
+    if (!position2) return res.status(404).json({ error: "Position not found" });
     if (newId && newId !== id) {
       const userCount = await db.get(
         "SELECT COUNT(*) AS cnt FROM users WHERE custom_position_id = ?",
@@ -117414,8 +117574,8 @@ router11.patch("/:id", authMiddleware, requireAdmin, async (req, res) => {
 });
 router11.delete("/:id", authMiddleware, requireAdmin, async (req, res) => {
   try {
-    const position = await db.get("SELECT * FROM custom_positions WHERE id = ?", [req.params.id]);
-    if (!position) return res.status(404).json({ error: "Position not found" });
+    const position2 = await db.get("SELECT * FROM custom_positions WHERE id = ?", [req.params.id]);
+    if (!position2) return res.status(404).json({ error: "Position not found" });
     const userCount = await db.get(
       "SELECT COUNT(*) AS cnt FROM users WHERE custom_position_id = ?",
       [req.params.id]
@@ -118478,8 +118638,8 @@ function getTools(cfg) {
       },
       execute: async (args, uid) => {
         if (args.action === "list") {
-          const status = args.status || "pending";
-          return JSON.stringify(await db.all("SELECT v.*, u.name as user_name FROM vacation_requests v JOIN users u ON v.user_id=u.id WHERE v.status=? ORDER BY v.created_at DESC LIMIT 50", [status]));
+          const status2 = args.status || "pending";
+          return JSON.stringify(await db.all("SELECT v.*, u.name as user_name FROM vacation_requests v JOIN users u ON v.user_id=u.id WHERE v.status=? ORDER BY v.created_at DESC LIMIT 50", [status2]));
         }
         if (args.action === "approve") {
           await db.run("UPDATE vacation_requests SET status=?, processed_by=?, processed_at=? WHERE id=?", ["approved", uid, (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, ""), args.id]);
@@ -119120,12 +119280,150 @@ ${fileContent}` : fullMessage, (/* @__PURE__ */ new Date()).toISOString().replac
 });
 var copilot_default = router15;
 
+// server/routes/timeline.ts
+var import_express16 = __toESM(require_express2(), 1);
+var router16 = (0, import_express16.Router)();
+function canAccessTimeline(requester, targetId) {
+  if (requester.id === targetId) return true;
+  if (requester.role === "admin" || requester.role === "super_user") return true;
+  return false;
+}
+router16.get("/:id/timeline", authMiddleware, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { type, from, to, limit, offset } = req.query;
+    if (!canAccessTimeline(req.user, id)) {
+      return res.status(403).json({ error: "Access denied" });
+    }
+    const user = await db.get("SELECT id FROM users WHERE id = ?", [id]);
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+    let sql = "SELECT * FROM user_timeline WHERE user_id = ?";
+    const params = [id];
+    if (type) {
+      const types = String(type).split(",");
+      sql += ` AND event_type IN (${types.map(() => "?").join(",")})`;
+      params.push(...types);
+    }
+    if (from) {
+      sql += " AND event_date >= ?";
+      params.push(from);
+    }
+    if (to) {
+      sql += " AND event_date <= ?";
+      params.push(to);
+    }
+    sql += " ORDER BY event_date DESC, created_at DESC";
+    const limitNum = Math.min(parseInt(limit || "50", 10), 200);
+    const offsetNum = parseInt(offset || "0", 10);
+    sql += " LIMIT ? OFFSET ?";
+    params.push(limitNum, offsetNum);
+    const events = await db.all(sql, params);
+    let countSql = "SELECT COUNT(*) as total FROM user_timeline WHERE user_id = ?";
+    const countParams = [id];
+    if (type) {
+      const types = String(type).split(",");
+      countSql += ` AND event_type IN (${types.map(() => "?").join(",")})`;
+      countParams.push(...types);
+    }
+    if (from) {
+      countSql += " AND event_date >= ?";
+      countParams.push(from);
+    }
+    if (to) {
+      countSql += " AND event_date <= ?";
+      countParams.push(to);
+    }
+    const { total } = await db.get(countSql, countParams);
+    return res.json({ events, total, hasMore: offsetNum + limitNum < total });
+  } catch (err) {
+    console.error("Get timeline error:", err);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+});
+router16.post("/:id/timeline", authMiddleware, requireAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { eventType, note, metadata, oldValue, newValue } = req.body;
+    if (!eventType || !note) {
+      return res.status(400).json({ error: "eventType and note are required" });
+    }
+    const user = await db.get("SELECT id FROM users WHERE id = ?", [id]);
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+    const now = (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "");
+    const eventId = v4_default();
+    await db.run(
+      `INSERT INTO user_timeline (id, user_id, event_type, event_date, old_value, new_value, metadata, note, created_by, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        eventId,
+        id,
+        eventType,
+        now,
+        oldValue || null,
+        newValue || null,
+        metadata ? JSON.stringify(metadata) : null,
+        note,
+        req.user.id,
+        now,
+        now
+      ]
+    );
+    const event = await db.get("SELECT * FROM user_timeline WHERE id = ?", [eventId]);
+    return res.status(201).json(event);
+  } catch (err) {
+    console.error("Create timeline event error:", err);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+});
+router16.patch("/:id/timeline/:eventId", authMiddleware, requireAdmin, async (req, res) => {
+  try {
+    const { id, eventId } = req.params;
+    const { note } = req.body;
+    if (!note) {
+      return res.status(400).json({ error: "note is required" });
+    }
+    const event = await db.get("SELECT * FROM user_timeline WHERE id = ?", [eventId]);
+    if (!event) {
+      return res.status(404).json({ error: "Timeline event not found" });
+    }
+    const now = (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "");
+    await db.run("UPDATE user_timeline SET note = ?, updated_at = ? WHERE id = ?", [note, now, eventId]);
+    const updated = await db.get("SELECT * FROM user_timeline WHERE id = ?", [eventId]);
+    return res.json(updated);
+  } catch (err) {
+    console.error("Update timeline event error:", err);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+});
+router16.delete("/:id/timeline/:eventId", authMiddleware, async (req, res) => {
+  try {
+    const { id, eventId } = req.params;
+    if (req.user.role !== "super_user") {
+      return res.status(403).json({ error: "Only super users can delete timeline events" });
+    }
+    const event = await db.get("SELECT * FROM user_timeline WHERE id = ?", [eventId]);
+    if (!event) {
+      return res.status(404).json({ error: "Timeline event not found" });
+    }
+    await db.run("DELETE FROM user_timeline WHERE id = ?", [eventId]);
+    return res.json({ message: "Timeline event deleted" });
+  } catch (err) {
+    console.error("Delete timeline event error:", err);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+});
+var timeline_default = router16;
+
 // server/index.ts
 import_dotenv.default.config();
-var app = (0, import_express16.default)();
+var app = (0, import_express17.default)();
 var PORT = process.env.PORT || 3e3;
 app.use((0, import_cors.default)());
-app.use(import_express16.default.json());
+app.use(import_express17.default.json());
 app.get("/api/health", (_req, res) => {
   res.json({ status: "ok", timestamp: (/* @__PURE__ */ new Date()).toISOString() });
 });
@@ -119144,19 +119442,20 @@ app.use("/api/work-areas", work_areas_default);
 app.use("/api/locations", locations_default);
 app.use("/api/periods", periods_default);
 app.use("/api/copilot", copilot_default);
+app.use("/api/users", timeline_default);
 if (process.env.NODE_ENV === "production") {
   const SMPS_DOMAINS = ["smps.bowdot.online"];
   const isSmpsDomain = (host) => host && SMPS_DOMAINS.some((d) => host.includes(d));
   const landingPath = import_path.default.resolve(process.cwd(), "landing");
   app.use((req, _res, next) => {
     if (!isSmpsDomain(req.get("host")) && !req.path.startsWith("/api")) {
-      import_express16.default.static(landingPath)(req, _res, next);
+      import_express17.default.static(landingPath)(req, _res, next);
     } else {
       next();
     }
   });
   const distPath = import_path.default.resolve(process.cwd(), "dist");
-  app.use(import_express16.default.static(distPath));
+  app.use(import_express17.default.static(distPath));
   app.use((req, res) => {
     if (isSmpsDomain(req.get("host"))) {
       res.sendFile(import_path.default.join(distPath, "index.html"));

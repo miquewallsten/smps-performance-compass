@@ -3,6 +3,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { db, tx } from '../db/connection.js';
 import { authMiddleware } from '../middleware/auth.js';
 import { requireAdmin } from '../middleware/rbac.js';
+import { logTimelineEvent } from './users.js';
 
 const router = Router();
 
@@ -61,6 +62,13 @@ router.post('/', authMiddleware, requireAdmin, async (req: Request, res: Respons
     );
 
     const assignment = await db.get('SELECT * FROM supervisor_assignments WHERE id = ?', [id]);
+    // Log supervisor assignment to timeline
+    const supervisor = await db.get('SELECT name FROM users WHERE id = ?', [supervisorId]) as Record<string, unknown> | undefined;
+    await logTimelineEvent(employeeId, 'supervisor_assigned', {
+      metadata: { supervisorName: supervisor?.name || supervisorId, period },
+      note: `Asignado a supervisor: ${supervisor?.name || supervisorId} — Periodo: ${period}`,
+      createdBy: req.user!.id
+    });
     return res.status(201).json(assignment);
   } catch (err: any) {
     // Handle unique constraint violation
@@ -82,8 +90,18 @@ router.delete('/:id', authMiddleware, requireAdmin, async (req: Request, res: Re
       return res.status(404).json({ error: 'Assignment not found' });
     }
 
+    // Get assignment details before deleting for timeline
+    const assignmentDetails = await db.get('SELECT * FROM supervisor_assignments WHERE id = ?', [id]) as Record<string, unknown> | undefined;
     await db.run('DELETE FROM supervisor_assignments WHERE id = ?', [id]);
-
+    // Log supervisor removal to timeline
+    if (assignmentDetails) {
+      const supervisor = await db.get('SELECT name FROM users WHERE id = ?', [assignmentDetails.supervisor_id]) as Record<string, unknown> | undefined;
+      await logTimelineEvent(assignmentDetails.employee_id as string, 'supervisor_removed', {
+        metadata: { supervisorName: supervisor?.name || assignmentDetails.supervisor_id, period: assignmentDetails.period },
+        note: `Removido supervisor: ${supervisor?.name || assignmentDetails.supervisor_id} — Periodo: ${assignmentDetails.period}`,
+        createdBy: req.user!.id
+      });
+    }
     return res.json({ message: 'Assignment deleted successfully' });
   } catch (err) {
     console.error('Delete assignment error:', err);

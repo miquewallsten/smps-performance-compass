@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import { db, tx } from '../db/connection.js';
 import { authMiddleware } from '../middleware/auth.js';
+import { logTimelineEvent } from './users.js';
 
 const router = Router();
 
@@ -95,6 +96,15 @@ router.patch('/:id', authMiddleware, async (req: Request, res: Response) => {
 
     const updated = await db.get('SELECT * FROM action_plans WHERE id = ?', [req.params.id]);
     const planItems = await db.all('SELECT * FROM smart_action_items WHERE action_plan_id = ?', [req.params.id]);
+    // Log action plan milestone to timeline
+    if (updated) {
+      const statusLabel = status === 'approved' ? 'aprobado' : 'rechazado';
+      await logTimelineEvent(updated.employee_id, 'action_plan_milestone', {
+        metadata: { planId: req.params.id, status, period: updated.period },
+        note: `Plan de acción ${statusLabel} — Periodo: ${updated.period}`,
+        createdBy: req.user!.id
+      });
+    }
     return res.json({ ...updated, items: planItems });
   } catch (err) {
     console.error('Update action plan error:', err);
@@ -119,6 +129,15 @@ router.post('/:id/approve', authMiddleware, async (req: Request, res: Response) 
 
     const updated = await db.get('SELECT * FROM action_plans WHERE id = ?', [req.params.id]);
     const planItems = await db.all('SELECT * FROM smart_action_items WHERE action_plan_id = ?', [req.params.id]);
+    // Log action plan milestone to timeline
+    if (updated) {
+      const statusLabel = status === 'approved' ? 'aprobado' : 'rechazado';
+      await logTimelineEvent(updated.employee_id, 'action_plan_milestone', {
+        metadata: { planId: req.params.id, status, period: updated.period },
+        note: `Plan de acción ${statusLabel} — Periodo: ${updated.period}`,
+        createdBy: req.user!.id
+      });
+    }
     return res.json({ ...updated, items: planItems });
   } catch (err) {
     console.error('Approve action plan error:', err);

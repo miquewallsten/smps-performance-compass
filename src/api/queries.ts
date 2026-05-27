@@ -298,3 +298,33 @@ export function useCopilotChat() {
     },
   });
 }
+
+// ── Timeline ──
+export function useUserTimeline(userId: string, params?: Record<string, string>) {
+  const queryString = params ? '?' + new URLSearchParams(params).toString() : '';
+  return useQuery({ queryKey: ['timeline', userId, params], queryFn: () => api.get<any[]>(`/api/users/${userId}/timeline${queryString}`) });
+}
+
+export function useCreateTimelineEvent() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ userId, ...data }: any) => api.post(`/api/users/${userId}/timeline`, data),
+    onSuccess: (_data: any, variables: any) => qc.invalidateQueries({ queryKey: ['timeline', variables.userId] }),
+  });
+}
+
+export function useUpdateTimelineEvent() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ userId, eventId, ...data }: any) => api.patch(`/api/users/${userId}/timeline/${eventId}`, data),
+    onSuccess: (_data: any, variables: any) => qc.invalidateQueries({ queryKey: ['timeline', variables.userId] }),
+  });
+}
+
+export function useDeleteTimelineEvent() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ userId, eventId }: any) => api.delete(`/api/users/${userId}/timeline/${eventId}`),
+    onSuccess: (_data: any, variables: any) => qc.invalidateQueries({ queryKey: ['timeline', variables.userId] }),
+  });
+}

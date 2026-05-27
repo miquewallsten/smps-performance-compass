@@ -1,12 +1,14 @@
 import { useState, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUsers, useEvaluations, useUpdateUser, useResetUserPassword, useCreateUser, useDeleteUser, useSystemStatus, useUpdateUserRole, usePositions, useWorkAreas, useLocations } from '@/api/queries';
 import { POSITION_LABELS, PERIODS, Position, LEGAL_HIERARCHY, ADMIN_HIERARCHY } from '@/types';
-import { Eye, Key, UserCheck, UserX, Search, Plus, Trash2, Star, Shield, Pencil, MapPin } from 'lucide-react';
+import { Eye, Key, UserCheck, UserX, Search, Plus, Trash2, Star, Shield, Pencil, MapPin, Clock } from 'lucide-react';
 import EvaluationViewer from '@/components/EvaluationViewer';
 import { toast } from 'sonner';
 
 export default function UserManagement() {
+  const navigate = useNavigate();
   const { user: currentUser } = useAuth();
   const { data: users = [] } = useUsers();
   const { data: evaluations = [] } = useEvaluations();
@@ -223,6 +225,9 @@ export default function UserManagement() {
         </td>
         <td className="py-2.5 px-3 text-right">
           <div className="flex items-center justify-end gap-0.5">
+            <button onClick={() => navigate(`/users/${user.id}/timeline`)} className="p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors" title="Ver Historial">
+              <Clock className="h-3.5 w-3.5" />
+            </button>
             <button onClick={() => handleToggleActive(user.id)} className={`p-1.5 rounded transition-colors ${user.isActive ? 'hover:bg-destructive/10 text-muted-foreground hover:text-destructive' : 'hover:bg-smps-success/10 text-muted-foreground hover:text-smps-success'}`} title={user.isActive ? 'Desactivar' : 'Activar'}>
               {user.isActive ? <UserX className="h-3.5 w-3.5" /> : <UserCheck className="h-3.5 w-3.5" />}
             </button>

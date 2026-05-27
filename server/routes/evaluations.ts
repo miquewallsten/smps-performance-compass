@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import { db, tx } from '../db/connection.js';
 import { authMiddleware } from '../middleware/auth.js';
+import { logTimelineEvent } from './users.js';
 
 const router = Router();
 
@@ -154,6 +155,15 @@ router.patch('/:id', authMiddleware, async (req: Request, res: Response) => {
 
     const updated = await db.get('SELECT * FROM evaluations WHERE id = ?', [req.params.id]);
     const evalResponses = await db.all('SELECT * FROM evaluation_responses WHERE evaluation_id = ?', [req.params.id]);
+    // Log evaluation completion to timeline
+    if (updated && updated.completed_at) {
+      const evalType = updated.type === 'self' ? 'self' : 'supervisor';
+      await logTimelineEvent(updated.evaluated_id, 'evaluation_completed', {
+        metadata: { period: updated.period, evalType, score: updated.total_score, evaluatorId: updated.evaluator_id },
+        note: `${evalType === 'self' ? 'Autoevaluación' : 'Evaluación de supervisor'} completada — Periodo: ${updated.period}, Calificación: ${updated.total_score}%`,
+        createdBy: req.user!.id
+      });
+    }
     return res.json({ ...updated, responses: evalResponses });
   } catch (err) {
     console.error('Update evaluation error:', err);
@@ -170,6 +180,14 @@ router.patch('/:id/feedback', authMiddleware, async (req: Request, res: Response
     await db.run('UPDATE evaluations SET feedback_completed = 1, feedback_completed_at = ?, feedback_completed_by = ? WHERE id = ?',
       [now, req.user!.id, req.params.id]);
     const updated = await db.get('SELECT * FROM evaluations WHERE id = ?', [req.params.id]);
+    // Log feedback completion to timeline
+    if (updated) {
+      await logTimelineEvent(updated.evaluated_id, 'evaluation_completed', {
+        metadata: { period: updated.period, evalType: 'feedback', score: updated.total_score },
+        note: `Sesión de feedback completada — Periodo: ${updated.period}`,
+        createdBy: req.user!.id
+      });
+    }
     return res.json(updated);
   } catch (err) {
     console.error('Feedback error:', err);

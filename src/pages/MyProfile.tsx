@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUsers, useEvaluations, useAssignments, useObjectives } from '@/api/queries';
 import { CURRENT_PERIOD, PERIODS, POSITION_LABELS, POSITION_LEVELS, LEVEL_LABELS } from '@/types';
-import { User as UserIcon, Target, TrendingUp, Sparkles } from 'lucide-react';
+import { User as UserIcon, Target, TrendingUp, Sparkles, Clock } from 'lucide-react';
 
 function TrafficLight({ value }: { value: number }) {
   let color = 'bg-destructive';
@@ -19,6 +19,7 @@ function TrafficLight({ value }: { value: number }) {
 
 export default function MyProfile() {
   const { user: currentUser } = useAuth();
+  const navigate = useNavigate();
   const { data: personalObjectives = [] } = useObjectives();
   const { data: evaluations = [] } = useEvaluations();
   const { data: assignments = [] } = useAssignments();
@@ -66,6 +67,9 @@ export default function MyProfile() {
           <h1 className="font-display text-2xl font-bold flex items-center gap-2">
             <UserIcon className="h-6 w-6 text-accent" /> Mi Perfil
           </h1>
+          <button onClick={() => navigate(`/users/${currentUser.id}/timeline`)} className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-accent/10 text-accent hover:bg-accent/20 transition-colors" title="Mi Historial">
+            <Clock className="h-3.5 w-3.5" /> Mi Historial
+          </button>
           <p className="text-muted-foreground text-sm mt-1">
             {currentUser.name} · {POSITION_LABELS[currentUser.position]} · {LEVEL_LABELS[level]}
           </p>
