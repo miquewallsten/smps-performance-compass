@@ -4,620 +4,467 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useUserTimeline, useUsers, useCreateTimelineEvent, useDeleteTimelineEvent } from '@/api/queries';
 import { POSITION_LABELS } from '@/types';
 import {
-  ArrowUp, ArrowDown, ArrowRight, UserPlus, UserMinus, BarChart3, Shield, UserCheck,
-  UserX, Calendar, CheckCircle, Key, MessageSquare, ChevronLeft, ChevronRight,
-  Plus, Trash2, Clock, Filter, X, ZoomIn, ZoomOut
+  ArrowRight, UserPlus, UserMinus, BarChart3, Shield, UserCheck,
+  UserX, Calendar, CheckCircle, Key, MessageSquare, ChevronLeft,
+  Plus, Trash2, Clock, SlidersHorizontal, X
 } from 'lucide-react';
 import { toast } from 'sonner';
 
-// ─── EVENT CONFIG ────────────────────────────────────────────────────────────
-const EVENT_CONFIG: Record<string, {
-  icon: typeof ArrowUp;
-  color: string;
-  bg: string;
-  border: string;
-  label: string;
-  railColor: string;
-}> = {
-  position_change:   { icon: ArrowUp,      color: 'text-amber-700',   bg: 'bg-amber-50/80',    border: 'border-amber-200/60',  label: 'Cambio de Posición',  railColor: 'hsl(40 60% 50%)' },
-  hire:               { icon: UserPlus,      color: 'text-emerald-700', bg: 'bg-emerald-50/80',  border: 'border-emerald-200/60', label: 'Ingreso',             railColor: 'hsl(145 60% 40%)' },
-  termination:        { icon: UserMinus,     color: 'text-red-700',     bg: 'bg-red-50/80',      border: 'border-red-200/60',    label: 'Baja',               railColor: 'hsl(350 80% 42%)' },
-  reactivation:       { icon: UserCheck,     color: 'text-emerald-700', bg: 'bg-emerald-50/80',  border: 'border-emerald-200/60', label: 'Reactivación',       railColor: 'hsl(145 60% 40%)' },
-  evaluation_completed: { icon: BarChart3,  color: 'text-rose-700',    bg: 'bg-rose-50/80',     border: 'border-rose-200/60',   label: 'Evaluación',         railColor: 'hsl(350 70% 45%)' },
-  role_change:        { icon: Shield,        color: 'text-blue-700',    bg: 'bg-blue-50/80',     border: 'border-blue-200/60',   label: 'Cambio de Rol',      railColor: 'hsl(215 50% 35%)' },
-  supervisor_assigned: { icon: UserCheck,   color: 'text-indigo-700',  bg: 'bg-indigo-50/80',   border: 'border-indigo-200/60', label: 'Supervisor Asignado', railColor: 'hsl(225 50% 42%)' },
-  supervisor_removed: { icon: UserX,         color: 'text-indigo-700', bg: 'bg-indigo-50/80',   border: 'border-indigo-200/60', label: 'Supervisor Removido', railColor: 'hsl(225 40% 55%)' },
-  period_transition:  { icon: Calendar,     color: 'text-slate-700',  bg: 'bg-slate-50/80',    border: 'border-slate-200/60',  label: 'Periodo',            railColor: 'hsl(215 15% 45%)' },
-  action_plan_milestone: { icon: CheckCircle, color: 'text-green-700', bg: 'bg-green-50/80',   border: 'border-green-200/60', label: 'Plan de Acción',     railColor: 'hsl(145 60% 40%)' },
-  password_reset:     { icon: Key,          color: 'text-orange-700',  bg: 'bg-orange-50/80',   border: 'border-orange-200/60', label: 'Contraseña',         railColor: 'hsl(25 80% 50%)' },
-  note:               { icon: MessageSquare, color: 'text-slate-600',  bg: 'bg-slate-50/80',    border: 'border-slate-200/60',  label: 'Nota',              railColor: 'hsl(215 15% 55%)' },
+/* ═════════════════════════════════════════════════════════════════════════════
+   TIME MACHINE — Apple-inspired career timeline
+   Dark depth viewport · Vertical mini-viewer · Sleek glass panels
+   ═════════════════════════════════════════════════════════════════════════════ */
+
+const EVT: Record<string, { icon: typeof ArrowRight; accent: string; label: string }> = {
+  position_change:      { icon: ArrowRight,    accent: 'hsl(40 60% 50%)',   label: 'Posición' },
+  hire:                  { icon: UserPlus,      accent: 'hsl(145 60% 40%)',  label: 'Ingreso' },
+  termination:           { icon: UserMinus,     accent: 'hsl(350 80% 42%)',  label: 'Baja' },
+  reactivation:          { icon: UserCheck,     accent: 'hsl(145 60% 40%)',  label: 'Reactivación' },
+  evaluation_completed:  { icon: BarChart3,     accent: 'hsl(350 70% 50%)',  label: 'Evaluación' },
+  role_change:           { icon: Shield,        accent: 'hsl(215 50% 40%)',  label: 'Rol' },
+  supervisor_assigned:   { icon: UserCheck,     accent: 'hsl(225 50% 50%)',  label: 'Supervisor +' },
+  supervisor_removed:    { icon: UserX,         accent: 'hsl(225 40% 55%)',  label: 'Supervisor −' },
+  period_transition:     { icon: Calendar,      accent: 'hsl(215 15% 50%)',  label: 'Periodo' },
+  action_plan_milestone: { icon: CheckCircle,    accent: 'hsl(145 60% 40%)',  label: 'Plan Acción' },
+  password_reset:        { icon: Key,           accent: 'hsl(25 80% 50%)',   label: 'Contraseña' },
+  note:                  { icon: MessageSquare,  accent: 'hsl(215 15% 55%)',  label: 'Nota' },
 };
 
-const CHANGE_TYPE_LABELS: Record<string, string> = {
-  promotion: 'Promoción',
-  demotion: 'Degradación',
-  lateral_move: 'Cambio lateral',
-  lateral: 'Cambio lateral',
+const CHANGE_LABELS: Record<string, string> = {
+  promotion: 'Promoción', demotion: 'Degradación', lateral_move: 'Cambio lateral', lateral: 'Cambio lateral',
 };
 
-const FILTER_OPTIONS = [
-  { key: 'all', label: 'Todo' },
-  { key: 'position_change', label: 'Posición' },
-  { key: 'hire', label: 'Ingreso' },
-  { key: 'termination', label: 'Baja' },
-  { key: 'evaluation_completed', label: 'Evaluación' },
-  { key: 'role_change', label: 'Rol' },
-  { key: 'supervisor_assigned', label: 'Supervisor' },
-  { key: 'action_plan_milestone', label: 'Plan de Acción' },
-  { key: 'note', label: 'Notas' },
+const FILTERS = [
+  { k: 'all', l: 'Todo' },
+  { k: 'position_change', l: 'Posición' },
+  { k: 'hire', l: 'Ingreso' },
+  { k: 'termination', l: 'Baja' },
+  { k: 'evaluation_completed', l: 'Evaluación' },
+  { k: 'role_change', l: 'Rol' },
+  { k: 'supervisor_assigned', l: 'Supervisor' },
+  { k: 'action_plan_milestone', l: 'Plan Acción' },
+  { k: 'note', l: 'Notas' },
 ];
 
-// ─── HELPERS ──────────────────────────────────────────────────────────────────
-function parseEventDate(dateStr: string): Date {
-  return new Date(dateStr + (dateStr.length <= 10 ? 'T12:00:00' : ''));
-}
+/* ── Helpers ──────────────────────────────────────────────────────────────── */
+const pd = (s: string) => new Date(s + (s.length <= 10 ? 'T12:00:00' : ''));
+const fmtDay = (s: string) => pd(s).toLocaleDateString('es-MX', { day: 'numeric' });
+const fmtMon = (s: string) => pd(s).toLocaleDateString('es-MX', { month: 'short' });
+const fmtFull = (s: string) => pd(s).toLocaleDateString('es-MX', { day: 'numeric', month: 'long', year: 'numeric' });
+const fmtTime = (s: string) => new Date(s).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
+const getYear = (s: string) => pd(s).getFullYear();
+const getMonthKey = (s: string) => { const d = pd(s); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`; };
+const monthLabel = (k: string) => { const [y,m] = k.split('-'); const d = new Date(+y, +m-1, 1); return d.toLocaleDateString('es-MX', { month: 'short' }); };
+const changeLabel = (meta: any) => meta?.changeType && CHANGE_LABELS[meta?.changeType] ? CHANGE_LABELS[meta.changeType] : '';
 
-function formatDay(dateStr: string): string {
-  const d = parseEventDate(dateStr);
-  return d.toLocaleDateString('es-MX', { day: 'numeric' });
-}
-
-function formatMonthYear(dateStr: string): string {
-  const d = parseEventDate(dateStr);
-  return d.toLocaleDateString('es-MX', { month: 'short', year: 'numeric' });
-}
-
-function formatFullDate(dateStr: string): string {
-  const d = parseEventDate(dateStr);
-  return d.toLocaleDateString('es-MX', { day: 'numeric', month: 'long', year: 'numeric' });
-}
-
-function formatTime(dateStr: string): string {
-  const d = new Date(dateStr);
-  return d.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
-}
-
-function getChangeTypeLabel(metadata: any): string {
-  if (metadata?.changeType && CHANGE_TYPE_LABELS[metadata.changeType]) {
-    return CHANGE_TYPE_LABELS[metadata.changeType];
-  }
-  return '';
-}
-
-function getYear(dateStr: string): number {
-  return parseEventDate(dateStr).getFullYear();
-}
-
-function getMonth(dateStr: string): string {
-  const d = parseEventDate(dateStr);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-}
-
-function monthLabel(key: string): string {
-  const [y, m] = key.split('-');
-  const d = new Date(Number(y), Number(m) - 1, 1);
-  return d.toLocaleDateString('es-MX', { month: 'short', year: 'numeric' });
-}
-
-// ─── SCORE RING ───────────────────────────────────────────────────────────────
-function ScoreRing({ score, size = 36 }: { score: number; size?: number }) {
-  const r = (size - 4) / 2;
-  const circ = 2 * Math.PI * r;
-  const pct = Math.max(0, Math.min(100, score)) / 100;
-  const color = score >= 80 ? 'hsl(145 60% 40%)' : score >= 60 ? 'hsl(40 60% 50%)' : 'hsl(350 80% 42%)';
+/* ── Score Ring ────────────────────────────────────────────────────────────── */
+function Ring({ v, s = 28 }: { v: number; s?: number }) {
+  const r = (s - 3) / 2, c = 2 * Math.PI * r, pct = Math.max(0, Math.min(100, v)) / 100;
+  const col = v >= 80 ? 'hsl(145 60% 40%)' : v >= 60 ? 'hsl(40 60% 50%)' : 'hsl(350 80% 42%)';
   return (
-    <svg width={size} height={size} className="shrink-0">
-      <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="hsl(var(--muted))" strokeWidth={2.5} />
-      <circle
-        cx={size/2} cy={size/2} r={r} fill="none" stroke={color} strokeWidth={2.5}
-        strokeDasharray={circ} strokeDashoffset={circ * (1 - pct)}
-        strokeLinecap="round" transform={`rotate(-90 ${size/2} ${size/2})`}
-        className="tm-score-ring"
-      />
-      <text x={size/2} y={size/2} textAnchor="middle" dominantBaseline="central"
-        className="fill-foreground text-[9px] font-semibold" style={{ fontFamily: 'var(--font-body)' }}>
-        {score}
-      </text>
+    <svg width={s} height={s} className="shrink-0">
+      <circle cx={s/2} cy={s/2} r={r} fill="none" stroke="hsl(215 50% 30%)" strokeWidth={2} />
+      <circle cx={s/2} cy={s/2} r={r} fill="none" stroke={col} strokeWidth={2}
+        strokeDasharray={c} strokeDashoffset={c*(1-pct)} strokeLinecap="round"
+        transform={`rotate(-90 ${s/2} ${s/2})`} className="tm-ring-anim" />
+      <text x={s/2} y={s/2} textAnchor="middle" dominantBaseline="central"
+        fill="hsl(210 20% 90%)" fontSize="8" fontWeight="600" fontFamily="var(--font-body)">{v}</text>
     </svg>
   );
 }
 
-// ─── MAIN COMPONENT ──────────────────────────────────────────────────────────
+/* ════════════════════════════════════════════════════════════════════════════ */
 export default function UserTimeline() {
   const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
-  const { user: currentUser } = useAuth();
+  const nav = useNavigate();
+  const { user: me } = useAuth();
   const { data: users = [] } = useUsers();
-  const [filter, setFilter] = useState<string>('all');
-  const [showAddNote, setShowAddNote] = useState(false);
+  const [filter, setFilter] = useState('all');
+  const [showFilter, setShowFilter] = useState(false);
+  const [showNote, setShowNote] = useState(false);
   const [noteText, setNoteText] = useState('');
-  const [expandedEvent, setExpandedEvent] = useState<string | null>(null);
-  const [showFilters, setShowFilters] = useState(false);
+  const [expanded, setExpanded] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const [canScrollLeft, setCanScrollLeft] = useState(false);
-  const [canScrollRight, setCanScrollRight] = useState(false);
   const [scrollPct, setScrollPct] = useState(0);
+  const filterRef = useRef<HTMLDivElement>(null);
 
-  const createEvent = useCreateTimelineEvent();
-  const deleteEvent = useDeleteTimelineEvent();
-
-  const targetUser = users.find((u: any) => u.id === id);
-  const { data: timelineData, isLoading } = useUserTimeline(id!, filter !== 'all' ? { type: filter } : undefined);
+  const createEvt = useCreateTimelineEvent();
+  const delEvt = useDeleteTimelineEvent();
+  const target = users.find((u: any) => u.id === id);
+  const { data: td, isLoading } = useUserTimeline(id!, filter !== 'all' ? { type: filter } : undefined);
 
   const events = useMemo(() => {
-    const raw = (timelineData as any)?.events || [];
-    return raw.sort((a: any, b: any) => {
-      const da = a.event_date || a.created_at;
-      const db = b.event_date || b.created_at;
-      return da.localeCompare(db);
-    });
-  }, [(timelineData as any)?.events]);
+    const raw = (td as any)?.events || [];
+    return raw.sort((a: any, b: any) => (a.event_date||a.created_at).localeCompare(b.event_date||b.created_at));
+  }, [(td as any)?.events]);
 
-  const total = (timelineData as any)?.total || 0;
+  const total = (td as any)?.total || 0;
+  const canAdmin = me?.isAdmin || me?.isSuperUser;
 
-  const canAddNote = currentUser?.isAdmin || currentUser?.isSuperUser;
-  const canDelete = currentUser?.isAdmin || currentUser?.isSuperUser;
-
-  // Group events by month for the rail
-  const monthGroups = useMemo(() => {
-    const groups: Record<string, any[]> = {};
-    events.forEach((e: any) => {
-      const key = getMonth(e.event_date || e.created_at);
-      if (!groups[key]) groups[key] = [];
-      groups[key].push(e);
-    });
-    return groups;
+  // Month groups
+  const months = useMemo(() => {
+    const g: Record<string, any[]> = {};
+    events.forEach((e: any) => { const k = getMonthKey(e.event_date||e.created_at); if (!g[k]) g[k] = []; g[k].push(e); });
+    return g;
   }, [events]);
+  const sortedMonths = useMemo(() => Object.keys(months).sort(), [months]);
+  const years = useMemo(() => [...new Set(sortedMonths.map(m => m.split('-')[0]))].sort(), [sortedMonths]);
 
-  const sortedMonths = useMemo(() => Object.keys(monthGroups).sort(), [monthGroups]);
-
-  // Year markers
-  const yearMarkers = useMemo(() => {
-    const years = new Set<string>();
-    sortedMonths.forEach(m => {
-      const [y] = m.split('-');
-      years.add(y);
-    });
-    return Array.from(years).sort();
-  }, [sortedMonths]);
-
-  // Scroll management
-  const updateScroll = useCallback(() => {
+  // Scroll tracking
+  const onScroll = useCallback(() => {
     const el = scrollRef.current;
     if (!el) return;
-    setCanScrollLeft(el.scrollLeft > 10);
-    setCanScrollRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 10);
     setScrollPct(el.scrollWidth > el.clientWidth ? el.scrollLeft / (el.scrollWidth - el.clientWidth) : 0);
   }, []);
 
   useEffect(() => {
-    const el = scrollRef.current;
-    if (!el) return;
-    updateScroll();
-    el.addEventListener('scroll', updateScroll, { passive: true });
-    const ro = new ResizeObserver(updateScroll);
-    ro.observe(el);
-    return () => { el.removeEventListener('scroll', updateScroll); ro.disconnect(); };
-  }, [updateScroll, events]);
+    const el = scrollRef.current; if (!el) return;
+    onScroll();
+    el.addEventListener('scroll', onScroll, { passive: true });
+    const ro = new ResizeObserver(onScroll); ro.observe(el);
+    return () => { el.removeEventListener('scroll', onScroll); ro.disconnect(); };
+  }, [onScroll, events]);
 
-  const scrollBy = (dir: number) => {
-    scrollRef.current?.scrollBy({ left: dir * 400, behavior: 'smooth' });
-  };
+  // Close filter on outside click
+  useEffect(() => {
+    if (!showFilter) return;
+    const h = (e: MouseEvent) => { if (filterRef.current && !filterRef.current.contains(e.target as Node)) setShowFilter(false); };
+    document.addEventListener('mousedown', h);
+    return () => document.removeEventListener('mousedown', h);
+  }, [showFilter]);
 
-  const scrollToMonth = (monthKey: string) => {
-    const el = scrollRef.current?.querySelector(`[data-month="${monthKey}"]`);
-    if (el) el.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
-  };
+  const scrollJump = (dir: number) => scrollRef.current?.scrollBy({ left: dir * 500, behavior: 'smooth' });
+  const jumpToMonth = (mk: string) => scrollRef.current?.querySelector(`[data-m="${mk}"]`)?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
 
-  // Add note
-  const handleAddNote = async () => {
+  const addNote = async () => {
     if (!noteText.trim()) return;
-    try {
-      await createEvent.mutateAsync({ userId: id, eventType: 'note', note: noteText.trim() });
-      setNoteText('');
-      setShowAddNote(false);
-      toast.success('Nota agregada al historial');
-    } catch {
-      toast.error('Error al agregar nota');
-    }
+    try { await createEvt.mutateAsync({ userId: id, eventType: 'note', note: noteText.trim() }); setNoteText(''); setShowNote(false); toast.success('Nota agregada'); }
+    catch { toast.error('Error al agregar nota'); }
   };
-
-  const handleDeleteEvent = async (eventId: string) => {
-    try {
-      await deleteEvent.mutateAsync({ userId: id!, eventId });
-      toast.success('Evento eliminado del historial');
-    } catch {
-      toast.error('Error al eliminar evento');
-    }
+  const deleteEvent = async (eid: string) => {
+    try { await delEvt.mutateAsync({ userId: id!, eventId: eid }); toast.success('Evento eliminado'); }
+    catch { toast.error('Error al eliminar'); }
   };
 
   if (!id) return null;
 
+  /* ── Vertical Mini-Viewer data ──────────────────────────────────────────── */
+  const viewerMonths = sortedMonths;
+
   return (
-    <div className="flex flex-col h-full -m-4 md:-m-5">
-      {/* ── HEADER ─────────────────────────────────────────────────────────── */}
-      <div className="shrink-0 smps-gradient-header px-4 md:px-5 py-3 flex items-center gap-3">
-        <button onClick={() => navigate(-1)} className="p-1.5 rounded-md text-primary-foreground/70 hover:text-primary-foreground hover:bg-white/10 transition-[color,background-color] 150ms ease-out">
-          <ChevronLeft className="h-4 w-4" />
-        </button>
-        <Clock className="h-4 w-4 text-primary-foreground/50" />
-        <div className="flex-1 min-w-0">
-          <h1 className="text-sm font-semibold text-primary-foreground truncate" style={{ fontFamily: 'var(--font-display)' }}>
-            {targetUser ? `Historial — ${targetUser.name}` : 'Historial'}
-          </h1>
-          <p className="text-[11px] text-primary-foreground/50">
-            {total} evento{total !== 1 ? 's' : ''} registrado{total !== 1 ? 's' : ''}
-          </p>
-        </div>
+    <div className="flex h-full -m-4 md:-m-5">
+      {/* ══════════════════════════════════════════════════════════════════════
+          MAIN VIEWPORT — Dark depth background
+          ══════════════════════════════════════════════════════════════════════ */}
+      <div className="flex-1 flex flex-col min-w-0 tm-viewport">
 
-        {/* Filter toggle */}
-        <button
-          onClick={() => setShowFilters(!showFilters)}
-          className={`p-1.5 rounded-md transition-[color,background-color] 150ms ease-out ${
-            filter !== 'all' ? 'bg-accent text-accent-foreground' : 'text-primary-foreground/50 hover:text-primary-foreground hover:bg-white/10'
-          }`}
-        >
-          <Filter className="h-4 w-4" />
-        </button>
-
-        {/* Add note */}
-        {canAddNote && (
-          <button
-            onClick={() => setShowAddNote(true)}
-            className="p-1.5 rounded-md text-primary-foreground/50 hover:text-primary-foreground hover:bg-white/10 transition-[color,background-color] 150ms ease-out"
-          >
-            <Plus className="h-4 w-4" />
+        {/* ── Header bar (dark) ─────────────────────────────────────────────── */}
+        <div className="shrink-0 h-10 flex items-center gap-2 px-4 border-b tm-header">
+          <button onClick={() => nav(-1)} className="p-1 rounded-md text-[hsl(210,20%,60%)] hover:text-[hsl(210,20%,85%)] transition-[color] 150ms ease-out">
+            <ChevronLeft className="h-3.5 w-3.5" />
           </button>
-        )}
-      </div>
-
-      {/* ── FILTER BAR ─────────────────────────────────────────────────────── */}
-      {showFilters && (
-        <div className="shrink-0 border-b bg-muted/30 px-4 py-2 flex gap-1.5 overflow-x-auto tm-filters-bar">
-          {FILTER_OPTIONS.map(opt => (
-            <button
-              key={opt.key}
-              onClick={() => setFilter(opt.key)}
-              className={`shrink-0 px-2.5 py-1 rounded-md text-xs font-medium transition-[background-color,color] 150ms ease-out ${
-                filter === opt.key
-                  ? 'bg-primary text-primary-foreground'
-                  : 'bg-background text-muted-foreground hover:bg-muted'
-              }`}
-            >
-              {opt.label}
-            </button>
-          ))}
-        </div>
-      )}
-
-      {/* ── ADD NOTE MODAL ──────────────────────────────────────────────────── */}
-      {showAddNote && (
-        <div className="shrink-0 border-b bg-card px-4 py-3 tm-slide-down">
-          <div className="flex items-center gap-2 mb-2">
-            <MessageSquare className="h-3.5 w-3.5 text-muted-foreground" />
-            <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground" style={{ fontFamily: 'var(--font-display)' }}>
-              Agregar Nota
-            </span>
-            <button onClick={() => setShowAddNote(false)} className="ml-auto p-1 rounded hover:bg-muted transition-[background-color] 150ms ease-out">
-              <X className="h-3.5 w-3.5 text-muted-foreground" />
-            </button>
+          <Clock className="h-3 w-3 text-[hsl(350,80%,42%)]" />
+          <div className="flex-1 min-w-0">
+            <h1 className="text-xs font-semibold text-[hsl(210,20%,85%)] truncate" style={{ fontFamily: 'var(--font-display)' }}>
+              {target ? `Historial — ${target.name}` : 'Historial'}
+            </h1>
           </div>
-          <div className="flex gap-2">
-            <input
-              value={noteText}
-              onChange={e => setNoteText(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && handleAddNote()}
-              placeholder="Escribe una nota para el historial..."
-              className="flex-1 min-w-0 px-3 py-1.5 text-sm border rounded-md bg-background focus:outline-none focus:ring-1 focus:ring-accent transition-[border-color,box-shadow] 150ms ease-out"
-              autoFocus
-            />
-            <button
-              onClick={handleAddNote}
-              disabled={!noteText.trim()}
-              className="px-3 py-1.5 rounded-md text-xs font-semibold bg-accent text-accent-foreground hover:opacity-90 disabled:opacity-40 transition-[opacity] 150ms ease-out active:scale-[0.97]"
-            >
-              Guardar
+          <span className="text-[10px] text-[hsl(210,15%,45%)] tabular-nums">{total} evento{total!==1?'s':''}</span>
+
+          {/* Filter dropdown */}
+          <div ref={filterRef} className="relative">
+            <button onClick={() => setShowFilter(!showFilter)}
+              className={`h-6 px-1.5 rounded flex items-center gap-1 text-[10px] transition-[background-color,color] 150ms ease-out ${
+                filter !== 'all' ? 'bg-[hsl(350,80%,42%)] text-white' : 'text-[hsl(210,15%,50%)] hover:text-[hsl(210,20%,80%)] hover:bg-[hsl(215,50%,18%)]'
+              }`}>
+              <SlidersHorizontal className="h-3 w-3" />
+              {filter !== 'all' && <span>{FILTERS.find(f=>f.k===filter)?.l}</span>}
             </button>
-          </div>
-        </div>
-      )}
-
-      {/* ── YEAR NAVIGATOR ──────────────────────────────────────────────────── */}
-      {yearMarkers.length > 1 && (
-        <div className="shrink-0 px-4 py-2 border-b bg-background flex items-center gap-2">
-          <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold mr-2" style={{ fontFamily: 'var(--font-display)' }}>
-            Años
-          </span>
-          {yearMarkers.map(y => (
-            <button
-              key={y}
-              onClick={() => {
-                const firstMonth = sortedMonths.find(m => m.startsWith(y));
-                if (firstMonth) scrollToMonth(firstMonth);
-              }}
-              className="px-2 py-0.5 rounded text-xs font-semibold hover:bg-muted transition-[background-color] 150ms ease-out active:scale-[0.97]"
-              style={{ fontFamily: 'var(--font-display)' }}
-            >
-              {y}
-            </button>
-          ))}
-        </div>
-      )}
-
-      {/* ── TIMELINE VIEWPORT ───────────────────────────────────────────────── */}
-      <div className="flex-1 relative overflow-hidden bg-background">
-        {/* Scroll arrows */}
-        {canScrollLeft && (
-          <button
-            onClick={() => scrollBy(-1)}
-            className="absolute left-0 top-0 bottom-0 w-10 z-10 flex items-center justify-center bg-gradient-to-r from-background to-transparent tm-arrow-left"
-          >
-            <ChevronLeft className="h-5 w-5 text-muted-foreground" />
-          </button>
-        )}
-        {canScrollRight && (
-          <button
-            onClick={() => scrollBy(1)}
-            className="absolute right-0 top-0 bottom-0 w-10 z-10 flex items-center justify-center bg-gradient-to-l from-background to-transparent tm-arrow-right"
-          >
-            <ChevronRight className="h-5 w-5 text-muted-foreground" />
-          </button>
-        )}
-
-        {/* Scroll progress bar */}
-        <div className="absolute top-0 left-0 right-0 h-0.5 bg-muted/50 z-10">
-          <div className="h-full bg-accent/60 transition-[width] 200ms ease-out" style={{ width: `${scrollPct * 100}%` }} />
-        </div>
-
-        {/* Loading */}
-        {isLoading ? (
-          <div className="h-full flex items-center justify-center">
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <div className="h-4 w-4 border-2 border-accent border-t-transparent rounded-full animate-spin" />
-              <span className="text-sm">Cargando historial...</span>
-            </div>
-          </div>
-        ) : events.length === 0 ? (
-          <div className="h-full flex items-center justify-center">
-            <div className="text-center">
-              <Clock className="h-8 w-8 mx-auto text-muted-foreground/30 mb-2" />
-              <p className="text-sm text-muted-foreground">Sin eventos en el historial</p>
-              {filter !== 'all' && (
-                <button onClick={() => setFilter('all')} className="mt-2 text-xs text-accent hover:underline">
-                  Ver todo el historial
-                </button>
-              )}
-            </div>
-          </div>
-        ) : (
-          /* ── HORIZONTAL TIMELINE ──────────────────────────────────────────── */
-          <div
-            ref={scrollRef}
-            className="h-full overflow-x-auto overflow-y-hidden tm-scroll-container"
-          >
-            <div className="flex items-stretch min-h-full pt-10 pb-14 px-8">
-              {/* Origin marker */}
-              <div className="shrink-0 flex flex-col items-center justify-center w-8">
-                <div className="w-2 h-2 rounded-full bg-accent shadow-[0_0_6px_hsl(350_80%_42%/0.4)]" />
+            {showFilter && (
+              <div className="absolute right-0 top-8 z-20 w-36 py-1 rounded-md border tm-dropdown tm-scale-in">
+                {FILTERS.map(f => (
+                  <button key={f.k} onClick={() => { setFilter(f.k); setShowFilter(false); }}
+                    className={`w-full text-left px-3 py-1.5 text-[11px] transition-[background-color] 100ms ease-out ${
+                      filter === f.k ? 'text-[hsl(350,80%,50%)] bg-[hsl(350,80%,42%,0.08)]' : 'text-[hsl(210,20%,75%)] hover:bg-[hsl(215,50%,18%)]'
+                    }`}>
+                    {f.l}
+                  </button>
+                ))}
               </div>
+            )}
+          </div>
 
-              {/* Month sections */}
-              {sortedMonths.map((monthKey, mi) => {
-                const monthEvents = monthGroups[monthKey];
-                const [yStr, mStr] = monthKey.split('-');
-                const isFirstOfYear = mi === 0 || !sortedMonths[mi - 1]?.startsWith(yStr);
+          {/* Add note */}
+          {canAdmin && !showNote && (
+            <button onClick={() => setShowNote(true)}
+              className="h-6 px-1.5 rounded flex items-center gap-1 text-[10px] text-[hsl(210,15%,50%)] hover:text-[hsl(210,20%,80%)] hover:bg-[hsl(215,50%,18%)] transition-[background-color,color] 150ms ease-out">
+              <Plus className="h-3 w-3" />Nota
+            </button>
+          )}
+        </div>
 
-                return (
-                  <div
-                    key={monthKey}
-                    data-month={monthKey}
-                    className="shrink-0 flex flex-col items-center tm-month-section"
-                    style={{ animationDelay: `${mi * 80}ms` }}
-                  >
-                    {/* Month label */}
-                    <div className="mb-3 text-center">
-                      {isFirstOfYear && (
-                        <span className="block text-lg font-bold text-foreground/25" style={{ fontFamily: 'var(--font-display)' }}>
-                          {yStr}
+        {/* ── Inline note input ─────────────────────────────────────────────── */}
+        {showNote && (
+          <div className="shrink-0 px-4 py-2 border-b tm-note-bar">
+            <div className="flex items-center gap-2">
+              <input value={noteText} onChange={e => setNoteText(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && addNote()}
+                placeholder="Nota para el historial..."
+                className="flex-1 min-w-0 h-6 px-2 rounded text-xs bg-[hsl(215,50%,12%)] border-[hsl(215,40%,22%)] text-[hsl(210,20%,85%)] placeholder:text-[hsl(210,15%,40%)] focus:outline-none focus:border-[hsl(350,80%,42%)] transition-[border-color] 150ms ease-out"
+                autoFocus />
+              <button onClick={addNote} disabled={!noteText.trim()}
+                className="h-6 px-2 rounded text-[10px] font-semibold bg-[hsl(350,80%,42%)] text-white hover:opacity-90 disabled:opacity-30 transition-[opacity] 150ms ease-out active:scale-[0.97]">
+                Guardar
+              </button>
+              <button onClick={() => setShowNote(false)} className="p-1 text-[hsl(210,15%,40%)] hover:text-[hsl(210,20%,60%)] transition-[color] 150ms ease-out">
+                <X className="h-3 w-3" />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ── Year quick-nav ────────────────────────────────────────────────── */}
+        {years.length > 1 && (
+          <div className="shrink-0 h-7 px-4 flex items-center gap-1 border-b tm-year-bar">
+            {years.map(y => (
+              <button key={y} onClick={() => { const fm = sortedMonths.find(m => m.startsWith(y)); if (fm) jumpToMonth(fm); }}
+                className="px-2 py-0.5 rounded text-[10px] font-semibold text-[hsl(210,20%,55%)] hover:text-[hsl(210,20%,85%)] hover:bg-[hsl(215,50%,18%)] transition-[background-color,color] 150ms ease-out active:scale-[0.97]"
+                style={{ fontFamily: 'var(--font-display)' }}>
+                {y}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* ── Scroll progress ──────────────────────────────────────────────── */}
+        <div className="shrink-0 h-px bg-[hsl(215,40%,18%)]">
+          <div className="h-full bg-[hsl(350,80%,42%,0.5)] transition-[width] 200ms ease-out" style={{ width: `${scrollPct * 100}%` }} />
+        </div>
+
+        {/* ── Main scrollable area ──────────────────────────────────────────── */}
+        <div className="flex-1 relative overflow-hidden">
+          {/* Left/right scroll arrows */}
+          {scrollPct > 0.02 && (
+            <button onClick={() => scrollJump(-1)}
+              className="absolute left-0 top-0 bottom-8 w-8 z-10 flex items-center justify-center tm-arrow-l">
+              <ChevronLeft className="h-4 w-4 text-[hsl(210,20%,60%)]" />
+            </button>
+          )}
+          {scrollPct < 0.98 && events.length > 0 && (
+            <button onClick={() => scrollJump(1)}
+              className="absolute right-8 top-0 bottom-8 w-8 z-10 flex items-center justify-center tm-arrow-r">
+              {/* using right-8 to not overlap the mini-viewer */}
+              <ChevronLeft className="h-4 w-4 text-[hsl(210,20%,60%)] rotate-180" />
+            </button>
+          )}
+
+          {isLoading ? (
+            <div className="h-full flex items-center justify-center">
+              <div className="h-4 w-4 border-2 border-[hsl(350,80%,42%)] border-t-transparent rounded-full animate-spin" />
+            </div>
+          ) : events.length === 0 ? (
+            <div className="h-full flex items-center justify-center">
+              <div className="text-center">
+                <Clock className="h-6 w-6 mx-auto text-[hsl(210,15%,30%)] mb-1" />
+                <p className="text-xs text-[hsl(210,15%,45%)]">Sin eventos en el historial</p>
+                {filter !== 'all' && (
+                  <button onClick={() => setFilter('all')} className="mt-1.5 text-[10px] text-[hsl(350,80%,50%)] hover:underline">Ver todo</button>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div ref={scrollRef} className="h-full overflow-x-auto overflow-y-hidden tm-scroll">
+              <div className="flex items-center min-h-full pt-6 pb-10 px-6">
+                {/* Origin dot */}
+                <div className="shrink-0 w-6 flex flex-col items-center">
+                  <div className="w-1.5 h-1.5 rounded-full bg-[hsl(350,80%,42%)] tm-origin-dot" />
+                </div>
+
+                {/* Month sections */}
+                {sortedMonths.map((mk, mi) => {
+                  const me = months[mk];
+                  const [ys, ms] = mk.split('-');
+                  const isFirstYear = mi === 0 || !sortedMonths[mi-1]?.startsWith(ys);
+                  return (
+                    <div key={mk} data-m={mk} className="shrink-0 flex flex-col items-center tm-month" style={{ animationDelay: `${mi * 60}ms` }}>
+                      {/* Month marker */}
+                      <div className="mb-2 text-center h-5">
+                        {isFirstYear && <span className="text-xs font-bold text-[hsl(210,20%,55%)] mr-1" style={{ fontFamily: 'var(--font-display)' }}>{ys}</span>}
+                        <span className={`text-[9px] uppercase tracking-widest font-semibold ${isFirstYear ? 'text-[hsl(350,80%,50%)]' : 'text-[hsl(210,15%,40%)]'}`} style={{ fontFamily: 'var(--font-display)' }}>
+                          {monthLabel(mk)}
                         </span>
-                      )}
-                      <span className={`text-[10px] uppercase tracking-widest font-semibold ${isFirstOfYear ? 'text-accent' : 'text-muted-foreground'}`} style={{ fontFamily: 'var(--font-display)' }}>
-                        {monthLabel(monthKey).replace(/ \d{4}$/, '')}
-                      </span>
-                    </div>
+                      </div>
 
-                    {/* Events column with rail */}
-                    <div className="flex-1 relative flex flex-col items-center">
-                      {/* Vertical rail segment */}
-                      <div className="absolute top-0 bottom-0 w-px bg-border" />
+                      {/* Rail + events */}
+                      <div className="relative flex flex-col items-center">
+                        <div className="absolute top-0 bottom-0 w-px bg-[hsl(215,40%,22%)]" />
+                        <div className="flex flex-col items-center gap-3 py-2">
+                          {me.map((ev: any, ei: number) => {
+                            const cfg = EVT[ev.event_type] || EVT.note;
+                            const Icon = cfg.icon;
+                            const isExp = expanded === ev.id;
+                            const meta = ev.metadata ? (typeof ev.metadata === 'string' ? JSON.parse(ev.metadata) : ev.metadata) : {};
+                            const cl = changeLabel(meta);
+                            const ds = ev.event_date || ev.created_at;
+                            const above = ei % 2 === 0;
 
-                      {/* Event nodes */}
-                      <div className="relative flex flex-col items-center gap-4 py-4">
-                        {monthEvents.map((event: any, ei: number) => {
-                          const config = EVENT_CONFIG[event.event_type] || EVENT_CONFIG.note;
-                          const Icon = config.icon;
-                          const isExpanded = expandedEvent === event.id;
-                          const metadata = event.metadata ? (typeof event.metadata === 'string' ? JSON.parse(event.metadata) : event.metadata) : {};
-                          const changeLabel = getChangeTypeLabel(metadata);
-                          const isAbove = ei % 2 === 0;
-                          const dateStr = event.event_date || event.created_at;
+                            return (
+                              <div key={ev.id} className="relative tm-node" style={{ animationDelay: `${mi * 60 + ei * 40}ms` }}>
+                                {/* Connector */}
+                                <div className={`absolute top-1/2 -translate-y-1/2 h-px w-3 ${above ? 'right-1/2' : 'left-1/2'}`}
+                                  style={{ backgroundColor: cfg.accent, opacity: 0.3 }} />
 
-                          return (
-                            <div
-                              key={event.id}
-                              className="relative tm-event-node"
-                              style={{ animationDelay: `${mi * 80 + ei * 60}ms` }}
-                            >
-                              {/* Connector line */}
-                              <div className="absolute top-1/2 -translate-y-1/2 h-px w-4"
-                                style={{ left: isAbove ? '50%' : undefined, right: isAbove ? undefined : '50%', backgroundColor: config.railColor, opacity: 0.4 }}
-                              />
+                                {/* Rail dot */}
+                                <div className="relative z-10 flex items-center justify-center w-5 h-5">
+                                  <div className="w-2 h-2 rounded-full tm-dot"
+                                    style={{ backgroundColor: cfg.accent, boxShadow: `0 0 6px ${cfg.accent}40` }} />
+                                </div>
 
-                              {/* Rail node dot */}
-                              <div className="relative z-10 flex items-center justify-center">
-                                <div className="w-3 h-3 rounded-full border-2 bg-background tm-rail-dot"
-                                  style={{ borderColor: config.railColor, boxShadow: `0 0 0 3px ${config.railColor}15` }}
-                                />
-                              </div>
-
-                              {/* Event card — positioned above or below */}
-                              <div className={`absolute ${isAbove ? 'bottom-6' : 'top-6'} left-1/2 -translate-x-1/2`}>
-                                <div
-                                  className={`tm-event-card w-52 rounded-lg border ${config.border} ${config.bg} backdrop-blur-sm cursor-pointer overflow-hidden`}
-                                  onClick={() => setExpandedEvent(isExpanded ? null : event.id)}
-                                >
-                                  {/* Compact view */}
-                                  <div className="px-3 py-2">
-                                    <div className="flex items-center gap-1.5 mb-1">
-                                      <Icon className="h-3 w-3 shrink-0" style={{ color: config.railColor }} />
-                                      <span className={`text-[10px] font-semibold uppercase tracking-wide truncate ${config.color}`}>
-                                        {config.label}
-                                      </span>
-                                    </div>
-                                    <div className="flex items-center gap-1.5">
-                                      <span className="text-xs font-bold text-foreground">{formatDay(dateStr)}</span>
-                                      <span className="text-[10px] text-muted-foreground">{formatMonthYear(dateStr).replace(/ \d{4}$/, '')}</span>
-                                    </div>
-                                    {changeLabel && (
-                                      <span className="inline-block mt-1 text-[9px] font-medium px-1.5 py-0.5 rounded bg-accent/10 text-accent">
-                                        {changeLabel}
-                                      </span>
-                                    )}
-
-                                    {/* Score ring for evaluations */}
-                                    {event.event_type === 'evaluation_completed' && metadata.score !== undefined && (
-                                      <div className="mt-1.5">
-                                        <ScoreRing score={metadata.score} size={32} />
+                                {/* Card */}
+                                <div className={`absolute ${above ? 'bottom-5' : 'top-5'} left-1/2 -translate-x-1/2`}>
+                                  <div className={`w-44 tm-card rounded-md cursor-pointer overflow-hidden ${isExp ? 'tm-card-exp' : ''}`}
+                                    onClick={() => setExpanded(isExp ? null : ev.id)}>
+                                    <div className="px-2.5 py-1.5">
+                                      <div className="flex items-center gap-1 mb-0.5">
+                                        <Icon className="h-2.5 w-2.5 shrink-0" style={{ color: cfg.accent }} />
+                                        <span className="text-[9px] font-semibold uppercase tracking-wider truncate" style={{ color: cfg.accent }}>{cfg.label}</span>
                                       </div>
-                                    )}
+                                      <div className="flex items-baseline gap-1.5">
+                                        <span className="text-[11px] font-bold text-[hsl(210,20%,85%)]">{fmtDay(ds)}</span>
+                                        <span className="text-[9px] text-[hsl(210,15%,45%)]">{fmtMon(ds)}</span>
+                                      </div>
+                                      {cl && <span className="inline-block mt-0.5 text-[8px] font-medium px-1 py-px rounded bg-[hsl(350,80%,42%,0.12)] text-[hsl(350,80%,55%)]">{cl}</span>}
 
-                                    {/* Position change mini-detail */}
-                                    {event.event_type === 'position_change' && event.old_value && event.new_value && !isExpanded && (
-                                      <div className="mt-1 flex items-center gap-1 text-[10px]">
-                                        <span className="text-muted-foreground line-through truncate max-w-[70px]">
-                                          {POSITION_LABELS[event.old_value as keyof typeof POSITION_LABELS] || event.old_value}
-                                        </span>
-                                        <ArrowRight className="h-2.5 w-2.5 shrink-0 text-muted-foreground" />
-                                        <span className="font-medium truncate max-w-[70px]">
-                                          {POSITION_LABELS[event.new_value as keyof typeof POSITION_LABELS] || event.new_value}
-                                        </span>
+                                      {/* Position mini-detail */}
+                                      {ev.event_type === 'position_change' && ev.old_value && ev.new_value && !isExp && (
+                                        <div className="mt-0.5 flex items-center gap-1 text-[9px]">
+                                          <span className="text-[hsl(210,15%,45%)] line-through truncate max-w-[55px]">{POSITION_LABELS[ev.old_value as keyof typeof POSITION_LABELS] || ev.old_value}</span>
+                                          <ArrowRight className="h-2 w-2 shrink-0 text-[hsl(210,15%,40%)]" />
+                                          <span className="text-[hsl(210,20%,75%)] font-medium truncate max-w-[55px]">{POSITION_LABELS[ev.new_value as keyof typeof POSITION_LABELS] || ev.new_value}</span>
+                                        </div>
+                                      )}
+
+                                      {/* Score ring compact */}
+                                      {ev.event_type === 'evaluation_completed' && meta.score !== undefined && (
+                                        <div className="mt-0.5"><Ring v={meta.score} s={24} /></div>
+                                      )}
+                                    </div>
+
+                                    {/* Expanded detail */}
+                                    {isExp && (
+                                      <div className="px-2.5 pb-2 border-t border-[hsl(215,40%,22%)] tm-expand">
+                                        <div className="mt-1.5 space-y-1">
+                                          <p className="text-[9px] text-[hsl(210,15%,45%)]">{fmtFull(ds)} · {fmtTime(ds)}</p>
+
+                                          {ev.event_type === 'position_change' && ev.old_value && ev.new_value && (
+                                            <div className="flex items-center gap-1 text-[10px]">
+                                              <span className="text-[hsl(210,15%,50%)] line-through">{POSITION_LABELS[ev.old_value as keyof typeof POSITION_LABELS] || ev.old_value}</span>
+                                              <ArrowRight className="h-2.5 w-2.5 shrink-0 text-[hsl(210,15%,40%)]" />
+                                              <span className="text-[hsl(210,20%,80%)] font-medium">{POSITION_LABELS[ev.new_value as keyof typeof POSITION_LABELS] || ev.new_value}</span>
+                                            </div>
+                                          )}
+
+                                          {ev.event_type === 'evaluation_completed' && (
+                                            <div className="space-y-0.5">
+                                              {meta.evalType === 'self' && <p className="text-[9px] text-[hsl(210,15%,50%)]">Autoevaluación</p>}
+                                              {meta.evalType === 'supervisor' && <p className="text-[9px] text-[hsl(210,15%,50%)]">Evaluación Supervisor</p>}
+                                              {meta.evalType === 'feedback' && <p className="text-[9px] text-[hsl(210,15%,50%)]">Sesión Feedback</p>}
+                                              {meta.period && <p className="text-[9px] text-[hsl(210,15%,50%)]">{meta.period}</p>}
+                                              {meta.score !== undefined && (
+                                                <div className="flex items-center gap-1.5"><Ring v={meta.score} /><span className="text-xs font-bold text-[hsl(350,80%,50%)]">{meta.score}%</span></div>
+                                              )}
+                                            </div>
+                                          )}
+
+                                          {ev.event_type === 'role_change' && meta.changes && (
+                                            <div className="flex flex-wrap gap-0.5">
+                                              {(meta.changes as string[]).map((c: string, i: number) => (
+                                                <span key={i} className="text-[8px] bg-[hsl(215,50%,18%)] text-[hsl(210,20%,70%)] px-1 py-px rounded">{c}</span>
+                                              ))}
+                                            </div>
+                                          )}
+
+                                          {(ev.event_type === 'supervisor_assigned' || ev.event_type === 'supervisor_removed') && meta.supervisorName && (
+                                            <p className="text-[10px]"><span className="font-medium text-[hsl(210,20%,80%)]">{meta.supervisorName}</span>
+                                            {meta.period && <span className="text-[9px] text-[hsl(210,15%,45%)] ml-1">{meta.period}</span>}</p>
+                                          )}
+
+                                          {ev.note && <p className="text-[10px] text-[hsl(210,20%,80%)] leading-relaxed">{ev.note}</p>}
+
+                                          {canAdmin && (
+                                            <button onClick={e => { e.stopPropagation(); if (confirm('¿Eliminar evento?')) deleteEvent(ev.id); }}
+                                              className="text-[9px] text-[hsl(210,15%,40%)] hover:text-[hsl(0,84%,60%)] transition-[color] 150ms ease-out">Eliminar</button>
+                                          )}
+                                        </div>
                                       </div>
                                     )}
                                   </div>
-
-                                  {/* Expanded detail */}
-                                  {isExpanded && (
-                                    <div className="px-3 pb-2.5 border-t border-border/30 tm-expand-section">
-                                      <div className="mt-2 space-y-1.5">
-                                        {/* Full date */}
-                                        <p className="text-[10px] text-muted-foreground">
-                                          {formatFullDate(dateStr)} · {formatTime(dateStr)}
-                                        </p>
-
-                                        {/* Position change detail */}
-                                        {event.event_type === 'position_change' && event.old_value && event.new_value && (
-                                          <div className="flex items-center gap-1.5 text-xs">
-                                            <span className="text-muted-foreground line-through">
-                                              {POSITION_LABELS[event.old_value as keyof typeof POSITION_LABELS] || event.old_value}
-                                            </span>
-                                            <ArrowRight className="h-3 w-3 shrink-0 text-muted-foreground" />
-                                            <span className="font-medium">
-                                              {POSITION_LABELS[event.new_value as keyof typeof POSITION_LABELS] || event.new_value}
-                                            </span>
-                                          </div>
-                                        )}
-
-                                        {/* Evaluation detail */}
-                                        {event.event_type === 'evaluation_completed' && (
-                                          <div className="space-y-1">
-                                            {metadata.evalType === 'self' && <p className="text-[10px] text-muted-foreground">Autoevaluación</p>}
-                                            {metadata.evalType === 'supervisor' && <p className="text-[10px] text-muted-foreground">Evaluación de Supervisor</p>}
-                                            {metadata.evalType === 'feedback' && <p className="text-[10px] text-muted-foreground">Sesión de Feedback</p>}
-                                            {metadata.period && <p className="text-[10px] text-muted-foreground">Periodo: {metadata.period}</p>}
-                                            {metadata.score !== undefined && (
-                                              <div className="flex items-center gap-2">
-                                                <ScoreRing score={metadata.score} />
-                                                <span className="text-sm font-bold text-accent">{metadata.score}%</span>
-                                              </div>
-                                            )}
-                                          </div>
-                                        )}
-
-                                        {/* Role change */}
-                                        {event.event_type === 'role_change' && metadata.changes && (
-                                          <div className="flex flex-wrap gap-1">
-                                            {(metadata.changes as string[]).map((c: string, i: number) => (
-                                              <span key={i} className="text-[9px] bg-primary/5 text-primary px-1.5 py-0.5 rounded font-medium">{c}</span>
-                                            ))}
-                                          </div>
-                                        )}
-
-                                        {/* Supervisor */}
-                                        {(event.event_type === 'supervisor_assigned' || event.event_type === 'supervisor_removed') && metadata.supervisorName && (
-                                          <p className="text-xs">
-                                            <span className="font-medium">{metadata.supervisorName}</span>
-                                            {metadata.period && <span className="text-muted-foreground text-[10px] ml-1.5">{metadata.period}</span>}
-                                          </p>
-                                        )}
-
-                                        {/* Note */}
-                                        {event.note && (
-                                          <p className="text-xs text-foreground leading-relaxed">{event.note}</p>
-                                        )}
-
-                                        {/* Delete button for admins */}
-                                        {canDelete && (
-                                          <button
-                                            onClick={e => { e.stopPropagation(); if (confirm('¿Eliminar este evento del historial?')) handleDeleteEvent(event.id); }}
-                                            className="mt-1 text-[10px] text-muted-foreground hover:text-destructive transition-[color] 150ms ease-out"
-                                          >
-                                            Eliminar evento
-                                          </button>
-                                        )}
-                                      </div>
-                                    </div>
-                                  )}
                                 </div>
                               </div>
-                            </div>
-                          );
-                        })}
+                            );
+                          })}
+                        </div>
                       </div>
+                      <div className="w-10 shrink-0" />
                     </div>
+                  );
+                })}
 
-                    {/* Month width: enough for events */}
-                    <div className="w-14 shrink-0" />
-                  </div>
-                );
-              })}
-
-              {/* Terminal marker */}
-              <div className="shrink-0 flex flex-col items-center justify-center w-8">
-                <div className="w-2 h-2 rounded-full bg-muted-foreground/20" />
+                {/* Terminal dot */}
+                <div className="shrink-0 w-6 flex flex-col items-center">
+                  <div className="w-1.5 h-1.5 rounded-full bg-[hsl(215,40%,22%)]" />
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
+      </div>
 
-        {/* Mini-map / scroll indicator */}
-        {events.length > 0 && (
-          <div className="absolute bottom-0 left-0 right-0 h-6 px-8 flex items-center gap-0.5 bg-gradient-to-t from-background to-transparent">
-            {sortedMonths.map((m, i) => {
-              const isActive = scrollPct >= i / sortedMonths.length && scrollPct < (i + 1) / sortedMonths.length;
+      {/* ══════════════════════════════════════════════════════════════════════
+          VERTICAL MINI-VIEWER — Apple Time Machine ruler
+          ══════════════════════════════════════════════════════════════════════ */}
+      {events.length > 0 && (
+        <div className="shrink-0 w-10 flex flex-col border-l tm-viewer-rail">
+          {/* Year markers + month ticks */}
+          <div className="flex-1 overflow-y-auto py-2 px-1 flex flex-col">
+            {sortedMonths.map((mk, i) => {
+              const [y] = mk.split('-');
+              const isFirst = i === 0 || !sortedMonths[i-1]?.startsWith(y);
+              const hasEvents = (months[mk]?.length || 0) > 0;
+              const pct = i / Math.max(1, sortedMonths.length - 1);
+
               return (
-                <button
-                  key={m}
-                  onClick={() => scrollToMonth(m)}
-                  className={`h-1 rounded-full flex-1 min-w-[4px] transition-[background-color] 150ms ease-out ${
-                    isActive ? 'bg-accent' : 'bg-border'
-                  }`}
-                  title={monthLabel(m)}
-                />
+                <div key={mk} className="flex flex-col items-center">
+                  {isFirst && (
+                    <button onClick={() => jumpToMonth(mk)}
+                      className="text-[8px] font-bold text-[hsl(210,20%,55%)] hover:text-[hsl(350,80%,50%)] transition-[color] 100ms ease-out mb-1"
+                      style={{ fontFamily: 'var(--font-display)' }}>
+                      {y}
+                    </button>
+                  )}
+                  <button onClick={() => jumpToMonth(mk)}
+                    className="w-full flex items-center gap-0.5 py-0.5 group">
+                    <div className="w-1 h-px bg-[hsl(215,40%,22%)] group-hover:bg-[hsl(350,80%,42%,0.5)] transition-[background-color] 150ms ease-out" />
+                    <div className={`w-1 h-1 rounded-full transition-[background-color,transform] 150ms ease-out ${
+                      hasEvents ? 'bg-[hsl(350,80%,42%)]' : 'bg-[hsl(215,40%,22%)]'
+                    } group-hover:scale-150`}
+                      style={{ transformOrigin: 'center' }} />
+                    <span className="text-[7px] text-[hsl(210,15%,40%)] group-hover:text-[hsl(210,20%,70%)] transition-[color] 100ms ease-out">
+                      {monthLabel(mk)}
+                    </span>
+                  </button>
+                </div>
               );
             })}
           </div>
-        )}
-      </div>
+
+          {/* Scroll position indicator */}
+          <div className="shrink-0 h-1 mx-1 mb-1 rounded-full bg-[hsl(215,40%,22%)]">
+            <div className="h-full rounded-full bg-[hsl(350,80%,42%,0.6)] transition-[width] 200ms ease-out"
+              style={{ width: `${Math.max(10, 100 / Math.max(1, sortedMonths.length))}%`, marginLeft: `${scrollPct * (100 - 100 / Math.max(1, sortedMonths.length))}%` }} />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

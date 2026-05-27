@@ -162,167 +162,178 @@
 @keyframes smps-slide-in { from { opacity: 0; transform: translateX(-8px); } to { opacity: 1; transform: translateX(0); } }
 @keyframes smps-scale-in { from { opacity: 0; transform: scale(0.97); } to { opacity: 1; transform: scale(1); } }
 
+
 /* ═══════════════════════════════════════════════════════════════════════════
-   TIME MACHINE — UserTimeline horizontal timeline
+   TIME MACHINE — Apple-inspired career timeline
+   Dark depth viewport · Vertical mini-viewer · Sleek glass panels
    ═══════════════════════════════════════════════════════════════════════════ */
 
-/* Scroll container — hide scrollbar for clean look */
-.tm-scroll-container {
-  scrollbar-width: thin;
-  scrollbar-color: hsl(var(--border)) transparent;
-  scroll-behavior: smooth;
+/* ── Viewport: dark depth surface ──────────────────────────────────────────── */
+.tm-viewport {
+  background:
+    radial-gradient(ellipse 80% 60% at 20% 40%, hsl(215 50% 12% / 0.5), transparent),
+    radial-gradient(ellipse 60% 50% at 80% 60%, hsl(350 50% 10% / 0.15), transparent),
+    hsl(215 55% 7%);
+  position: relative;
+}
+.tm-viewport::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(1px 1px at 10% 20%, hsl(210 20% 50% / 0.12), transparent),
+    radial-gradient(1px 1px at 30% 70%, hsl(210 20% 50% / 0.08), transparent),
+    radial-gradient(1px 1px at 50% 10%, hsl(210 20% 50% / 0.1), transparent),
+    radial-gradient(1px 1px at 70% 50%, hsl(210 20% 50% / 0.06), transparent),
+    radial-gradient(1px 1px at 90% 80%, hsl(210 20% 50% / 0.09), transparent),
+    radial-gradient(1px 1px at 15% 90%, hsl(210 20% 50% / 0.07), transparent),
+    radial-gradient(1px 1px at 60% 30%, hsl(210 20% 50% / 0.05), transparent),
+    radial-gradient(1px 1px at 85% 15%, hsl(210 20% 50% / 0.08), transparent);
+  pointer-events: none;
+  z-index: 0;
+}
+.tm-viewport > * { position: relative; z-index: 1; }
+
+/* ── Header ────────────────────────────────────────────────────────────────── */
+.tm-header {
+  background: hsl(215 55% 9% / 0.8);
+  border-color: hsl(215 40% 18%);
+  backdrop-filter: blur(8px);
+}
+.tm-year-bar {
+  background: hsl(215 55% 8%);
+  border-color: hsl(215 40% 18%);
+}
+.tm-note-bar {
+  background: hsl(215 55% 9%);
+  border-color: hsl(215 40% 18%);
+}
+
+/* ── Dropdown ──────────────────────────────────────────────────────────────── */
+.tm-dropdown {
+  background: hsl(215 50% 12%);
+  border-color: hsl(215 40% 22%);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 8px 24px hsl(215 50% 5% / 0.4);
+}
+
+/* ── Scroll ────────────────────────────────────────────────────────────────── */
+.tm-scroll {
+  scrollbar-width: none;
   -webkit-overflow-scrolling: touch;
 }
-.tm-scroll-container::-webkit-scrollbar {
-  height: 4px;
+.tm-scroll::-webkit-scrollbar { display: none; }
+
+/* ── Month entrance ────────────────────────────────────────────────────────── */
+.tm-month {
+  animation: tm-reveal 400ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
-.tm-scroll-container::-webkit-scrollbar-track {
-  background: transparent;
-}
-.tm-scroll-container::-webkit-scrollbar-thumb {
-  background: hsl(var(--border));
-  border-radius: 999px;
+@keyframes tm-reveal {
+  from { opacity: 0; transform: translateY(6px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
 }
 
-/* Month section entrance */
-.tm-month-section {
-  animation: tm-month-reveal 450ms cubic-bezier(0.16, 1, 0.3, 1) both;
+/* ── Node entrance ─────────────────────────────────────────────────────────── */
+.tm-node {
+  animation: tm-node-in 300ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
-@keyframes tm-month-reveal {
-  from {
-    opacity: 0;
-    transform: translateY(12px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+@keyframes tm-node-in {
+  from { opacity: 0; transform: scale(0.7); }
+  to   { opacity: 1; transform: scale(1); }
 }
 
-/* Event node entrance */
-.tm-event-node {
-  animation: tm-node-appear 350ms cubic-bezier(0.16, 1, 0.3, 1) both;
+/* ── Rail dot ──────────────────────────────────────────────────────────────── */
+.tm-dot {
+  animation: tm-dot-in 500ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
-@keyframes tm-node-appear {
-  from {
-    opacity: 0;
-    transform: scale(0.8);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
+@keyframes tm-dot-in {
+  0%   { transform: scale(0); opacity: 0; }
+  60%  { transform: scale(1.6); opacity: 0.7; }
+  100% { transform: scale(1); opacity: 1; }
 }
 
-/* Rail dot pulse on appear */
-.tm-rail-dot {
-  animation: tm-dot-pulse 600ms cubic-bezier(0.16, 1, 0.3, 1) both;
+/* ── Origin dot glow ──────────────────────────────────────────────────────── */
+.tm-origin-dot {
+  animation: tm-glow 2s ease-in-out infinite alternate;
 }
-@keyframes tm-dot-pulse {
-  0% {
-    transform: scale(0);
-    opacity: 0;
-  }
-  50% {
-    transform: scale(1.4);
-    opacity: 0.6;
-  }
-  100% {
-    transform: scale(1);
-    opacity: 1;
-  }
+@keyframes tm-glow {
+  from { box-shadow: 0 0 4px hsl(350 80% 42% / 0.3); }
+  to   { box-shadow: 0 0 10px hsl(350 80% 42% / 0.6); }
 }
 
-/* Event card */
-.tm-event-card {
+/* ── Event card (glass on dark) ─────────────────────────────────────────────── */
+.tm-card {
+  background: hsl(215 50% 14% / 0.6);
+  border: 1px solid hsl(215 40% 22% / 0.5);
+  backdrop-filter: blur(8px);
   transition: transform 150ms cubic-bezier(0.16, 1, 0.3, 1),
               box-shadow 200ms ease-out,
-              border-color 150ms ease-out;
-  box-shadow: 0 1px 3px hsl(215 50% 15% / 0.04);
+              border-color 150ms ease-out,
+              background-color 150ms ease-out;
+  box-shadow: 0 1px 4px hsl(215 50% 5% / 0.3);
 }
 @media (hover: hover) and (pointer: fine) {
-  .tm-event-card:hover {
-    transform: translateY(-2px) scale(1.02);
-    box-shadow: 0 4px 12px -2px hsl(215 50% 15% / 0.08);
+  .tm-card:hover {
+    transform: translateY(-1px) scale(1.03);
+    box-shadow: 0 6px 16px -2px hsl(215 50% 5% / 0.4);
+    border-color: hsl(215 40% 28% / 0.6);
+    background: hsl(215 50% 16% / 0.7);
   }
 }
-.tm-event-card:active {
-  transform: scale(0.97);
+.tm-card:active { transform: scale(0.97); }
+.tm-card-exp {
+  border-color: hsl(215 40% 30% / 0.6);
+  background: hsl(215 50% 15% / 0.8);
 }
 
-/* Expanded section reveal */
-.tm-expand-section {
-  animation: tm-expand 200ms cubic-bezier(0.16, 1, 0.3, 1) both;
+/* ── Expand section ─────────────────────────────────────────────────────────── */
+.tm-expand {
+  animation: tm-expand-in 200ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
-@keyframes tm-expand {
-  from {
-    opacity: 0;
-    max-height: 0;
-    transform: translateY(-4px);
-  }
-  to {
-    opacity: 1;
-    max-height: 300px;
-    transform: translateY(0);
-  }
+@keyframes tm-expand-in {
+  from { opacity: 0; max-height: 0; transform: translateY(-2px); }
+  to   { opacity: 1; max-height: 200px; transform: translateY(0); }
 }
 
-/* Score ring animation */
-.tm-score-ring {
-  transition: stroke-dashoffset 700ms cubic-bezier(0.16, 1, 0.3, 1);
+/* ── Score ring ─────────────────────────────────────────────────────────────── */
+.tm-ring-anim {
+  transition: stroke-dashoffset 600ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* Slide-down for add note */
-.tm-slide-down {
-  animation: tm-slide-down 200ms cubic-bezier(0.16, 1, 0.3, 1) both;
+/* ── Scale in (dropdown) ────────────────────────────────────────────────────── */
+.tm-scale-in {
+  animation: tm-scale-in 150ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
-@keyframes tm-slide-down {
-  from {
-    opacity: 0;
-    transform: translateY(-8px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+@keyframes tm-scale-in {
+  from { opacity: 0; transform: scale(0.95); }
+  to   { opacity: 1; transform: scale(1); }
 }
 
-/* Filters bar entrance */
-.tm-filters-bar {
-  animation: tm-filters-in 200ms ease-out both;
+/* ── Scroll arrows ─────────────────────────────────────────────────────────── */
+.tm-arrow-l {
+  background: linear-gradient(to right, hsl(215 55% 7% / 0.95), transparent);
+  animation: tm-arr 200ms ease-out both;
 }
-@keyframes tm-filters-in {
-  from { opacity: 0; transform: translateY(-4px); }
-  to { opacity: 1; transform: translateY(0); }
+.tm-arrow-r {
+  background: linear-gradient(to left, hsl(215 55% 7% / 0.95), transparent);
+  animation: tm-arr 200ms ease-out both;
+}
+@keyframes tm-arr { from { opacity: 0; } to { opacity: 1; } }
+
+/* ── Vertical mini-viewer rail ─────────────────────────────────────────────── */
+.tm-viewer-rail {
+  background: hsl(215 55% 8%);
+  border-color: hsl(215 40% 18%);
 }
 
-/* Scroll arrows */
-.tm-arrow-left,
-.tm-arrow-right {
-  animation: tm-arrow-fade 200ms ease-out both;
-}
-@keyframes tm-arrow-fade {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-/* Reduced motion */
+/* ── Reduced motion ────────────────────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
-  .tm-month-section,
-  .tm-event-node,
-  .tm-rail-dot,
-  .tm-expand-section,
-  .tm-slide-down,
-  .tm-filters-bar,
-  .tm-arrow-left,
-  .tm-arrow-right {
+  .tm-month, .tm-node, .tm-dot, .tm-origin-dot, .tm-card,
+  .tm-expand, .tm-scale-in, .tm-arrow-l, .tm-arrow-r {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
   }
-  .tm-event-card {
-    transition-duration: 0.01ms !important;
-  }
-  .tm-score-ring {
+  .tm-card, .tm-ring-anim {
     transition-duration: 0.01ms !important;
   }
 }
