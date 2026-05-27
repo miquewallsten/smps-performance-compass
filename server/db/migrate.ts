@@ -488,42 +488,73 @@ export async function migrate(): Promise<void> {
   }
 
   // ─── Data Migration: Work Areas & Positions ────────────────────────────────
-  // Seed work_areas if empty (first run after adding the table)
-  const workAreaCount = await getScalar<number>('SELECT COUNT(*) AS cnt FROM work_areas');
-  if (workAreaCount === 0) {
-    console.log('  Seeding work_areas...');
-    const now = new Date().toISOString();
-    const areas = [
-      ['fiscal_consultoria', 'Fiscal Consultoría', 'legal', 1],
-      ['fiscal_litigio', 'Fiscal Litigio', 'legal', 2],
-      ['corporativo', 'Corporativo', 'legal', 3],
-      ['backoffice', 'Backoffice', 'administrativo', 4],
-    ] as const;
-    for (const [id, label, level, sortOrder] of areas) {
-      await run(
-        'INSERT IGNORE INTO work_areas (id, label, level, sort_order, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)',
-        [id, label, level, sortOrder, now, now]
-      );
+  // 1. Ensure all 4 current work areas exist (INSERT IGNORE handles existing)
+  console.log('  Ensuring work areas exist...');
+  const now = new Date().toISOString();
+  const areas = [
+    ['fiscal_consultoria', 'Fiscal Consultoría', 'legal', 1],
+    ['fiscal_litigio', 'Fiscal Litigio', 'legal', 2],
+    ['corporativo', 'Corporativo', 'legal', 3],
+    ['backoffice', 'Backoffice', 'administrativo', 4],
+  ] as const;
+  for (const [id, label, level, sortOrder] of areas) {
+    await run(
+      'INSERT IGNORE INTO work_areas (id, label, level, sort_order, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)',
+      [id, label, level, sortOrder, now, now]
+    );
+  }
+  console.log('  ✓ work_areas ensured');
+
+  // 2. Migrate old work_area IDs to new ones (handles upgrades from previous schema)
+  // Old: consultoria_fiscal → fiscal_consultoria, litigio_fiscal → fiscal_litigio,
+  //      administrativo → backoffice, general → corporativo
+  const oldToNewArea: Record<string, string> = {
+    'consultoria_fiscal': 'fiscal_consultoria',
+    'litigio_fiscal': 'fiscal_litigio',
+    'administrativo': 'backoffice',
+    'general': 'corporativo',
+  };
+  for (const [oldId, newId] of Object.entries(oldToNewArea)) {
+    const migrated = await run(
+      `UPDATE custom_positions SET work_area_id = ? WHERE work_area_id = ?`,
+      [newId, oldId]
+    );
+    if (migrated && migrated > 0) {
+      console.log(`  ✓ Migrated ${migrated} positions from area '${oldId}' to '${newId}'`);
     }
-    console.log('  ✓ work_areas seeded');
+    // Also migrate users with practice_area pointing to old IDs
+    const userMigrated = await run(
+      `UPDATE users SET practice_area = ? WHERE practice_area = ?`,
+      [newId, oldId]
+    );
+    if (userMigrated && userMigrated > 0) {
+      console.log(`  ✓ Migrated ${userMigrated} users from practice_area '${oldId}' to '${newId}'`);
+    }
   }
 
-  // Migrate existing custom_positions: set work_area_id from practice_area/level
-  // Only run if there are positions with NULL work_area_id
+  // 3. Fix positions with NULL work_area_id
   const nullWorkAreaCount = await getScalar<number>(
     'SELECT COUNT(*) AS cnt FROM custom_positions WHERE work_area_id IS NULL'
   );
   if (nullWorkAreaCount && nullWorkAreaCount > 0) {
     console.log(`  Migrating ${nullWorkAreaCount} positions to work_area_id...`);
-    // Administrativo positions
-    await run(
-      "UPDATE custom_positions SET work_area_id = 'backoffice' WHERE work_area_id IS NULL AND level = 'administrativo'"
-    );
-    // Legal positions: use practice_area if available, else 'corporativo' (fallback)
-    await run(
-      "UPDATE custom_positions SET work_area_id = COALESCE(practice_area, 'corporativo') WHERE work_area_id IS NULL AND level = 'legal'"
-    );
+    await run("UPDATE custom_positions SET work_area_id = 'backoffice' WHERE work_area_id IS NULL AND level = 'administrativo'");
+    await run("UPDATE custom_positions SET work_area_id = COALESCE(practice_area, 'corporativo') WHERE work_area_id IS NULL AND level = 'legal'");
     console.log('  ✓ positions migrated to work_area_id');
+  }
+
+  // 4. Remove stale work areas (old IDs that are no longer valid)
+  const validAreaIds = areas.map(a => a[0]);
+  const staleAreas = await db.all(`SELECT id FROM work_areas WHERE id NOT IN (${validAreaIds.map(() => '?').join(',')})`, validAreaIds);
+  for (const stale of staleAreas) {
+    // Check if any positions reference this area before deleting
+    const posUsingStale = await getScalar<number>(`SELECT COUNT(*) AS cnt FROM custom_positions WHERE work_area_id = ?`, [stale.id]);
+    if (posUsingStale === 0) {
+      await run('DELETE FROM work_areas WHERE id = ?', [stale.id]);
+      console.log(`  ✓ Removed stale work area '${stale.id}'`);
+    } else {
+      console.log(`  ⚠ Cannot remove stale work area '${stale.id}': ${posUsingStale} position(s) still reference it`);
+    }
   }
 
   // Seed positions if custom_positions is empty (e.g. existing DB that had positions lost during schema change)
