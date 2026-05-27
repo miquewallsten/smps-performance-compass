@@ -1,16 +1,17 @@
-name: Deploy to Production
+name: CI
 
 on:
   push:
+    branches: [main, dev]
+  pull_request:
     branches: [main]
-  workflow_dispatch:
 
 concurrency:
-  group: deploy-production
-  cancel-in-progress: false
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  # ─── Test & Build ───────────────────────────────────────
+  # ─── Build & Test ───────────────────────────────────────
   build:
     runs-on: ubuntu-latest
     steps:
@@ -38,124 +39,15 @@ jobs:
           test -f dist/index.html || { echo "❌ dist/index.html missing"; exit 1; }
           test -f server.cjs || { echo "❌ server.cjs missing"; exit 1; }
           echo "✅ All build artifacts present"
+          echo "Build size:"
+          du -sh dist/ server.cjs
 
-      - name: Create .env.production from secrets
-        run: |
-          cat > .env.production << 'EOF'
-          MYSQL_HOST=${{ secrets.MYSQL_HOST }}
-          MYSQL_PORT=${{ secrets.MYSQL_PORT }}
-          MYSQL_USER=${{ secrets.MYSQL_USER }}
-          MYSQL_PASSWORD=${{ secrets.MYSQL_PASSWORD }}
-          MYSQL_DATABASE=${{ secrets.MYSQL_DATABASE }}
-          JWT_SECRET=${{ secrets.JWT_SECRET }}
-          PORT=${{ secrets.APP_PORT }}
-          NODE_ENV=production
-          OLLAMA_API_KEY=${{ secrets.OLLAMA_API_KEY }}
-          OLLAMA_BASE_URL=${{ secrets.OLLAMA_BASE_URL }}
-          OLLAMA_MODEL=${{ secrets.OLLAMA_MODEL }}
-          EOF
-
-      - name: Upload build artifacts
+      - name: Upload build artifacts (for debugging)
+        if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: build-output
+          name: build-debug
           path: |
             dist/
             server.cjs
-            server.js
-            package.json
-            package-lock.json
-            ci-deploy.sh
-            start.sh
-            .env.production
-          retention-days: 1
-
-  # ─── Deploy ──────────────────────────────────────────────
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    environment: production
-    steps:
-      - name: Download build artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: build-output
-
-      - name: Install SSH client
-        run: sudo apt-get update && sudo apt-get install -y openssh-client rsync
-
-      - name: Setup SSH key
-        run: |
-          mkdir -p $HOME/.ssh
-          echo "${{ secrets.HOSTINGER_SSH_KEY }}" > $HOME/.ssh/deploy_key
-          chmod 600 $HOME/.ssh/deploy_key
-          ssh-keyscan -p ${{ secrets.HOSTINGER_PORT }} ${{ secrets.HOSTINGER_HOST }} >> $HOME/.ssh/known_hosts 2>/dev/null || true
-
-      - name: Wait for SSH connectivity (with retries)
-        run: |
-          echo "Testing SSH connection with retries..."
-          for i in 1 2 3 4 5 6 7 8 9 10; do
-            if ssh -i $HOME/.ssh/deploy_key -p ${{ secrets.HOSTINGER_PORT }} -o StrictHostKeyChecking=no -o ConnectTimeout=10 ${{ secrets.HOSTINGER_USER }}@${{ secrets.HOSTINGER_HOST }} "echo 'SSH connection OK'" 2>/dev/null; then
-              echo "✅ SSH connection established on attempt $i"
-              exit 0
-            fi
-            echo "Attempt $i failed, waiting 20s before retry..."
-            sleep 20
-          done
-          echo "❌ Could not establish SSH connection after 10 attempts"
-          exit 1
-
-      - name: Create SSH config for reliable connections
-        run: |
-          cat > $HOME/.ssh/config << EOF
-          Host hostinger
-            HostName ${{ secrets.HOSTINGER_HOST }}
-            Port ${{ secrets.HOSTINGER_PORT }}
-            User ${{ secrets.HOSTINGER_USER }}
-            IdentityFile $HOME/.ssh/deploy_key
-            StrictHostKeyChecking no
-            ConnectTimeout 30
-            ServerAliveInterval 15
-            ServerAliveCountMax 3
-          EOF
-          chmod 600 $HOME/.ssh/config
-
-      - name: Upload files to Hostinger via rsync
-        run: |
-          REMOTE_PATH="${{ secrets.HOSTINGER_PATH }}"
-          
-          echo "Uploading build artifacts..."
-          rsync -avz --progress -e "ssh -F $HOME/.ssh/config" \
-            server.cjs server.js package.json package-lock.json \
-            ci-deploy.sh start.sh .env.production \
-            hostinger:${REMOTE_PATH}/
-          
-          echo "Uploading frontend dist..."
-          rsync -avz --progress -e "ssh -F $HOME/.ssh/config" \
-            dist/ hostinger:${REMOTE_PATH}/dist/
-          
-          echo "✅ All files uploaded"
-
-      - name: Run server-side deploy script
-        run: |
-          ssh -F $HOME/.ssh/config hostinger \
-            "chmod +x ${{ secrets.HOSTINGER_PATH }}/ci-deploy.sh && bash ${{ secrets.HOSTINGER_PATH }}/ci-deploy.sh"
-
-      - name: Verify deployment
-        run: |
-          echo "Verifying deployment via public URL..."
-          for i in $(seq 1 12); do
-            sleep 5
-            HEALTH=$(curl -sf https://bowdot.online/api/health 2>/dev/null || echo "")
-            if echo "$HEALTH" | grep -q '"ok"'; then
-              echo "✅ Deployment verified! Health: $HEALTH"
-              exit 0
-            fi
-            echo "Attempt $i/12: waiting for server..."
-          done
-          echo "❌ Deployment verification failed — server did not respond"
-          exit 1
-
-      - name: Cleanup SSH key
-        if: always()
-        run: rm -f $HOME/.ssh/deploy_key $HOME/.ssh/config
+          retention-days: 3
