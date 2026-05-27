@@ -89,9 +89,29 @@ jobs:
           mkdir -p ~/.ssh
           echo "${{ secrets.HOSTINGER_SSH_KEY }}" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
-          ssh-keyscan -p ${{ secrets.HOSTINGER_PORT }} ${{ secrets.HOSTINGER_HOST }} >> ~/.ssh/known_hosts 2>/dev/null || true
+          # Add host key with retries (Hostinger sometimes rate-limits ssh-keyscan)
+          for i in 1 2 3; do
+            if ssh-keyscan -p ${{ secrets.HOSTINGER_PORT }} ${{ secrets.HOSTINGER_HOST }} >> ~/.ssh/known_hosts 2>/dev/null; then
+              echo "✅ Host key added"
+              break
+            fi
+            echo "Attempt $i: ssh-keyscan failed, retrying in 10s..."
+            sleep 10
+          done
 
-      - name: Upload files to Hostinger
+      - name: Test SSH connectivity
+        run: |
+          echo "Testing SSH connection with retries..."
+          for i in 1 2 3 4 5; do
+            if ssh -i ~/.ssh/deploy_key -p ${{ secrets.HOSTINGER_PORT }} -o StrictHostKeyChecking=no -o ConnectTimeout=15 ${{ secrets.HOSTINGER_USER }}@${{ secrets.HOSTINGER_HOST }} "echo 'SSH OK'" 2>/dev/null; then
+              echo "✅ SSH connection established on attempt $i"
+              break
+            fi
+            echo "Attempt $i failed, waiting 30s before retry..."
+            sleep 30
+          done
+
+      - name: Upload files to Hostinger via rsync
         run: |
           SSH_KEY="~/.ssh/deploy_key"
           SSH_PORT="${{ secrets.HOSTINGER_PORT }}"
@@ -99,28 +119,36 @@ jobs:
           SSH_HOST="${{ secrets.HOSTINGER_HOST }}"
           REMOTE_PATH="${{ secrets.HOSTINGER_PATH }}"
           
-          echo "Uploading build artifacts..."
-          scp -i $SSH_KEY -P $SSH_PORT -o StrictHostKeyChecking=no server.cjs $SSH_USER@$SSH_HOST:$REMOTE_PATH/server.cjs
-          scp -i $SSH_KEY -P $SSH_PORT -o StrictHostKeyChecking=no server.js $SSH_USER@$SSH_HOST:$REMOTE_PATH/server.js
-          scp -i $SSH_KEY -P $SSH_PORT -o StrictHostKeyChecking=no package.json $SSH_USER@$SSH_HOST:$REMOTE_PATH/package.json
-          scp -i $SSH_KEY -P $SSH_PORT -o StrictHostKeyChecking=no package-lock.json $SSH_USER@$SSH_HOST:$REMOTE_PATH/package-lock.json
-          scp -i $SSH_KEY -P $SSH_PORT -o StrictHostKeyChecking=no ci-deploy.sh $SSH_USER@$SSH_HOST:$REMOTE_PATH/ci-deploy.sh
-          scp -i $SSH_KEY -P $SSH_PORT -o StrictHostKeyChecking=no start.sh $SSH_USER@$SSH_HOST:$REMOTE_PATH/start.sh
-          scp -i $SSH_KEY -P $SSH_PORT -o StrictHostKeyChecking=no .env.production $SSH_USER@$SSH_HOST:$REMOTE_PATH/.env.production
+          # Create SSH config for reliable connections
+          mkdir -p ~/.ssh
+          cat > ~/.ssh/config << SSHCFG
+          Host hostinger
+            HostName ${SSH_HOST}
+            Port ${SSH_PORT}
+            User ${SSH_USER}
+            IdentityFile ~/.ssh/deploy_key
+            StrictHostKeyChecking no
+            ConnectTimeout 30
+            ServerAliveInterval 15
+            ServerAliveCountMax 3
+          SSHCFG
+          chmod 600 ~/.ssh/config
+          
+          echo "Uploading build artifacts via rsync..."
+          rsync -avz --progress -e "ssh -F ~/.ssh/config" \
+            server.cjs server.js package.json package-lock.json \
+            ci-deploy.sh start.sh .env.production \
+            hostinger:${REMOTE_PATH}/
           
           echo "Uploading frontend dist..."
-          ssh -i $SSH_KEY -p $SSH_PORT -o StrictHostKeyChecking=no $SSH_USER@$SSH_HOST "mkdir -p $REMOTE_PATH/dist/assets"
-          scp -i $SSH_KEY -P $SSH_PORT -o StrictHostKeyChecking=no dist/index.html $SSH_USER@$SSH_HOST:$REMOTE_PATH/dist/index.html
-          scp -i $SSH_KEY -P $SSH_PORT -o StrictHostKeyChecking=no dist/favicon.ico $SSH_USER@$SSH_HOST:$REMOTE_PATH/dist/favicon.ico 2>/dev/null || true
-          scp -i $SSH_KEY -P $SSH_PORT -o StrictHostKeyChecking=no dist/robots.txt $SSH_USER@$SSH_HOST:$REMOTE_PATH/dist/robots.txt 2>/dev/null || true
-          scp -i $SSH_KEY -P $SSH_PORT -o StrictHostKeyChecking=no dist/assets/* $SSH_USER@$SSH_HOST:$REMOTE_PATH/dist/assets/
+          rsync -avz --progress -e "ssh -F ~/.ssh/config" \
+            dist/ hostinger:${REMOTE_PATH}/dist/
           
           echo "✅ All files uploaded"
 
       - name: Run server-side deploy script
         run: |
-          ssh -i ~/.ssh/deploy_key -p ${{ secrets.HOSTINGER_PORT }} -o StrictHostKeyChecking=no \
-            ${{ secrets.HOSTINGER_USER }}@${{ secrets.HOSTINGER_HOST }} \
+          ssh -F ~/.ssh/config hostinger \
             "chmod +x ${{ secrets.HOSTINGER_PATH }}/ci-deploy.sh && bash ${{ secrets.HOSTINGER_PATH }}/ci-deploy.sh"
 
       - name: Verify deployment
