@@ -113015,7 +113015,7 @@ async function migrate() {
       employee_id VARCHAR(36) NOT NULL,
       supervisor_id VARCHAR(36) NOT NULL,
       period VARCHAR(50) NOT NULL,
-      content TEXT NOT NULL,
+      content TEXT NOT NULL DEFAULT '',
       approval_status VARCHAR(50) NOT NULL DEFAULT 'pending',
       approval_comments TEXT,
       approved_by VARCHAR(36),
@@ -113032,9 +113032,9 @@ async function migrate() {
       competencia VARCHAR(255) NOT NULL DEFAULT '',
       objetivo TEXT NOT NULL,
       acciones TEXT NOT NULL,
-      que_evitar TEXT NOT NULL,
+      que_evitar TEXT NOT NULL DEFAULT '',
       fecha_revision VARCHAR(50) NOT NULL DEFAULT '',
-      apoyos TEXT NOT NULL,
+      apoyos TEXT NOT NULL DEFAULT '',
       created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
       INDEX idx_sai_plan (action_plan_id)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
@@ -113242,7 +113242,7 @@ async function migrate() {
     `ALTER TABLE evaluation_na_approvals ADD COLUMN IF NOT EXISTS approved TINYINT(1) NOT NULL DEFAULT 0 AFTER question_id`,
     `ALTER TABLE evaluation_na_approvals ADD UNIQUE INDEX IF NOT EXISTS ena_eval_question_unique (evaluation_id, question_id)`,
     // action_plans: add missing columns
-    `ALTER TABLE action_plans ADD COLUMN IF NOT EXISTS content TEXT NOT NULL AFTER period`,
+    `ALTER TABLE action_plans ADD COLUMN IF NOT EXISTS content TEXT NOT NULL DEFAULT '' AFTER period`,
     `ALTER TABLE action_plans ADD COLUMN IF NOT EXISTS approval_status VARCHAR(50) NOT NULL DEFAULT 'pending' AFTER content`,
     `ALTER TABLE action_plans ADD COLUMN IF NOT EXISTS approval_comments TEXT AFTER approval_status`,
     `ALTER TABLE action_plans ADD COLUMN IF NOT EXISTS approved_by VARCHAR(36) AFTER approval_comments`,
@@ -113251,9 +113251,9 @@ async function migrate() {
     `ALTER TABLE smart_action_items ADD COLUMN IF NOT EXISTS competencia VARCHAR(255) NOT NULL DEFAULT '' AFTER action_plan_id`,
     `ALTER TABLE smart_action_items ADD COLUMN IF NOT EXISTS objetivo TEXT NOT NULL AFTER competencia`,
     `ALTER TABLE smart_action_items ADD COLUMN IF NOT EXISTS acciones TEXT NOT NULL AFTER objetivo`,
-    `ALTER TABLE smart_action_items ADD COLUMN IF NOT EXISTS que_evitar TEXT NOT NULL AFTER acciones`,
+    `ALTER TABLE smart_action_items ADD COLUMN IF NOT EXISTS que_evitar TEXT NOT NULL DEFAULT '' AFTER acciones`,
     `ALTER TABLE smart_action_items ADD COLUMN IF NOT EXISTS fecha_revision VARCHAR(50) NOT NULL DEFAULT '' AFTER que_evitar`,
-    `ALTER TABLE smart_action_items ADD COLUMN IF NOT EXISTS apoyos TEXT NOT NULL AFTER fecha_revision`,
+    `ALTER TABLE smart_action_items ADD COLUMN IF NOT EXISTS apoyos TEXT NOT NULL DEFAULT '' AFTER fecha_revision`,
     // personal_objectives: make pilares_estrategicos and alcance nullable (code doesn't always provide them)
     `ALTER TABLE personal_objectives MODIFY COLUMN pilares_estrategicos TEXT NULL`,
     `ALTER TABLE personal_objectives MODIFY COLUMN alcance TEXT NULL`,
@@ -115145,44 +115145,34 @@ async function seed() {
       console.log(`  \u2713 SuperAdmin created (${SUPERADMIN_EMAIL})`);
     }
     for (const user of USERS) {
+      const id = v4_default();
       const passwordHash = bcryptjs_default.hashSync(user.password, 12);
       const securityAnswerHash = bcryptjs_default.hashSync(user.email.toLowerCase().trim(), 12);
       const securityQuestion = "\xBFCu\xE1l es su correo electr\xF3nico?";
-      const existingUser = await tx.get(conn, "SELECT id FROM users WHERE email = ?", [user.email]);
-      if (existingUser) {
-        await tx.run(
-          conn,
-          `UPDATE users SET password_hash = ?, security_question = ?, security_answer = ?, must_change_password = 0, updated_at = ? WHERE id = ?`,
-          [passwordHash, securityQuestion, securityAnswerHash, now(), existingUser.id]
-        );
-        console.log(`  \u2713 ${user.name} (${user.email}) - password reset, must_change_password cleared`);
-      } else {
-        const id = v4_default();
-        await tx.run(
-          conn,
-          `INSERT INTO users (id, email, password_hash, security_question, security_answer, name, position, practice_area, custom_position_id, is_admin, is_super_user, is_managing_partner, is_active, must_change_password, created_at, updated_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, NULL, ?, ?, ?, ?, ?, ?, ?)`,
-          [
-            id,
-            user.email,
-            passwordHash,
-            securityQuestion,
-            securityAnswerHash,
-            user.name,
-            user.position,
-            user.practiceArea || null,
-            user.isAdmin ? 1 : 0,
-            0,
-            user.isManagingPartner ? 1 : 0,
-            user.isActive ? 1 : 0,
-            0,
-            now(),
-            now()
-            // must_change_password = 0 for all regular users
-          ]
-        );
-        console.log(`  \u2713 ${user.name} (${user.email}) - ${user.position}${user.isAdmin ? " [ADMIN]" : ""}${user.isManagingPartner ? " [MANAGING_PARTNER]" : ""}${!user.isActive ? " [INACTIVE]" : ""}`);
-      }
+      await tx.run(
+        conn,
+        `INSERT IGNORE INTO users (id, email, password_hash, security_question, security_answer, name, position, practice_area, custom_position_id, is_admin, is_super_user, is_managing_partner, is_active, must_change_password, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, NULL, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          id,
+          user.email,
+          passwordHash,
+          securityQuestion,
+          securityAnswerHash,
+          user.name,
+          user.position,
+          user.practiceArea || null,
+          user.isAdmin ? 1 : 0,
+          0,
+          user.isManagingPartner ? 1 : 0,
+          user.isActive ? 1 : 0,
+          1,
+          now(),
+          now()
+          // must_change_password = 1 for all regular users
+        ]
+      );
+      console.log(`  \u2713 ${user.name} (${user.email}) - ${user.position}${user.isAdmin ? " [ADMIN]" : ""}${user.isManagingPartner ? " [MANAGING_PARTNER]" : ""}${!user.isActive ? " [INACTIVE]" : ""}`);
     }
     const hasStatus = await tx.get(conn, "SELECT id FROM system_status LIMIT 1");
     if (!hasStatus) {
