@@ -124,7 +124,7 @@ export default function Layout() {
     { to: '/vacations', icon: Palmtree, label: 'Vacaciones', show: showVacModule, badge: pendingVacationCount },
     { to: '/period-config', icon: Calendar, label: 'Periodos', show: isAdminOrSuper },
     { to: '/copilot', icon: Bot, label: 'Copilot', show: modules.copilot && isSuperUser },
-    { to: '/settings', icon: Settings, label: 'Config', show: true },
+    { to: '/settings', icon: Settings, label: 'Perfil', show: true },
   ];
 
   const renderNavItem = (item: { to: string; icon: React.ElementType; label: string; badge?: number }) => {

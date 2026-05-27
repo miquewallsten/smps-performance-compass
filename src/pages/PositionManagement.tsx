@@ -24,8 +24,8 @@ export default function PositionManagement() {
   const [expandedAreas, setExpandedAreas] = useState<Set<string>>(new Set());
   const [showAddArea, setShowAddArea] = useState(false);
   const [editingArea, setEditingArea] = useState<string | null>(null);
-  const [newArea, setNewArea] = useState({ id: '', label: '', level: 'legal' as PositionLevel, sortOrder: 0 });
-  const [editAreaData, setEditAreaData] = useState({ label: '', level: 'legal' as PositionLevel, sortOrder: 0 });
+  const [newArea, setNewArea] = useState({ label: '', level: 'legal' as PositionLevel });
+  const [editAreaData, setEditAreaData] = useState({ label: '', level: 'legal' as PositionLevel });
 
   const [showAddPosition, setShowAddPosition] = useState<string | null>(null); // workAreaId
   const [editingPosition, setEditingPosition] = useState<string | null>(null);
@@ -52,16 +52,17 @@ export default function PositionManagement() {
 
   // ─── Work Area handlers ───
   const handleCreateArea = () => {
-    if (!newArea.id.trim() || !newArea.label.trim()) { toast.error('ID y nombre son obligatorios'); return; }
+    if (!newArea.label.trim()) { toast.error('El nombre del área es obligatorio'); return; }
+    const slug = newArea.label.trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
     createWorkAreaMut.mutate(
-      { id: newArea.id.trim().toLowerCase().replace(/\s+/g, '_'), label: newArea.label.trim(), level: newArea.level, sortOrder: newArea.sortOrder },
-      { onSuccess: () => { toast.success('Área creada'); setShowAddArea(false); setNewArea({ id: '', label: '', level: 'legal', sortOrder: 0 }); }, onError: (err: Error) => toast.error(err.message) }
+      { id: slug, label: newArea.label.trim(), level: newArea.level },
+      { onSuccess: () => { toast.success('Área creada'); setShowAddArea(false); setNewArea({ label: '', level: 'legal' }); }, onError: (err: Error) => toast.error(err.message) }
     );
   };
 
   const handleUpdateArea = (areaId: string) => {
     updateWorkAreaMut.mutate(
-      { id: areaId, label: editAreaData.label.trim(), level: editAreaData.level, sortOrder: editAreaData.sortOrder },
+      { id: areaId, label: editAreaData.label.trim(), level: editAreaData.level },
       { onSuccess: () => { toast.success('Área actualizada'); setEditingArea(null); }, onError: (err: Error) => toast.error(err.message) }
     );
   };
@@ -180,7 +181,6 @@ export default function PositionManagement() {
                           <option value="legal">Legal</option>
                           <option value="administrativo">Administrativo</option>
                         </select>
-                        <input type="number" value={editAreaData.sortOrder} onChange={e => setEditAreaData(p => ({ ...p, sortOrder: parseInt(e.target.value) || 0 }))} className="px-2 py-1 rounded border border-input bg-background text-sm w-16" placeholder="Orden" />
                         <button onClick={() => handleUpdateArea(area.id)} className="p-1.5 rounded bg-accent text-accent-foreground hover:opacity-90"><Save className="h-3.5 w-3.5" /></button>
                         <button onClick={() => setEditingArea(null)} className="p-1.5 rounded hover:bg-muted"><X className="h-3.5 w-3.5" /></button>
                       </div>
@@ -196,7 +196,7 @@ export default function PositionManagement() {
                   </div>
                   {editingArea !== area.id && (
                     <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
-                      <button onClick={() => { setEditingArea(area.id); setEditAreaData({ label: area.label, level: area.level, sortOrder: area.sortOrder }); }} className="p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors" title="Editar área">
+                      <button onClick={() => { setEditingArea(area.id); setEditAreaData({ label: area.label, level: area.level }); }} className="p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors" title="Editar área">
                         <Pencil className="h-3.5 w-3.5" />
                       </button>
                       <button onClick={() => handleDeleteArea(area.id)} className="p-1.5 rounded hover:bg-destructive/10 text-destructive/70 hover:text-destructive transition-colors" title="Eliminar área">
@@ -277,31 +277,23 @@ export default function PositionManagement() {
           {showAddArea && (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/20 backdrop-blur-sm" onClick={() => setShowAddArea(false)}>
               <div className="smps-surface-elevated w-full max-w-md shadow-xl" onClick={e => e.stopPropagation()}>
-                <h3 className="smps-section-title font-display text-base font-semibold mb-3">Nueva Área</h3>
+                <h3 className="smps-section-title font-display text-base font-semibold mb-3">Nueva Área de Trabajo</h3>
                 <div className="space-y-3">
                   <div>
-                    <label className="text-sm font-medium text-foreground">ID (slug)</label>
-                    <input type="text" value={newArea.id} onChange={e => setNewArea(p => ({ ...p, id: e.target.value }))} placeholder="ej. corporativo" className="w-full px-3 py-2 rounded-lg border border-input bg-background text-foreground text-sm" />
+                    <label className="text-sm font-medium text-foreground">Nombre del Área</label>
+                    <input type="text" value={newArea.label} onChange={e => setNewArea(p => ({ ...p, label: e.target.value }))} placeholder="ej. Corporativo" className="w-full px-3 py-2 rounded-lg border border-input bg-background text-foreground text-sm" autoFocus />
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-foreground">Nombre</label>
-                    <input type="text" value={newArea.label} onChange={e => setNewArea(p => ({ ...p, label: e.target.value }))} placeholder="ej. Corporativo" className="w-full px-3 py-2 rounded-lg border border-input bg-background text-foreground text-sm" />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-foreground">Área</label>
+                    <label className="text-sm font-medium text-foreground">Tipo de Área</label>
                     <select value={newArea.level} onChange={e => setNewArea(p => ({ ...p, level: e.target.value as PositionLevel }))} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm">
                       <option value="legal">Legal</option>
                       <option value="administrativo">Administrativo</option>
                     </select>
                   </div>
-                  <div>
-                    <label className="text-sm font-medium text-foreground">Orden</label>
-                    <input type="number" value={newArea.sortOrder} onChange={e => setNewArea(p => ({ ...p, sortOrder: parseInt(e.target.value) || 0 }))} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" />
-                  </div>
                 </div>
                 <div className="flex gap-3 mt-5">
-                  <button onClick={() => { setShowAddArea(false); setNewArea({ id: '', label: '', level: 'legal', sortOrder: 0 }); }} className="flex-1 py-2 rounded-lg border text-sm font-medium hover:bg-muted transition-colors">Cancelar</button>
-                  <button onClick={handleCreateArea} disabled={!newArea.id.trim() || !newArea.label.trim()} className="flex-1 py-2 rounded-lg bg-accent text-accent-foreground text-sm font-medium disabled:opacity-40 hover:opacity-90 transition-opacity">Crear Área</button>
+                  <button onClick={() => { setShowAddArea(false); setNewArea({ label: '', level: 'legal' }); }} className="flex-1 py-2 rounded-lg border text-sm font-medium hover:bg-muted transition-colors">Cancelar</button>
+                  <button onClick={handleCreateArea} disabled={!newArea.label.trim()} className="flex-1 py-2 rounded-lg bg-accent text-accent-foreground text-sm font-medium disabled:opacity-40 hover:opacity-90 transition-opacity">Crear Área</button>
                 </div>
               </div>
             </div>
