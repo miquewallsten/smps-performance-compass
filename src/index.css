@@ -162,78 +162,30 @@
 @keyframes smps-slide-in { from { opacity: 0; transform: translateX(-8px); } to { opacity: 1; transform: translateX(0); } }
 @keyframes smps-scale-in { from { opacity: 0; transform: scale(0.97); } to { opacity: 1; transform: scale(1); } }
 
-
 /* ═══════════════════════════════════════════════════════════════════════════
-   TIME MACHINE — Apple-inspired career timeline
-   Dark depth viewport · Vertical mini-viewer · Sleek glass panels
+   TIME MACHINE — Career Timeline (Light Theme)
    ═══════════════════════════════════════════════════════════════════════════ */
 
-/* ── Viewport: dark depth surface ──────────────────────────────────────────── */
-.tm-viewport {
-  background:
-    radial-gradient(ellipse 80% 60% at 20% 40%, hsl(215 50% 12% / 0.5), transparent),
-    radial-gradient(ellipse 60% 50% at 80% 60%, hsl(350 50% 10% / 0.15), transparent),
-    hsl(215 55% 7%);
-  position: relative;
-}
-.tm-viewport::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background-image:
-    radial-gradient(1px 1px at 10% 20%, hsl(210 20% 50% / 0.12), transparent),
-    radial-gradient(1px 1px at 30% 70%, hsl(210 20% 50% / 0.08), transparent),
-    radial-gradient(1px 1px at 50% 10%, hsl(210 20% 50% / 0.1), transparent),
-    radial-gradient(1px 1px at 70% 50%, hsl(210 20% 50% / 0.06), transparent),
-    radial-gradient(1px 1px at 90% 80%, hsl(210 20% 50% / 0.09), transparent),
-    radial-gradient(1px 1px at 15% 90%, hsl(210 20% 50% / 0.07), transparent),
-    radial-gradient(1px 1px at 60% 30%, hsl(210 20% 50% / 0.05), transparent),
-    radial-gradient(1px 1px at 85% 15%, hsl(210 20% 50% / 0.08), transparent);
-  pointer-events: none;
-  z-index: 0;
-}
-.tm-viewport > * { position: relative; z-index: 1; }
-
-/* ── Header ────────────────────────────────────────────────────────────────── */
-.tm-header {
-  background: hsl(215 55% 9% / 0.8);
-  border-color: hsl(215 40% 18%);
-  backdrop-filter: blur(8px);
-}
-.tm-year-bar {
-  background: hsl(215 55% 8%);
-  border-color: hsl(215 40% 18%);
-}
-.tm-note-bar {
-  background: hsl(215 55% 9%);
-  border-color: hsl(215 40% 18%);
-}
-
-/* ── Dropdown ──────────────────────────────────────────────────────────────── */
-.tm-dropdown {
-  background: hsl(215 50% 12%);
-  border-color: hsl(215 40% 22%);
-  backdrop-filter: blur(12px);
-  box-shadow: 0 8px 24px hsl(215 50% 5% / 0.4);
-}
-
-/* ── Scroll ────────────────────────────────────────────────────────────────── */
+/* Scroll container — minimal scrollbar */
 .tm-scroll {
-  scrollbar-width: none;
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--border)) transparent;
   -webkit-overflow-scrolling: touch;
 }
-.tm-scroll::-webkit-scrollbar { display: none; }
+.tm-scroll::-webkit-scrollbar { height: 4px; }
+.tm-scroll::-webkit-scrollbar-track { background: transparent; }
+.tm-scroll::-webkit-scrollbar-thumb { background: hsl(var(--border)); border-radius: 999px; }
 
-/* ── Month entrance ────────────────────────────────────────────────────────── */
+/* Month entrance */
 .tm-month {
   animation: tm-reveal 400ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 @keyframes tm-reveal {
-  from { opacity: 0; transform: translateY(6px) scale(0.97); }
+  from { opacity: 0; transform: translateY(8px) scale(0.98); }
   to   { opacity: 1; transform: translateY(0) scale(1); }
 }
 
-/* ── Node entrance ─────────────────────────────────────────────────────────── */
+/* Node entrance */
 .tm-node {
   animation: tm-node-in 300ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
@@ -242,94 +194,79 @@
   to   { opacity: 1; transform: scale(1); }
 }
 
-/* ── Rail dot ──────────────────────────────────────────────────────────────── */
+/* Rail dot */
 .tm-dot {
   animation: tm-dot-in 500ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 @keyframes tm-dot-in {
   0%   { transform: scale(0); opacity: 0; }
-  60%  { transform: scale(1.6); opacity: 0.7; }
+  60%  { transform: scale(1.5); opacity: 0.7; }
   100% { transform: scale(1); opacity: 1; }
 }
 
-/* ── Origin dot glow ──────────────────────────────────────────────────────── */
-.tm-origin-dot {
+/* Origin dot glow */
+.tm-glow-dot {
+  box-shadow: 0 0 6px hsl(var(--accent) / 0.3);
   animation: tm-glow 2s ease-in-out infinite alternate;
 }
 @keyframes tm-glow {
-  from { box-shadow: 0 0 4px hsl(350 80% 42% / 0.3); }
-  to   { box-shadow: 0 0 10px hsl(350 80% 42% / 0.6); }
+  from { box-shadow: 0 0 4px hsl(var(--accent) / 0.3); }
+  to   { box-shadow: 0 0 10px hsl(var(--accent) / 0.5); }
 }
 
-/* ── Event card (glass on dark) ─────────────────────────────────────────────── */
+/* Event card */
 .tm-card {
-  background: hsl(215 50% 14% / 0.6);
-  border: 1px solid hsl(215 40% 22% / 0.5);
-  backdrop-filter: blur(8px);
   transition: transform 150ms cubic-bezier(0.16, 1, 0.3, 1),
               box-shadow 200ms ease-out,
-              border-color 150ms ease-out,
-              background-color 150ms ease-out;
-  box-shadow: 0 1px 4px hsl(215 50% 5% / 0.3);
+              border-color 150ms ease-out;
+  box-shadow: 0 1px 3px hsl(var(--foreground) / 0.04);
 }
 @media (hover: hover) and (pointer: fine) {
   .tm-card:hover {
-    transform: translateY(-1px) scale(1.03);
-    box-shadow: 0 6px 16px -2px hsl(215 50% 5% / 0.4);
-    border-color: hsl(215 40% 28% / 0.6);
-    background: hsl(215 50% 16% / 0.7);
+    transform: translateY(-2px) scale(1.02);
+    box-shadow: 0 6px 16px -3px hsl(var(--foreground) / 0.07);
+    border-color: hsl(var(--border));
   }
 }
 .tm-card:active { transform: scale(0.97); }
 .tm-card-exp {
-  border-color: hsl(215 40% 30% / 0.6);
-  background: hsl(215 50% 15% / 0.8);
+  border-color: hsl(var(--accent) / 0.2);
+  box-shadow: 0 4px 12px -2px hsl(var(--foreground) / 0.06);
 }
 
-/* ── Expand section ─────────────────────────────────────────────────────────── */
+/* Expand section */
 .tm-expand {
   animation: tm-expand-in 200ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 @keyframes tm-expand-in {
-  from { opacity: 0; max-height: 0; transform: translateY(-2px); }
-  to   { opacity: 1; max-height: 200px; transform: translateY(0); }
+  from { opacity: 0; max-height: 0; transform: translateY(-4px); }
+  to   { opacity: 1; max-height: 250px; transform: translateY(0); }
 }
 
-/* ── Score ring ─────────────────────────────────────────────────────────────── */
+/* Score ring */
 .tm-ring-anim {
   transition: stroke-dashoffset 600ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* ── Scale in (dropdown) ────────────────────────────────────────────────────── */
+/* Scale in (dropdown) */
 .tm-scale-in {
   animation: tm-scale-in 150ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 @keyframes tm-scale-in {
-  from { opacity: 0; transform: scale(0.95); }
+  from { opacity: 0; transform: scale(0.96); }
   to   { opacity: 1; transform: scale(1); }
 }
 
-/* ── Scroll arrows ─────────────────────────────────────────────────────────── */
-.tm-arrow-l {
-  background: linear-gradient(to right, hsl(215 55% 7% / 0.95), transparent);
-  animation: tm-arr 200ms ease-out both;
-}
-.tm-arrow-r {
-  background: linear-gradient(to left, hsl(215 55% 7% / 0.95), transparent);
+/* Scroll arrows */
+.tm-arr {
   animation: tm-arr 200ms ease-out both;
 }
 @keyframes tm-arr { from { opacity: 0; } to { opacity: 1; } }
 
-/* ── Vertical mini-viewer rail ─────────────────────────────────────────────── */
-.tm-viewer-rail {
-  background: hsl(215 55% 8%);
-  border-color: hsl(215 40% 18%);
-}
-
-/* ── Reduced motion ────────────────────────────────────────────────────────── */
+/* Reduced motion */
 @media (prefers-reduced-motion: reduce) {
-  .tm-month, .tm-node, .tm-dot, .tm-origin-dot, .tm-card,
-  .tm-expand, .tm-scale-in, .tm-arrow-l, .tm-arrow-r {
+  .tm-month, .tm-node, .tm-dot, .tm-glow-dot, .tm-card,
+  .tm-expand, .tm-scale-in, .tm-arr {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
   }

@@ -239,7 +239,7 @@ export default function Layout() {
           ))}
         </div>
 
-        {location.pathname === '/copilot' ? (
+        {(location.pathname === '/copilot' || location.pathname.includes('/timeline')) ? (
           <div
             className="fixed top-14 bottom-0 right-0 smps-fade-in transition-all duration-200"
             style={{ left: collapsed ? '3.5rem' : '13rem' }}
