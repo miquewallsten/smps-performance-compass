@@ -268,12 +268,16 @@ export default function CopilotChat() {
     setIsStreaming(true);
 
     try {
-      const formData = new FormData();
-      formData.append('message', content);
-      if (attachedFile) formData.append('file', attachedFile);
-      if (selectedConvId) formData.append('conversationId', selectedConvId);
-
-      const result = await chatMutation.mutateAsync(formData as any);
+      let result;
+      if (attachedFile) {
+        const formData = new FormData();
+        formData.append('message', content);
+        formData.append('file', attachedFile);
+        if (selectedConvId) formData.append('conversationId', selectedConvId);
+        result = await api.upload('/api/copilot/chat', formData);
+      } else {
+        result = await chatMutation.mutateAsync({ message: content, conversationId: selectedConvId });
+      }
       if (!selectedConvId && result.conversationId) {
         setSelectedConvId(result.conversationId);
       }
