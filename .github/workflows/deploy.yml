@@ -10,6 +10,9 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: write
+
 jobs:
   # ─── Build & Test ───────────────────────────────────────
   build:
@@ -43,7 +46,6 @@ jobs:
           du -sh dist/ server.cjs
 
       - name: Commit built artifacts
-        # Only on push to main (not PRs), commit the built files so the server can pull them
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: |
           git config user.name "GitHub Actions"
@@ -53,7 +55,6 @@ jobs:
           git push
 
   # ─── Notify Server ─────────────────────────────────────
-  # After the built artifacts are committed, trigger the server to pull & restart
   notify:
     needs: build
     runs-on: ubuntu-latest
