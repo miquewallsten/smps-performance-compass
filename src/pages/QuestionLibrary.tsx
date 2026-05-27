@@ -1,8 +1,7 @@
 import { useState, useMemo, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCustomQuestions, useLibraryQuestions, useCreateLibraryQuestion, useUpdateLibraryQuestion, useDeleteLibraryQuestion, useSeedOverrides, useUpdateSeedOverride } from '@/api/queries';
-import { QUESTIONS_BY_POSITION, getSectionByCategory, SECTION_LABELS, SECTION_ORDER } from '@/data/questions';
-import { getSectionWeights } from '@/data/sectionWeights';
+import { QUESTIONS_BY_POSITION, getSectionByCategory, getSectionForQuestion, SECTION_LABELS, SECTION_ORDER, getQuestionsForUser } from '@/data/questions';
 import { POSITION_LABELS, QuestionCategory, EvalQuestion, LibraryQuestion, EvalSection, POSITION_LEVELS, Position } from '@/types';
 import { BookOpen, Search, Plus, Pencil, Trash2, Save, X, Download, SlidersHorizontal, Layers, ChevronDown, ChevronRight, XCircle, LayoutList, LayoutGrid, Hash } from 'lucide-react';
 import { toast } from 'sonner';
@@ -285,30 +284,23 @@ export default function QuestionLibrary() {
   }, [groupMode]);
 
   const exportCSV = () => {
-    // Export per-position rescaled weights so each position's weights sum to 100%
+    // Use getQuestionsForUser() — the exact same function the evaluation UI uses.
+    // This guarantees rescaled weights match what the user sees in the app (summing to 100% per position).
     const rows: string[] = ['Posición,Sección,Categoría,Peso (%),Texto'];
     const allPositions = new Set<string>();
     allSeedItems.forEach(item => item.positions.forEach(p => allPositions.add(p)));
 
     for (const pos of allPositions) {
       const posLabel = POSITION_LABELS[pos as Position] || pos;
-      const sectionWts = getSectionWeights(pos as Position);
-      const posQuestions = allSeedItems.filter(item => item.positions.includes(pos));
-      const bySection: Record<string, typeof posQuestions> = {};
-      posQuestions.forEach(q => {
-        const section = getSectionByCategory(q.category);
-        if (!bySection[section]) bySection[section] = [];
-        bySection[section].push(q);
+      const evalQuestions = getQuestionsForUser(
+        { position: pos as Position, practiceArea: 'corporativo' },
+        Array.isArray(customQuestions) ? {} : customQuestions
+      );
+      evalQuestions.forEach(q => {
+        const section = getSectionForQuestion(q, pos as Position);
+        const text = `"${q.text.replace(/"/g, '""')}"`;
+        rows.push(`${posLabel},${SECTION_LABELS[section]},${q.category},${q.weight},${text}`);
       });
-      for (const [section, qs] of Object.entries(bySection)) {
-        const target = sectionWts[section as EvalSection] || 0;
-        const sum = qs.reduce((s, q) => s + (q.weight || 1), 0) || qs.length;
-        qs.forEach(q => {
-          const rescaledWeight = Math.round(((q.weight || 1) / sum) * target * 100) / 100;
-          const text = `"${q.text.replace(/"/g, '""')}"`;
-          rows.push(`${posLabel},${SECTION_LABELS[section as EvalSection] || section},${q.category},${rescaledWeight},${text}`);
-        });
-      }
     }
     libraryQuestions.forEach(q => {
       const text = `"${q.text.replace(/"/g, '""')}"`;
@@ -320,7 +312,7 @@ export default function QuestionLibrary() {
     const a = document.createElement('a');
     a.href = url; a.download = `preguntas-por-posicion-${new Date().toISOString().split('T')[0]}.csv`;
     a.click(); URL.revokeObjectURL(url);
-    toast.success('CSV con pesos reescalados por posición');
+    toast.success('CSV descargado');
   };
 
   return (
