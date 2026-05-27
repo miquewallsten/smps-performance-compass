@@ -113372,15 +113372,15 @@ async function migrate() {
       `UPDATE custom_positions SET work_area_id = ? WHERE work_area_id = ?`,
       [newId, oldId]
     );
-    if (migrated && migrated > 0) {
-      console.log(`  \u2713 Migrated ${migrated} positions from area '${oldId}' to '${newId}'`);
+    if (migrated && migrated.affectedRows > 0) {
+      console.log(`  \u2713 Migrated ${migrated.affectedRows} positions from area '${oldId}' to '${newId}'`);
     }
     const userMigrated = await run(
       `UPDATE users SET practice_area = ? WHERE practice_area = ?`,
       [newId, oldId]
     );
-    if (userMigrated && userMigrated > 0) {
-      console.log(`  \u2713 Migrated ${userMigrated} users from practice_area '${oldId}' to '${newId}'`);
+    if (userMigrated && userMigrated.affectedRows > 0) {
+      console.log(`  \u2713 Migrated ${userMigrated.affectedRows} users from practice_area '${oldId}' to '${newId}'`);
     }
   }
   const nullWorkAreaCount = await getScalar(
