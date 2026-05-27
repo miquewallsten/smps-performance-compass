@@ -27,6 +27,7 @@ interface AuthContextType {
   loading: boolean;
   systemInitialized: boolean | null;
   moduleConfig: ModuleConfig | null;
+  isSuperUser: boolean;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   changePassword: (currentPassword: string, newPassword: string, securityQuestion?: string, securityAnswer?: string) => Promise<void>;
@@ -118,6 +119,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   return (
     <AuthContext.Provider value={{
       user, loading, systemInitialized, moduleConfig,
+      isSuperUser: user?.isSuperUser ?? false,
       login, logout, changePassword, resetPassword, getSecurityQuestion,
       refreshUser, initializeSystem,
     }}>
