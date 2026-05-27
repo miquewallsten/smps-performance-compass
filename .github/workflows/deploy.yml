@@ -60,43 +60,68 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     steps:
-      - name: Setup SSH key
+      - name: Trigger deploy webhook (PHP)
+        env:
+          WEBHOOK_SECRET: "smps-deploy-webhook-2025"
+          COMMIT_SHA: ${{ github.sha }}
+          COMMIT_MSG: ${{ github.event.head_commit.message }}
+        run: |
+          SAFE_MSG=$(echo "$COMMIT_MSG" | head -1 | sed 's/"/\\"/g' | sed "s/'/\\'/g")
+          BODY="{\"ref\":\"refs/heads/main\",\"head_commit\":{\"id\":\"$COMMIT_SHA\",\"message\":\"$SAFE_MSG\"}}"
+          SIGNATURE="sha256=$(echo -n "$BODY" | openssl dgst -sha256 -hmac "$WEBHOOK_SECRET" | awk '{print $NF}')"
+          
+          RESPONSE=$(curl -s -w "\n%{http_code}" \
+            -X POST \
+            -H "Content-Type: application/json" \
+            -H "X-Hub-Signature-256: $SIGNATURE" \
+            -d "$BODY" \
+            https://smps.bowdot.online/deploy-webhook.php)
+          
+          HTTP_CODE=$(echo "$RESPONSE" | tail -1)
+          BODY=$(echo "$RESPONSE" | sed '$d')
+          
+          echo "Webhook Response: $BODY"
+          echo "HTTP Code: $HTTP_CODE"
+          
+          if [ "$HTTP_CODE" = "200" ]; then
+            echo "✅ Deploy webhook triggered successfully"
+          else
+            echo "⚠️ Deploy webhook returned HTTP $HTTP_CODE, trying Express endpoint..."
+            
+            # Try Express deploy endpoint as fallback
+            RESPONSE2=$(curl -s -w "\n%{http_code}" \
+              -X POST \
+              -H "Content-Type: application/json" \
+              -H "X-Hub-Signature-256: $SIGNATURE" \
+              -d "$BODY" \
+              https://smps.bowdot.online/api/deploy)
+            
+            HTTP_CODE2=$(echo "$RESPONSE2" | tail -1)
+            echo "Express endpoint HTTP Code: $HTTP_CODE2"
+          fi
+
+      - name: Deploy via SSH (fallback)
+        if: always()
         run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.HOSTINGER_SSH_KEY }}" > ~/.ssh/deploy_key
+          sed -i 's/\r$//' ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
+          
+          # Check if key is valid
+          if ssh-keygen -l -f ~/.ssh/deploy_key 2>/dev/null; then
+            echo "SSH key is valid"
+          else
+            echo "⚠️ SSH key format error, skipping SSH deploy"
+            exit 0
+          fi
+          
           ssh-keyscan -p ${{ secrets.HOSTINGER_PORT }} ${{ secrets.HOSTINGER_HOST }} >> ~/.ssh/known_hosts 2>/dev/null
-
-      - name: Deploy to Hostinger
-        env:
-          SSH_KEY: ~/.ssh/deploy_key
-          SSH_HOST: ${{ secrets.HOSTINGER_HOST }}
-          SSH_PORT: ${{ secrets.HOSTINGER_PORT }}
-          SSH_USER: ${{ secrets.HOSTINGER_USER }}
-          APP_DIR: ${{ secrets.HOSTINGER_PATH }}
-        run: |
-          SSH_CMD="ssh -i $SSH_KEY -p $SSH_PORT -o StrictHostKeyChecking=no $SSH_USER@$SSH_HOST"
+          
+          SSH_CMD="ssh -i ~/.ssh/deploy_key -p ${{ secrets.HOSTINGER_PORT }} -o StrictHostKeyChecking=no -o ConnectTimeout=10 ${{ secrets.HOSTINGER_USER }}@${{ secrets.HOSTINGER_HOST }}"
           
           echo "🔄 Pulling latest code on server..."
-          $SSH_CMD "cd $APP_DIR && git pull origin main"
+          $SSH_CMD "cd ${{ secrets.HOSTINGER_PATH }} && git pull origin main" || true
           
-          echo "📦 Installing dependencies..."
-          $SSH_CMD "cd $APP_DIR && npm install --omit=dev --ignore-scripts 2>&1 | tail -5"
-          
-          echo "🔄 Restarting server..."
-          $SSH_CMD "cd $APP_DIR && pkill -f 'node.*server' 2>/dev/null; sleep 2; nohup node server.cjs >> console.log 2>&1 &"
-          
-          echo "✅ Deploy complete! Waiting for health check..."
-          sleep 5
-          
-          # Health check
-          for i in $(seq 1 10); do
-            sleep 3
-            if $SSH_CMD "curl -s http://localhost:${{ secrets.APP_PORT || 3000 }}/api/health 2>/dev/null | grep -q ok"; then
-              echo "✅ Server is healthy!"
-              exit 0
-            fi
-            echo "  Attempt $i/10: waiting for server..."
-          done
-          
-          echo "⚠️ Could not verify server health via localhost"
+          echo "📦 Running build-and-restart.sh..."
+          $SSH_CMD "cd ${{ secrets.HOSTINGER_PATH }} && bash build-and-restart.sh" || true
