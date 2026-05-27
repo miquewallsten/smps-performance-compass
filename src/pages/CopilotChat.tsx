@@ -349,7 +349,7 @@ export default function CopilotChat() {
   ];
 
   return (
-    <div className="flex-1 flex overflow-hidden min-h-0">
+    <div className="h-full flex overflow-hidden">
       {/* Sidebar — conversations list */}
       {sidebarOpen && (
         <div className="w-56 lg:w-64 border-r bg-card flex-shrink-0 flex flex-col">

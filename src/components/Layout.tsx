@@ -236,18 +236,21 @@ export default function Layout() {
           ))}
         </div>
 
-        <main className={`flex-1 min-h-0 ${location.pathname === '/copilot' ? 'overflow-hidden flex flex-col' : 'overflow-auto'} ${location.pathname === '/copilot' ? '' : 'pb-16 md:pb-0'} ${collapsed ? 'md:ml-14' : 'md:ml-52'} transition-all duration-200`}>
-          {location.pathname === '/copilot' ? (
-            <div className="flex-1 min-h-0 smps-fade-in">
-              <Outlet />
-            </div>
-          ) : (
+        {location.pathname === '/copilot' ? (
+          <div
+            className="fixed top-14 bottom-0 right-0 smps-fade-in transition-all duration-200"
+            style={{ left: collapsed ? '3.5rem' : '13rem' }}
+          >
+            <Outlet />
+          </div>
+        ) : (
+          <main className={`flex-1 min-h-0 overflow-auto pb-16 md:pb-0 ${collapsed ? 'md:ml-14' : 'md:ml-52'} transition-all duration-200`}>
             <div className="p-4 md:p-5 max-w-6xl mx-auto smps-fade-in">
               <PeriodEndAlert />
               <Outlet />
             </div>
-          )}
-        </main>
+          </main>
+        )}
       </div>
     </div>
   );
