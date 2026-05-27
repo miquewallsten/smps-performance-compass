@@ -61,10 +61,15 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     steps:
       - name: Trigger server deploy
+        env:
+          WEBHOOK_SECRET: "smps-deploy-webhook-2025"
+          COMMIT_SHA: ${{ github.sha }}
+          COMMIT_MSG: ${{ github.event.head_commit.message }}
         run: |
-          SECRET="smps-deploy-webhook-2025"
-          BODY='{"ref":"refs/heads/main","head_commit":{"id":"${{ github.sha }}","message":"${{ github.event.head_commit.message }}"}}'
-          SIGNATURE="sha256=$(echo -n "$BODY" | openssl dgst -sha256 -hmac "$SECRET" | awk '{print $NF}')"
+          # Create a simple JSON payload (escape special chars in commit message)
+          SAFE_MSG=$(echo "$COMMIT_MSG" | head -1 | sed 's/"/\\"/g' | sed "s/'/\\'/g")
+          BODY="{\"ref\":\"refs/heads/main\",\"head_commit\":{\"id\":\"$COMMIT_SHA\",\"message\":\"$SAFE_MSG\"}}"
+          SIGNATURE="sha256=$(echo -n "$BODY" | openssl dgst -sha256 -hmac "$WEBHOOK_SECRET" | awk '{print $NF}')"
           
           RESPONSE=$(curl -s -w "\n%{http_code}" \
             -X POST \
@@ -74,7 +79,7 @@ jobs:
             https://bowdot.online/deploy-webhook.php)
           
           HTTP_CODE=$(echo "$RESPONSE" | tail -1)
-          BODY=$(echo "$RESPONSE" | head -n -1)
+          BODY=$(echo "$RESPONSE" | sed '$d')
           
           echo "Response: $BODY"
           echo "HTTP Code: $HTTP_CODE"
