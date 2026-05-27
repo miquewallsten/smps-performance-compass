@@ -54,38 +54,49 @@ jobs:
           git diff --cached --quiet || git commit -m "chore: update built artifacts [skip ci]"
           git push
 
-  # ─── Notify Server ─────────────────────────────────────
-  notify:
+  # ─── Deploy to Hostinger ──────────────────────────────
+  deploy:
     needs: build
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     steps:
-      - name: Trigger server deploy
-        env:
-          WEBHOOK_SECRET: "smps-deploy-webhook-2025"
-          COMMIT_SHA: ${{ github.sha }}
-          COMMIT_MSG: ${{ github.event.head_commit.message }}
+      - name: Setup SSH key
         run: |
-          # Create a simple JSON payload (escape special chars in commit message)
-          SAFE_MSG=$(echo "$COMMIT_MSG" | head -1 | sed 's/"/\\"/g' | sed "s/'/\\'/g")
-          BODY="{\"ref\":\"refs/heads/main\",\"head_commit\":{\"id\":\"$COMMIT_SHA\",\"message\":\"$SAFE_MSG\"}}"
-          SIGNATURE="sha256=$(echo -n "$BODY" | openssl dgst -sha256 -hmac "$WEBHOOK_SECRET" | awk '{print $NF}')"
+          mkdir -p ~/.ssh
+          echo "${{ secrets.HOSTINGER_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -p ${{ secrets.HOSTINGER_PORT }} ${{ secrets.HOSTINGER_HOST }} >> ~/.ssh/known_hosts 2>/dev/null
+
+      - name: Deploy to Hostinger
+        env:
+          SSH_KEY: ~/.ssh/deploy_key
+          SSH_HOST: ${{ secrets.HOSTINGER_HOST }}
+          SSH_PORT: ${{ secrets.HOSTINGER_PORT }}
+          SSH_USER: ${{ secrets.HOSTINGER_USER }}
+          APP_DIR: ${{ secrets.HOSTINGER_PATH }}
+        run: |
+          SSH_CMD="ssh -i $SSH_KEY -p $SSH_PORT -o StrictHostKeyChecking=no $SSH_USER@$SSH_HOST"
           
-          RESPONSE=$(curl -s -w "\n%{http_code}" \
-            -X POST \
-            -H "Content-Type: application/json" \
-            -H "X-Hub-Signature-256: $SIGNATURE" \
-            -d "$BODY" \
-            https://smps.bowdot.online/api/deploy)
+          echo "🔄 Pulling latest code on server..."
+          $SSH_CMD "cd $APP_DIR && git pull origin main"
           
-          HTTP_CODE=$(echo "$RESPONSE" | tail -1)
-          BODY=$(echo "$RESPONSE" | sed '$d')
+          echo "📦 Installing dependencies..."
+          $SSH_CMD "cd $APP_DIR && npm install --omit=dev --ignore-scripts 2>&1 | tail -5"
           
-          echo "Response: $BODY"
-          echo "HTTP Code: $HTTP_CODE"
+          echo "🔄 Restarting server..."
+          $SSH_CMD "cd $APP_DIR && pkill -f 'node.*server' 2>/dev/null; sleep 2; nohup node server.cjs >> console.log 2>&1 &"
           
-          if [ "$HTTP_CODE" = "200" ]; then
-            echo "✅ Server deploy triggered successfully"
-          else
-            echo "⚠️ Server deploy trigger returned HTTP $HTTP_CODE"
-          fi
+          echo "✅ Deploy complete! Waiting for health check..."
+          sleep 5
+          
+          # Health check
+          for i in $(seq 1 10); do
+            sleep 3
+            if $SSH_CMD "curl -s http://localhost:${{ secrets.APP_PORT || 3000 }}/api/health 2>/dev/null | grep -q ok"; then
+              echo "✅ Server is healthy!"
+              exit 0
+            fi
+            echo "  Attempt $i/10: waiting for server..."
+          done
+          
+          echo "⚠️ Could not verify server health via localhost"
