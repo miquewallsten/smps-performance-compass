@@ -1,32 +1,32 @@
 #!/bin/bash
 set -e
-export PATH="/opt/alt/alt-nodejs22/root/usr/bin:/usr/local/bin:/usr/bin:/bin:$PATH"
-export PATH="$HOME/domains/bowdot.online/nodejs/node_modules/.bin:$PATH"
-export LD_LIBRARY_PATH="/opt/alt/alt-nodejs22/root/usr/lib64:$LD_LIBRARY_PATH"
-cd ~/domains/bowdot.online/nodejs
 
-echo "=== Post-deploy build starting ==="
+# Post-deployment script for Hostinger
+# Built artifacts come from git (committed by GitHub Actions)
+# This script only installs prod deps and restarts Passenger.
+
+export HOME="/home/u906489923"
+export PATH="/home/u906489923/domains/bowdot.online/nodejs/node_modules/.bin:/opt/alt/alt-nodejs22/root/usr/bin:/usr/local/bin:/usr/bin:/bin"
+export LD_LIBRARY_PATH="/opt/alt/alt-nodejs22/root/usr/lib64"
+
+cd /home/u906489923/domains/bowdot.online/nodejs
+
+echo "=== Post-deploy starting ==="
 echo "Working directory: $(pwd)"
 
-# Install ALL dependencies
-echo "Installing dependencies..."
-npm install 2>&1 | tail -5
-
-# Build
-echo "Building application..."
-npm run build 2>&1
-
-# Verify build
-if [ -f dist/index.html ] && [ -f server.cjs ]; then
-  echo "Build successful!"
-else
-  echo "Build FAILED"
+# Verify built files exist (they come from git now)
+if [ ! -f dist/index.html ] || [ ! -f server.cjs ]; then
+  echo "ERROR: Built files missing! dist/index.html or server.cjs not found."
+  echo "The GitHub Actions CI should have committed these files."
   exit 1
 fi
 
-# Prune dev deps
-echo "Pruning dev dependencies..."
-npm prune --omit=dev 2>&1 | tail -3
+echo "Built files verified:"
+ls -la dist/index.html server.cjs
+
+# Install production dependencies only
+echo "Installing production dependencies..."
+npm install --omit=dev --ignore-scripts 2>&1 | tail -5
 
 # Restart Passenger
 echo "Restarting Passenger..."
