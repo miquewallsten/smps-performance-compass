@@ -348,9 +348,9 @@ export default function CopilotChat() {
   ];
 
   return (
-    <div className="h-[calc(100vh-3.5rem)] flex">
+    <div className="h-full flex overflow-hidden">
       {/* Sidebar — conversations list */}
-      <div className="w-64 border-r bg-card flex-shrink-0 hidden md:flex flex-col">
+      <div className="w-56 lg:w-64 border-r bg-card flex-shrink-0 hidden md:flex flex-col">
         <div className="p-3 border-b space-y-2">
           <Button onClick={handleNewConversation} variant="outline" className="w-full justify-start gap-2 text-sm">
             <Plus className="h-4 w-4" /> Nueva conversación
