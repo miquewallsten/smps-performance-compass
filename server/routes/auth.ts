@@ -11,7 +11,14 @@ const router = Router();
 // Helper to strip sensitive fields from a user row
 function sanitizeUser(user: Record<string, unknown>) {
   const { password_hash, security_answer, ...safe } = user;
-  return safe;
+  return {
+    ...safe,
+    isAdmin: Boolean(user.is_admin),
+    isSuperUser: Boolean(user.is_super_user),
+    isManagingPartner: Boolean(user.is_managing_partner),
+    isActive: Boolean(user.is_active),
+    mustChangePassword: Boolean(user.must_change_password),
+  };
 }
 
 // ─── POST /api/auth/login ──────────────────────────────────────────────────
