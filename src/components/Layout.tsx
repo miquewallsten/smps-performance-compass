@@ -109,7 +109,7 @@ export default function Layout() {
   ];
 
   const userGroupItems = [
-    { to: '/users', icon: Users, label: 'Colaboradores', show: isAdminOrSuper },
+    { to: '/users', icon: Users, label: 'Usuarios', show: isAdminOrSuper },
     { to: '/positions', icon: Briefcase, label: 'Áreas y Puestos', show: isAdminOrSuper },
   ];
 
