@@ -1,4 +1,4 @@
-import { pool, exec, getScalar, run, get } from './connection.js';
+import { pool, exec, getScalar, run, get, all } from './connection.js';
 
 /**
  * Run all database migrations — creates every table and index if they don't exist.
@@ -546,7 +546,7 @@ export async function migrate(): Promise<void> {
 
   // 4. Remove stale work areas (old IDs that are no longer valid)
   const validAreaIds = areas.map(a => a[0]);
-  const staleAreas = await db.all(`SELECT id FROM work_areas WHERE id NOT IN (${validAreaIds.map(() => '?').join(',')})`, validAreaIds);
+  const staleAreas = await all(`SELECT id FROM work_areas WHERE id NOT IN (${validAreaIds.map(() => '?').join(',')})`, validAreaIds);
   for (const stale of staleAreas) {
     // Check if any positions reference this area before deleting
     const posUsingStale = await getScalar<number>(`SELECT COUNT(*) AS cnt FROM custom_positions WHERE work_area_id = ?`, [stale.id]);

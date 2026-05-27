@@ -18989,7 +18989,7 @@ var require_mimeScore = __commonJS({
 var require_mime_types = __commonJS({
   "node_modules/type-is/node_modules/mime-types/index.js"(exports2) {
     "use strict";
-    var db3 = require_mime_db();
+    var db2 = require_mime_db();
     var extname = require("path").extname;
     var mimeScore = require_mimeScore();
     var EXTRACT_TYPE_REGEXP = /^\s*([^;\s]*)(?:;|\s|$)/;
@@ -19008,7 +19008,7 @@ var require_mime_types = __commonJS({
         return false;
       }
       var match = EXTRACT_TYPE_REGEXP.exec(type);
-      var mime = match && db3[match[1].toLowerCase()];
+      var mime = match && db2[match[1].toLowerCase()];
       if (mime && mime.charset) {
         return mime.charset;
       }
@@ -19053,8 +19053,8 @@ var require_mime_types = __commonJS({
       return exports2.types[extension2] || false;
     }
     function populateMaps(extensions, types) {
-      Object.keys(db3).forEach(function forEachMimeType(type) {
-        var mime = db3[type];
+      Object.keys(db2).forEach(function forEachMimeType(type) {
+        var mime = db2[type];
         var exts = mime.extensions;
         if (!exts || !exts.length) {
           return;
@@ -19075,14 +19075,14 @@ var require_mime_types = __commonJS({
       });
     }
     function _preferredType(ext, type0, type1) {
-      var score0 = type0 ? mimeScore(type0, db3[type0].source) : 0;
-      var score1 = type1 ? mimeScore(type1, db3[type1].source) : 0;
+      var score0 = type0 ? mimeScore(type0, db2[type0].source) : 0;
+      var score1 = type1 ? mimeScore(type1, db2[type1].source) : 0;
       return score0 > score1 ? type0 : type1;
     }
     function _preferredTypeLegacy(ext, type0, type1) {
       var SOURCE_RANK = ["nginx", "apache", void 0, "iana"];
-      var score0 = type0 ? SOURCE_RANK.indexOf(db3[type0].source) : 0;
-      var score1 = type1 ? SOURCE_RANK.indexOf(db3[type1].source) : 0;
+      var score0 = type0 ? SOURCE_RANK.indexOf(db2[type0].source) : 0;
+      var score1 = type1 ? SOURCE_RANK.indexOf(db2[type1].source) : 0;
       if (exports2.types[extension] !== "application/octet-stream" && (score0 > score1 || score0 === score1 && exports2.types[extension]?.slice(0, 12) === "application/")) {
         return type0;
       }
@@ -32176,7 +32176,7 @@ var require_mimeScore2 = __commonJS({
 var require_mime_types2 = __commonJS({
   "node_modules/express/node_modules/mime-types/index.js"(exports2) {
     "use strict";
-    var db3 = require_mime_db2();
+    var db2 = require_mime_db2();
     var extname = require("path").extname;
     var mimeScore = require_mimeScore2();
     var EXTRACT_TYPE_REGEXP = /^\s*([^;\s]*)(?:;|\s|$)/;
@@ -32195,7 +32195,7 @@ var require_mime_types2 = __commonJS({
         return false;
       }
       var match = EXTRACT_TYPE_REGEXP.exec(type);
-      var mime = match && db3[match[1].toLowerCase()];
+      var mime = match && db2[match[1].toLowerCase()];
       if (mime && mime.charset) {
         return mime.charset;
       }
@@ -32240,8 +32240,8 @@ var require_mime_types2 = __commonJS({
       return exports2.types[extension2] || false;
     }
     function populateMaps(extensions, types) {
-      Object.keys(db3).forEach(function forEachMimeType(type) {
-        var mime = db3[type];
+      Object.keys(db2).forEach(function forEachMimeType(type) {
+        var mime = db2[type];
         var exts = mime.extensions;
         if (!exts || !exts.length) {
           return;
@@ -32262,14 +32262,14 @@ var require_mime_types2 = __commonJS({
       });
     }
     function _preferredType(ext, type0, type1) {
-      var score0 = type0 ? mimeScore(type0, db3[type0].source) : 0;
-      var score1 = type1 ? mimeScore(type1, db3[type1].source) : 0;
+      var score0 = type0 ? mimeScore(type0, db2[type0].source) : 0;
+      var score1 = type1 ? mimeScore(type1, db2[type1].source) : 0;
       return score0 > score1 ? type0 : type1;
     }
     function _preferredTypeLegacy(ext, type0, type1) {
       var SOURCE_RANK = ["nginx", "apache", void 0, "iana"];
-      var score0 = type0 ? SOURCE_RANK.indexOf(db3[type0].source) : 0;
-      var score1 = type1 ? SOURCE_RANK.indexOf(db3[type1].source) : 0;
+      var score0 = type0 ? SOURCE_RANK.indexOf(db2[type0].source) : 0;
+      var score1 = type1 ? SOURCE_RANK.indexOf(db2[type1].source) : 0;
       if (exports2.types[extension] !== "application/octet-stream" && (score0 > score1 || score0 === score1 && exports2.types[extension]?.slice(0, 12) === "application/")) {
         return type0;
       }
@@ -44532,7 +44532,7 @@ var require_mimeScore3 = __commonJS({
 var require_mime_types3 = __commonJS({
   "node_modules/accepts/node_modules/mime-types/index.js"(exports2) {
     "use strict";
-    var db3 = require_mime_db3();
+    var db2 = require_mime_db3();
     var extname = require("path").extname;
     var mimeScore = require_mimeScore3();
     var EXTRACT_TYPE_REGEXP = /^\s*([^;\s]*)(?:;|\s|$)/;
@@ -44551,7 +44551,7 @@ var require_mime_types3 = __commonJS({
         return false;
       }
       var match = EXTRACT_TYPE_REGEXP.exec(type);
-      var mime = match && db3[match[1].toLowerCase()];
+      var mime = match && db2[match[1].toLowerCase()];
       if (mime && mime.charset) {
         return mime.charset;
       }
@@ -44596,8 +44596,8 @@ var require_mime_types3 = __commonJS({
       return exports2.types[extension2] || false;
     }
     function populateMaps(extensions, types) {
-      Object.keys(db3).forEach(function forEachMimeType(type) {
-        var mime = db3[type];
+      Object.keys(db2).forEach(function forEachMimeType(type) {
+        var mime = db2[type];
         var exts = mime.extensions;
         if (!exts || !exts.length) {
           return;
@@ -44618,14 +44618,14 @@ var require_mime_types3 = __commonJS({
       });
     }
     function _preferredType(ext, type0, type1) {
-      var score0 = type0 ? mimeScore(type0, db3[type0].source) : 0;
-      var score1 = type1 ? mimeScore(type1, db3[type1].source) : 0;
+      var score0 = type0 ? mimeScore(type0, db2[type0].source) : 0;
+      var score1 = type1 ? mimeScore(type1, db2[type1].source) : 0;
       return score0 > score1 ? type0 : type1;
     }
     function _preferredTypeLegacy(ext, type0, type1) {
       var SOURCE_RANK = ["nginx", "apache", void 0, "iana"];
-      var score0 = type0 ? SOURCE_RANK.indexOf(db3[type0].source) : 0;
-      var score1 = type1 ? SOURCE_RANK.indexOf(db3[type1].source) : 0;
+      var score0 = type0 ? SOURCE_RANK.indexOf(db2[type0].source) : 0;
+      var score1 = type1 ? SOURCE_RANK.indexOf(db2[type1].source) : 0;
       if (exports2.types[extension] !== "application/octet-stream" && (score0 > score1 || score0 === score1 && exports2.types[extension]?.slice(0, 12) === "application/")) {
         return type0;
       }
@@ -54812,7 +54812,7 @@ var require_mimeScore4 = __commonJS({
 var require_mime_types4 = __commonJS({
   "node_modules/send/node_modules/mime-types/index.js"(exports2) {
     "use strict";
-    var db3 = require_mime_db4();
+    var db2 = require_mime_db4();
     var extname = require("path").extname;
     var mimeScore = require_mimeScore4();
     var EXTRACT_TYPE_REGEXP = /^\s*([^;\s]*)(?:;|\s|$)/;
@@ -54831,7 +54831,7 @@ var require_mime_types4 = __commonJS({
         return false;
       }
       var match = EXTRACT_TYPE_REGEXP.exec(type);
-      var mime = match && db3[match[1].toLowerCase()];
+      var mime = match && db2[match[1].toLowerCase()];
       if (mime && mime.charset) {
         return mime.charset;
       }
@@ -54876,8 +54876,8 @@ var require_mime_types4 = __commonJS({
       return exports2.types[extension2] || false;
     }
     function populateMaps(extensions, types) {
-      Object.keys(db3).forEach(function forEachMimeType(type) {
-        var mime = db3[type];
+      Object.keys(db2).forEach(function forEachMimeType(type) {
+        var mime = db2[type];
         var exts = mime.extensions;
         if (!exts || !exts.length) {
           return;
@@ -54898,14 +54898,14 @@ var require_mime_types4 = __commonJS({
       });
     }
     function _preferredType(ext, type0, type1) {
-      var score0 = type0 ? mimeScore(type0, db3[type0].source) : 0;
-      var score1 = type1 ? mimeScore(type1, db3[type1].source) : 0;
+      var score0 = type0 ? mimeScore(type0, db2[type0].source) : 0;
+      var score1 = type1 ? mimeScore(type1, db2[type1].source) : 0;
       return score0 > score1 ? type0 : type1;
     }
     function _preferredTypeLegacy(ext, type0, type1) {
       var SOURCE_RANK = ["nginx", "apache", void 0, "iana"];
-      var score0 = type0 ? SOURCE_RANK.indexOf(db3[type0].source) : 0;
-      var score1 = type1 ? SOURCE_RANK.indexOf(db3[type1].source) : 0;
+      var score0 = type0 ? SOURCE_RANK.indexOf(db2[type0].source) : 0;
+      var score1 = type1 ? SOURCE_RANK.indexOf(db2[type1].source) : 0;
       if (exports2.types[extension] !== "application/octet-stream" && (score0 > score1 || score0 === score1 && exports2.types[extension]?.slice(0, 12) === "application/")) {
         return type0;
       }
@@ -112909,7 +112909,7 @@ async function tableExists(tableName) {
   );
   return rows[0].cnt > 0;
 }
-var db2 = { get, all, run, exec, getScalar, transaction, tableExists, tx };
+var db = { get, all, run, exec, getScalar, transaction, tableExists, tx };
 
 // server/db/migrate.ts
 async function migrate() {
@@ -113392,7 +113392,7 @@ async function migrate() {
     console.log("  \u2713 positions migrated to work_area_id");
   }
   const validAreaIds = areas.map((a) => a[0]);
-  const staleAreas = await db.all(`SELECT id FROM work_areas WHERE id NOT IN (${validAreaIds.map(() => "?").join(",")})`, validAreaIds);
+  const staleAreas = await all(`SELECT id FROM work_areas WHERE id NOT IN (${validAreaIds.map(() => "?").join(",")})`, validAreaIds);
   for (const stale of staleAreas) {
     const posUsingStale = await getScalar(`SELECT COUNT(*) AS cnt FROM custom_positions WHERE work_area_id = ?`, [stale.id]);
     if (posUsingStale === 0) {
@@ -115280,7 +115280,7 @@ var ASSIGNMENTS = [
 async function seed() {
   console.log("Seeding database...");
   const now = () => (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "").slice(0, 19).replace("T", " ");
-  await db2.transaction(async (conn) => {
+  await db.transaction(async (conn) => {
     const existingSuper = await tx.get(conn, "SELECT id FROM users WHERE email = ?", [SUPERADMIN_EMAIL]);
     if (existingSuper) {
       const passwordHash = bcryptjs_default.hashSync(SUPERADMIN_PASSWORD, 12);
@@ -115402,8 +115402,8 @@ async function seed() {
       console.log(`  \u2713 Assignment: ${assignment.employeeEmail} \u2192 ${assignment.supervisorEmail} (${assignment.period})`);
     }
   });
-  const userCount = (await db2.get("SELECT COUNT(*) as count FROM users")).count;
-  const assignmentCount = (await db2.get("SELECT COUNT(*) as count FROM supervisor_assignments")).count;
+  const userCount = (await db.get("SELECT COUNT(*) as count FROM users")).count;
+  const assignmentCount = (await db.get("SELECT COUNT(*) as count FROM supervisor_assignments")).count;
   console.log(`
 \u2705 Seeding complete!`);
   console.log(`   Users: ${userCount}`);
@@ -115479,7 +115479,7 @@ async function authMiddleware(req, res, next) {
   }
   try {
     const tokenHash = hashToken(token);
-    const blocked = await db2.get("SELECT id FROM sessions WHERE token_hash = ?", [tokenHash]);
+    const blocked = await db.get("SELECT id FROM sessions WHERE token_hash = ?", [tokenHash]);
     if (blocked) {
       return res.status(401).json({ error: "Token revoked" });
     }
@@ -115534,7 +115534,7 @@ router.post("/login", async (req, res) => {
     if (!email || !password) {
       return res.status(400).json({ error: "Email and password are required" });
     }
-    const user = await db2.get("SELECT * FROM users WHERE email = ?", [email]);
+    const user = await db.get("SELECT * FROM users WHERE email = ?", [email]);
     if (!user) {
       return res.status(401).json({ error: "Invalid credentials" });
     }
@@ -115572,11 +115572,11 @@ router.post("/logout", authMiddleware, requireAuthenticated, async (req, res) =>
     const tokenHash = hashToken(token);
     const expiresAt = getTokenExpiry().toISOString();
     const payload = req.user;
-    await db2.run(
+    await db.run(
       "INSERT INTO sessions (id, user_id, token_hash, created_at, expires_at) VALUES (?, ?, ?, ?, ?)",
       [v4_default(), payload.id, tokenHash, (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, ""), expiresAt]
     );
-    await db2.run("DELETE FROM sessions WHERE expires_at < ?", [(/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "")]);
+    await db.run("DELETE FROM sessions WHERE expires_at < ?", [(/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "")]);
     return res.json({ message: "Logged out successfully" });
   } catch (err) {
     console.error("Logout error:", err);
@@ -115585,7 +115585,7 @@ router.post("/logout", authMiddleware, requireAuthenticated, async (req, res) =>
 });
 router.get("/me", authMiddleware, requireAuthenticated, async (req, res) => {
   try {
-    const user = await db2.get("SELECT * FROM users WHERE id = ?", [req.user.id]);
+    const user = await db.get("SELECT * FROM users WHERE id = ?", [req.user.id]);
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
@@ -115598,7 +115598,7 @@ router.get("/me", authMiddleware, requireAuthenticated, async (req, res) => {
 router.post("/change-password", authMiddleware, requireAuthenticated, async (req, res) => {
   try {
     const { currentPassword, newPassword, securityQuestion, securityAnswer } = req.body;
-    const user = await db2.get("SELECT * FROM users WHERE id = ?", [req.user.id]);
+    const user = await db.get("SELECT * FROM users WHERE id = ?", [req.user.id]);
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
@@ -115618,12 +115618,12 @@ router.post("/change-password", authMiddleware, requireAuthenticated, async (req
     const now = (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "");
     if (securityQuestion && securityAnswer) {
       const hashedAnswer = await hashSecurityAnswer(securityAnswer);
-      await db2.run(
+      await db.run(
         "UPDATE users SET password_hash = ?, security_question = ?, security_answer = ?, must_change_password = 0, updated_at = ? WHERE id = ?",
         [hashedPassword, securityQuestion, hashedAnswer, now, user.id]
       );
     } else {
-      await db2.run(
+      await db.run(
         "UPDATE users SET password_hash = ?, must_change_password = 0, updated_at = ? WHERE id = ?",
         [hashedPassword, now, user.id]
       );
@@ -115640,7 +115640,7 @@ router.post("/security-question", async (req, res) => {
     if (!email) {
       return res.status(400).json({ error: "Email is required" });
     }
-    const user = await db2.get("SELECT security_question FROM users WHERE email = ?", [email]);
+    const user = await db.get("SELECT security_question FROM users WHERE email = ?", [email]);
     if (!user) {
       return res.json({ securityQuestion: null });
     }
@@ -115659,7 +115659,7 @@ router.post("/reset-password", async (req, res) => {
     if (newPassword.length < 6) {
       return res.status(400).json({ error: "New password must be at least 6 characters" });
     }
-    const user = await db2.get("SELECT * FROM users WHERE email = ?", [email]);
+    const user = await db.get("SELECT * FROM users WHERE email = ?", [email]);
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
@@ -115669,7 +115669,7 @@ router.post("/reset-password", async (req, res) => {
     }
     const hashedPassword = await hashPassword(newPassword);
     const now = (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "");
-    await db2.run(
+    await db.run(
       "UPDATE users SET password_hash = ?, must_change_password = 0, updated_at = ? WHERE id = ?",
       [hashedPassword, now, user.id]
     );
@@ -115691,13 +115691,13 @@ function sanitizeUser2(user) {
 var SAFE_USER_COLUMNS = `id, name, email, position, practice_area, custom_position_id, location_id, is_admin, is_super_user, is_managing_partner, is_active, must_change_password, created_at, updated_at`;
 router2.get("/", authMiddleware, async (req, res) => {
   try {
-    const allUsers = await db2.all(`SELECT ${SAFE_USER_COLUMNS} FROM users WHERE is_active = 1`);
+    const allUsers = await db.all(`SELECT ${SAFE_USER_COLUMNS} FROM users WHERE is_active = 1`);
     const role = req.user.role;
     if (role === "super_user" || role === "admin") {
       return res.json(allUsers);
     }
     const userId = req.user.id;
-    const assignments = await db2.all(
+    const assignments = await db.all(
       "SELECT employee_id, supervisor_id FROM supervisor_assignments WHERE (employee_id = ? OR supervisor_id = ?)",
       [userId, userId]
     );
@@ -115719,21 +115719,21 @@ router2.get("/:id", authMiddleware, async (req, res) => {
     const role = req.user.role;
     const userId = req.user.id;
     if (role === "admin" || role === "super_user") {
-      const user = await db2.get(`SELECT ${SAFE_USER_COLUMNS} FROM users WHERE id = ?`, [targetId]);
+      const user = await db.get(`SELECT ${SAFE_USER_COLUMNS} FROM users WHERE id = ?`, [targetId]);
       if (!user) return res.status(404).json({ error: "User not found" });
       return res.json(sanitizeUser2(user));
     }
     if (userId === targetId) {
-      const user = await db2.get(`SELECT ${SAFE_USER_COLUMNS} FROM users WHERE id = ?`, [targetId]);
+      const user = await db.get(`SELECT ${SAFE_USER_COLUMNS} FROM users WHERE id = ?`, [targetId]);
       if (!user) return res.status(404).json({ error: "User not found" });
       return res.json(sanitizeUser2(user));
     }
-    const assignment = await db2.get(
+    const assignment = await db.get(
       "SELECT id FROM supervisor_assignments WHERE (supervisor_id = ? AND employee_id = ?) OR (employee_id = ? AND supervisor_id = ?) LIMIT 1",
       [userId, targetId, userId, targetId]
     );
     if (assignment) {
-      const user = await db2.get(`SELECT ${SAFE_USER_COLUMNS} FROM users WHERE id = ?`, [targetId]);
+      const user = await db.get(`SELECT ${SAFE_USER_COLUMNS} FROM users WHERE id = ?`, [targetId]);
       if (!user) return res.status(404).json({ error: "User not found" });
       return res.json(sanitizeUser2(user));
     }
@@ -115752,21 +115752,21 @@ router2.post("/", authMiddleware, requireAdmin, async (req, res) => {
     if (password.length < 6) {
       return res.status(400).json({ error: "Password must be at least 6 characters" });
     }
-    const existing = await db2.get("SELECT id FROM users WHERE email = ?", [email]);
+    const existing = await db.get("SELECT id FROM users WHERE email = ?", [email]);
     if (existing) {
       return res.status(409).json({ error: "Email is already registered" });
     }
     const finalIsAdmin = isAdmin ? 1 : 0;
     const finalIsMP = isManagingPartner ? 1 : 0;
     if (finalIsMP) {
-      const currentMPs = await db2.all("SELECT id, name FROM users WHERE is_managing_partner = 1 AND is_super_user = 0");
+      const currentMPs = await db.all("SELECT id, name FROM users WHERE is_managing_partner = 1 AND is_super_user = 0");
       if (currentMPs.length >= 1) {
         const mpName = currentMPs[0]?.name || "otro usuario";
         return res.status(409).json({ error: `Solo puede haber un Socio Administrador. Actualmente es ${mpName}.` });
       }
     }
     if (finalIsAdmin && !isManagingPartner) {
-      const currentAdmins = await db2.all("SELECT id FROM users WHERE is_admin = 1 AND is_super_user = 0");
+      const currentAdmins = await db.all("SELECT id FROM users WHERE is_admin = 1 AND is_super_user = 0");
       if (currentAdmins.length >= 2) {
         return res.status(409).json({ error: "M\xE1ximo 2 Usuario Administrador permitidos. Quite permisos a otro primero." });
       }
@@ -115776,7 +115776,7 @@ router2.post("/", authMiddleware, requireAdmin, async (req, res) => {
     const securityQuestion = "\xBFCu\xE1l es su correo electr\xF3nico?";
     const hashedAnswer = await hashSecurityAnswer(email);
     const now = (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "");
-    await db2.run(
+    await db.run(
       `INSERT INTO users (id, email, password_hash, security_question, security_answer, name, position, practice_area, custom_position_id, location_id, is_admin, is_super_user, is_managing_partner, is_active, must_change_password, created_at, updated_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
@@ -115802,7 +115802,7 @@ router2.post("/", authMiddleware, requireAdmin, async (req, res) => {
         now
       ]
     );
-    const user = await db2.get(`SELECT ${SAFE_USER_COLUMNS} FROM users WHERE id = ?`, [id]);
+    const user = await db.get(`SELECT ${SAFE_USER_COLUMNS} FROM users WHERE id = ?`, [id]);
     return res.status(201).json(sanitizeUser2(user));
   } catch (err) {
     console.error("Create user error:", err);
@@ -115812,7 +115812,7 @@ router2.post("/", authMiddleware, requireAdmin, async (req, res) => {
 router2.patch("/:id", authMiddleware, requireSelfOrAdmin, async (req, res) => {
   try {
     const { id } = req.params;
-    const user = await db2.get("SELECT * FROM users WHERE id = ?", [id]);
+    const user = await db.get("SELECT * FROM users WHERE id = ?", [id]);
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
@@ -115857,7 +115857,7 @@ router2.patch("/:id", authMiddleware, requireSelfOrAdmin, async (req, res) => {
         const newMP = !!isManagingPartner;
         if (newMP !== currentIsMP) {
           if (newMP) {
-            const currentMPs = await db2.all("SELECT id, name FROM users WHERE is_managing_partner = 1 AND is_super_user = 0 AND id != ?", [id]);
+            const currentMPs = await db.all("SELECT id, name FROM users WHERE is_managing_partner = 1 AND is_super_user = 0 AND id != ?", [id]);
             if (currentMPs.length >= 1) {
               const mpName = currentMPs[0]?.name || "otro usuario";
               return res.status(409).json({ error: `Solo puede haber un Socio Administrador. Actualmente es ${mpName}.` });
@@ -115878,7 +115878,7 @@ router2.patch("/:id", authMiddleware, requireSelfOrAdmin, async (req, res) => {
             return res.status(409).json({ error: "No se puede quitar el rol de Administrador al Socio Administrador. Quite primero el rol de Socio Administrador." });
           }
           if (newAdmin) {
-            const currentAdmins = await db2.all("SELECT id FROM users WHERE is_admin = 1 AND is_super_user = 0 AND id != ?", [id]);
+            const currentAdmins = await db.all("SELECT id FROM users WHERE is_admin = 1 AND is_super_user = 0 AND id != ?", [id]);
             if (currentAdmins.length >= 2) {
               return res.status(409).json({ error: "M\xE1ximo 2 Usuario Administrador permitidos. Quite permisos a otro primero." });
             }
@@ -115914,8 +115914,8 @@ router2.patch("/:id", authMiddleware, requireSelfOrAdmin, async (req, res) => {
     updates.push("updated_at = ?");
     values.push((/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, ""));
     values.push(id);
-    await db2.run(`UPDATE users SET ${updates.join(", ")} WHERE id = ?`, values);
-    const updatedUser = await db2.get(`SELECT ${SAFE_USER_COLUMNS} FROM users WHERE id = ?`, [id]);
+    await db.run(`UPDATE users SET ${updates.join(", ")} WHERE id = ?`, values);
+    const updatedUser = await db.get(`SELECT ${SAFE_USER_COLUMNS} FROM users WHERE id = ?`, [id]);
     return res.json(sanitizeUser2(updatedUser));
   } catch (err) {
     console.error("Update user error:", err);
@@ -115925,12 +115925,12 @@ router2.patch("/:id", authMiddleware, requireSelfOrAdmin, async (req, res) => {
 router2.delete("/:id", authMiddleware, requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
-    const user = await db2.get("SELECT id FROM users WHERE id = ?", [id]);
+    const user = await db.get("SELECT id FROM users WHERE id = ?", [id]);
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
     const now = (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "");
-    await db2.run("UPDATE users SET is_active = 0, updated_at = ? WHERE id = ?", [now, id]);
+    await db.run("UPDATE users SET is_active = 0, updated_at = ? WHERE id = ?", [now, id]);
     return res.json({ message: "User deactivated successfully" });
   } catch (err) {
     console.error("Delete user error:", err);
@@ -115944,13 +115944,13 @@ router2.post("/:id/reset-password", authMiddleware, requireAdmin, async (req, re
     if (!newPassword || newPassword.length < 6) {
       return res.status(400).json({ error: "New password must be at least 6 characters" });
     }
-    const user = await db2.get("SELECT id FROM users WHERE id = ?", [id]);
+    const user = await db.get("SELECT id FROM users WHERE id = ?", [id]);
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
     const hashedPassword = await hashPassword(newPassword);
     const now = (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "");
-    await db2.run("UPDATE users SET password_hash = ?, must_change_password = 1, updated_at = ? WHERE id = ?", [hashedPassword, now, id]);
+    await db.run("UPDATE users SET password_hash = ?, must_change_password = 1, updated_at = ? WHERE id = ?", [hashedPassword, now, id]);
     return res.json({ message: "Password reset successfully" });
   } catch (err) {
     console.error("Reset password error:", err);
@@ -115961,14 +115961,14 @@ router2.patch("/:id/role", authMiddleware, requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     const { isAdmin, isManagingPartner, isSuperUser } = req.body;
-    const user = await db2.get("SELECT * FROM users WHERE id = ?", [id]);
+    const user = await db.get("SELECT * FROM users WHERE id = ?", [id]);
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
     const updates = [];
     const values = [];
     if (isManagingPartner !== void 0 && isManagingPartner) {
-      const currentMPs = await db2.all("SELECT id, name FROM users WHERE is_managing_partner = 1 AND is_super_user = 0 AND id != ?", [id]);
+      const currentMPs = await db.all("SELECT id, name FROM users WHERE is_managing_partner = 1 AND is_super_user = 0 AND id != ?", [id]);
       if (currentMPs.length >= 1) {
         const mpName = currentMPs[0]?.name || "otro usuario";
         return res.status(409).json({ error: `Solo puede haber un Socio Administrador. Actualmente es ${mpName}.` });
@@ -115986,7 +115986,7 @@ router2.patch("/:id/role", authMiddleware, requireAdmin, async (req, res) => {
         return res.status(409).json({ error: "No se puede quitar el rol de Administrador al Socio Administrador. Quite primero el rol de Socio Administrador." });
       }
       if (isAdmin) {
-        const currentAdmins = await db2.all("SELECT id FROM users WHERE is_admin = 1 AND is_super_user = 0 AND id != ?", [id]);
+        const currentAdmins = await db.all("SELECT id FROM users WHERE is_admin = 1 AND is_super_user = 0 AND id != ?", [id]);
         if (currentAdmins.length >= 2) {
           return res.status(409).json({ error: "M\xE1ximo 2 Usuario Administrador permitidos. Quite permisos a otro primero." });
         }
@@ -116010,8 +116010,8 @@ router2.patch("/:id/role", authMiddleware, requireAdmin, async (req, res) => {
     updates.push("updated_at = ?");
     values.push((/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, ""));
     values.push(id);
-    await db2.run(`UPDATE users SET ${updates.join(", ")} WHERE id = ?`, values);
-    const updatedUser = await db2.get(`SELECT ${SAFE_USER_COLUMNS} FROM users WHERE id = ?`, [id]);
+    await db.run(`UPDATE users SET ${updates.join(", ")} WHERE id = ?`, values);
+    const updatedUser = await db.get(`SELECT ${SAFE_USER_COLUMNS} FROM users WHERE id = ?`, [id]);
     return res.json(sanitizeUser2(updatedUser));
   } catch (err) {
     console.error("Update role error:", err);
@@ -116040,7 +116040,7 @@ router3.get("/", authMiddleware, async (req, res) => {
       sql += " AND supervisor_id = ?";
       params.push(supervisorId);
     }
-    const assignments = await db2.all(sql, params);
+    const assignments = await db.all(sql, params);
     return res.json(assignments);
   } catch (err) {
     console.error("List assignments error:", err);
@@ -116054,12 +116054,12 @@ router3.post("/", authMiddleware, requireAdmin, async (req, res) => {
       return res.status(400).json({ error: "employeeId, supervisorId, and period are required" });
     }
     const id = v4_default();
-    await db2.run(
+    await db.run(
       `INSERT INTO supervisor_assignments (id, employee_id, supervisor_id, period)
        VALUES (?, ?, ?, ?)`,
       [id, employeeId, supervisorId, period]
     );
-    const assignment = await db2.get("SELECT * FROM supervisor_assignments WHERE id = ?", [id]);
+    const assignment = await db.get("SELECT * FROM supervisor_assignments WHERE id = ?", [id]);
     return res.status(201).json(assignment);
   } catch (err) {
     if (err.code === "ER_DUP_ENTRY") {
@@ -116072,11 +116072,11 @@ router3.post("/", authMiddleware, requireAdmin, async (req, res) => {
 router3.delete("/:id", authMiddleware, requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
-    const assignment = await db2.get("SELECT id FROM supervisor_assignments WHERE id = ?", [id]);
+    const assignment = await db.get("SELECT id FROM supervisor_assignments WHERE id = ?", [id]);
     if (!assignment) {
       return res.status(404).json({ error: "Assignment not found" });
     }
-    await db2.run("DELETE FROM supervisor_assignments WHERE id = ?", [id]);
+    await db.run("DELETE FROM supervisor_assignments WHERE id = ?", [id]);
     return res.json({ message: "Assignment deleted successfully" });
   } catch (err) {
     console.error("Delete assignment error:", err);
@@ -116165,7 +116165,7 @@ var VACATION_DEFAULTS = {
 };
 router4.get("/initialized", async (_req, res) => {
   try {
-    const row = await db2.get("SELECT id FROM system_status LIMIT 1");
+    const row = await db.get("SELECT id FROM system_status LIMIT 1");
     return res.json({ initialized: !!row });
   } catch (err) {
     console.error("Check initialized error:", err);
@@ -116174,7 +116174,7 @@ router4.get("/initialized", async (_req, res) => {
 });
 router4.post("/init", async (req, res) => {
   try {
-    const existing = await db2.get("SELECT id FROM system_status LIMIT 1");
+    const existing = await db.get("SELECT id FROM system_status LIMIT 1");
     if (existing) {
       return res.status(409).json({ error: "System is already initialized" });
     }
@@ -116185,7 +116185,7 @@ router4.post("/init", async (req, res) => {
     if (password.length < 6) {
       return res.status(400).json({ error: "Password must be at least 6 characters" });
     }
-    const existingUser = await db2.get("SELECT id FROM users WHERE email = ?", [email]);
+    const existingUser = await db.get("SELECT id FROM users WHERE email = ?", [email]);
     if (existingUser) {
       return res.status(409).json({ error: "Email is already registered" });
     }
@@ -116193,7 +116193,7 @@ router4.post("/init", async (req, res) => {
     const userId = v4_default();
     const hashedPassword = await hashPassword(password);
     const hashedAnswer = await hashSecurityAnswer(securityAnswer);
-    await db2.transaction(async (conn) => {
+    await db.transaction(async (conn) => {
       await tx.run(
         conn,
         `INSERT INTO users (id, email, password_hash, security_question, security_answer, name, position, is_admin, is_super_user, is_managing_partner, is_active, must_change_password, created_at, updated_at)
@@ -116244,7 +116244,7 @@ router4.post("/init", async (req, res) => {
       role,
       name
     });
-    const user = await db2.get("SELECT * FROM users WHERE id = ?", [userId]);
+    const user = await db.get("SELECT * FROM users WHERE id = ?", [userId]);
     return res.status(201).json({ token, user: sanitizeUser3(user) });
   } catch (err) {
     console.error("System init error:", err);
@@ -116253,7 +116253,7 @@ router4.post("/init", async (req, res) => {
 });
 router4.get("/status", authMiddleware, async (req, res) => {
   try {
-    const row = await db2.get("SELECT * FROM system_status LIMIT 1");
+    const row = await db.get("SELECT * FROM system_status LIMIT 1");
     if (!row) {
       return res.status(404).json({ error: "System not initialized" });
     }
@@ -116271,12 +116271,12 @@ router4.patch("/status", authMiddleware, requireSuperUser, async (req, res) => {
     }
     const now = (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "").replace("T", " ").replace(/\.\d{3}Z$/, "");
     const action = status === "active" ? "activated" : "deactivated";
-    await db2.run("UPDATE system_status SET status = ? WHERE id = 1", [status]);
-    await db2.run(
+    await db.run("UPDATE system_status SET status = ? WHERE id = 1", [status]);
+    await db.run(
       `INSERT INTO activation_history (id, action, date, by_user_id) VALUES (?, ?, ?, ?)`,
       [v4_default(), action, now, req.user.id]
     );
-    const row = await db2.get("SELECT * FROM system_status LIMIT 1");
+    const row = await db.get("SELECT * FROM system_status LIMIT 1");
     return res.json(row);
   } catch (err) {
     console.error("Patch system status error:", err);
@@ -116285,7 +116285,7 @@ router4.patch("/status", authMiddleware, requireSuperUser, async (req, res) => {
 });
 router4.get("/modules", authMiddleware, async (_req, res) => {
   try {
-    const row = await db2.get("SELECT * FROM module_config LIMIT 1");
+    const row = await db.get("SELECT * FROM module_config LIMIT 1");
     if (!row) {
       return res.status(404).json({ error: "Module config not found" });
     }
@@ -116319,8 +116319,8 @@ router4.patch("/modules", authMiddleware, requireSuperUser, async (req, res) => 
     if (updates.length === 0) {
       return res.status(400).json({ error: "No fields to update" });
     }
-    await db2.run(`UPDATE module_config SET ${updates.join(", ")} WHERE id = 1`, values);
-    const row = await db2.get("SELECT * FROM module_config LIMIT 1");
+    await db.run(`UPDATE module_config SET ${updates.join(", ")} WHERE id = 1`, values);
+    const row = await db.get("SELECT * FROM module_config LIMIT 1");
     return res.json(row);
   } catch (err) {
     console.error("Patch modules error:", err);
@@ -116329,7 +116329,7 @@ router4.patch("/modules", authMiddleware, requireSuperUser, async (req, res) => 
 });
 router4.get("/activation-history", authMiddleware, requireSuperUser, async (_req, res) => {
   try {
-    const rows = await db2.all("SELECT * FROM activation_history ORDER BY date DESC");
+    const rows = await db.all("SELECT * FROM activation_history ORDER BY date DESC");
     return res.json(rows);
   } catch (err) {
     console.error("Get activation history error:", err);
@@ -116344,7 +116344,7 @@ var router5 = (0, import_express5.Router)();
 async function fetchResponses(evaluationIds) {
   if (evaluationIds.length === 0) return /* @__PURE__ */ new Map();
   const placeholders = evaluationIds.map(() => "?").join(",");
-  const rows = await db2.all(`SELECT * FROM evaluation_responses WHERE evaluation_id IN (${placeholders})`, evaluationIds);
+  const rows = await db.all(`SELECT * FROM evaluation_responses WHERE evaluation_id IN (${placeholders})`, evaluationIds);
   const map = /* @__PURE__ */ new Map();
   for (const r of rows) {
     if (!map.has(r.evaluation_id)) map.set(r.evaluation_id, []);
@@ -116355,7 +116355,7 @@ async function fetchResponses(evaluationIds) {
 async function fetchNaApprovals(evaluationIds) {
   if (evaluationIds.length === 0) return /* @__PURE__ */ new Map();
   const placeholders = evaluationIds.map(() => "?").join(",");
-  const rows = await db2.all(`SELECT * FROM evaluation_na_approvals WHERE evaluation_id IN (${placeholders})`, evaluationIds);
+  const rows = await db.all(`SELECT * FROM evaluation_na_approvals WHERE evaluation_id IN (${placeholders})`, evaluationIds);
   const map = /* @__PURE__ */ new Map();
   for (const r of rows) {
     if (!map.has(r.evaluation_id)) map.set(r.evaluation_id, []);
@@ -116384,7 +116384,7 @@ router5.get("/", authMiddleware, async (req, res) => {
       sql += " AND type = ?";
       params.push(type);
     }
-    const evaluations = await db2.all(sql, params);
+    const evaluations = await db.all(sql, params);
     const ids = evaluations.map((e) => e.id);
     const responsesMap = await fetchResponses(ids);
     const approvalsMap = await fetchNaApprovals(ids);
@@ -116401,10 +116401,10 @@ router5.get("/", authMiddleware, async (req, res) => {
 });
 router5.get("/:id", authMiddleware, async (req, res) => {
   try {
-    const evaluation = await db2.get("SELECT * FROM evaluations WHERE id = ?", [req.params.id]);
+    const evaluation = await db.get("SELECT * FROM evaluations WHERE id = ?", [req.params.id]);
     if (!evaluation) return res.status(404).json({ error: "Evaluation not found" });
-    const responses = await db2.all("SELECT * FROM evaluation_responses WHERE evaluation_id = ?", [req.params.id]);
-    const naApprovals = await db2.all("SELECT * FROM evaluation_na_approvals WHERE evaluation_id = ?", [req.params.id]);
+    const responses = await db.all("SELECT * FROM evaluation_responses WHERE evaluation_id = ?", [req.params.id]);
+    const naApprovals = await db.all("SELECT * FROM evaluation_na_approvals WHERE evaluation_id = ?", [req.params.id]);
     return res.json({ ...evaluation, responses, naApprovals });
   } catch (err) {
     console.error("Get evaluation error:", err);
@@ -116421,7 +116421,7 @@ router5.post("/", authMiddleware, async (req, res) => {
     const now = (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "");
     const respArr = responses || [];
     const totalScore = req.body.totalScore !== void 0 ? Number(req.body.totalScore) : respArr.length > 0 ? respArr.reduce((sum, r) => sum + (r.score || 0), 0) / respArr.length : 0;
-    await db2.transaction(async (conn) => {
+    await db.transaction(async (conn) => {
       await tx.run(
         conn,
         `INSERT INTO evaluations (id, evaluator_id, evaluated_id, period, type, comments, supervisor_comments, total_score, completed_at, feedback_completed, created_at)
@@ -116436,8 +116436,8 @@ router5.post("/", authMiddleware, async (req, res) => {
         );
       }
     });
-    const evaluation = await db2.get("SELECT * FROM evaluations WHERE id = ?", [id]);
-    const evalResponses = await db2.all("SELECT * FROM evaluation_responses WHERE evaluation_id = ?", [id]);
+    const evaluation = await db.get("SELECT * FROM evaluations WHERE id = ?", [id]);
+    const evalResponses = await db.all("SELECT * FROM evaluation_responses WHERE evaluation_id = ?", [id]);
     return res.status(201).json({ ...evaluation, responses: evalResponses });
   } catch (err) {
     if (err.code === "ER_DUP_ENTRY") {
@@ -116449,7 +116449,7 @@ router5.post("/", authMiddleware, async (req, res) => {
 });
 router5.patch("/:id", authMiddleware, async (req, res) => {
   try {
-    const evaluation = await db2.get("SELECT * FROM evaluations WHERE id = ?", [req.params.id]);
+    const evaluation = await db.get("SELECT * FROM evaluations WHERE id = ?", [req.params.id]);
     if (!evaluation) return res.status(404).json({ error: "Evaluation not found" });
     const { comments, supervisorComments, totalScore, responses } = req.body;
     const now = (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "");
@@ -116470,7 +116470,7 @@ router5.patch("/:id", authMiddleware, async (req, res) => {
     updates.push("completed_at = ?");
     params.push(now);
     if (responses && Array.isArray(responses)) {
-      await db2.transaction(async (conn) => {
+      await db.transaction(async (conn) => {
         if (updates.length > 0) {
           await tx.run(conn, `UPDATE evaluations SET ${updates.join(", ")} WHERE id = ?`, [...params, req.params.id]);
         }
@@ -116484,10 +116484,10 @@ router5.patch("/:id", authMiddleware, async (req, res) => {
         }
       });
     } else if (updates.length > 0) {
-      await db2.run(`UPDATE evaluations SET ${updates.join(", ")} WHERE id = ?`, [...params, req.params.id]);
+      await db.run(`UPDATE evaluations SET ${updates.join(", ")} WHERE id = ?`, [...params, req.params.id]);
     }
-    const updated = await db2.get("SELECT * FROM evaluations WHERE id = ?", [req.params.id]);
-    const evalResponses = await db2.all("SELECT * FROM evaluation_responses WHERE evaluation_id = ?", [req.params.id]);
+    const updated = await db.get("SELECT * FROM evaluations WHERE id = ?", [req.params.id]);
+    const evalResponses = await db.all("SELECT * FROM evaluation_responses WHERE evaluation_id = ?", [req.params.id]);
     return res.json({ ...updated, responses: evalResponses });
   } catch (err) {
     console.error("Update evaluation error:", err);
@@ -116496,14 +116496,14 @@ router5.patch("/:id", authMiddleware, async (req, res) => {
 });
 router5.patch("/:id/feedback", authMiddleware, async (req, res) => {
   try {
-    const evaluation = await db2.get("SELECT * FROM evaluations WHERE id = ?", [req.params.id]);
+    const evaluation = await db.get("SELECT * FROM evaluations WHERE id = ?", [req.params.id]);
     if (!evaluation) return res.status(404).json({ error: "Evaluation not found" });
     const now = (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "");
-    await db2.run(
+    await db.run(
       "UPDATE evaluations SET feedback_completed = 1, feedback_completed_at = ?, feedback_completed_by = ? WHERE id = ?",
       [now, req.user.id, req.params.id]
     );
-    const updated = await db2.get("SELECT * FROM evaluations WHERE id = ?", [req.params.id]);
+    const updated = await db.get("SELECT * FROM evaluations WHERE id = ?", [req.params.id]);
     return res.json(updated);
   } catch (err) {
     console.error("Feedback error:", err);
@@ -116512,17 +116512,17 @@ router5.patch("/:id/feedback", authMiddleware, async (req, res) => {
 });
 router5.patch("/:id/na-approval", authMiddleware, async (req, res) => {
   try {
-    const evaluation = await db2.get("SELECT * FROM evaluations WHERE id = ?", [req.params.id]);
+    const evaluation = await db.get("SELECT * FROM evaluations WHERE id = ?", [req.params.id]);
     if (!evaluation) return res.status(404).json({ error: "Evaluation not found" });
     const { questionId, approved } = req.body;
     if (!questionId) return res.status(400).json({ error: "questionId is required" });
-    await db2.run(
+    await db.run(
       `INSERT INTO evaluation_na_approvals (id, evaluation_id, question_id, approved, approved_by, approved_at)
        VALUES (?, ?, ?, ?, ?, ?)
        ON DUPLICATE KEY UPDATE approved = VALUES(approved), approved_by = VALUES(approved_by), approved_at = VALUES(approved_at)`,
       [v4_default(), req.params.id, questionId, approved ? 1 : 0, req.user.id, (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "")]
     );
-    const approvals = await db2.all("SELECT * FROM evaluation_na_approvals WHERE evaluation_id = ?", [req.params.id]);
+    const approvals = await db.all("SELECT * FROM evaluation_na_approvals WHERE evaluation_id = ?", [req.params.id]);
     return res.json(approvals);
   } catch (err) {
     console.error("NA approval error:", err);
@@ -116547,10 +116547,10 @@ router6.get("/", authMiddleware, async (req, res) => {
       sql += " AND period = ?";
       params.push(period);
     }
-    const plans = await db2.all(sql, params);
+    const plans = await db.all(sql, params);
     const result = [];
     for (const plan of plans) {
-      const items = await db2.all("SELECT * FROM smart_action_items WHERE action_plan_id = ?", [plan.id]);
+      const items = await db.all("SELECT * FROM smart_action_items WHERE action_plan_id = ?", [plan.id]);
       result.push({ ...plan, items });
     }
     return res.json(result);
@@ -116567,7 +116567,7 @@ router6.post("/", authMiddleware, async (req, res) => {
     }
     const id = v4_default();
     const now = (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "");
-    await db2.transaction(async (conn) => {
+    await db.transaction(async (conn) => {
       await tx.run(
         conn,
         `INSERT INTO action_plans (id, employee_id, supervisor_id, period, content, approval_status, created_at, updated_at)
@@ -116585,8 +116585,8 @@ router6.post("/", authMiddleware, async (req, res) => {
         }
       }
     });
-    const plan = await db2.get("SELECT * FROM action_plans WHERE id = ?", [id]);
-    const planItems = await db2.all("SELECT * FROM smart_action_items WHERE action_plan_id = ?", [id]);
+    const plan = await db.get("SELECT * FROM action_plans WHERE id = ?", [id]);
+    const planItems = await db.all("SELECT * FROM smart_action_items WHERE action_plan_id = ?", [id]);
     return res.status(201).json({ ...plan, items: planItems });
   } catch (err) {
     if (err.code === "ER_DUP_ENTRY") {
@@ -116598,7 +116598,7 @@ router6.post("/", authMiddleware, async (req, res) => {
 });
 router6.patch("/:id", authMiddleware, async (req, res) => {
   try {
-    const plan = await db2.get("SELECT * FROM action_plans WHERE id = ?", [req.params.id]);
+    const plan = await db.get("SELECT * FROM action_plans WHERE id = ?", [req.params.id]);
     if (!plan) return res.status(404).json({ error: "Action plan not found" });
     const { content, items } = req.body;
     const now = (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "");
@@ -116611,7 +116611,7 @@ router6.patch("/:id", authMiddleware, async (req, res) => {
     updates.push("updated_at = ?");
     params.push(now);
     if (items && Array.isArray(items)) {
-      await db2.transaction(async (conn) => {
+      await db.transaction(async (conn) => {
         await tx.run(conn, `UPDATE action_plans SET ${updates.join(", ")} WHERE id = ?`, [...params, req.params.id]);
         await tx.run(conn, "DELETE FROM smart_action_items WHERE action_plan_id = ?", [req.params.id]);
         for (const item of items) {
@@ -116623,10 +116623,10 @@ router6.patch("/:id", authMiddleware, async (req, res) => {
         }
       });
     } else {
-      await db2.run(`UPDATE action_plans SET ${updates.join(", ")} WHERE id = ?`, [...params, req.params.id]);
+      await db.run(`UPDATE action_plans SET ${updates.join(", ")} WHERE id = ?`, [...params, req.params.id]);
     }
-    const updated = await db2.get("SELECT * FROM action_plans WHERE id = ?", [req.params.id]);
-    const planItems = await db2.all("SELECT * FROM smart_action_items WHERE action_plan_id = ?", [req.params.id]);
+    const updated = await db.get("SELECT * FROM action_plans WHERE id = ?", [req.params.id]);
+    const planItems = await db.all("SELECT * FROM smart_action_items WHERE action_plan_id = ?", [req.params.id]);
     return res.json({ ...updated, items: planItems });
   } catch (err) {
     console.error("Update action plan error:", err);
@@ -116635,19 +116635,19 @@ router6.patch("/:id", authMiddleware, async (req, res) => {
 });
 router6.post("/:id/approve", authMiddleware, async (req, res) => {
   try {
-    const plan = await db2.get("SELECT * FROM action_plans WHERE id = ?", [req.params.id]);
+    const plan = await db.get("SELECT * FROM action_plans WHERE id = ?", [req.params.id]);
     if (!plan) return res.status(404).json({ error: "Action plan not found" });
     const { status, comments } = req.body;
     if (!["approved", "rejected"].includes(status)) {
       return res.status(400).json({ error: "Status must be approved or rejected" });
     }
     const now = (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "");
-    await db2.run(
+    await db.run(
       "UPDATE action_plans SET approval_status = ?, approval_comments = ?, approved_by = ?, approved_at = ?, updated_at = ? WHERE id = ?",
       [status, comments || null, req.user.id, now, now, req.params.id]
     );
-    const updated = await db2.get("SELECT * FROM action_plans WHERE id = ?", [req.params.id]);
-    const planItems = await db2.all("SELECT * FROM smart_action_items WHERE action_plan_id = ?", [req.params.id]);
+    const updated = await db.get("SELECT * FROM action_plans WHERE id = ?", [req.params.id]);
+    const planItems = await db.all("SELECT * FROM smart_action_items WHERE action_plan_id = ?", [req.params.id]);
     return res.json({ ...updated, items: planItems });
   } catch (err) {
     console.error("Approve action plan error:", err);
@@ -116672,14 +116672,14 @@ router7.get("/", authMiddleware, async (req, res) => {
       sql += " AND period = ?";
       params.push(period);
     }
-    const objectives = await db2.all(sql, params);
+    const objectives = await db.all(sql, params);
     const result = [];
     for (const obj of objectives) {
       if (obj.type === "admin") {
-        const adminObjs = await db2.all("SELECT * FROM admin_objectives WHERE personal_objectives_id = ?", [obj.id]);
+        const adminObjs = await db.all("SELECT * FROM admin_objectives WHERE personal_objectives_id = ?", [obj.id]);
         result.push({ ...obj, adminObjectives: adminObjs, legalObjective: null });
       } else {
-        const legalObj = await db2.get("SELECT * FROM legal_objectives WHERE personal_objectives_id = ?", [obj.id]);
+        const legalObj = await db.get("SELECT * FROM legal_objectives WHERE personal_objectives_id = ?", [obj.id]);
         result.push({ ...obj, adminObjectives: [], legalObjective: legalObj || null });
       }
     }
@@ -116698,8 +116698,8 @@ router7.post("/", authMiddleware, async (req, res) => {
     if (!["admin", "legal"].includes(type)) {
       return res.status(400).json({ error: "Type must be admin or legal" });
     }
-    const existing = await db2.get("SELECT * FROM personal_objectives WHERE user_id = ? AND period = ?", [userId, period]);
-    const objId = await db2.transaction(async (conn) => {
+    const existing = await db.get("SELECT * FROM personal_objectives WHERE user_id = ? AND period = ?", [userId, period]);
+    const objId = await db.transaction(async (conn) => {
       let objId2;
       if (existing) {
         objId2 = existing.id;
@@ -116752,12 +116752,12 @@ router7.post("/", authMiddleware, async (req, res) => {
       }
       return objId2;
     });
-    const obj = await db2.get("SELECT * FROM personal_objectives WHERE id = ?", [objId]);
+    const obj = await db.get("SELECT * FROM personal_objectives WHERE id = ?", [objId]);
     if (obj.type === "admin") {
-      const adminObjs = await db2.all("SELECT * FROM admin_objectives WHERE personal_objectives_id = ?", [objId]);
+      const adminObjs = await db.all("SELECT * FROM admin_objectives WHERE personal_objectives_id = ?", [objId]);
       return res.json({ ...obj, adminObjectives: adminObjs, legalObjective: null });
     } else {
-      const legalObj = await db2.get("SELECT * FROM legal_objectives WHERE personal_objectives_id = ?", [objId]);
+      const legalObj = await db.get("SELECT * FROM legal_objectives WHERE personal_objectives_id = ?", [objId]);
       return res.json({ ...obj, adminObjectives: [], legalObjective: legalObj || null });
     }
   } catch (err) {
@@ -116767,14 +116767,14 @@ router7.post("/", authMiddleware, async (req, res) => {
 });
 router7.post("/:id/submit", authMiddleware, async (req, res) => {
   try {
-    const obj = await db2.get("SELECT * FROM personal_objectives WHERE id = ?", [req.params.id]);
+    const obj = await db.get("SELECT * FROM personal_objectives WHERE id = ?", [req.params.id]);
     if (!obj) return res.status(404).json({ error: "Objectives not found" });
     const now = (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "");
-    await db2.run(
+    await db.run(
       "UPDATE admin_objectives SET status = 'pending', submitted_at = ? WHERE personal_objectives_id = ? AND status = 'draft'",
       [now, req.params.id]
     );
-    const adminObjs = await db2.all("SELECT * FROM admin_objectives WHERE personal_objectives_id = ?", [req.params.id]);
+    const adminObjs = await db.all("SELECT * FROM admin_objectives WHERE personal_objectives_id = ?", [req.params.id]);
     return res.json({ ...obj, adminObjectives: adminObjs, legalObjective: null });
   } catch (err) {
     console.error("Submit objectives error:", err);
@@ -116783,18 +116783,18 @@ router7.post("/:id/submit", authMiddleware, async (req, res) => {
 });
 router7.post("/:id/review", authMiddleware, async (req, res) => {
   try {
-    const obj = await db2.get("SELECT * FROM personal_objectives WHERE id = ?", [req.params.id]);
+    const obj = await db.get("SELECT * FROM personal_objectives WHERE id = ?", [req.params.id]);
     if (!obj) return res.status(404).json({ error: "Objectives not found" });
     const { objectiveId, status, comment } = req.body;
     if (!objectiveId || !["approved", "rejected"].includes(status)) {
       return res.status(400).json({ error: "objectiveId and valid status (approved/rejected) are required" });
     }
     const now = (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "");
-    await db2.run(
+    await db.run(
       "UPDATE admin_objectives SET status = ?, reviewed_by = ?, reviewed_at = ?, reviewer_comment = ? WHERE id = ?",
       [status, req.user.id, now, comment || null, objectiveId]
     );
-    const adminObjs = await db2.all("SELECT * FROM admin_objectives WHERE personal_objectives_id = ?", [req.params.id]);
+    const adminObjs = await db.all("SELECT * FROM admin_objectives WHERE personal_objectives_id = ?", [req.params.id]);
     return res.json({ ...obj, adminObjectives: adminObjs, legalObjective: null });
   } catch (err) {
     console.error("Review objectives error:", err);
@@ -116818,9 +116818,9 @@ router8.get("/", authMiddleware, async (req, res) => {
     if (!includeArchived) {
       sql += " AND (archived = 0 OR archived IS NULL)";
     }
-    const announcements = await db2.all(sql, params);
+    const announcements = await db.all(sql, params);
     const announcementsWithReads = await Promise.all(announcements.map(async (a) => {
-      const readRows = await db2.all("SELECT user_id FROM announcement_reads WHERE announcement_id = ?", [a.id]);
+      const readRows = await db.all("SELECT user_id FROM announcement_reads WHERE announcement_id = ?", [a.id]);
       return { ...a, readBy: readRows.map((r) => r.user_id) };
     }));
     const result = announcementsWithReads.filter((a) => {
@@ -116842,11 +116842,11 @@ router8.post("/", authMiddleware, requireAdmin, async (req, res) => {
     if (!["all", "legal", "administrativo"].includes(audience)) return res.status(400).json({ error: "Invalid audience" });
     const id = v4_default();
     const now = (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "");
-    await db2.run(
+    await db.run(
       "INSERT INTO announcements (id, author_id, title, body, audience, created_at, expires_at, archived) VALUES (?, ?, ?, ?, ?, ?, ?, 0)",
       [id, req.user.id, title, body, audience, now, expiresAt || null]
     );
-    const announcement = await db2.get("SELECT * FROM announcements WHERE id = ?", [id]);
+    const announcement = await db.get("SELECT * FROM announcements WHERE id = ?", [id]);
     return res.status(201).json({ ...announcement, readBy: [] });
   } catch (err) {
     console.error("Create announcement error:", err);
@@ -116855,7 +116855,7 @@ router8.post("/", authMiddleware, requireAdmin, async (req, res) => {
 });
 router8.patch("/:id", authMiddleware, requireAdmin, async (req, res) => {
   try {
-    const announcement = await db2.get("SELECT * FROM announcements WHERE id = ?", [req.params.id]);
+    const announcement = await db.get("SELECT * FROM announcements WHERE id = ?", [req.params.id]);
     if (!announcement) return res.status(404).json({ error: "Announcement not found" });
     const { title, body, audience, expiresAt, archived } = req.body;
     const updates = [];
@@ -116881,10 +116881,10 @@ router8.patch("/:id", authMiddleware, requireAdmin, async (req, res) => {
       params.push(archived ? 1 : 0);
     }
     if (updates.length > 0) {
-      await db2.run(`UPDATE announcements SET ${updates.join(", ")} WHERE id = ?`, [...params, req.params.id]);
+      await db.run(`UPDATE announcements SET ${updates.join(", ")} WHERE id = ?`, [...params, req.params.id]);
     }
-    const updated = await db2.get("SELECT * FROM announcements WHERE id = ?", [req.params.id]);
-    const readByRows = await db2.all("SELECT user_id FROM announcement_reads WHERE announcement_id = ?", [req.params.id]);
+    const updated = await db.get("SELECT * FROM announcements WHERE id = ?", [req.params.id]);
+    const readByRows = await db.all("SELECT user_id FROM announcement_reads WHERE announcement_id = ?", [req.params.id]);
     const readBy = readByRows.map((r) => r.user_id);
     return res.json({ ...updated, readBy });
   } catch (err) {
@@ -116894,9 +116894,9 @@ router8.patch("/:id", authMiddleware, requireAdmin, async (req, res) => {
 });
 router8.post("/:id/read", authMiddleware, async (req, res) => {
   try {
-    const announcement = await db2.get("SELECT * FROM announcements WHERE id = ?", [req.params.id]);
+    const announcement = await db.get("SELECT * FROM announcements WHERE id = ?", [req.params.id]);
     if (!announcement) return res.status(404).json({ error: "Announcement not found" });
-    await db2.run(
+    await db.run(
       "INSERT IGNORE INTO announcement_reads (announcement_id, user_id) VALUES (?, ?)",
       [req.params.id, req.user.id]
     );
@@ -116924,9 +116924,9 @@ router9.get("/requests", authMiddleware, async (req, res) => {
       sql += " AND status = ?";
       params.push(status);
     }
-    const requests = await db2.all(sql, params);
+    const requests = await db.all(sql, params);
     const result = await Promise.all(requests.map(async (r) => {
-      const approvals = await db2.all("SELECT * FROM vacation_approvals WHERE vacation_request_id = ?", [r.id]);
+      const approvals = await db.all("SELECT * FROM vacation_approvals WHERE vacation_request_id = ?", [r.id]);
       return { ...r, approvals };
     }));
     return res.json(result);
@@ -116943,11 +116943,11 @@ router9.post("/requests", authMiddleware, async (req, res) => {
     }
     const id = v4_default();
     const now = (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "");
-    await db2.run(
+    await db.run(
       "INSERT INTO vacation_requests (id, user_id, start_date, end_date, days, reason, status, created_at, period) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
       [id, userId, startDate, endDate, days, reason || "", "pending", now, period || null]
     );
-    const request = await db2.get("SELECT * FROM vacation_requests WHERE id = ?", [id]);
+    const request = await db.get("SELECT * FROM vacation_requests WHERE id = ?", [id]);
     return res.status(201).json({ ...request, approvals: [] });
   } catch (err) {
     console.error("Create vacation request error:", err);
@@ -116956,7 +116956,7 @@ router9.post("/requests", authMiddleware, async (req, res) => {
 });
 router9.patch("/requests/:id", authMiddleware, async (req, res) => {
   try {
-    const request = await db2.get("SELECT * FROM vacation_requests WHERE id = ?", [req.params.id]);
+    const request = await db.get("SELECT * FROM vacation_requests WHERE id = ?", [req.params.id]);
     if (!request) return res.status(404).json({ error: "Request not found" });
     const { status, reason } = req.body;
     const updates = [];
@@ -116970,10 +116970,10 @@ router9.patch("/requests/:id", authMiddleware, async (req, res) => {
       params.push(reason);
     }
     if (updates.length > 0) {
-      await db2.run(`UPDATE vacation_requests SET ${updates.join(", ")} WHERE id = ?`, [...params, req.params.id]);
+      await db.run(`UPDATE vacation_requests SET ${updates.join(", ")} WHERE id = ?`, [...params, req.params.id]);
     }
-    const updated = await db2.get("SELECT * FROM vacation_requests WHERE id = ?", [req.params.id]);
-    const approvals = await db2.all("SELECT * FROM vacation_approvals WHERE vacation_request_id = ?", [req.params.id]);
+    const updated = await db.get("SELECT * FROM vacation_requests WHERE id = ?", [req.params.id]);
+    const approvals = await db.all("SELECT * FROM vacation_approvals WHERE vacation_request_id = ?", [req.params.id]);
     return res.json({ ...updated, approvals });
   } catch (err) {
     console.error("Update vacation request error:", err);
@@ -116982,7 +116982,7 @@ router9.patch("/requests/:id", authMiddleware, async (req, res) => {
 });
 router9.post("/requests/:id/approve", authMiddleware, async (req, res) => {
   try {
-    const request = await db2.get("SELECT * FROM vacation_requests WHERE id = ?", [req.params.id]);
+    const request = await db.get("SELECT * FROM vacation_requests WHERE id = ?", [req.params.id]);
     if (!request) return res.status(404).json({ error: "Request not found" });
     const { action, comment } = req.body;
     if (!["approved", "rejected"].includes(action)) {
@@ -116990,13 +116990,13 @@ router9.post("/requests/:id/approve", authMiddleware, async (req, res) => {
     }
     const id = v4_default();
     const now = (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "");
-    await db2.run(
+    await db.run(
       "INSERT INTO vacation_approvals (id, vacation_request_id, approver_id, approved_at, action, comment) VALUES (?, ?, ?, ?, ?, ?)",
       [id, req.params.id, req.user.id, now, action, comment || null]
     );
-    await db2.run("UPDATE vacation_requests SET status = ? WHERE id = ?", [action, req.params.id]);
-    const updated = await db2.get("SELECT * FROM vacation_requests WHERE id = ?", [req.params.id]);
-    const approvals = await db2.all("SELECT * FROM vacation_approvals WHERE vacation_request_id = ?", [req.params.id]);
+    await db.run("UPDATE vacation_requests SET status = ? WHERE id = ?", [action, req.params.id]);
+    const updated = await db.get("SELECT * FROM vacation_requests WHERE id = ?", [req.params.id]);
+    const approvals = await db.all("SELECT * FROM vacation_approvals WHERE vacation_request_id = ?", [req.params.id]);
     return res.json({ ...updated, approvals });
   } catch (err) {
     console.error("Approve vacation error:", err);
@@ -117005,7 +117005,7 @@ router9.post("/requests/:id/approve", authMiddleware, async (req, res) => {
 });
 router9.delete("/requests/:id", authMiddleware, async (req, res) => {
   try {
-    const request = await db2.get("SELECT * FROM vacation_requests WHERE id = ?", [req.params.id]);
+    const request = await db.get("SELECT * FROM vacation_requests WHERE id = ?", [req.params.id]);
     if (!request) return res.status(404).json({ error: "Request not found" });
     if (request.user_id !== req.user.id && req.user.role !== "admin" && req.user.role !== "super_user") {
       return res.status(403).json({ error: "Can only delete your own requests" });
@@ -117013,7 +117013,7 @@ router9.delete("/requests/:id", authMiddleware, async (req, res) => {
     if (request.status !== "pending" && req.user.role !== "admin" && req.user.role !== "super_user") {
       return res.status(400).json({ error: "Can only delete pending requests" });
     }
-    await db2.run("DELETE FROM vacation_requests WHERE id = ?", [req.params.id]);
+    await db.run("DELETE FROM vacation_requests WHERE id = ?", [req.params.id]);
     return res.json({ message: "Request deleted" });
   } catch (err) {
     console.error("Delete vacation request error:", err);
@@ -117022,7 +117022,7 @@ router9.delete("/requests/:id", authMiddleware, async (req, res) => {
 });
 router9.get("/config", authMiddleware, requireAdmin, async (_req, res) => {
   try {
-    const config = await db2.all("SELECT * FROM vacation_config");
+    const config = await db.all("SELECT * FROM vacation_config");
     return res.json(config);
   } catch (err) {
     console.error("Get vacation config error:", err);
@@ -117034,12 +117034,12 @@ router9.patch("/config", authMiddleware, requireAdmin, async (req, res) => {
     const { positions } = req.body;
     if (!Array.isArray(positions)) return res.status(400).json({ error: "positions array required" });
     for (const p of positions) {
-      await db2.run(
+      await db.run(
         "INSERT INTO vacation_config (position, days) VALUES (?, ?) ON DUPLICATE KEY UPDATE days=VALUES(days)",
         [p.position, p.days]
       );
     }
-    const config = await db2.all("SELECT * FROM vacation_config");
+    const config = await db.all("SELECT * FROM vacation_config");
     return res.json(config);
   } catch (err) {
     console.error("Update vacation config error:", err);
@@ -117054,11 +117054,11 @@ router9.post("/extra-days", authMiddleware, requireAdmin, async (req, res) => {
     }
     const id = v4_default();
     const now = (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "");
-    await db2.run(
+    await db.run(
       "INSERT INTO extra_vacation_days (id, user_id, days, reason, added_by, added_at, period) VALUES (?, ?, ?, ?, ?, ?, ?)",
       [id, userId, days, reason, req.user.id, now, period]
     );
-    const extra = await db2.get("SELECT * FROM extra_vacation_days WHERE id = ?", [id]);
+    const extra = await db.get("SELECT * FROM extra_vacation_days WHERE id = ?", [id]);
     return res.status(201).json(extra);
   } catch (err) {
     console.error("Add extra days error:", err);
@@ -117072,7 +117072,7 @@ var import_express10 = __toESM(require_express2(), 1);
 var router10 = (0, import_express10.Router)();
 router10.get("/library", authMiddleware, async (_req, res) => {
   try {
-    const questions = await db2.all("SELECT * FROM library_questions");
+    const questions = await db.all("SELECT * FROM library_questions");
     return res.json(questions);
   } catch (err) {
     console.error("List library questions error:", err);
@@ -117087,11 +117087,11 @@ router10.post("/library", authMiddleware, requireAdmin, async (req, res) => {
     }
     const id = v4_default();
     const now = (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "");
-    await db2.run(
+    await db.run(
       "INSERT INTO library_questions (id, question_id, category, text, default_weight, created_at, created_by) VALUES (?, ?, ?, ?, ?, ?, ?)",
       [id, questionId, category, text, defaultWeight, now, req.user.id]
     );
-    const question = await db2.get("SELECT * FROM library_questions WHERE id = ?", [id]);
+    const question = await db.get("SELECT * FROM library_questions WHERE id = ?", [id]);
     return res.status(201).json(question);
   } catch (err) {
     if (err.code === "ER_DUP_ENTRY") {
@@ -117103,7 +117103,7 @@ router10.post("/library", authMiddleware, requireAdmin, async (req, res) => {
 });
 router10.patch("/library/:id", authMiddleware, requireAdmin, async (req, res) => {
   try {
-    const question = await db2.get("SELECT * FROM library_questions WHERE id = ?", [req.params.id]);
+    const question = await db.get("SELECT * FROM library_questions WHERE id = ?", [req.params.id]);
     if (!question) return res.status(404).json({ error: "Question not found" });
     const { category, text, defaultWeight } = req.body;
     const updates = [];
@@ -117121,9 +117121,9 @@ router10.patch("/library/:id", authMiddleware, requireAdmin, async (req, res) =>
       params.push(defaultWeight);
     }
     if (updates.length > 0) {
-      await db2.run(`UPDATE library_questions SET ${updates.join(", ")} WHERE id = ?`, [...params, req.params.id]);
+      await db.run(`UPDATE library_questions SET ${updates.join(", ")} WHERE id = ?`, [...params, req.params.id]);
     }
-    const updated = await db2.get("SELECT * FROM library_questions WHERE id = ?", [req.params.id]);
+    const updated = await db.get("SELECT * FROM library_questions WHERE id = ?", [req.params.id]);
     return res.json(updated);
   } catch (err) {
     console.error("Update library question error:", err);
@@ -117132,7 +117132,7 @@ router10.patch("/library/:id", authMiddleware, requireAdmin, async (req, res) =>
 });
 router10.delete("/library/:id", authMiddleware, requireAdmin, async (req, res) => {
   try {
-    await db2.run("DELETE FROM library_questions WHERE id = ?", [req.params.id]);
+    await db.run("DELETE FROM library_questions WHERE id = ?", [req.params.id]);
     return res.json({ message: "Question deleted" });
   } catch (err) {
     console.error("Delete library question error:", err);
@@ -117148,7 +117148,7 @@ router10.get("/custom", authMiddleware, async (req, res) => {
       sql += " AND position = ?";
       params.push(position);
     }
-    const questions = await db2.all(sql, params);
+    const questions = await db.all(sql, params);
     return res.json(questions);
   } catch (err) {
     console.error("List custom questions error:", err);
@@ -117160,7 +117160,7 @@ router10.post("/custom", authMiddleware, requireAdmin, async (req, res) => {
     const { position, questions } = req.body;
     if (!position) return res.status(400).json({ error: "position is required" });
     if (!Array.isArray(questions)) return res.status(400).json({ error: "questions array is required" });
-    await db2.transaction(async (conn) => {
+    await db.transaction(async (conn) => {
       await tx.run(conn, "DELETE FROM custom_eval_questions WHERE position = ?", [position]);
       for (const q of questions) {
         await tx.run(
@@ -117170,7 +117170,7 @@ router10.post("/custom", authMiddleware, requireAdmin, async (req, res) => {
         );
       }
     });
-    const result = await db2.all("SELECT * FROM custom_eval_questions WHERE position = ?", [position]);
+    const result = await db.all("SELECT * FROM custom_eval_questions WHERE position = ?", [position]);
     return res.json(result);
   } catch (err) {
     console.error("Set custom questions error:", err);
@@ -117179,7 +117179,7 @@ router10.post("/custom", authMiddleware, requireAdmin, async (req, res) => {
 });
 router10.get("/overrides", authMiddleware, async (_req, res) => {
   try {
-    const overrides = await db2.all("SELECT * FROM seed_question_overrides");
+    const overrides = await db.all("SELECT * FROM seed_question_overrides");
     return res.json(overrides);
   } catch (err) {
     console.error("List overrides error:", err);
@@ -117189,7 +117189,7 @@ router10.get("/overrides", authMiddleware, async (_req, res) => {
 router10.patch("/overrides/:id", authMiddleware, requireAdmin, async (req, res) => {
   try {
     const { text, category, weight, hidden } = req.body;
-    const existing = await db2.get("SELECT * FROM seed_question_overrides WHERE question_id = ?", [req.params.id]);
+    const existing = await db.get("SELECT * FROM seed_question_overrides WHERE question_id = ?", [req.params.id]);
     if (existing) {
       const updates = [];
       const params = [];
@@ -117210,15 +117210,15 @@ router10.patch("/overrides/:id", authMiddleware, requireAdmin, async (req, res) 
         params.push(hidden ? 1 : 0);
       }
       if (updates.length > 0) {
-        await db2.run(`UPDATE seed_question_overrides SET ${updates.join(", ")} WHERE question_id = ?`, [...params, req.params.id]);
+        await db.run(`UPDATE seed_question_overrides SET ${updates.join(", ")} WHERE question_id = ?`, [...params, req.params.id]);
       }
     } else {
-      await db2.run(
+      await db.run(
         "INSERT INTO seed_question_overrides (question_id, text, category, weight, hidden) VALUES (?, ?, ?, ?, ?)",
         [req.params.id, text || null, category || null, weight || null, hidden ? 1 : 0]
       );
     }
-    const result = await db2.get("SELECT * FROM seed_question_overrides WHERE question_id = ?", [req.params.id]);
+    const result = await db.get("SELECT * FROM seed_question_overrides WHERE question_id = ?", [req.params.id]);
     return res.json(result);
   } catch (err) {
     console.error("Update override error:", err);
@@ -117242,7 +117242,7 @@ router11.get("/", authMiddleware, async (req, res) => {
       params.push(work_area_id);
     }
     sql += " ORDER BY cp.id";
-    const positions = await db2.all(sql, params);
+    const positions = await db.all(sql, params);
     return res.json(positions);
   } catch (err) {
     console.error("List positions error:", err);
@@ -117251,7 +117251,7 @@ router11.get("/", authMiddleware, async (req, res) => {
 });
 router11.get("/:id", authMiddleware, async (req, res) => {
   try {
-    const position = await db2.get(
+    const position = await db.get(
       `SELECT cp.*, wa.label AS work_area_label, wa.level AS work_area_level
        FROM custom_positions cp
        JOIN work_areas wa ON cp.work_area_id = wa.id
@@ -117271,14 +117271,14 @@ router11.post("/", authMiddleware, requireAdmin, async (req, res) => {
     if (!id || !label || !workAreaId || !basePosition) {
       return res.status(400).json({ error: "id, label, workAreaId, and basePosition are required" });
     }
-    const area = await db2.get("SELECT id FROM work_areas WHERE id = ?", [workAreaId]);
+    const area = await db.get("SELECT id FROM work_areas WHERE id = ?", [workAreaId]);
     if (!area) return res.status(400).json({ error: "Work area not found" });
     const now = (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "");
-    await db2.run(
+    await db.run(
       "INSERT INTO custom_positions (id, label, work_area_id, base_position, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)",
       [id, label, workAreaId, basePosition, now, now]
     );
-    const position = await db2.get(
+    const position = await db.get(
       `SELECT cp.*, wa.label AS work_area_label, wa.level AS work_area_level
        FROM custom_positions cp JOIN work_areas wa ON cp.work_area_id = wa.id WHERE cp.id = ?`,
       [id]
@@ -117296,10 +117296,10 @@ router11.patch("/:id", authMiddleware, requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     const { label, workAreaId, basePosition, newId } = req.body;
-    const position = await db2.get("SELECT * FROM custom_positions WHERE id = ?", [id]);
+    const position = await db.get("SELECT * FROM custom_positions WHERE id = ?", [id]);
     if (!position) return res.status(404).json({ error: "Position not found" });
     if (newId && newId !== id) {
-      const userCount = await db2.get(
+      const userCount = await db.get(
         "SELECT COUNT(*) AS cnt FROM users WHERE custom_position_id = ?",
         [id]
       );
@@ -117318,7 +117318,7 @@ router11.patch("/:id", authMiddleware, requireAdmin, async (req, res) => {
       values.push(label);
     }
     if (workAreaId !== void 0) {
-      const area = await db2.get("SELECT id FROM work_areas WHERE id = ?", [workAreaId]);
+      const area = await db.get("SELECT id FROM work_areas WHERE id = ?", [workAreaId]);
       if (!area) return res.status(400).json({ error: "Work area not found" });
       updates.push("work_area_id = ?");
       values.push(workAreaId);
@@ -117331,15 +117331,15 @@ router11.patch("/:id", authMiddleware, requireAdmin, async (req, res) => {
     updates.push("updated_at = ?");
     values.push((/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, ""));
     values.push(id);
-    await db2.run(`UPDATE custom_positions SET ${updates.join(", ")} WHERE id = ?`, values);
+    await db.run(`UPDATE custom_positions SET ${updates.join(", ")} WHERE id = ?`, values);
     const finalId = newId && newId !== id ? newId : id;
-    const updated = await db2.get(
+    const updated = await db.get(
       `SELECT cp.*, wa.label AS work_area_label, wa.level AS work_area_level
        FROM custom_positions cp JOIN work_areas wa ON cp.work_area_id = wa.id WHERE cp.id = ?`,
       [finalId]
     );
     if (newId && newId !== id) {
-      await db2.run("UPDATE users SET custom_position_id = ? WHERE custom_position_id = ?", [newId, id]);
+      await db.run("UPDATE users SET custom_position_id = ? WHERE custom_position_id = ?", [newId, id]);
     }
     return res.json(updated);
   } catch (err) {
@@ -117349,16 +117349,16 @@ router11.patch("/:id", authMiddleware, requireAdmin, async (req, res) => {
 });
 router11.delete("/:id", authMiddleware, requireAdmin, async (req, res) => {
   try {
-    const position = await db2.get("SELECT * FROM custom_positions WHERE id = ?", [req.params.id]);
+    const position = await db.get("SELECT * FROM custom_positions WHERE id = ?", [req.params.id]);
     if (!position) return res.status(404).json({ error: "Position not found" });
-    const userCount = await db2.get(
+    const userCount = await db.get(
       "SELECT COUNT(*) AS cnt FROM users WHERE custom_position_id = ?",
       [req.params.id]
     );
     if (userCount.cnt > 0) {
       return res.status(409).json({ error: `Cannot delete position: ${userCount.cnt} user(s) assigned. Remove assignments first.` });
     }
-    await db2.run("DELETE FROM custom_positions WHERE id = ?", [req.params.id]);
+    await db.run("DELETE FROM custom_positions WHERE id = ?", [req.params.id]);
     return res.json({ message: "Position deleted" });
   } catch (err) {
     console.error("Delete position error:", err);
@@ -117372,13 +117372,13 @@ var import_express12 = __toESM(require_express2(), 1);
 var router12 = (0, import_express12.Router)();
 router12.get("/", authMiddleware, async (_req, res) => {
   try {
-    const areas = await db2.all(
+    const areas = await db.all(
       `SELECT wa.*, 
         (SELECT COUNT(*) FROM custom_positions WHERE work_area_id = wa.id) AS position_count
        FROM work_areas wa ORDER BY wa.sort_order, wa.label`
     );
     const areasWithPositions = await Promise.all(areas.map(async (area) => {
-      const positions = await db2.all(
+      const positions = await db.all(
         `SELECT cp.*, wa.label AS work_area_label, wa.level AS work_area_level
          FROM custom_positions cp
          JOIN work_areas wa ON cp.work_area_id = wa.id
@@ -117404,11 +117404,11 @@ router12.post("/", authMiddleware, requireAdmin, async (req, res) => {
       return res.status(400).json({ error: 'Level must be "legal" or "administrativo"' });
     }
     const now = (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "");
-    await db2.run(
+    await db.run(
       "INSERT INTO work_areas (id, label, level, sort_order, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)",
       [id, label, level, sortOrder || 0, now, now]
     );
-    const area = await db2.get("SELECT * FROM work_areas WHERE id = ?", [id]);
+    const area = await db.get("SELECT * FROM work_areas WHERE id = ?", [id]);
     return res.status(201).json(area);
   } catch (err) {
     if (err.code === "ER_DUP_ENTRY") {
@@ -117422,7 +117422,7 @@ router12.patch("/:id", authMiddleware, requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     const { label, level, sortOrder } = req.body;
-    const area = await db2.get("SELECT * FROM work_areas WHERE id = ?", [id]);
+    const area = await db.get("SELECT * FROM work_areas WHERE id = ?", [id]);
     if (!area) return res.status(404).json({ error: "Work area not found" });
     const updates = [];
     const values = [];
@@ -117445,8 +117445,8 @@ router12.patch("/:id", authMiddleware, requireAdmin, async (req, res) => {
     updates.push("updated_at = ?");
     values.push((/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, ""));
     values.push(id);
-    await db2.run(`UPDATE work_areas SET ${updates.join(", ")} WHERE id = ?`, values);
-    const updated = await db2.get("SELECT * FROM work_areas WHERE id = ?", [id]);
+    await db.run(`UPDATE work_areas SET ${updates.join(", ")} WHERE id = ?`, values);
+    const updated = await db.get("SELECT * FROM work_areas WHERE id = ?", [id]);
     return res.json(updated);
   } catch (err) {
     console.error("Update work area error:", err);
@@ -117456,16 +117456,16 @@ router12.patch("/:id", authMiddleware, requireAdmin, async (req, res) => {
 router12.delete("/:id", authMiddleware, requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
-    const area = await db2.get("SELECT * FROM work_areas WHERE id = ?", [id]);
+    const area = await db.get("SELECT * FROM work_areas WHERE id = ?", [id]);
     if (!area) return res.status(404).json({ error: "Work area not found" });
-    const posCount = await db2.get(
+    const posCount = await db.get(
       "SELECT COUNT(*) AS cnt FROM custom_positions WHERE work_area_id = ?",
       [id]
     );
     if (posCount.cnt > 0) {
       return res.status(409).json({ error: `Cannot delete area with ${posCount.cnt} assigned position(s). Remove positions first.` });
     }
-    await db2.run("DELETE FROM work_areas WHERE id = ?", [id]);
+    await db.run("DELETE FROM work_areas WHERE id = ?", [id]);
     return res.json({ message: "Work area deleted" });
   } catch (err) {
     console.error("Delete work area error:", err);
@@ -117479,7 +117479,7 @@ var import_express13 = __toESM(require_express2(), 1);
 var router13 = (0, import_express13.Router)();
 router13.get("/", authMiddleware, async (_req, res) => {
   try {
-    const locations = await db2.all(
+    const locations = await db.all(
       `SELECT l.*, 
         (SELECT COUNT(*) FROM users WHERE location_id = l.id) AS user_count
        FROM locations l ORDER BY l.sort_order, l.label`
@@ -117497,11 +117497,11 @@ router13.post("/", authMiddleware, requireAdmin, async (req, res) => {
       return res.status(400).json({ error: "id and label are required" });
     }
     const now = (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "");
-    await db2.run(
+    await db.run(
       "INSERT INTO locations (id, label, city, office, floor, desk, sort_order, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
       [id, label, city || null, office || null, floor || null, desk || null, sortOrder || 0, now, now]
     );
-    const location = await db2.get("SELECT * FROM locations WHERE id = ?", [id]);
+    const location = await db.get("SELECT * FROM locations WHERE id = ?", [id]);
     return res.status(201).json(location);
   } catch (err) {
     if (err.code === "ER_DUP_ENTRY") {
@@ -117515,7 +117515,7 @@ router13.patch("/:id", authMiddleware, requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     const { label, city, office, floor, desk, sortOrder } = req.body;
-    const location = await db2.get("SELECT * FROM locations WHERE id = ?", [id]);
+    const location = await db.get("SELECT * FROM locations WHERE id = ?", [id]);
     if (!location) return res.status(404).json({ error: "Location not found" });
     const updates = [];
     const values = [];
@@ -117547,8 +117547,8 @@ router13.patch("/:id", authMiddleware, requireAdmin, async (req, res) => {
     updates.push("updated_at = ?");
     values.push((/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, ""));
     values.push(id);
-    await db2.run(`UPDATE locations SET ${updates.join(", ")} WHERE id = ?`, values);
-    const updated = await db2.get("SELECT * FROM locations WHERE id = ?", [id]);
+    await db.run(`UPDATE locations SET ${updates.join(", ")} WHERE id = ?`, values);
+    const updated = await db.get("SELECT * FROM locations WHERE id = ?", [id]);
     return res.json(updated);
   } catch (err) {
     console.error("Update location error:", err);
@@ -117558,16 +117558,16 @@ router13.patch("/:id", authMiddleware, requireAdmin, async (req, res) => {
 router13.delete("/:id", authMiddleware, requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
-    const location = await db2.get("SELECT * FROM locations WHERE id = ?", [id]);
+    const location = await db.get("SELECT * FROM locations WHERE id = ?", [id]);
     if (!location) return res.status(404).json({ error: "Location not found" });
-    const userCount = await db2.get(
+    const userCount = await db.get(
       "SELECT COUNT(*) AS cnt FROM users WHERE location_id = ?",
       [id]
     );
     if (userCount.cnt > 0) {
       return res.status(409).json({ error: `Cannot delete location: ${userCount.cnt} user(s) assigned. Remove assignments first.` });
     }
-    await db2.run("DELETE FROM locations WHERE id = ?", [id]);
+    await db.run("DELETE FROM locations WHERE id = ?", [id]);
     return res.json({ message: "Location deleted" });
   } catch (err) {
     console.error("Delete location error:", err);
@@ -117581,7 +117581,7 @@ var import_express14 = __toESM(require_express2(), 1);
 var router14 = (0, import_express14.Router)();
 router14.get("/", authMiddleware, async (_req, res) => {
   try {
-    const periods = await db2.all("SELECT * FROM period_configs");
+    const periods = await db.all("SELECT * FROM period_configs");
     return res.json(periods);
   } catch (err) {
     console.error("List periods error:", err);
@@ -117594,13 +117594,13 @@ router14.post("/", authMiddleware, requireAdmin, async (req, res) => {
     if (!period || !selfStart || !selfEnd || !supervisorStart || !supervisorEnd || !feedbackStart || !feedbackEnd || !actionPlanStart || !actionPlanEnd) {
       return res.status(400).json({ error: "All period fields are required" });
     }
-    await db2.run(
+    await db.run(
       `INSERT INTO period_configs (period, self_start, self_end, supervisor_start, supervisor_end, feedback_start, feedback_end, action_plan_start, action_plan_end)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
       ON DUPLICATE KEY UPDATE self_start=VALUES(self_start), self_end=VALUES(self_end), supervisor_start=VALUES(supervisor_start), supervisor_end=VALUES(supervisor_end), feedback_start=VALUES(feedback_start), feedback_end=VALUES(feedback_end), action_plan_start=VALUES(action_plan_start), action_plan_end=VALUES(action_plan_end)`,
       [period, selfStart, selfEnd, supervisorStart, supervisorEnd, feedbackStart, feedbackEnd, actionPlanStart, actionPlanEnd]
     );
-    const config = await db2.get("SELECT * FROM period_configs WHERE period = ?", [period]);
+    const config = await db.get("SELECT * FROM period_configs WHERE period = ?", [period]);
     return res.json(config);
   } catch (err) {
     console.error("Create/update period error:", err);
@@ -117625,7 +117625,7 @@ var upload = (0, import_multer.default)({
 router15.use(authMiddleware, requireSuperUser);
 router15.use(async (_req, res, next) => {
   try {
-    const moduleConfig = await db2.get("SELECT copilot FROM module_config WHERE id=1");
+    const moduleConfig = await db.get("SELECT copilot FROM module_config WHERE id=1");
     if (!moduleConfig?.copilot) {
       return res.status(403).json({ error: "M\xF3dulo Copiloto IA est\xE1 desactivado. Act\xEDvalo en Configuraci\xF3n del Sistema." });
     }
@@ -117682,18 +117682,18 @@ async function buildRichContext() {
     unreadAnnouncements,
     currentPeriodConfig
   ] = await Promise.all([
-    db2.get("SELECT COUNT(*) c FROM users"),
-    db2.get("SELECT COUNT(*) c FROM users WHERE is_active=1"),
-    db2.get("SELECT COUNT(*) c FROM users WHERE is_admin=1 AND is_active=1"),
-    db2.get("SELECT COUNT(*) c FROM users WHERE is_managing_partner=1 AND is_active=1"),
-    db2.all("SELECT * FROM period_configs ORDER BY period DESC LIMIT 5"),
-    db2.get("SELECT * FROM system_status WHERE id=1"),
-    db2.get("SELECT * FROM module_config WHERE id=1"),
-    db2.all("SELECT COUNT(*) c FROM evaluations WHERE type='self' AND completed_at IS NOT NULL"),
-    db2.all("SELECT COUNT(*) c FROM evaluations WHERE type='supervisor' AND completed_at IS NOT NULL"),
-    db2.get("SELECT COUNT(*) c FROM vacation_requests WHERE status='pending'"),
-    db2.get("SELECT COUNT(*) c FROM announcements WHERE archived=0"),
-    db2.get("SELECT * FROM period_configs ORDER BY period DESC LIMIT 1")
+    db.get("SELECT COUNT(*) c FROM users"),
+    db.get("SELECT COUNT(*) c FROM users WHERE is_active=1"),
+    db.get("SELECT COUNT(*) c FROM users WHERE is_admin=1 AND is_active=1"),
+    db.get("SELECT COUNT(*) c FROM users WHERE is_managing_partner=1 AND is_active=1"),
+    db.all("SELECT * FROM period_configs ORDER BY period DESC LIMIT 5"),
+    db.get("SELECT * FROM system_status WHERE id=1"),
+    db.get("SELECT * FROM module_config WHERE id=1"),
+    db.all("SELECT COUNT(*) c FROM evaluations WHERE type='self' AND completed_at IS NOT NULL"),
+    db.all("SELECT COUNT(*) c FROM evaluations WHERE type='supervisor' AND completed_at IS NOT NULL"),
+    db.get("SELECT COUNT(*) c FROM vacation_requests WHERE status='pending'"),
+    db.get("SELECT COUNT(*) c FROM announcements WHERE archived=0"),
+    db.get("SELECT * FROM period_configs ORDER BY period DESC LIMIT 1")
   ]);
   const latestPeriod = currentPeriodConfig?.period || "ninguno";
   const now = /* @__PURE__ */ new Date();
@@ -117707,12 +117707,12 @@ async function buildRichContext() {
     else if (today < currentPeriodConfig.self_start) evalPhase = "pre-periodo";
     else evalPhase = "post-periodo";
   }
-  const pendingSelfCount = await db2.get(`
+  const pendingSelfCount = await db.get(`
     SELECT COUNT(*) c FROM users u
     WHERE u.is_active = 1 AND u.is_super_user = 0
     AND NOT EXISTS (SELECT 1 FROM evaluations e WHERE e.evaluator_id = u.id AND e.type = 'self' AND e.period = ? AND e.completed_at IS NOT NULL)
   `, [latestPeriod]);
-  const pendingSupCount = await db2.get(`
+  const pendingSupCount = await db.get(`
     SELECT COUNT(*) c FROM supervisor_assignments sa
     WHERE sa.period = ?
     AND NOT EXISTS (SELECT 1 FROM evaluations e WHERE e.evaluated_id = sa.employee_id AND e.evaluator_id = sa.supervisor_id AND e.type = 'supervisor' AND e.period = ? AND e.completed_at IS NOT NULL)
@@ -117825,12 +117825,12 @@ function getTools(cfg) {
           if (!sql) return JSON.stringify({ error: "SQL vac\xEDo" });
           if (!/^[\s(]*SELECT/i.test(sql)) return JSON.stringify({ error: "Solo SELECT permitido" });
           if (/\b(DROP|DELETE|INSERT|UPDATE|ALTER|CREATE|TRUNCATE|EXEC)\b/i.test(sql)) return JSON.stringify({ error: "Operaci\xF3n no permitida" });
-          const rows = await db2.all(sql);
+          const rows = await db.all(sql);
           return JSON.stringify(rows.slice(0, 100));
         }
         if (act === "missing_evals") {
           const period = args.period || "2024-2025";
-          const rows = await db2.all(`
+          const rows = await db.all(`
             SELECT u.id, u.name, u.position,
               CASE WHEN e_self.id IS NULL THEN 1 ELSE 0 END as missing_self,
               CASE WHEN sa.id IS NOT NULL AND e_sup.id IS NULL THEN 1 ELSE 0 END as missing_supervisor
@@ -117844,7 +117844,7 @@ function getTools(cfg) {
         }
         if (act === "completion_rates") {
           const period = args.period || "2024-2025";
-          const rows = await db2.all(`
+          const rows = await db.all(`
             SELECT u.position,
               COUNT(DISTINCT u.id) as total,
               COUNT(DISTINCT e_self.evaluator_id) as self_done,
@@ -117860,7 +117860,7 @@ function getTools(cfg) {
         }
         if (act === "score_analysis") {
           const period = args.period || "2024-2025";
-          const rows = await db2.all(`
+          const rows = await db.all(`
             SELECT u.position, e.type,
               COUNT(*) as count, AVG(e.total_score) as avg_score,
               MIN(e.total_score) as min_score, MAX(e.total_score) as max_score
@@ -117875,7 +117875,7 @@ function getTools(cfg) {
           const p1 = args.period || "2024-2025";
           const p2 = args.compare_period;
           if (!p2) return JSON.stringify({ error: "Necesita compare_period" });
-          const rows = await db2.all(`
+          const rows = await db.all(`
             SELECT u.position,
               e1.total_score as score_p1, e1.period as period_p1,
               e2.total_score as score_p2, e2.period as period_p2
@@ -117887,7 +117887,7 @@ function getTools(cfg) {
           return JSON.stringify(rows);
         }
         if (act === "org_summary") {
-          const rows = await db2.all(`
+          const rows = await db.all(`
             SELECT position, COUNT(*) as count, 
               SUM(CASE WHEN is_admin=1 THEN 1 ELSE 0 END) as admins,
               SUM(CASE WHEN is_managing_partner=1 THEN 1 ELSE 0 END) as managing_partners
@@ -117945,39 +117945,39 @@ function getTools(cfg) {
             s += " AND position=?";
             p.push(args.position);
           }
-          return JSON.stringify(await db2.all(s, p));
+          return JSON.stringify(await db.all(s, p));
         }
-        if (act === "search") return JSON.stringify(await db2.all("SELECT id,name,email,position,is_admin,is_managing_partner,is_active FROM users WHERE name LIKE ? OR email LIKE ? LIMIT 20", [`%${args.q}%`, `%${args.q}%`]));
+        if (act === "search") return JSON.stringify(await db.all("SELECT id,name,email,position,is_admin,is_managing_partner,is_active FROM users WHERE name LIKE ? OR email LIKE ? LIMIT 20", [`%${args.q}%`, `%${args.q}%`]));
         if (act === "get") {
-          const u = await db2.get(`SELECT ${UF} FROM users WHERE id=?`, [args.id]);
+          const u = await db.get(`SELECT ${UF} FROM users WHERE id=?`, [args.id]);
           return u ? JSON.stringify(u) : JSON.stringify({ error: "No encontrado" });
         }
         if (act === "create") {
           if (!args.name || !args.email || !args.position || !args.password) return JSON.stringify({ error: "Campos obligatorios: name, email, position, password" });
           if (args.password.length < 6) return JSON.stringify({ error: "Contrase\xF1a min 6" });
-          const ex = await db2.get("SELECT id FROM users WHERE email=?", [args.email]);
+          const ex = await db.get("SELECT id FROM users WHERE email=?", [args.email]);
           if (ex) return JSON.stringify({ error: "Email ya existe" });
           const isAdmin = typeof args.is_admin === "string" ? args.is_admin === "true" || args.is_admin === "1" : !!args.is_admin;
           const isMP = typeof args.is_managing_partner === "string" ? args.is_managing_partner === "true" || args.is_managing_partner === "1" : !!args.is_managing_partner;
           if (isMP) {
-            const currentMPs = await db2.all("SELECT id, name FROM users WHERE is_managing_partner = 1 AND is_super_user = 0");
+            const currentMPs = await db.all("SELECT id, name FROM users WHERE is_managing_partner = 1 AND is_super_user = 0");
             if (currentMPs.length >= 1) return JSON.stringify({ error: `Solo puede haber 1 Socio Administrador. Actualmente es ${currentMPs[0].name}` });
           }
           if (isAdmin && !isMP) {
-            const currentAdmins = await db2.all("SELECT id FROM users WHERE is_admin = 1 AND is_super_user = 0");
+            const currentAdmins = await db.all("SELECT id FROM users WHERE is_admin = 1 AND is_super_user = 0");
             if (currentAdmins.length >= 2) return JSON.stringify({ error: "M\xE1ximo 2 Usuario Administrador permitidos" });
           }
           const id = v4_default(), hp = await hashPassword(args.password), now = (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "");
           let derivedPosition = args.position;
           let derivedArea = args.practice_area || null;
           if (args.custom_position_id) {
-            const posRow = await db2.get("SELECT cp.base_position, cp.work_area_id, wa.level FROM custom_positions cp JOIN work_areas wa ON cp.work_area_id = wa.id WHERE cp.id = ?", [args.custom_position_id]);
+            const posRow = await db.get("SELECT cp.base_position, cp.work_area_id, wa.level FROM custom_positions cp JOIN work_areas wa ON cp.work_area_id = wa.id WHERE cp.id = ?", [args.custom_position_id]);
             if (posRow) {
               derivedPosition = posRow.base_position;
               derivedArea = posRow.level === "legal" ? posRow.work_area_id : null;
             }
           }
-          await db2.run(
+          await db.run(
             "INSERT INTO users (id,email,password_hash,security_question,security_answer,name,position,practice_area,custom_position_id,location_id,is_admin,is_super_user,is_managing_partner,is_active,must_change_password,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
             [id, args.email, hp, "\xBFEmail?", args.email, args.name, derivedPosition, derivedArea, args.custom_position_id || null, args.location_id || null, isAdmin ? 1 : 0, 0, isMP ? 1 : 0, 1, 1, now, now]
           );
@@ -117991,7 +117991,7 @@ function getTools(cfg) {
               r.push({ email: u.email, error: "Faltan campos" });
               continue;
             }
-            const ex = await db2.get("SELECT id FROM users WHERE email=?", [u.email]);
+            const ex = await db.get("SELECT id FROM users WHERE email=?", [u.email]);
             if (ex) {
               r.push({ email: u.email, error: "Ya existe" });
               continue;
@@ -118000,13 +118000,13 @@ function getTools(cfg) {
             let bPosition = u.position;
             let bArea = u.practice_area || null;
             if (u.custom_position_id) {
-              const posRow = await db2.get("SELECT cp.base_position, cp.work_area_id, wa.level FROM custom_positions cp JOIN work_areas wa ON cp.work_area_id = wa.id WHERE cp.id = ?", [u.custom_position_id]);
+              const posRow = await db.get("SELECT cp.base_position, cp.work_area_id, wa.level FROM custom_positions cp JOIN work_areas wa ON cp.work_area_id = wa.id WHERE cp.id = ?", [u.custom_position_id]);
               if (posRow) {
                 bPosition = posRow.base_position;
                 bArea = posRow.level === "legal" ? posRow.work_area_id : null;
               }
             }
-            await db2.run(
+            await db.run(
               "INSERT INTO users (id,email,password_hash,security_question,security_answer,name,position,practice_area,custom_position_id,location_id,is_admin,is_super_user,is_managing_partner,is_active,must_change_password,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
               [id, u.email, hp, "\xBFEmail?", u.email, u.name, bPosition, bArea, u.custom_position_id || null, u.location_id || null, 0, 0, 0, 1, 1, now, now]
             );
@@ -118016,14 +118016,14 @@ function getTools(cfg) {
         }
         if (act === "update_role") {
           if (!args.id) return JSON.stringify({ error: "Falta id" });
-          const user = await db2.get("SELECT * FROM users WHERE id=?", [args.id]);
+          const user = await db.get("SELECT * FROM users WHERE id=?", [args.id]);
           if (!user) return JSON.stringify({ error: "No encontrado" });
           const updates = [];
           const vals = [];
           if (args.is_managing_partner !== void 0) {
             const newMP = args.is_managing_partner === "true" || args.is_managing_partner === "1";
             if (newMP) {
-              const currentMPs = await db2.all("SELECT id, name FROM users WHERE is_managing_partner = 1 AND is_super_user = 0 AND id != ?", [args.id]);
+              const currentMPs = await db.all("SELECT id, name FROM users WHERE is_managing_partner = 1 AND is_super_user = 0 AND id != ?", [args.id]);
               if (currentMPs.length >= 1) return JSON.stringify({ error: `Solo puede haber 1 Socio Administrador. Actualmente es ${currentMPs[0].name}` });
             }
             updates.push("is_managing_partner=?");
@@ -118036,7 +118036,7 @@ function getTools(cfg) {
           if (args.is_admin !== void 0) {
             const newAdmin = args.is_admin === "true" || args.is_admin === "1";
             if (newAdmin && !user.is_managing_partner) {
-              const currentAdmins = await db2.all("SELECT id FROM users WHERE is_admin = 1 AND is_super_user = 0 AND id != ?", [args.id]);
+              const currentAdmins = await db.all("SELECT id FROM users WHERE is_admin = 1 AND is_super_user = 0 AND id != ?", [args.id]);
               if (currentAdmins.length >= 2) return JSON.stringify({ error: "M\xE1ximo 2 Usuario Administrador" });
             }
             if (!newAdmin && user.is_managing_partner) return JSON.stringify({ error: "No se puede quitar admin al Socio Administrador" });
@@ -118045,22 +118045,22 @@ function getTools(cfg) {
           }
           if (updates.length === 0) return JSON.stringify({ error: "Sin cambios" });
           vals.push((/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, ""), args.id);
-          await db2.run(`UPDATE users SET ${updates.join(", ")}, updated_at=? WHERE id=?`, vals);
+          await db.run(`UPDATE users SET ${updates.join(", ")}, updated_at=? WHERE id=?`, vals);
           return JSON.stringify({ ok: true, msg: "Rol actualizado" });
         }
         if (act === "deactivate") {
-          await db2.run("UPDATE users SET is_active=0, updated_at=? WHERE id=?", [(/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, ""), args.id]);
+          await db.run("UPDATE users SET is_active=0, updated_at=? WHERE id=?", [(/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, ""), args.id]);
           return JSON.stringify({ ok: true, msg: "Usuario desactivado" });
         }
         if (act === "activate") {
-          await db2.run("UPDATE users SET is_active=1, updated_at=? WHERE id=?", [(/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, ""), args.id]);
+          await db.run("UPDATE users SET is_active=1, updated_at=? WHERE id=?", [(/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, ""), args.id]);
           return JSON.stringify({ ok: true, msg: "Usuario activado" });
         }
         if (act === "assign_supervisor") {
           if (!args.employee_id || !args.supervisor_id || !args.period) return JSON.stringify({ error: "Falta employee_id, supervisor_id, period" });
           const id = v4_default();
           try {
-            await db2.run("INSERT INTO supervisor_assignments (id,employee_id,supervisor_id,period) VALUES(?,?,?,?)", [id, args.employee_id, args.supervisor_id, args.period]);
+            await db.run("INSERT INTO supervisor_assignments (id,employee_id,supervisor_id,period) VALUES(?,?,?,?)", [id, args.employee_id, args.supervisor_id, args.period]);
             return JSON.stringify({ ok: true, msg: "Supervisor asignado" });
           } catch (e) {
             if (e.code === "ER_DUP_ENTRY") return JSON.stringify({ error: "Asignaci\xF3n ya existe" });
@@ -118133,26 +118133,26 @@ function getTools(cfg) {
             s += " AND e.evaluated_id=?";
             p.push(args.evaluated_id);
           }
-          return JSON.stringify(await db2.all(s, p));
+          return JSON.stringify(await db.all(s, p));
         }
         if (act === "get") {
-          const ev = await db2.get("SELECT e.*, u1.name as evaluator_name, u2.name as evaluated_name FROM evaluations e JOIN users u1 ON e.evaluator_id=u1.id JOIN users u2 ON e.evaluated_id=u2.id WHERE e.id=?", [args.id]);
+          const ev = await db.get("SELECT e.*, u1.name as evaluator_name, u2.name as evaluated_name FROM evaluations e JOIN users u1 ON e.evaluator_id=u1.id JOIN users u2 ON e.evaluated_id=u2.id WHERE e.id=?", [args.id]);
           if (!ev) return JSON.stringify({ error: "No encontrada" });
-          const responses = await db2.all("SELECT * FROM evaluation_responses WHERE evaluation_id=?", [args.id]);
+          const responses = await db.all("SELECT * FROM evaluation_responses WHERE evaluation_id=?", [args.id]);
           return JSON.stringify({ ...ev, responses });
         }
-        if (act === "periods") return JSON.stringify(await db2.all("SELECT DISTINCT period FROM evaluations ORDER BY period"));
+        if (act === "periods") return JSON.stringify(await db.all("SELECT DISTINCT period FROM evaluations ORDER BY period"));
         if (act === "stats") {
           const period = args.period || "2024-2025";
-          return JSON.stringify(await db2.all("SELECT u.position, e.type, COUNT(*) as count, AVG(e.total_score) as avg_score, MIN(e.total_score) as min_score, MAX(e.total_score) as max_score FROM evaluations e JOIN users u ON u.id=e.evaluated_id WHERE e.period=? AND e.completed_at IS NOT NULL GROUP BY u.position, e.type", [period]));
+          return JSON.stringify(await db.all("SELECT u.position, e.type, COUNT(*) as count, AVG(e.total_score) as avg_score, MIN(e.total_score) as min_score, MAX(e.total_score) as max_score FROM evaluations e JOIN users u ON u.id=e.evaluated_id WHERE e.period=? AND e.completed_at IS NOT NULL GROUP BY u.position, e.type", [period]));
         }
         if (act === "score_card") {
           if (!args.evaluated_id) return JSON.stringify({ error: "Falta evaluated_id" });
-          const user = await db2.get("SELECT name, position FROM users WHERE id=?", [args.evaluated_id]);
+          const user = await db.get("SELECT name, position FROM users WHERE id=?", [args.evaluated_id]);
           if (!user) return JSON.stringify({ error: "Usuario no encontrado" });
           const period = args.period || "2024-2025";
-          const evals = await db2.all("SELECT e.id, e.type, e.total_score, e.completed_at FROM evaluations e WHERE e.evaluated_id=? AND e.period=?", [args.evaluated_id, period]);
-          const allResponses = await db2.all("SELECT er.*, e.type as eval_type FROM evaluation_responses er JOIN evaluations e ON er.evaluation_id=e.id WHERE e.evaluated_id=? AND e.period=?", [args.evaluated_id, period]);
+          const evals = await db.all("SELECT e.id, e.type, e.total_score, e.completed_at FROM evaluations e WHERE e.evaluated_id=? AND e.period=?", [args.evaluated_id, period]);
+          const allResponses = await db.all("SELECT er.*, e.type as eval_type FROM evaluation_responses er JOIN evaluations e ON er.evaluation_id=e.id WHERE e.evaluated_id=? AND e.period=?", [args.evaluated_id, period]);
           const cats = {};
           for (const r of allResponses) {
             const cat = r.category || "Sin categor\xEDa";
@@ -118176,17 +118176,17 @@ function getTools(cfg) {
         }
         if (act === "next_actions") {
           if (!args.evaluated_id) return JSON.stringify({ error: "Falta evaluated_id" });
-          const user = await db2.get("SELECT name, position FROM users WHERE id=?", [args.evaluated_id]);
-          const periods = await db2.all("SELECT period FROM period_configs ORDER BY period DESC LIMIT 3");
+          const user = await db.get("SELECT name, position FROM users WHERE id=?", [args.evaluated_id]);
+          const periods = await db.all("SELECT period FROM period_configs ORDER BY period DESC LIMIT 3");
           const actions = [];
           for (const p of periods) {
-            const selfEval = await db2.get("SELECT id, completed_at FROM evaluations WHERE evaluator_id=? AND evaluated_id=? AND type=? AND period=?", [args.evaluated_id, args.evaluated_id, "self", p.period]);
+            const selfEval = await db.get("SELECT id, completed_at FROM evaluations WHERE evaluator_id=? AND evaluated_id=? AND type=? AND period=?", [args.evaluated_id, args.evaluated_id, "self", p.period]);
             if (!selfEval) actions.push(`Autoevaluaci\xF3n ${p.period}: PENDIENTE`);
             else if (!selfEval.completed_at) actions.push(`Autoevaluaci\xF3n ${p.period}: EN PROGRESO`);
-            const supEval = await db2.get("SELECT id, completed_at, feedback_completed FROM evaluations WHERE evaluated_id=? AND type=? AND period=?", [args.evaluated_id, "supervisor", p.period]);
+            const supEval = await db.get("SELECT id, completed_at, feedback_completed FROM evaluations WHERE evaluated_id=? AND type=? AND period=?", [args.evaluated_id, "supervisor", p.period]);
             if (!supEval) actions.push(`Evaluaci\xF3n supervisor ${p.period}: PENDIENTE`);
             else if (!supEval.feedback_completed) actions.push(`Feedback ${p.period}: PENDIENTE`);
-            const actionPlan = await db2.get("SELECT id, status FROM action_plans WHERE user_id=? AND period=?", [args.evaluated_id, p.period]);
+            const actionPlan = await db.get("SELECT id, status FROM action_plans WHERE user_id=? AND period=?", [args.evaluated_id, p.period]);
             if (!actionPlan) actions.push(`Plan de acci\xF3n ${p.period}: PENDIENTE`);
           }
           return JSON.stringify({ user, pending_actions: actions });
@@ -118205,7 +118205,7 @@ function getTools(cfg) {
           }
           if (!updates.length) return JSON.stringify({ error: "Sin cambios" });
           vals.push(args.id);
-          await db2.run(`UPDATE evaluations SET ${updates.join(", ")} WHERE id=?`, vals);
+          await db.run(`UPDATE evaluations SET ${updates.join(", ")} WHERE id=?`, vals);
           return JSON.stringify({ ok: true, msg: "Comentarios actualizados" });
         }
         if (act === "set_score") {
@@ -118214,51 +118214,51 @@ function getTools(cfg) {
           const weight = args.weight ? Number(args.weight) : 1;
           const na = args.not_applicable === "true" || args.not_applicable === "1" ? 1 : 0;
           const ne = args.no_elements === "true" || args.no_elements === "1" ? 1 : 0;
-          const existing = await db2.get("SELECT id FROM evaluation_responses WHERE evaluation_id=? AND question_id=?", [args.id, args.question_id]);
+          const existing = await db.get("SELECT id FROM evaluation_responses WHERE evaluation_id=? AND question_id=?", [args.id, args.question_id]);
           if (existing) {
-            await db2.run(
+            await db.run(
               "UPDATE evaluation_responses SET score=?, weight=?, not_applicable=?, no_elements=?, response_text=? WHERE evaluation_id=? AND question_id=?",
               [score, weight, na, ne, args.response_text || null, args.id, args.question_id]
             );
           } else {
-            await db2.run(
+            await db.run(
               "INSERT INTO evaluation_responses (id,evaluation_id,question_id,score,weight,not_applicable,no_elements,response_text) VALUES(?,?,?,?,?,?,?,?)",
               [v4_default(), args.id, args.question_id, score, weight, na, ne, args.response_text || null]
             );
           }
-          const responses = await db2.all("SELECT score, weight, not_applicable, no_elements FROM evaluation_responses WHERE evaluation_id=?", [args.id]);
+          const responses = await db.all("SELECT score, weight, not_applicable, no_elements FROM evaluation_responses WHERE evaluation_id=?", [args.id]);
           const applicable = responses.filter((r) => !r.not_applicable && !r.no_elements);
           const totalScore = applicable.length ? Math.round(applicable.reduce((s, r) => s + r.score * r.weight, 0) / applicable.reduce((s, r) => s + r.weight, 0) * 20 * 10) / 10 : 0;
-          await db2.run("UPDATE evaluations SET total_score=? WHERE id=?", [totalScore, args.id]);
+          await db.run("UPDATE evaluations SET total_score=? WHERE id=?", [totalScore, args.id]);
           return JSON.stringify({ ok: true, score, weight, total_score: totalScore, msg: `Calificaci\xF3n guardada. Total actualizado: ${totalScore}` });
         }
         if (act === "complete_eval") {
           if (!args.id) return JSON.stringify({ error: "Falta id" });
-          await db2.run("UPDATE evaluations SET completed_at=? WHERE id=?", [(/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, ""), args.id]);
-          const responses = await db2.all("SELECT score, weight, not_applicable, no_elements FROM evaluation_responses WHERE evaluation_id=?", [args.id]);
+          await db.run("UPDATE evaluations SET completed_at=? WHERE id=?", [(/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, ""), args.id]);
+          const responses = await db.all("SELECT score, weight, not_applicable, no_elements FROM evaluation_responses WHERE evaluation_id=?", [args.id]);
           const applicable = responses.filter((r) => !r.not_applicable && !r.no_elements);
           const totalScore = applicable.length ? Math.round(applicable.reduce((s, r) => s + r.score * r.weight, 0) / applicable.reduce((s, r) => s + r.weight, 0) * 20 * 10) / 10 : 0;
-          await db2.run("UPDATE evaluations SET total_score=? WHERE id=?", [totalScore, args.id]);
+          await db.run("UPDATE evaluations SET total_score=? WHERE id=?", [totalScore, args.id]);
           return JSON.stringify({ ok: true, msg: "Evaluaci\xF3n completada", total_score: totalScore });
         }
         if (act === "complete_feedback") {
           if (!args.id) return JSON.stringify({ error: "Falta id" });
-          await db2.run("UPDATE evaluations SET feedback_completed=1, feedback_completed_at=?, feedback_completed_by=? WHERE id=?", [(/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, ""), uid, args.id]);
+          await db.run("UPDATE evaluations SET feedback_completed=1, feedback_completed_at=?, feedback_completed_by=? WHERE id=?", [(/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, ""), uid, args.id]);
           return JSON.stringify({ ok: true, msg: "Feedback completado" });
         }
         if (act === "questions") {
           if (args.position) {
-            const custom = await db2.all("SELECT question_id, category, text, weight, hidden FROM custom_eval_questions WHERE position=? ORDER BY category", [args.position]);
-            const overrides = await db2.all("SELECT question_id, text, category, weight, hidden FROM seed_question_overrides WHERE question_id LIKE ?", [args.position + "%"]);
+            const custom = await db.all("SELECT question_id, category, text, weight, hidden FROM custom_eval_questions WHERE position=? ORDER BY category", [args.position]);
+            const overrides = await db.all("SELECT question_id, text, category, weight, hidden FROM seed_question_overrides WHERE question_id LIKE ?", [args.position + "%"]);
             return JSON.stringify({ custom_questions: custom, seed_overrides: overrides, position: args.position });
           }
-          const lib = await db2.all("SELECT question_id, category, text, default_weight FROM library_questions ORDER BY category");
+          const lib = await db.all("SELECT question_id, category, text, default_weight FROM library_questions ORDER BY category");
           return JSON.stringify({ library: lib });
         }
         if (act === "create_question") {
           if (!args.text || !args.category) return JSON.stringify({ error: "Falta text y category" });
           const id = v4_default(), qid = args.question_id || "q_" + Date.now();
-          await db2.run(
+          await db.run(
             "INSERT INTO library_questions (id,question_id,category,text,default_weight,created_at,created_by) VALUES(?,?,?,?,?,?,?)",
             [id, qid, args.category, args.text, Number(args.weight) || 1, (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, ""), uid]
           );
@@ -118274,7 +118274,7 @@ function getTools(cfg) {
             }
             try {
               const id = v4_default(), qid = "q_" + Date.now() + "_" + Math.random().toString(36).slice(2, 6);
-              await db2.run("INSERT INTO library_questions (id,question_id,category,text,default_weight,created_at,created_by) VALUES(?,?,?,?,?,?,?)", [id, qid, q.category, q.text, Number(q.weight) || 1, (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, ""), uid]);
+              await db.run("INSERT INTO library_questions (id,question_id,category,text,default_weight,created_at,created_by) VALUES(?,?,?,?,?,?,?)", [id, qid, q.category, q.text, Number(q.weight) || 1, (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, ""), uid]);
               r.push({ qid, ok: true });
             } catch (e) {
               r.push({ text: q.text, error: String(e) });
@@ -118284,7 +118284,7 @@ function getTools(cfg) {
         }
         if (act === "update_question") {
           if (!args.question_id) return JSON.stringify({ error: "Falta question_id" });
-          const existing = await db2.get("SELECT * FROM library_questions WHERE question_id=?", [args.question_id]);
+          const existing = await db.get("SELECT * FROM library_questions WHERE question_id=?", [args.question_id]);
           if (existing) {
             const updates = [];
             const vals = [];
@@ -118306,11 +118306,11 @@ function getTools(cfg) {
             }
             if (updates.length > 0) {
               vals.push(args.question_id);
-              await db2.run("UPDATE library_questions SET " + updates.join(", ") + " WHERE question_id=?", vals);
+              await db.run("UPDATE library_questions SET " + updates.join(", ") + " WHERE question_id=?", vals);
             }
             return JSON.stringify({ ok: true, msg: "Pregunta de biblioteca actualizada" });
           }
-          const ov = await db2.get("SELECT * FROM seed_question_overrides WHERE question_id=?", [args.question_id]);
+          const ov = await db.get("SELECT * FROM seed_question_overrides WHERE question_id=?", [args.question_id]);
           if (ov) {
             const updates = [];
             const vals = [];
@@ -118332,7 +118332,7 @@ function getTools(cfg) {
             }
             if (updates.length > 0) {
               vals.push(args.question_id);
-              await db2.run("UPDATE seed_question_overrides SET " + updates.join(", ") + " WHERE question_id=?", vals);
+              await db.run("UPDATE seed_question_overrides SET " + updates.join(", ") + " WHERE question_id=?", vals);
             }
             return JSON.stringify({ ok: true, msg: "Override actualizada" });
           }
@@ -118340,42 +118340,42 @@ function getTools(cfg) {
         }
         if (act === "delete_question") {
           if (!args.question_id) return JSON.stringify({ error: "Falta question_id" });
-          const lib = await db2.get("SELECT * FROM library_questions WHERE question_id=?", [args.question_id]);
+          const lib = await db.get("SELECT * FROM library_questions WHERE question_id=?", [args.question_id]);
           if (lib) {
-            await db2.run("DELETE FROM library_questions WHERE question_id=?", [args.question_id]);
+            await db.run("DELETE FROM library_questions WHERE question_id=?", [args.question_id]);
             return JSON.stringify({ ok: true, msg: "Pregunta de biblioteca eliminada" });
           }
-          const ov = await db2.get("SELECT * FROM seed_question_overrides WHERE question_id=?", [args.question_id]);
+          const ov = await db.get("SELECT * FROM seed_question_overrides WHERE question_id=?", [args.question_id]);
           if (ov) {
-            await db2.run("UPDATE seed_question_overrides SET hidden=1 WHERE question_id=?", [args.question_id]);
+            await db.run("UPDATE seed_question_overrides SET hidden=1 WHERE question_id=?", [args.question_id]);
             return JSON.stringify({ ok: true, msg: "Pregunta base ocultada" });
           }
           return JSON.stringify({ error: "Pregunta no encontrada" });
         }
-        if (act === "list_library") return JSON.stringify(await db2.all("SELECT question_id, category, text, default_weight FROM library_questions ORDER BY category, text"));
+        if (act === "list_library") return JSON.stringify(await db.all("SELECT question_id, category, text, default_weight FROM library_questions ORDER BY category, text"));
         if (act === "supervisor_assignments") {
           const period = args.period || "2024-2025";
-          return JSON.stringify(await db2.all("SELECT sa.*,eu.name as employee_name,su.name as supervisor_name FROM supervisor_assignments sa JOIN users eu ON sa.employee_id=eu.id JOIN users su ON sa.supervisor_id=su.id WHERE sa.period=?", [period]));
+          return JSON.stringify(await db.all("SELECT sa.*,eu.name as employee_name,su.name as supervisor_name FROM supervisor_assignments sa JOIN users eu ON sa.employee_id=eu.id JOIN users su ON sa.supervisor_id=su.id WHERE sa.period=?", [period]));
         }
         if (act === "action_plan") {
           if (args.id) {
-            const plan = await db2.get("SELECT * FROM action_plans WHERE id=?", [args.id]);
-            const items = await db2.all("SELECT * FROM smart_action_items WHERE action_plan_id=?", [args.id]);
+            const plan = await db.get("SELECT * FROM action_plans WHERE id=?", [args.id]);
+            const items = await db.all("SELECT * FROM smart_action_items WHERE action_plan_id=?", [args.id]);
             return JSON.stringify({ ...plan, items });
           }
           const userId = args.evaluated_id;
           if (userId) {
-            const plans = await db2.all("SELECT * FROM action_plans WHERE user_id=? ORDER BY created_at DESC", [userId]);
+            const plans = await db.all("SELECT * FROM action_plans WHERE user_id=? ORDER BY created_at DESC", [userId]);
             return JSON.stringify(plans);
           }
-          return JSON.stringify(await db2.all("SELECT ap.*, u.name as user_name FROM action_plans ap JOIN users u ON ap.user_id=u.id ORDER BY ap.created_at DESC LIMIT 20"));
+          return JSON.stringify(await db.all("SELECT ap.*, u.name as user_name FROM action_plans ap JOIN users u ON ap.user_id=u.id ORDER BY ap.created_at DESC LIMIT 20"));
         }
         if (act === "personal_objectives") {
           if (args.evaluated_id) {
-            const objs = await db2.all("SELECT * FROM personal_objectives WHERE user_id=? ORDER BY created_at DESC", [args.evaluated_id]);
+            const objs = await db.all("SELECT * FROM personal_objectives WHERE user_id=? ORDER BY created_at DESC", [args.evaluated_id]);
             return JSON.stringify(objs);
           }
-          return JSON.stringify(await db2.all("SELECT po.*, u.name as user_name FROM personal_objectives po JOIN users u ON po.user_id=u.id ORDER BY po.created_at DESC LIMIT 20"));
+          return JSON.stringify(await db.all("SELECT po.*, u.name as user_name FROM personal_objectives po JOIN users u ON po.user_id=u.id ORDER BY po.created_at DESC LIMIT 20"));
         }
         return JSON.stringify({ error: "Acci\xF3n desconocida" });
       }
@@ -118397,14 +118397,14 @@ function getTools(cfg) {
       execute: async (args, uid) => {
         if (args.action === "list") {
           const status = args.status || "pending";
-          return JSON.stringify(await db2.all("SELECT v.*, u.name as user_name FROM vacation_requests v JOIN users u ON v.user_id=u.id WHERE v.status=? ORDER BY v.created_at DESC LIMIT 50", [status]));
+          return JSON.stringify(await db.all("SELECT v.*, u.name as user_name FROM vacation_requests v JOIN users u ON v.user_id=u.id WHERE v.status=? ORDER BY v.created_at DESC LIMIT 50", [status]));
         }
         if (args.action === "approve") {
-          await db2.run("UPDATE vacation_requests SET status=?, processed_by=?, processed_at=? WHERE id=?", ["approved", uid, (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, ""), args.id]);
+          await db.run("UPDATE vacation_requests SET status=?, processed_by=?, processed_at=? WHERE id=?", ["approved", uid, (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, ""), args.id]);
           return JSON.stringify({ ok: true, msg: "Aprobada" });
         }
         if (args.action === "reject") {
-          await db2.run("UPDATE vacation_requests SET status=?, processed_by=?, processed_at=? WHERE id=?", ["rejected", uid, (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, ""), args.id]);
+          await db.run("UPDATE vacation_requests SET status=?, processed_by=?, processed_at=? WHERE id=?", ["rejected", uid, (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, ""), args.id]);
           return JSON.stringify({ ok: true, msg: "Rechazada" });
         }
         return JSON.stringify({ error: "Acci\xF3n desconocida" });
@@ -118428,12 +118428,12 @@ function getTools(cfg) {
       },
       execute: async (args, uid) => {
         if (args.action === "list") {
-          return JSON.stringify(await db2.all("SELECT a.*, u.name as author_name FROM announcements a JOIN users u ON a.author_id=u.id ORDER BY a.created_at DESC LIMIT 20"));
+          return JSON.stringify(await db.all("SELECT a.*, u.name as author_name FROM announcements a JOIN users u ON a.author_id=u.id ORDER BY a.created_at DESC LIMIT 20"));
         }
         if (args.action === "create") {
           if (!args.title || !args.content) return JSON.stringify({ error: "Falta title y content" });
           const id = v4_default();
-          await db2.run(
+          await db.run(
             "INSERT INTO announcements (id,author_id,title,content,audience,priority,archived,created_at) VALUES(?,?,?,?,?,?,?,?)",
             [id, uid, args.title, args.content, args.audience || "all", args.priority || "normal", 0, (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "")]
           );
@@ -118450,9 +118450,9 @@ function getTools(cfg) {
       parameters: { type: "object", properties: { action: { type: "string", enum: ["create"] }, period: { type: "string" }, self_start: { type: "string" }, self_end: { type: "string" }, supervisor_start: { type: "string" }, supervisor_end: { type: "string" }, feedback_start: { type: "string" }, feedback_end: { type: "string" }, action_plan_start: { type: "string" }, action_plan_end: { type: "string" } }, required: ["action"] },
       execute: async (args) => {
         if (args.action === "create") {
-          const ex = await db2.get("SELECT period FROM period_configs WHERE period=?", [args.period]);
+          const ex = await db.get("SELECT period FROM period_configs WHERE period=?", [args.period]);
           if (ex) return JSON.stringify({ error: "Ya existe" });
-          await db2.run("INSERT INTO period_configs (period,self_start,self_end,supervisor_start,supervisor_end,feedback_start,feedback_end,action_plan_start,action_plan_end) VALUES(?,?,?,?,?,?,?,?,?)", [args.period, args.self_start, args.self_end, args.supervisor_start, args.supervisor_end, args.feedback_start, args.feedback_end, args.action_plan_start, args.action_plan_end]);
+          await db.run("INSERT INTO period_configs (period,self_start,self_end,supervisor_start,supervisor_end,feedback_start,feedback_end,action_plan_start,action_plan_end) VALUES(?,?,?,?,?,?,?,?,?)", [args.period, args.self_start, args.self_end, args.supervisor_start, args.supervisor_end, args.feedback_start, args.feedback_end, args.action_plan_start, args.action_plan_end]);
           return JSON.stringify({ ok: true, msg: `Periodo "${args.period}" creado` });
         }
         return JSON.stringify({ error: "Acci\xF3n desconocida" });
@@ -118466,16 +118466,16 @@ function getTools(cfg) {
       parameters: { type: "object", properties: { action: { type: "string", enum: ["status", "toggle_system", "toggle_module"] }, status: { type: "string" }, module: { type: "string" }, enabled: { type: "string", description: "true or false" } }, required: ["action"] },
       execute: async (args, uid) => {
         const act = args.action;
-        if (act === "status") return JSON.stringify({ status: await db2.get("SELECT * FROM system_status WHERE id=1"), modules: await db2.get("SELECT * FROM module_config WHERE id=1") });
+        if (act === "status") return JSON.stringify({ status: await db.get("SELECT * FROM system_status WHERE id=1"), modules: await db.get("SELECT * FROM module_config WHERE id=1") });
         if (act === "toggle_system") {
           if (!["active", "inactive"].includes(args.status)) return JSON.stringify({ error: "Inv\xE1lido" });
-          await db2.run("UPDATE system_status SET status=? WHERE id=1", [args.status]);
-          await db2.run("INSERT INTO activation_history (id,action,date,by_user_id) VALUES(?,?,?,?)", [v4_default(), args.status === "active" ? "activated" : "deactivated", (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, ""), uid]);
+          await db.run("UPDATE system_status SET status=? WHERE id=1", [args.status]);
+          await db.run("INSERT INTO activation_history (id,action,date,by_user_id) VALUES(?,?,?,?)", [v4_default(), args.status === "active" ? "activated" : "deactivated", (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, ""), uid]);
           return JSON.stringify({ ok: true, msg: `Sistema ${args.status}` });
         }
         if (act === "toggle_module") {
           if (!["evaluations", "communications", "vacations", "copilot"].includes(args.module)) return JSON.stringify({ error: "Inv\xE1lido" });
-          await db2.run(`UPDATE module_config SET ${args.module}=? WHERE id=1`, [args.enabled ? 1 : 0]);
+          await db.run(`UPDATE module_config SET ${args.module}=? WHERE id=1`, [args.enabled ? 1 : 0]);
           return JSON.stringify({ ok: true, msg: `${args.module} ${args.enabled ? "activado" : "desactivado"}` });
         }
         return JSON.stringify({ error: "Acci\xF3n desconocida" });
@@ -118488,14 +118488,14 @@ function getTools(cfg) {
       description: "Estad\xEDsticas generales.",
       parameters: { type: "object", properties: { period: { type: "string" } } },
       execute: async (args) => {
-        const u = (await db2.get("SELECT COUNT(*) c FROM users WHERE is_active=1")).c;
-        const a2 = (await db2.get("SELECT COUNT(*) c FROM users WHERE is_admin=1 AND is_active=1")).c;
+        const u = (await db.get("SELECT COUNT(*) c FROM users WHERE is_active=1")).c;
+        const a2 = (await db.get("SELECT COUNT(*) c FROM users WHERE is_admin=1 AND is_active=1")).c;
         let es = { total: 0, done: 0 };
         if (args.period) {
-          const evs = await db2.all("SELECT completed_at FROM evaluations WHERE period=?", [args.period]);
+          const evs = await db.all("SELECT completed_at FROM evaluations WHERE period=?", [args.period]);
           es = { total: evs.length, done: evs.filter((e) => e.completed_at).length };
         }
-        const vp = (await db2.get("SELECT COUNT(*) c FROM vacation_requests WHERE status='pending'")).c;
+        const vp = (await db.get("SELECT COUNT(*) c FROM vacation_requests WHERE status='pending'")).c;
         return JSON.stringify({ activeUsers: u, admins: a2, evalStats: es, pendingVacations: vp });
       }
     });
@@ -118524,20 +118524,20 @@ function getTools(cfg) {
         const act = args.action;
         const now = (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "");
         if (act === "list") {
-          const areas = await db2.all("SELECT wa.*, (SELECT COUNT(*) FROM custom_positions WHERE work_area_id = wa.id) AS position_count FROM work_areas wa ORDER BY wa.sort_order, wa.label");
+          const areas = await db.all("SELECT wa.*, (SELECT COUNT(*) FROM custom_positions WHERE work_area_id = wa.id) AS position_count FROM work_areas wa ORDER BY wa.sort_order, wa.label");
           return JSON.stringify(areas);
         }
         if (act === "get") {
           if (!args.id) return JSON.stringify({ error: "Falta id" });
-          const area = await db2.get("SELECT * FROM work_areas WHERE id = ?", [args.id]);
+          const area = await db.get("SELECT * FROM work_areas WHERE id = ?", [args.id]);
           if (!area) return JSON.stringify({ error: "\xC1rea no encontrada" });
-          const positions = await db2.all("SELECT * FROM custom_positions WHERE work_area_id = ? ORDER BY id", [args.id]);
+          const positions = await db.all("SELECT * FROM custom_positions WHERE work_area_id = ? ORDER BY id", [args.id]);
           return JSON.stringify({ ...area, positions });
         }
         if (act === "create") {
           if (!args.id || !args.label || !args.level) return JSON.stringify({ error: "Campos obligatorios: id, label, level" });
           try {
-            await db2.run(
+            await db.run(
               "INSERT INTO work_areas (id, label, level, sort_order, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)",
               [args.id, args.label, args.level, args.sort_order || 0, now, now]
             );
@@ -118549,7 +118549,7 @@ function getTools(cfg) {
         }
         if (act === "update") {
           if (!args.id) return JSON.stringify({ error: "Falta id del \xE1rea" });
-          const area = await db2.get("SELECT * FROM work_areas WHERE id = ?", [args.id]);
+          const area = await db.get("SELECT * FROM work_areas WHERE id = ?", [args.id]);
           if (!area) return JSON.stringify({ error: "\xC1rea no encontrada" });
           const updates = [];
           const vals = [];
@@ -118570,14 +118570,14 @@ function getTools(cfg) {
           updates.push("updated_at = ?");
           vals.push(now);
           vals.push(args.id);
-          await db2.run(`UPDATE work_areas SET ${updates.join(", ")} WHERE id = ?`, vals);
+          await db.run(`UPDATE work_areas SET ${updates.join(", ")} WHERE id = ?`, vals);
           return JSON.stringify({ ok: true, msg: "\xC1rea actualizada" });
         }
         if (act === "delete") {
           if (!args.id) return JSON.stringify({ error: "Falta id" });
-          const posCount = (await db2.get("SELECT COUNT(*) c FROM custom_positions WHERE work_area_id = ?", [args.id])).c;
+          const posCount = (await db.get("SELECT COUNT(*) c FROM custom_positions WHERE work_area_id = ?", [args.id])).c;
           if (posCount > 0) return JSON.stringify({ error: `No se puede eliminar: tiene ${posCount} puesto(s) asignado(s). Elimina primero los puestos.` });
-          await db2.run("DELETE FROM work_areas WHERE id = ?", [args.id]);
+          await db.run("DELETE FROM work_areas WHERE id = ?", [args.id]);
           return JSON.stringify({ ok: true, msg: "\xC1rea eliminada" });
         }
         return JSON.stringify({ error: "Acci\xF3n desconocida" });
@@ -118614,20 +118614,20 @@ function getTools(cfg) {
             params.push(args.work_area_id);
           }
           sql += " ORDER BY cp.id";
-          return JSON.stringify(await db2.all(sql, params));
+          return JSON.stringify(await db.all(sql, params));
         }
         if (act === "get") {
           if (!args.id) return JSON.stringify({ error: "Falta CVE" });
-          const pos = await db2.get("SELECT cp.*, wa.label AS work_area_label, wa.level AS work_area_level FROM custom_positions cp JOIN work_areas wa ON cp.work_area_id = wa.id WHERE cp.id = ?", [args.id]);
+          const pos = await db.get("SELECT cp.*, wa.label AS work_area_label, wa.level AS work_area_level FROM custom_positions cp JOIN work_areas wa ON cp.work_area_id = wa.id WHERE cp.id = ?", [args.id]);
           if (!pos) return JSON.stringify({ error: "Puesto no encontrado" });
           return JSON.stringify(pos);
         }
         if (act === "create") {
           if (!args.id || !args.label || !args.work_area_id || !args.base_position) return JSON.stringify({ error: "Campos obligatorios: id (CVE), label, work_area_id, base_position" });
-          const area = await db2.get("SELECT id FROM work_areas WHERE id = ?", [args.work_area_id]);
+          const area = await db.get("SELECT id FROM work_areas WHERE id = ?", [args.work_area_id]);
           if (!area) return JSON.stringify({ error: "\xC1rea de trabajo no encontrada" });
           try {
-            await db2.run(
+            await db.run(
               "INSERT INTO custom_positions (id, label, work_area_id, base_position, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)",
               [args.id, args.label, args.work_area_id, args.base_position, now, now]
             );
@@ -118639,10 +118639,10 @@ function getTools(cfg) {
         }
         if (act === "update") {
           if (!args.id) return JSON.stringify({ error: "Falta CVE del puesto a actualizar" });
-          const pos = await db2.get("SELECT * FROM custom_positions WHERE id = ?", [args.id]);
+          const pos = await db.get("SELECT * FROM custom_positions WHERE id = ?", [args.id]);
           if (!pos) return JSON.stringify({ error: "Puesto no encontrado" });
           if (args.new_id && args.new_id !== args.id) {
-            const userCount = (await db2.get("SELECT COUNT(*) c FROM users WHERE custom_position_id = ?", [args.id])).c;
+            const userCount = (await db.get("SELECT COUNT(*) c FROM users WHERE custom_position_id = ?", [args.id])).c;
             if (userCount > 0) return JSON.stringify({ error: `No se puede cambiar el CVE: ${userCount} usuario(s) asignado(s). Remueve las asignaciones primero.` });
           }
           const updates = [];
@@ -118656,7 +118656,7 @@ function getTools(cfg) {
             vals.push(args.label);
           }
           if (args.work_area_id !== void 0) {
-            const area = await db2.get("SELECT id FROM work_areas WHERE id = ?", [args.work_area_id]);
+            const area = await db.get("SELECT id FROM work_areas WHERE id = ?", [args.work_area_id]);
             if (!area) return JSON.stringify({ error: "\xC1rea de trabajo no encontrada" });
             updates.push("work_area_id = ?");
             vals.push(args.work_area_id);
@@ -118670,17 +118670,17 @@ function getTools(cfg) {
           vals.push(now);
           const currentId = args.id;
           vals.push(currentId);
-          await db2.run(`UPDATE custom_positions SET ${updates.join(", ")} WHERE id = ?`, vals);
+          await db.run(`UPDATE custom_positions SET ${updates.join(", ")} WHERE id = ?`, vals);
           if (args.new_id && args.new_id !== args.id) {
-            await db2.run("UPDATE users SET custom_position_id = ? WHERE custom_position_id = ?", [args.new_id, args.id]);
+            await db.run("UPDATE users SET custom_position_id = ? WHERE custom_position_id = ?", [args.new_id, args.id]);
           }
           return JSON.stringify({ ok: true, msg: "Puesto actualizado" });
         }
         if (act === "delete") {
           if (!args.id) return JSON.stringify({ error: "Falta CVE" });
-          const userCount = (await db2.get("SELECT COUNT(*) c FROM users WHERE custom_position_id = ?", [args.id])).c;
+          const userCount = (await db.get("SELECT COUNT(*) c FROM users WHERE custom_position_id = ?", [args.id])).c;
           if (userCount > 0) return JSON.stringify({ error: `No se puede eliminar: ${userCount} usuario(s) asignado(s). Remueve las asignaciones primero.` });
-          await db2.run("DELETE FROM custom_positions WHERE id = ?", [args.id]);
+          await db.run("DELETE FROM custom_positions WHERE id = ?", [args.id]);
           return JSON.stringify({ ok: true, msg: "Puesto eliminado" });
         }
         return JSON.stringify({ error: "Acci\xF3n desconocida" });
@@ -118712,18 +118712,18 @@ function getTools(cfg) {
         const act = args.action;
         const now = (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "");
         if (act === "list") {
-          return JSON.stringify(await db2.all("SELECT l.*, (SELECT COUNT(*) FROM users WHERE location_id = l.id) AS user_count FROM locations l ORDER BY l.sort_order, l.label"));
+          return JSON.stringify(await db.all("SELECT l.*, (SELECT COUNT(*) FROM users WHERE location_id = l.id) AS user_count FROM locations l ORDER BY l.sort_order, l.label"));
         }
         if (act === "get") {
           if (!args.id) return JSON.stringify({ error: "Falta id" });
-          const loc = await db2.get("SELECT * FROM locations WHERE id = ?", [args.id]);
+          const loc = await db.get("SELECT * FROM locations WHERE id = ?", [args.id]);
           if (!loc) return JSON.stringify({ error: "Ubicaci\xF3n no encontrada" });
           return JSON.stringify(loc);
         }
         if (act === "create") {
           if (!args.id || !args.label) return JSON.stringify({ error: "Campos obligatorios: id, label" });
           try {
-            await db2.run(
+            await db.run(
               "INSERT INTO locations (id, label, city, office, floor, desk, sort_order, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
               [args.id, args.label, args.city || null, args.office || null, args.floor || null, args.desk || null, args.sort_order || 0, now, now]
             );
@@ -118735,7 +118735,7 @@ function getTools(cfg) {
         }
         if (act === "update") {
           if (!args.id) return JSON.stringify({ error: "Falta id de la ubicaci\xF3n" });
-          const loc = await db2.get("SELECT * FROM locations WHERE id = ?", [args.id]);
+          const loc = await db.get("SELECT * FROM locations WHERE id = ?", [args.id]);
           if (!loc) return JSON.stringify({ error: "Ubicaci\xF3n no encontrada" });
           const updates = [];
           const vals = [];
@@ -118767,14 +118767,14 @@ function getTools(cfg) {
           updates.push("updated_at = ?");
           vals.push(now);
           vals.push(args.id);
-          await db2.run(`UPDATE locations SET ${updates.join(", ")} WHERE id = ?`, vals);
+          await db.run(`UPDATE locations SET ${updates.join(", ")} WHERE id = ?`, vals);
           return JSON.stringify({ ok: true, msg: "Ubicaci\xF3n actualizada" });
         }
         if (act === "delete") {
           if (!args.id) return JSON.stringify({ error: "Falta id" });
-          const userCount = (await db2.get("SELECT COUNT(*) c FROM users WHERE location_id = ?", [args.id])).c;
+          const userCount = (await db.get("SELECT COUNT(*) c FROM users WHERE location_id = ?", [args.id])).c;
           if (userCount > 0) return JSON.stringify({ error: `No se puede eliminar: ${userCount} usuario(s) asignado(s). Remueve las asignaciones primero.` });
-          await db2.run("DELETE FROM locations WHERE id = ?", [args.id]);
+          await db.run("DELETE FROM locations WHERE id = ?", [args.id]);
           return JSON.stringify({ ok: true, msg: "Ubicaci\xF3n eliminada" });
         }
         return JSON.stringify({ error: "Acci\xF3n desconocida" });
@@ -118788,10 +118788,10 @@ function toFunctions(tools) {
 }
 router15.get("/config", async (_req, res) => {
   try {
-    let cfg = await db2.get("SELECT * FROM copilot_config WHERE id=1");
+    let cfg = await db.get("SELECT * FROM copilot_config WHERE id=1");
     if (!cfg) {
-      await db2.run("INSERT INTO copilot_config (id,model,api_provider,api_base_url,api_key,can_manage_users,can_manage_evaluations,can_manage_vacations,can_manage_announcements,can_manage_periods,can_manage_system,can_view_reports,max_tokens,temperature) VALUES(1,'qwen3.5:397b','ollama',NULL,NULL,1,1,1,1,1,1,1,4096,0.3)");
-      cfg = await db2.get("SELECT * FROM copilot_config WHERE id=1");
+      await db.run("INSERT INTO copilot_config (id,model,api_provider,api_base_url,api_key,can_manage_users,can_manage_evaluations,can_manage_vacations,can_manage_announcements,can_manage_periods,can_manage_system,can_view_reports,max_tokens,temperature) VALUES(1,'qwen3.5:397b','ollama',NULL,NULL,1,1,1,1,1,1,1,4096,0.3)");
+      cfg = await db.get("SELECT * FROM copilot_config WHERE id=1");
     }
     if (cfg?.api_key && typeof cfg.api_key === "string" && cfg.api_key.length > 8) {
       cfg = { ...cfg, api_key: cfg.api_key.slice(0, 4) + "\u2022\u2022\u2022\u2022" + cfg.api_key.slice(-4) };
@@ -118842,9 +118842,9 @@ router15.patch("/config", async (req, res) => {
     }
     if (updates.length > 0) {
       values.push(1);
-      await db2.run(`UPDATE copilot_config SET ${updates.join(", ")} WHERE id=?`, values);
+      await db.run(`UPDATE copilot_config SET ${updates.join(", ")} WHERE id=?`, values);
     }
-    const cfg = await db2.get("SELECT * FROM copilot_config WHERE id=1");
+    const cfg = await db.get("SELECT * FROM copilot_config WHERE id=1");
     if (cfg?.api_key && typeof cfg.api_key === "string" && cfg.api_key.length > 8) {
       return res.json({ ...cfg, api_key: cfg.api_key.slice(0, 4) + "\u2022\u2022\u2022\u2022" + cfg.api_key.slice(-4) });
     }
@@ -118857,13 +118857,13 @@ router15.patch("/config", async (req, res) => {
 router15.put("/config", async (req, res) => {
   try {
     const { model, api_provider, api_base_url, api_key, can_manage_users, can_manage_evaluations, can_manage_vacations, can_manage_announcements, can_manage_periods, can_manage_system, can_view_reports, max_tokens, temperature } = req.body;
-    const current = await db2.get("SELECT api_key FROM copilot_config WHERE id=1");
+    const current = await db.get("SELECT api_key FROM copilot_config WHERE id=1");
     const apiKey = api_key && !api_key.includes("\u2022\u2022\u2022\u2022") ? api_key : current?.api_key;
-    await db2.run(
+    await db.run(
       "UPDATE copilot_config SET model=?,api_provider=?,api_base_url=?,api_key=?,can_manage_users=?,can_manage_evaluations=?,can_manage_vacations=?,can_manage_announcements=?,can_manage_periods=?,can_manage_system=?,can_view_reports=?,max_tokens=?,temperature=? WHERE id=1",
       [model || "qwen3.5:397b", api_provider || "ollama", api_base_url || null, apiKey, can_manage_users ? 1 : 0, can_manage_evaluations ? 1 : 0, can_manage_vacations ? 1 : 0, can_manage_announcements ? 1 : 0, can_manage_periods ? 1 : 0, can_manage_system ? 1 : 0, can_view_reports ? 1 : 0, max_tokens || 4096, temperature ?? 0.3]
     );
-    const cfg = await db2.get("SELECT * FROM copilot_config WHERE id=1");
+    const cfg = await db.get("SELECT * FROM copilot_config WHERE id=1");
     if (cfg?.api_key && typeof cfg.api_key === "string" && cfg.api_key.length > 8) {
       return res.json({ ...cfg, api_key: cfg.api_key.slice(0, 4) + "\u2022\u2022\u2022\u2022" + cfg.api_key.slice(-4) });
     }
@@ -118875,7 +118875,7 @@ router15.put("/config", async (req, res) => {
 });
 router15.get("/conversations", async (req, res) => {
   try {
-    const convs = await db2.all("SELECT id, title, created_at, updated_at FROM copilot_conversations WHERE user_id=? ORDER BY updated_at DESC LIMIT 50", [req.user.id]);
+    const convs = await db.all("SELECT id, title, created_at, updated_at FROM copilot_conversations WHERE user_id=? ORDER BY updated_at DESC LIMIT 50", [req.user.id]);
     res.json(convs);
   } catch (e) {
     console.error("Conversations error:", e);
@@ -118884,9 +118884,9 @@ router15.get("/conversations", async (req, res) => {
 });
 router15.get("/conversations/:id", async (req, res) => {
   try {
-    const conv = await db2.get("SELECT * FROM copilot_conversations WHERE id=? AND user_id=?", [req.params.id, req.user.id]);
+    const conv = await db.get("SELECT * FROM copilot_conversations WHERE id=? AND user_id=?", [req.params.id, req.user.id]);
     if (!conv) return res.status(404).json({ error: "No encontrada" });
-    const messages = await db2.all("SELECT id, role, content, created_at FROM copilot_messages WHERE conversation_id=? ORDER BY created_at", [req.params.id]);
+    const messages = await db.all("SELECT id, role, content, created_at FROM copilot_messages WHERE conversation_id=? ORDER BY created_at", [req.params.id]);
     res.json({ ...conv, messages });
   } catch (e) {
     console.error("Conversation error:", e);
@@ -118895,10 +118895,10 @@ router15.get("/conversations/:id", async (req, res) => {
 });
 router15.delete("/conversations/:id", async (req, res) => {
   try {
-    const conv = await db2.get("SELECT id FROM copilot_conversations WHERE id=? AND user_id=?", [req.params.id, req.user.id]);
+    const conv = await db.get("SELECT id FROM copilot_conversations WHERE id=? AND user_id=?", [req.params.id, req.user.id]);
     if (!conv) return res.status(404).json({ error: "No encontrada" });
-    await db2.run("DELETE FROM copilot_messages WHERE conversation_id=?", [req.params.id]);
-    await db2.run("DELETE FROM copilot_conversations WHERE id=?", [req.params.id]);
+    await db.run("DELETE FROM copilot_messages WHERE conversation_id=?", [req.params.id]);
+    await db.run("DELETE FROM copilot_conversations WHERE id=?", [req.params.id]);
     res.json({ ok: true });
   } catch (e) {
     console.error("Delete error:", e);
@@ -118907,12 +118907,12 @@ router15.delete("/conversations/:id", async (req, res) => {
 });
 router15.delete("/conversations", async (req, res) => {
   try {
-    const convs = await db2.all("SELECT id FROM copilot_conversations WHERE user_id=?", [req.user.id]);
+    const convs = await db.all("SELECT id FROM copilot_conversations WHERE user_id=?", [req.user.id]);
     const ids = convs.map((c) => c.id);
     if (ids.length > 0) {
       const placeholders = ids.map(() => "?").join(",");
-      await db2.run(`DELETE FROM copilot_messages WHERE conversation_id IN (${placeholders})`, ids);
-      await db2.run("DELETE FROM copilot_conversations WHERE user_id=?", [req.user.id]);
+      await db.run(`DELETE FROM copilot_messages WHERE conversation_id IN (${placeholders})`, ids);
+      await db.run("DELETE FROM copilot_conversations WHERE user_id=?", [req.user.id]);
     }
     res.json({ ok: true, deleted: ids.length });
   } catch (e) {
@@ -118927,7 +118927,7 @@ router15.post("/chat", upload.single("file"), async (req, res) => {
     const fileContent = req.file ? parseFile(req.file.buffer, req.file.originalname) : "";
     const fileName = req.file?.originalname || "";
     if (!fullMessage && !fileContent) return res.status(400).json({ error: "Mensaje vac\xEDo" });
-    const cfg = await db2.get("SELECT * FROM copilot_config WHERE id=1");
+    const cfg = await db.get("SELECT * FROM copilot_config WHERE id=1");
     const apiKey = cfg.api_key || process.env.OLLAMA_API_KEY;
     const baseUrl = cfg.api_base_url || process.env.OLLAMA_BASE_URL || "https://ollama.com/v1";
     const endpoint = `${baseUrl}/chat/completions`;
@@ -118938,13 +118938,13 @@ router15.post("/chat", upload.single("file"), async (req, res) => {
     if (!convId) {
       convId = v4_default();
       const title = fullMessage.slice(0, 50) || "Nueva conversaci\xF3n";
-      await db2.run("INSERT INTO copilot_conversations (id,user_id,title,created_at,updated_at) VALUES(?,?,?,?,?)", [convId, req.user.id, title, (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, ""), (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "")]);
+      await db.run("INSERT INTO copilot_conversations (id,user_id,title,created_at,updated_at) VALUES(?,?,?,?,?)", [convId, req.user.id, title, (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, ""), (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "")]);
     }
-    await db2.run("INSERT INTO copilot_messages (id,conversation_id,role,content,created_at) VALUES(?,?,?,?,?)", [v4_default(), convId, "user", fileContent ? `${fullMessage}
+    await db.run("INSERT INTO copilot_messages (id,conversation_id,role,content,created_at) VALUES(?,?,?,?,?)", [v4_default(), convId, "user", fileContent ? `${fullMessage}
 
 [Archivo: ${fileName}]
 ${fileContent}` : fullMessage, (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "")]);
-    const history = (await db2.all("SELECT role, content FROM copilot_messages WHERE conversation_id=? ORDER BY created_at DESC LIMIT 20", [convId])).reverse();
+    const history = (await db.all("SELECT role, content FROM copilot_messages WHERE conversation_id=? ORDER BY created_at DESC LIMIT 20", [convId])).reverse();
     const useTools = needsTools(fullMessage, !!fileContent);
     const messages = [{ role: "system", content: await buildSystemPrompt(cfg, userName, useTools) }];
     for (const m of history) messages.push({ role: m.role, content: m.content });
@@ -119028,8 +119028,8 @@ ${fileContent}` : fullMessage, (/* @__PURE__ */ new Date()).toISOString().replac
         break;
       }
     }
-    await db2.run("INSERT INTO copilot_messages (id,conversation_id,role,content,tool_calls,tool_results,created_at) VALUES(?,?,?,?,?,?,?)", [v4_default(), convId, "assistant", finalResponse, toolCallsData, toolResultsData, (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "")]);
-    await db2.run("UPDATE copilot_conversations SET updated_at=? WHERE id=?", [(/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, ""), convId]);
+    await db.run("INSERT INTO copilot_messages (id,conversation_id,role,content,tool_calls,tool_results,created_at) VALUES(?,?,?,?,?,?,?)", [v4_default(), convId, "assistant", finalResponse, toolCallsData, toolResultsData, (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "")]);
+    await db.run("UPDATE copilot_conversations SET updated_at=? WHERE id=?", [(/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, ""), convId]);
     return res.json({ conversationId: convId, message: { id: v4_default(), role: "assistant", content: finalResponse } });
   } catch (e) {
     console.error("Chat error:", e);
