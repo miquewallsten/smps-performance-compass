@@ -246,6 +246,10 @@ export default function Layout() {
           >
             <Outlet />
           </div>
+        ) : location.pathname.includes('/timeline') ? (
+          <main className={`flex-1 min-h-0 overflow-hidden pb-16 md:pb-0 ${collapsed ? 'md:ml-14' : 'md:ml-52'} transition-all duration-200`}>
+            <Outlet />
+          </main>
         ) : (
           <main className={`flex-1 min-h-0 overflow-auto pb-16 md:pb-0 ${collapsed ? 'md:ml-14' : 'md:ml-52'} transition-all duration-200`}>
             <div className="p-4 md:p-5 max-w-6xl mx-auto smps-fade-in">

@@ -142,7 +142,7 @@ export default function UserTimeline() {
 
   return (
     /* Negative margins to fill the Layout container padding */
-    <div className="-m-4 md:-m-5 flex flex-col" style={{ height: 'calc(100vh - 3.5rem)' }}>
+    <div className="flex flex-col h-full">
       {/* ── HEADER ──────────────────────────────────────────────────────────── */}
       <div className="shrink-0 border-b bg-background px-4 py-2.5 flex items-center gap-3">
         <button onClick={() => nav(-1)} className="p-1 rounded-md hover:bg-muted transition-[background-color] 150ms ease-out text-muted-foreground hover:text-foreground">
