@@ -501,9 +501,9 @@ var require_has_flag = __commonJS({
     "use strict";
     module2.exports = (flag, argv = process.argv) => {
       const prefix = flag.startsWith("-") ? "" : flag.length === 1 ? "-" : "--";
-      const position2 = argv.indexOf(prefix + flag);
+      const position = argv.indexOf(prefix + flag);
       const terminatorPosition = argv.indexOf("--");
-      return position2 !== -1 && (terminatorPosition === -1 || position2 < terminatorPosition);
+      return position !== -1 && (terminatorPosition === -1 || position < terminatorPosition);
     };
   }
 });
@@ -56743,17 +56743,17 @@ var require_lib5 = __commonJS({
       return true;
     };
     var toLower = (code) => code | 32;
-    var matchesWord = (sql, position2, word, length) => {
+    var matchesWord = (sql, position, word, length) => {
       for (let offset = 0; offset < word.length; offset++)
-        if (toLower(sql.charCodeAt(position2 + offset)) !== word.charCodeAt(offset))
+        if (toLower(sql.charCodeAt(position + offset)) !== word.charCodeAt(offset))
           return false;
-      return (position2 === 0 || !isWordChar(sql.charCodeAt(position2 - 1))) && (position2 + word.length >= length || !isWordChar(sql.charCodeAt(position2 + word.length)));
+      return (position === 0 || !isWordChar(sql.charCodeAt(position - 1))) && (position + word.length >= length || !isWordChar(sql.charCodeAt(position + word.length)));
     };
-    var skipSqlContext = (sql, position2) => {
-      const currentChar = sql.charCodeAt(position2);
-      const nextChar = sql.charCodeAt(position2 + 1);
+    var skipSqlContext = (sql, position) => {
+      const currentChar = sql.charCodeAt(position);
+      const nextChar = sql.charCodeAt(position + 1);
       if (currentChar === charCode.singleQuote) {
-        for (let cursor = position2 + 1; cursor < sql.length; cursor++) {
+        for (let cursor = position + 1; cursor < sql.length; cursor++) {
           if (sql.charCodeAt(cursor) === charCode.backslash)
             cursor++;
           else if (sql.charCodeAt(cursor) === charCode.singleQuote)
@@ -56763,7 +56763,7 @@ var require_lib5 = __commonJS({
       }
       if (currentChar === charCode.backtick) {
         const length = sql.length;
-        for (let cursor = position2 + 1; cursor < length; cursor++) {
+        for (let cursor = position + 1; cursor < length; cursor++) {
           if (sql.charCodeAt(cursor) !== charCode.backtick)
             continue;
           if (sql.charCodeAt(cursor + 1) === charCode.backtick) {
@@ -56775,45 +56775,45 @@ var require_lib5 = __commonJS({
         return length;
       }
       if (currentChar === charCode.dash && nextChar === charCode.dash) {
-        const lineBreak = sql.indexOf("\n", position2 + 2);
+        const lineBreak = sql.indexOf("\n", position + 2);
         return lineBreak === -1 ? sql.length : lineBreak + 1;
       }
       if (currentChar === charCode.slash && nextChar === charCode.asterisk) {
-        const commentEnd = sql.indexOf("*/", position2 + 2);
+        const commentEnd = sql.indexOf("*/", position + 2);
         return commentEnd === -1 ? sql.length : commentEnd + 2;
       }
       return -1;
     };
     var findNextPlaceholder = (sql, start) => {
       const sqlLength = sql.length;
-      for (let position2 = start; position2 < sqlLength; position2++) {
-        const code = sql.charCodeAt(position2);
+      for (let position = start; position < sqlLength; position++) {
+        const code = sql.charCodeAt(position);
         if (code === charCode.questionMark)
-          return position2;
+          return position;
         if (code === charCode.singleQuote || code === charCode.backtick || code === charCode.dash || code === charCode.slash) {
-          const contextEnd = skipSqlContext(sql, position2);
+          const contextEnd = skipSqlContext(sql, position);
           if (contextEnd !== -1)
-            position2 = contextEnd - 1;
+            position = contextEnd - 1;
         }
       }
       return -1;
     };
     var findSetKeyword = (sql, startFrom = 0) => {
       const length = sql.length;
-      for (let position2 = startFrom; position2 < length; position2++) {
-        const code = sql.charCodeAt(position2);
+      for (let position = startFrom; position < length; position++) {
+        const code = sql.charCodeAt(position);
         const lower = code | 32;
         if (code === charCode.singleQuote || code === charCode.backtick || code === charCode.dash || code === charCode.slash) {
-          const contextEnd = skipSqlContext(sql, position2);
+          const contextEnd = skipSqlContext(sql, position);
           if (contextEnd !== -1) {
-            position2 = contextEnd - 1;
+            position = contextEnd - 1;
             continue;
           }
         }
-        if (lower === 115 && matchesWord(sql, position2, "set", length))
-          return position2 + 3;
-        if (lower === 107 && matchesWord(sql, position2, "key", length)) {
-          let cursor = position2 + 3;
+        if (lower === 115 && matchesWord(sql, position, "set", length))
+          return position + 3;
+        if (lower === 107 && matchesWord(sql, position, "key", length)) {
+          let cursor = position + 3;
           while (cursor < length && isWhitespace(sql.charCodeAt(cursor)))
             cursor++;
           if (matchesWord(sql, cursor, "update", length))
@@ -73291,9 +73291,9 @@ var require_tracing = __commonJS({
       }
       return channel.hasSubscribers ?? channel.start?.hasSubscribers ?? false;
     }
-    function traceCallback(channel, fn, position2, context, thisArg, ...args) {
+    function traceCallback(channel, fn, position, context, thisArg, ...args) {
       if (shouldTrace(channel)) {
-        return channel.traceCallback(fn, position2, context(), thisArg, ...args);
+        return channel.traceCallback(fn, position, context(), thisArg, ...args);
       }
       return fn.apply(thisArg, args);
     }
@@ -116272,8 +116272,8 @@ router2.get("/:id", authMiddleware, async (req, res) => {
 });
 router2.post("/", authMiddleware, requireAdmin, async (req, res) => {
   try {
-    const { name, email, position: position2, password, practiceArea, customPositionId: customPositionId2, locationId, isAdmin, isManagingPartner } = req.body;
-    if (!name || !email || !position2 || !password) {
+    const { name, email, position, password, practiceArea, customPositionId, locationId, isAdmin, isManagingPartner } = req.body;
+    if (!name || !email || !position || !password) {
       return res.status(400).json({ error: "Name, email, position, and password are required" });
     }
     if (password.length < 6) {
@@ -116314,9 +116314,9 @@ router2.post("/", authMiddleware, requireAdmin, async (req, res) => {
         securityQuestion,
         hashedAnswer,
         name,
-        position2,
+        position,
         practiceArea ?? null,
-        customPositionId2 ?? null,
+        customPositionId ?? null,
         locationId ?? null,
         finalIsAdmin,
         0,
@@ -116332,8 +116332,8 @@ router2.post("/", authMiddleware, requireAdmin, async (req, res) => {
     );
     const user = await db.get(`SELECT ${SAFE_USER_COLUMNS} FROM users WHERE id = ?`, [id]);
     await logTimelineEvent(id, "hire", {
-      newValue: position2,
-      metadata: { practiceArea: practiceArea || null, customPositionId: customPositionId2 || null, locationId: locationId || null, isAdmin: !!finalIsAdmin, isManagingPartner: !!finalIsMP },
+      newValue: position,
+      metadata: { practiceArea: practiceArea || null, customPositionId: customPositionId || null, locationId: locationId || null, isAdmin: !!finalIsAdmin, isManagingPartner: !!finalIsMP },
       note: "Usuario creado",
       createdBy: req.user.id
     });
@@ -116355,7 +116355,7 @@ router2.patch("/:id", authMiddleware, requireSelfOrAdmin, async (req, res) => {
     const updates = [];
     const values = [];
     if (isAdminUser) {
-      const { name, email, position: position2, practiceArea, customPositionId: customPositionId2, locationId, isActive: isActive2, isAdmin, isManagingPartner, isSuperUser } = req.body;
+      const { name, email, position, practiceArea, customPositionId, locationId, isActive, isAdmin, isManagingPartner, isSuperUser } = req.body;
       if (name !== void 0) {
         updates.push("name = ?");
         values.push(name);
@@ -116364,25 +116364,25 @@ router2.patch("/:id", authMiddleware, requireSelfOrAdmin, async (req, res) => {
         updates.push("email = ?");
         values.push(email);
       }
-      if (position2 !== void 0) {
+      if (position !== void 0) {
         updates.push("position = ?");
-        values.push(position2);
+        values.push(position);
       }
       if (practiceArea !== void 0) {
         updates.push("practice_area = ?");
         values.push(practiceArea);
       }
-      if (customPositionId2 !== void 0) {
+      if (customPositionId !== void 0) {
         updates.push("custom_position_id = ?");
-        values.push(customPositionId2);
+        values.push(customPositionId);
       }
       if (locationId !== void 0) {
         updates.push("location_id = ?");
         values.push(locationId);
       }
-      if (isActive2 !== void 0) {
+      if (isActive !== void 0) {
         updates.push("is_active = ?");
-        values.push(isActive2 ? 1 : 0);
+        values.push(isActive ? 1 : 0);
       }
       const currentIsMP = !!(user.is_managing_partner === 1 || user.is_managing_partner === true);
       const currentIsAdmin = !!(user.is_admin === 1 || user.is_admin === true);
@@ -116432,6 +116432,27 @@ router2.patch("/:id", authMiddleware, requireSelfOrAdmin, async (req, res) => {
         updates.push("is_super_user = ?");
         values.push(isSuperUser ? 1 : 0);
       }
+      if (updates.length > 0) {
+        if (position !== void 0 && position !== user.position) {
+          const changeType = (
+            /* rank comparison */
+            "lateral_move"
+          );
+          await logTimelineEvent(id, "position_change", {
+            oldValue: user.position,
+            newValue: position,
+            metadata: { customPositionId: customPositionId || null, changeType },
+            note: `Posici\xF3n cambiada: ${user.position} \u2192 ${position}`,
+            createdBy: req.user.id
+          });
+        }
+        if (isActive === true && (user.is_active === 0 || user.is_active === false)) {
+          await logTimelineEvent(id, "reactivation", {
+            note: "Usuario reactivado",
+            createdBy: req.user.id
+          });
+        }
+      }
     } else if (isSelf) {
       const { name, email } = req.body;
       if (name !== void 0) {
@@ -116451,27 +116472,6 @@ router2.patch("/:id", authMiddleware, requireSelfOrAdmin, async (req, res) => {
     values.push(id);
     await db.run(`UPDATE users SET ${updates.join(", ")} WHERE id = ?`, values);
     const updatedUser = await db.get(`SELECT ${SAFE_USER_COLUMNS} FROM users WHERE id = ?`, [id]);
-    if (isAdminUser && updates.length > 0) {
-      if (position !== void 0 && position !== user.position) {
-        const changeType = (
-          /* rank comparison */
-          "lateral_move"
-        );
-        await logTimelineEvent(id, "position_change", {
-          oldValue: user.position,
-          newValue: position,
-          metadata: { customPositionId: customPositionId || null, changeType },
-          note: `Posici\xF3n cambiada: ${user.position} \u2192 ${position}`,
-          createdBy: req.user.id
-        });
-      }
-      if (isActive === true && (user.is_active === 0 || user.is_active === false)) {
-        await logTimelineEvent(id, "reactivation", {
-          note: "Usuario reactivado",
-          createdBy: req.user.id
-        });
-      }
-    }
     return res.json(sanitizeUser2(updatedUser));
   } catch (err) {
     console.error("Update user error:", err);
@@ -116832,11 +116832,11 @@ router4.post("/init", async (req, res) => {
           [pos.cve, pos.label, pos.workAreaId, pos.basePosition, now, now]
         );
       }
-      for (const [position2, days] of Object.entries(VACATION_DEFAULTS)) {
+      for (const [position, days] of Object.entries(VACATION_DEFAULTS)) {
         await tx.run(
           conn,
           `INSERT INTO vacation_config (position, days) VALUES (?, ?)`,
-          [position2, days]
+          [position, days]
         );
       }
       await tx.run(
@@ -117891,12 +117891,12 @@ router10.delete("/library/:id", authMiddleware, requireAdmin, async (req, res) =
 });
 router10.get("/custom", authMiddleware, async (req, res) => {
   try {
-    const { position: position2 } = req.query;
+    const { position } = req.query;
     let sql = "SELECT * FROM custom_eval_questions WHERE 1=1";
     const params = [];
-    if (position2) {
+    if (position) {
       sql += " AND position = ?";
-      params.push(position2);
+      params.push(position);
     }
     const questions = await db.all(sql, params);
     return res.json(questions);
@@ -117907,20 +117907,20 @@ router10.get("/custom", authMiddleware, async (req, res) => {
 });
 router10.post("/custom", authMiddleware, requireAdmin, async (req, res) => {
   try {
-    const { position: position2, questions } = req.body;
-    if (!position2) return res.status(400).json({ error: "position is required" });
+    const { position, questions } = req.body;
+    if (!position) return res.status(400).json({ error: "position is required" });
     if (!Array.isArray(questions)) return res.status(400).json({ error: "questions array is required" });
     await db.transaction(async (conn) => {
-      await tx.run(conn, "DELETE FROM custom_eval_questions WHERE position = ?", [position2]);
+      await tx.run(conn, "DELETE FROM custom_eval_questions WHERE position = ?", [position]);
       for (const q of questions) {
         await tx.run(
           conn,
           "INSERT INTO custom_eval_questions (id, position, question_id, category, text, weight, section, practice_area) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-          [v4_default(), position2, q.questionId, q.category, q.text, q.weight, q.section || null, q.practiceArea || null]
+          [v4_default(), position, q.questionId, q.category, q.text, q.weight, q.section || null, q.practiceArea || null]
         );
       }
     });
-    const result = await db.all("SELECT * FROM custom_eval_questions WHERE position = ?", [position2]);
+    const result = await db.all("SELECT * FROM custom_eval_questions WHERE position = ?", [position]);
     return res.json(result);
   } catch (err) {
     console.error("Set custom questions error:", err);
@@ -118001,15 +118001,15 @@ router11.get("/", authMiddleware, async (req, res) => {
 });
 router11.get("/:id", authMiddleware, async (req, res) => {
   try {
-    const position2 = await db.get(
+    const position = await db.get(
       `SELECT cp.*, wa.label AS work_area_label, wa.level AS work_area_level
        FROM custom_positions cp
        JOIN work_areas wa ON cp.work_area_id = wa.id
        WHERE cp.id = ?`,
       [req.params.id]
     );
-    if (!position2) return res.status(404).json({ error: "Position not found" });
-    return res.json(position2);
+    if (!position) return res.status(404).json({ error: "Position not found" });
+    return res.json(position);
   } catch (err) {
     console.error("Get position error:", err);
     return res.status(500).json({ error: "Internal server error" });
@@ -118028,12 +118028,12 @@ router11.post("/", authMiddleware, requireAdmin, async (req, res) => {
       "INSERT INTO custom_positions (id, label, work_area_id, base_position, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)",
       [id, label, workAreaId, basePosition, now, now]
     );
-    const position2 = await db.get(
+    const position = await db.get(
       `SELECT cp.*, wa.label AS work_area_label, wa.level AS work_area_level
        FROM custom_positions cp JOIN work_areas wa ON cp.work_area_id = wa.id WHERE cp.id = ?`,
       [id]
     );
-    return res.status(201).json(position2);
+    return res.status(201).json(position);
   } catch (err) {
     if (err.code === "ER_DUP_ENTRY") {
       return res.status(409).json({ error: "Position ID already exists" });
@@ -118046,8 +118046,8 @@ router11.patch("/:id", authMiddleware, requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     const { label, workAreaId, basePosition, newId } = req.body;
-    const position2 = await db.get("SELECT * FROM custom_positions WHERE id = ?", [id]);
-    if (!position2) return res.status(404).json({ error: "Position not found" });
+    const position = await db.get("SELECT * FROM custom_positions WHERE id = ?", [id]);
+    if (!position) return res.status(404).json({ error: "Position not found" });
     if (newId && newId !== id) {
       const userCount = await db.get(
         "SELECT COUNT(*) AS cnt FROM users WHERE custom_position_id = ?",
@@ -118099,8 +118099,8 @@ router11.patch("/:id", authMiddleware, requireAdmin, async (req, res) => {
 });
 router11.delete("/:id", authMiddleware, requireAdmin, async (req, res) => {
   try {
-    const position2 = await db.get("SELECT * FROM custom_positions WHERE id = ?", [req.params.id]);
-    if (!position2) return res.status(404).json({ error: "Position not found" });
+    const position = await db.get("SELECT * FROM custom_positions WHERE id = ?", [req.params.id]);
+    if (!position) return res.status(404).json({ error: "Position not found" });
     const userCount = await db.get(
       "SELECT COUNT(*) AS cnt FROM users WHERE custom_position_id = ?",
       [req.params.id]

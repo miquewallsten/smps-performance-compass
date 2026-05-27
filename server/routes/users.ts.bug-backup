@@ -293,25 +293,6 @@ router.patch('/:id', authMiddleware, requireSelfOrAdmin, async (req: Request, re
         }
         updates.push('is_super_user = ?'); values.push(isSuperUser ? 1 : 0);
       }
-      // Log position changes and reactivation to timeline
-      if (updates.length > 0) {
-        if (position !== undefined && position !== user.position) {
-          const changeType = /* rank comparison */ 'lateral_move'; // simplified
-          await logTimelineEvent(id, 'position_change', {
-            oldValue: user.position as string,
-            newValue: position,
-            metadata: { customPositionId: customPositionId || null, changeType },
-            note: `Posición cambiada: ${(user.position as string)} → ${position}`,
-            createdBy: req.user!.id
-          });
-        }
-        if (isActive === true && (user.is_active === 0 || user.is_active === false)) {
-          await logTimelineEvent(id, 'reactivation', {
-            note: 'Usuario reactivado',
-            createdBy: req.user!.id
-          });
-        }
-      }
     } else if (isSelf) {
       // Self can only change name and email
       const { name, email } = req.body as { name?: string; email?: string };
@@ -331,6 +312,25 @@ router.patch('/:id', authMiddleware, requireSelfOrAdmin, async (req: Request, re
     await db.run(`UPDATE users SET ${updates.join(', ')} WHERE id = ?`, values);
 
     const updatedUser = await db.get(`SELECT ${SAFE_USER_COLUMNS} FROM users WHERE id = ?`, [id]) as Record<string, unknown>;
+    // Log position changes and reactivation to timeline
+    if (isAdminUser && updates.length > 0) {
+      if (position !== undefined && position !== user.position) {
+        const changeType = /* rank comparison */ 'lateral_move'; // simplified
+        await logTimelineEvent(id, 'position_change', {
+          oldValue: user.position as string,
+          newValue: position,
+          metadata: { customPositionId: customPositionId || null, changeType },
+          note: `Posición cambiada: ${(user.position as string)} → ${position}`,
+          createdBy: req.user!.id
+        });
+      }
+      if (isActive === true && (user.is_active === 0 || user.is_active === false)) {
+        await logTimelineEvent(id, 'reactivation', {
+          note: 'Usuario reactivado',
+          createdBy: req.user!.id
+        });
+      }
+    }
     return res.json(sanitizeUser(updatedUser));
   } catch (err) {
     console.error('Update user error:', err);
