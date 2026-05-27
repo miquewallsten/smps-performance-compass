@@ -168,7 +168,7 @@ export default function Layout() {
       </header>
 
       <div className="flex flex-1 pt-14 min-h-0 overflow-hidden">
-        <aside className={`${collapsed ? 'w-14' : 'w-52'} bg-sidebar border-r border-sidebar-border transition-all duration-200 flex-shrink-0 hidden md:flex flex-col fixed top-14 left-0 bottom-0 z-40`}>
+        <aside className={`${collapsed ? 'w-14' : 'w-52'} bg-sidebar border-r border-sidebar-border transition-all duration-200 flex-shrink-0 hidden md:flex flex-col sticky top-14 self-stretch`}>
           <nav className="flex-1 py-3 px-2 space-y-0.5 overflow-y-auto">
             {showEvalModule && (
               <>
@@ -241,17 +241,16 @@ export default function Layout() {
 
         {location.pathname === '/copilot' ? (
           <div
-            className="fixed top-14 bottom-0 right-0 smps-fade-in transition-all duration-200"
-            style={{ left: collapsed ? '3.5rem' : '13rem' }}
+            className="flex-1 min-h-0 smps-fade-in transition-all duration-200"
           >
             <Outlet />
           </div>
         ) : location.pathname.includes('/timeline') ? (
-          <main className={`flex-1 min-h-0 overflow-hidden pb-16 md:pb-0 ${collapsed ? 'md:ml-14' : 'md:ml-52'} transition-all duration-200`}>
+          <main className={`flex-1 min-h-0 overflow-hidden pb-16 md:pb-0 transition-all duration-200`}>
             <Outlet />
           </main>
         ) : (
-          <main className={`flex-1 min-h-0 overflow-auto pb-16 md:pb-0 ${collapsed ? 'md:ml-14' : 'md:ml-52'} transition-all duration-200`}>
+          <main className={`flex-1 min-h-0 overflow-auto pb-16 md:pb-0 transition-all duration-200`}>
             <div className="p-4 md:p-5 max-w-6xl mx-auto smps-fade-in">
               <PeriodEndAlert />
               <Outlet />
