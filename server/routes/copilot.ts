@@ -211,7 +211,7 @@ function needsTools(message: string, hasFile: boolean): boolean {
 }
 
 // ─── TOOLS ──────────────────────────────────────────────────────────────────
-const UF = 'id,name,email,position,practice_area,is_admin,is_super_user,is_managing_partner,is_active';
+const UF = 'id,name,email,position,practice_area,custom_position_id,location_id,is_admin,is_super_user,is_managing_partner,is_active';
 
 function getTools(cfg: Record<string, unknown>): Tool[] {
   const t: Tool[] = [];
@@ -362,8 +362,15 @@ function getTools(cfg: Record<string, unknown>): Tool[] {
           if (isMP) { const currentMPs = await db.all('SELECT id, name FROM users WHERE is_managing_partner = 1 AND is_super_user = 0'); if (currentMPs.length >= 1) return JSON.stringify({ error: `Solo puede haber 1 Socio Administrador. Actualmente es ${currentMPs[0].name}` }); }
           if (isAdmin && !isMP) { const currentAdmins = await db.all('SELECT id FROM users WHERE is_admin = 1 AND is_super_user = 0'); if (currentAdmins.length >= 2) return JSON.stringify({ error: 'Máximo 2 Usuario Administrador permitidos' }); }
           const id = uuidv4(), hp = await hashPassword(args.password as string), now = new Date().toISOString();
-          await db.run('INSERT INTO users (id,email,password_hash,security_question,security_answer,name,position,practice_area,is_admin,is_super_user,is_managing_partner,is_active,must_change_password,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
-            [id, args.email, hp, '¿Email?', args.email, args.name, args.position, (args.practice_area as string) || null, isAdmin ? 1 : 0, 0, isMP ? 1 : 0, 1, 1, now, now]);
+          // Derive practice_area and position from custom_position_id if provided
+          let derivedPosition = args.position as string;
+          let derivedArea = (args.practice_area as string) || null;
+          if (args.custom_position_id) {
+            const posRow = await db.get('SELECT cp.base_position, cp.work_area_id, wa.level FROM custom_positions cp JOIN work_areas wa ON cp.work_area_id = wa.id WHERE cp.id = ?', [args.custom_position_id]);
+            if (posRow) { derivedPosition = posRow.base_position; derivedArea = posRow.level === 'legal' ? posRow.work_area_id : null; }
+          }
+          await db.run('INSERT INTO users (id,email,password_hash,security_question,security_answer,name,position,practice_area,custom_position_id,location_id,is_admin,is_super_user,is_managing_partner,is_active,must_change_password,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
+            [id, args.email, hp, '¿Email?', args.email, args.name, derivedPosition, derivedArea, (args.custom_position_id as string) || null, (args.location_id as string) || null, isAdmin ? 1 : 0, 0, isMP ? 1 : 0, 1, 1, now, now]);
           return JSON.stringify({ ok: true, msg: `"${args.name}" creado`, id });
         }
         if (act === 'batch_create') {
@@ -374,8 +381,15 @@ function getTools(cfg: Record<string, unknown>): Tool[] {
             const ex = await db.get('SELECT id FROM users WHERE email=?', [u.email]);
             if (ex) { r.push({ email: u.email, error: 'Ya existe' }); continue; }
             const id = uuidv4(), hp = await hashPassword(u.password as string), now = new Date().toISOString();
-            await db.run('INSERT INTO users (id,email,password_hash,security_question,security_answer,name,position,practice_area,is_admin,is_super_user,is_managing_partner,is_active,must_change_password,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
-              [id, u.email, hp, '¿Email?', u.email, u.name, u.position, (u.practice_area as string) || null, 0, 0, 0, 1, 1, now, now]);
+            // Derive from custom_position_id if provided
+            let bPosition = u.position as string;
+            let bArea = (u.practice_area as string) || null;
+            if (u.custom_position_id) {
+              const posRow = await db.get('SELECT cp.base_position, cp.work_area_id, wa.level FROM custom_positions cp JOIN work_areas wa ON cp.work_area_id = wa.id WHERE cp.id = ?', [u.custom_position_id]);
+              if (posRow) { bPosition = posRow.base_position; bArea = posRow.level === 'legal' ? posRow.work_area_id : null; }
+            }
+            await db.run('INSERT INTO users (id,email,password_hash,security_question,security_answer,name,position,practice_area,custom_position_id,location_id,is_admin,is_super_user,is_managing_partner,is_active,must_change_password,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
+              [id, u.email, hp, '¿Email?', u.email, u.name, bPosition, bArea, (u.custom_position_id as string) || null, (u.location_id as string) || null, 0, 0, 0, 1, 1, now, now]);
             r.push({ email: u.email, ok: true, id });
           }
           return JSON.stringify({ msg: `${r.filter(x => x.ok).length}/${us.length} creados`, results: r });

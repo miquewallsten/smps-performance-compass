@@ -8,6 +8,7 @@ interface AuthUser {
   position: string;
   practiceArea?: string;
   customPositionId?: string;
+  locationId?: string;
   isAdmin: boolean;
   isSuperUser: boolean;
   isManagingPartner: boolean;

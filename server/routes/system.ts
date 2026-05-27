@@ -5,7 +5,7 @@ import { signToken, getRole } from '../auth/jwt.js';
 import { hashPassword, hashSecurityAnswer } from '../auth/security.js';
 import { authMiddleware } from '../middleware/auth.js';
 import { requireSuperUser } from '../middleware/rbac.js';
-import { POSITION_CATALOG } from '../data/positionCatalog.js';
+import { WORK_AREAS, POSITION_CATALOG } from '../data/positionCatalog.js';
 
 const router = Router();
 
@@ -90,31 +90,38 @@ router.post('/init', async (req: Request, res: Response) => {
          VALUES (?, ?, ?, ?, ?, ?, ?, 1, 1, 1, 1, 0, ?, ?)`,
         [userId, email, hashedPassword, securityQuestion, hashedAnswer, name, 'socio', now, now]);
 
-      // 2. Seed all custom positions
-      for (const pos of POSITION_CATALOG) {
+      // 2. Seed work areas
+      for (const area of WORK_AREAS) {
         await tx.run(conn,
-          `INSERT INTO custom_positions (id, label, level, practice_area, base_position, created_at)
-           VALUES (?, ?, ?, ?, ?, ?)`,
-          [pos.cve, pos.label, pos.level, pos.practiceArea ?? null, pos.basePosition, now]);
+          `INSERT INTO work_areas (id, label, level, sort_order, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)`,
+          [area.id, area.label, area.level, area.sortOrder, now, now]);
       }
 
-      // 3. Seed vacation config defaults
+      // 3. Seed all custom positions
+      for (const pos of POSITION_CATALOG) {
+        await tx.run(conn,
+          `INSERT INTO custom_positions (id, label, work_area_id, base_position, created_at, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?)`,
+          [pos.cve, pos.label, pos.workAreaId, pos.basePosition, now, now]);
+      }
+
+      // 4. Seed vacation config defaults
       for (const [position, days] of Object.entries(VACATION_DEFAULTS)) {
         await tx.run(conn,
           `INSERT INTO vacation_config (position, days) VALUES (?, ?)`,
           [position, days]);
       }
 
-      // 4. Seed module config (all enabled)
+      // 5. Seed module config (all enabled)
       await tx.run(conn,
         `INSERT INTO module_config (id, evaluations, communications, vacations, copilot) VALUES (1, 1, 1, 1, 1)`);
 
-      // 5. Seed system status
+      // 6. Seed system status
       await tx.run(conn,
         `INSERT INTO system_status (id, status, activation_date, payment_plan, max_users, tickets) VALUES (1, 'active', ?, 'monthly', 50, 0)`,
         [now]);
 
-      // 6. Seed activation history
+      // 7. Seed activation history
       await tx.run(conn,
         `INSERT INTO activation_history (id, action, date, by_user_id) VALUES (?, 'activated', ?, ?)`,
         [uuidv4(), now, userId]);

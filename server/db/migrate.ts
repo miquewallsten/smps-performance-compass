@@ -21,6 +21,7 @@ export async function migrate(): Promise<void> {
       is_managing_partner TINYINT(1) NOT NULL DEFAULT 0,
       is_active TINYINT(1) NOT NULL DEFAULT 1,
       must_change_password TINYINT(1) NOT NULL DEFAULT 0,
+      location_id VARCHAR(50),
       created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
       updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
@@ -38,10 +39,31 @@ export async function migrate(): Promise<void> {
     `CREATE TABLE IF NOT EXISTS custom_positions (
       id VARCHAR(36) PRIMARY KEY,
       label VARCHAR(255) NOT NULL,
-      level VARCHAR(50) NOT NULL,
-      practice_area VARCHAR(255),
+      work_area_id VARCHAR(50) NOT NULL,
       base_position VARCHAR(50) NOT NULL,
-      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+
+    `CREATE TABLE IF NOT EXISTS work_areas (
+      id VARCHAR(50) PRIMARY KEY,
+      label VARCHAR(255) NOT NULL,
+      level ENUM('legal','administrativo') NOT NULL,
+      sort_order INT NOT NULL DEFAULT 0,
+      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+
+    `CREATE TABLE IF NOT EXISTS locations (
+      id VARCHAR(50) PRIMARY KEY,
+      label VARCHAR(255) NOT NULL,
+      city VARCHAR(255),
+      office VARCHAR(255),
+      floor VARCHAR(50),
+      desk VARCHAR(50),
+      sort_order INT NOT NULL DEFAULT 0,
+      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
 
     `CREATE TABLE IF NOT EXISTS period_configs (
@@ -419,6 +441,37 @@ export async function migrate(): Promise<void> {
 
     // vacation_requests: add days column if missing
     `ALTER TABLE vacation_requests ADD COLUMN IF NOT EXISTS days INT NOT NULL DEFAULT 0 AFTER end_date`,
+
+    // ─── Work Areas & Positions & Locations ──────────────────────────────────
+    // work_areas: create table
+    `CREATE TABLE IF NOT EXISTS work_areas (
+      id VARCHAR(50) PRIMARY KEY,
+      label VARCHAR(255) NOT NULL,
+      level ENUM('legal','administrativo') NOT NULL,
+      sort_order INT NOT NULL DEFAULT 0,
+      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+
+    // locations: create table
+    `CREATE TABLE IF NOT EXISTS locations (
+      id VARCHAR(50) PRIMARY KEY,
+      label VARCHAR(255) NOT NULL,
+      city VARCHAR(255),
+      office VARCHAR(255),
+      floor VARCHAR(50),
+      desk VARCHAR(50),
+      sort_order INT NOT NULL DEFAULT 0,
+      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+
+    // custom_positions: add work_area_id and updated_at
+    `ALTER TABLE custom_positions ADD COLUMN IF NOT EXISTS work_area_id VARCHAR(50) AFTER label`,
+    `ALTER TABLE custom_positions ADD COLUMN IF NOT EXISTS updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP`,
+
+    // users: add location_id
+    `ALTER TABLE users ADD COLUMN IF NOT EXISTS location_id VARCHAR(50) AFTER must_change_password`,
   ];
 
   for (const sql of alterMigrations) {

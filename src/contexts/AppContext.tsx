@@ -1,7 +1,6 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { User, Evaluation, SupervisorAssignment, ActionPlan, EvalQuestion, Position, PersonalObjectives, Announcement, VacationRequest, ExtraVacationDays, ModuleConfig, ActivationHistoryEntry, PeriodConfig, LibraryQuestion, CustomPosition, AdminObjectiveStatus } from '@/types';
 import { MOCK_USERS, MOCK_ASSIGNMENTS, MOCK_EVALUATIONS } from '@/data/mockData';
-import { asCustomPositions } from '@/data/positionCatalog';
 
 export interface SystemStatus {
   status: 'active' | 'inactive';

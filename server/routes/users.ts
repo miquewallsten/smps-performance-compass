@@ -14,7 +14,7 @@ function sanitizeUser(user: Record<string, unknown>) {
 }
 
 // Columns to select for safe user responses (excludes password_hash and security_answer)
-const SAFE_USER_COLUMNS = `id, name, email, position, practice_area, custom_position_id, is_admin, is_super_user, is_managing_partner, is_active, must_change_password, created_at, updated_at`;
+const SAFE_USER_COLUMNS = `id, name, email, position, practice_area, custom_position_id, location_id, is_admin, is_super_user, is_managing_partner, is_active, must_change_password, created_at, updated_at`;
 
 // ─── GET /api/users ──────────────────────────────────────────────────────
 // Visibility rules:
@@ -98,13 +98,14 @@ router.get('/:id', authMiddleware, async (req: Request, res: Response) => {
 // ─── POST /api/users ─────────────────────────────────────────────────────
 router.post('/', authMiddleware, requireAdmin, async (req: Request, res: Response) => {
   try {
-    const { name, email, position, password, practiceArea, customPositionId, isAdmin, isManagingPartner } = req.body as {
+    const { name, email, position, password, practiceArea, customPositionId, locationId, isAdmin, isManagingPartner } = req.body as {
       name?: string;
       email?: string;
       position?: string;
       password?: string;
       practiceArea?: string;
       customPositionId?: string;
+      locationId?: string;
       isAdmin?: boolean;
       isManagingPartner?: boolean;
     };
@@ -150,8 +151,8 @@ router.post('/', authMiddleware, requireAdmin, async (req: Request, res: Respons
     const now = new Date().toISOString();
 
     await db.run(
-      `INSERT INTO users (id, email, password_hash, security_question, security_answer, name, position, practice_area, custom_position_id, is_admin, is_super_user, is_managing_partner, is_active, must_change_password, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO users (id, email, password_hash, security_question, security_answer, name, position, practice_area, custom_position_id, location_id, is_admin, is_super_user, is_managing_partner, is_active, must_change_password, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         id,
         email,
@@ -162,6 +163,7 @@ router.post('/', authMiddleware, requireAdmin, async (req: Request, res: Respons
         position,
         practiceArea ?? null,
         customPositionId ?? null,
+        locationId ?? null,
         finalIsAdmin,
         0, // isSuperUser is always false for admin-created users
         finalIsMP,
@@ -198,12 +200,13 @@ router.patch('/:id', authMiddleware, requireSelfOrAdmin, async (req: Request, re
 
     if (isAdminUser) {
       // Admin can change all fields including role fields
-      const { name, email, position, practiceArea, customPositionId, isActive, isAdmin, isManagingPartner, isSuperUser } = req.body as {
+      const { name, email, position, practiceArea, customPositionId, locationId, isActive, isAdmin, isManagingPartner, isSuperUser } = req.body as {
         name?: string;
         email?: string;
         position?: string;
         practiceArea?: string;
         customPositionId?: string;
+        locationId?: string;
         isActive?: boolean;
         isAdmin?: boolean;
         isManagingPartner?: boolean;
@@ -215,6 +218,7 @@ router.patch('/:id', authMiddleware, requireSelfOrAdmin, async (req: Request, re
       if (position !== undefined) { updates.push('position = ?'); values.push(position); }
       if (practiceArea !== undefined) { updates.push('practice_area = ?'); values.push(practiceArea); }
       if (customPositionId !== undefined) { updates.push('custom_position_id = ?'); values.push(customPositionId); }
+      if (locationId !== undefined) { updates.push('location_id = ?'); values.push(locationId); }
       if (isActive !== undefined) { updates.push('is_active = ?'); values.push(isActive ? 1 : 0); }
 
       // Role fields with validation - only validate when the value is CHANGING

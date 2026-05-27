@@ -23,6 +23,7 @@ import QuestionLibrary from "./pages/QuestionLibrary";
 import MyActionPlan from "./pages/MyActionPlan";
 import MyProfile from "./pages/MyProfile";
 import CopilotChat from "./pages/CopilotChat";
+import PositionManagement from "./pages/PositionManagement";
 import NotFound from "./pages/NotFound";
 import SetupPage from "./pages/Setup";
 import Login from "./pages/Login";
@@ -89,6 +90,7 @@ function AppRoutes() {
         <Route path="evaluations" element={<Evaluations />} />
         <Route path="reports" element={<Reports />} />
         <Route path="users" element={<UserManagement />} />
+        <Route path="positions" element={<PositionManagement />} />
         <Route path="assign" element={<AssignSupervisors />} />
         <Route path="orgchart" element={<OrgChart />} />
         <Route path="settings" element={<SettingsPage />} />

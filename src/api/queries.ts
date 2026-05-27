@@ -181,16 +181,54 @@ export function useUpdateSeedOverride() {
 }
 
 // ── Positions ──
-export function usePositions() {
-  return useQuery({ queryKey: ['positions'], queryFn: () => api.get<any[]>('/api/positions') });
+export function usePositions(workAreaId?: string) {
+  return useQuery({ queryKey: ['positions', workAreaId], queryFn: () => api.get<any[]>(workAreaId ? `/api/positions?work_area_id=${workAreaId}` : '/api/positions') });
 }
 export function useCreatePosition() {
   const qc = useQueryClient();
-  return useMutation({ mutationFn: (data: any) => api.post('/api/positions', data), onSuccess: () => qc.invalidateQueries({ queryKey: ['positions'] }) });
+  return useMutation({ mutationFn: (data: any) => api.post('/api/positions', data), onSuccess: () => { qc.invalidateQueries({ queryKey: ['positions'] }); qc.invalidateQueries({ queryKey: ['workAreas'] }); } });
+}
+export function useUpdatePosition() {
+  const qc = useQueryClient();
+  return useMutation({ mutationFn: ({ id, ...data }: any) => api.patch(`/api/positions/${id}`, data), onSuccess: () => { qc.invalidateQueries({ queryKey: ['positions'] }); qc.invalidateQueries({ queryKey: ['workAreas'] }); qc.invalidateQueries({ queryKey: ['users'] }); } });
 }
 export function useDeletePosition() {
   const qc = useQueryClient();
-  return useMutation({ mutationFn: (id: string) => api.delete(`/api/positions/${id}`), onSuccess: () => qc.invalidateQueries({ queryKey: ['positions'] }) });
+  return useMutation({ mutationFn: (id: string) => api.delete(`/api/positions/${id}`), onSuccess: () => { qc.invalidateQueries({ queryKey: ['positions'] }); qc.invalidateQueries({ queryKey: ['workAreas'] }); } });
+}
+
+// ── Work Areas ──
+export function useWorkAreas() {
+  return useQuery({ queryKey: ['workAreas'], queryFn: () => api.get<any[]>('/api/work-areas') });
+}
+export function useCreateWorkArea() {
+  const qc = useQueryClient();
+  return useMutation({ mutationFn: (data: any) => api.post('/api/work-areas', data), onSuccess: () => qc.invalidateQueries({ queryKey: ['workAreas'] }) });
+}
+export function useUpdateWorkArea() {
+  const qc = useQueryClient();
+  return useMutation({ mutationFn: ({ id, ...data }: any) => api.patch(`/api/work-areas/${id}`, data), onSuccess: () => qc.invalidateQueries({ queryKey: ['workAreas'] }) });
+}
+export function useDeleteWorkArea() {
+  const qc = useQueryClient();
+  return useMutation({ mutationFn: (id: string) => api.delete(`/api/work-areas/${id}`), onSuccess: () => qc.invalidateQueries({ queryKey: ['workAreas'] }) });
+}
+
+// ── Locations ──
+export function useLocations() {
+  return useQuery({ queryKey: ['locations'], queryFn: () => api.get<any[]>('/api/locations') });
+}
+export function useCreateLocation() {
+  const qc = useQueryClient();
+  return useMutation({ mutationFn: (data: any) => api.post('/api/locations', data), onSuccess: () => qc.invalidateQueries({ queryKey: ['locations'] }) });
+}
+export function useUpdateLocation() {
+  const qc = useQueryClient();
+  return useMutation({ mutationFn: ({ id, ...data }: any) => api.patch(`/api/locations/${id}`, data), onSuccess: () => qc.invalidateQueries({ queryKey: ['locations'] }) });
+}
+export function useDeleteLocation() {
+  const qc = useQueryClient();
+  return useMutation({ mutationFn: (id: string) => api.delete(`/api/locations/${id}`), onSuccess: () => qc.invalidateQueries({ queryKey: ['locations'] }) });
 }
 
 // ── Periods ──

@@ -89,7 +89,7 @@ export default function MyProfile() {
           <div><span className="text-muted-foreground">Nombre:</span> <span className="font-medium">{currentUser.name}</span></div>
           <div><span className="text-muted-foreground">Email:</span> <span className="font-medium">{currentUser.email}</span></div>
           <div><span className="text-muted-foreground">Posición:</span> <span className="font-medium">{POSITION_LABELS[currentUser.position]}</span></div>
-          <div><span className="text-muted-foreground">Área:</span> <span className="font-medium">{LEVEL_LABELS[level]}</span></div>
+          <div><span className="text-muted-foreground">Área:</span> <span className="font-medium">{currentUser.practiceArea ? currentUser.practiceArea.charAt(0).toUpperCase() + currentUser.practiceArea.slice(1).replace(/_/g, ' ') : LEVEL_LABELS[level]}</span></div>
         </div>
       </div>
 

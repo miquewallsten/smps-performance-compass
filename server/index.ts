@@ -16,6 +16,8 @@ import announcementRoutes from './routes/announcements.js';
 import vacationRoutes from './routes/vacations.js';
 import questionRoutes from './routes/questions.js';
 import positionRoutes from './routes/positions.js';
+import workAreaRoutes from './routes/work-areas.js';
+import locationRoutes from './routes/locations.js';
 import periodRoutes from './routes/periods.js';
 import copilotRoutes from './routes/copilot.js';
 
@@ -44,6 +46,8 @@ app.use('/api/announcements', announcementRoutes);
 app.use('/api/vacations', vacationRoutes);
 app.use('/api/questions', questionRoutes);
 app.use('/api/positions', positionRoutes);
+app.use('/api/work-areas', workAreaRoutes);
+app.use('/api/locations', locationRoutes);
 app.use('/api/periods', periodRoutes);
 app.use('/api/copilot', copilotRoutes);
 

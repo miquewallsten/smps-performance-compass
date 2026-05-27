@@ -4,7 +4,7 @@ import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 import {
   LayoutDashboard, ClipboardCheck, Users, BarChart3, Settings, LogOut,
   UserCheck, ClipboardList, ChevronLeft, ChevronRight, Menu, Map, Shield, FileText, Target, Bot,
-  Megaphone, Palmtree, ChevronDown, HelpCircle, BookOpen, Calendar, User as UserIcon
+  Megaphone, Palmtree, ChevronDown, HelpCircle, BookOpen, Calendar, User as UserIcon, Briefcase
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { NavLink } from '@/components/NavLink';
@@ -29,6 +29,7 @@ export default function Layout() {
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
   const [evalGroupOpen, setEvalGroupOpen] = useState(true);
+  const [userGroupOpen, setUserGroupOpen] = useState(true);
 
   useEffect(() => {
     if (!currentUser) navigate('/login');
@@ -107,10 +108,14 @@ export default function Layout() {
     { to: '/evaluations', icon: ClipboardList, label: 'Evaluar', show: hasTeam || isAdminOrSuper || isManagingPartner, badge: pendingEvalCount > 1 ? pendingEvalCount - (evaluations.some(e => e.evaluatedId === currentUser.id && e.type === 'self' && e.period === CURRENT_PERIOD) ? 0 : 0) : 0 },
   ];
 
+  const userGroupItems = [
+    { to: '/users', icon: Users, label: 'Colaboradores', show: isAdminOrSuper },
+    { to: '/positions', icon: Briefcase, label: 'Áreas y Puestos', show: isAdminOrSuper },
+  ];
+
   const otherItems = [
     { to: '/reports', icon: BarChart3, label: 'Reportes', show: isAdminOrSuper || isManagingPartner },
     { to: '/orgchart', icon: Map, label: 'Organigrama', show: isAdminOrSuper || isManagingPartner || isSocio },
-    { to: '/users', icon: Users, label: 'Usuarios', show: isAdminOrSuper },
     { to: '/assign', icon: UserCheck, label: 'Asignar', show: isAdminOrSuper },
     { to: '/evaluation-templates', icon: BookOpen, label: 'Plantillas', show: isAdminOrSuper },
     { to: '/question-library', icon: BookOpen, label: 'Preguntas', show: isAdminOrSuper },
@@ -175,6 +180,26 @@ export default function Layout() {
                   </button>
                 )}
                 {(evalGroupOpen || collapsed) && evalItems.map(item => (
+                  <div key={item.to} className="relative">
+                    {renderNavItem(item)}
+                  </div>
+                ))}
+                {!collapsed && <div className="border-b border-sidebar-border my-1.5" />}
+              </>
+            )}
+            {/* Usuarios Group */}
+            {userGroupItems.some(item => item.show) && (
+              <>
+                {!collapsed && (
+                  <button
+                    onClick={() => setUserGroupOpen(!userGroupOpen)}
+                    className="flex items-center gap-2 px-3 py-1.5 text-[11px] uppercase tracking-widest text-sidebar-foreground/40 font-semibold w-full hover:text-sidebar-foreground/60 transition-colors"
+                  >
+                    <span>Usuarios</span>
+                    <ChevronDown className={`h-3 w-3 ml-auto transition-transform duration-200 ${userGroupOpen ? '' : '-rotate-90'}`} />
+                  </button>
+                )}
+                {(userGroupOpen || collapsed) && userGroupItems.filter(item => item.show).map(item => (
                   <div key={item.to} className="relative">
                     {renderNavItem(item)}
                   </div>

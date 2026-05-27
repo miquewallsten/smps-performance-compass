@@ -124,14 +124,42 @@ export interface LibraryQuestion {
   createdBy?: string;
 }
 
-/** Posición custom dada de alta por el admin (heredera de una posición base). */
+/** Posición (CVE Puesto) dada de alta por el admin. */
 export interface CustomPosition {
-  id: string;          // p. ej. "custom-abc123"
+  id: string;              // CVE code, e.g. "SMPS12"
+  label: string;           // e.g. "Asociado Jr Corporativo"
+  workAreaId: string;      // FK → WorkArea.id
+  basePosition: Position;  // posición base de la que hereda plantilla y pesos
+  workAreaLabel?: string;  // joined from work_areas
+  workAreaLevel?: PositionLevel; // joined from work_areas
+  createdAt: string;
+  updatedAt?: string;
+}
+
+/** Área de trabajo (Legal / Administrativo). */
+export interface WorkArea {
+  id: string;
   label: string;
   level: PositionLevel;
-  practiceArea?: PracticeArea; // solo legal
-  basePosition: Position;      // posición existente de la que hereda plantilla y pesos
+  sortOrder: number;
+  positionCount?: number;
+  positions?: CustomPosition[];
   createdAt: string;
+  updatedAt?: string;
+}
+
+/** Ubicación física del empleado (ciudad, oficina, piso, escritorio). */
+export interface Location {
+  id: string;
+  label: string;
+  city?: string;
+  office?: string;
+  floor?: string;
+  desk?: string;
+  sortOrder: number;
+  userCount?: number;
+  createdAt: string;
+  updatedAt?: string;
 }
 
 export interface User {
@@ -141,6 +169,7 @@ export interface User {
   position: Position;
   practiceArea?: PracticeArea; // solo aplica a posiciones legales
   customPositionId?: string;   // referencia al catálogo de puestos (cve_puesto)
+  locationId?: string;        // FK → Location.id
   isAdmin: boolean;
   isActive: boolean;
   password: string;
