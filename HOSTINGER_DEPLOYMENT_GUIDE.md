@@ -24,7 +24,7 @@ GitHub Actions triggers webhook on server
         ↓
 Server: git pull → npm install --omit=dev → Passenger restart
         ↓
-✅ Live at bowdot.online!
+✅ Live at smps.bowdot.online!
 ```
 
 ---
@@ -53,14 +53,14 @@ GitHub Actions builds, commits artifacts, and triggers the webhook automatically
 SSH into the server and run:
 ```bash
 ssh -p 65002 u906489923@82.29.157.108
-cd ~/domains/bowdot.online/nodejs
+cd ~/domains/bowdot.online/smps-app
 git pull
 bash build-and-restart.sh
 ```
 
 ### Manual webhook trigger
 ```bash
-curl -X POST https://bowdot.online/deploy-webhook.php \
+curl -X POST https://smps.bowdot.online/deploy-webhook.php \
   -H "Content-Type: application/json" \
   -H "X-Hub-Signature-256: sha256=$(echo -n '{"ref":"refs/heads/main","head_commit":{"id":"manual","message":"manual deploy"}}' | openssl dgst -sha256 -hmac 'smps-deploy-webhook-2025' | awk '{print $NF}')" \
   -d '{"ref":"refs/heads/main","head_commit":{"id":"manual","message":"manual deploy"}}'
@@ -101,9 +101,9 @@ Set in **hPanel → Advanced → Node.js → Environment Variables** OR in `.env
 
 | Item | Value |
 |------|-------|
-| **Live URL** | https://bowdot.online |
-| **Health check** | https://bowdot.online/api/health |
+| **Live URL** | https://smps.bowdot.online |
+| **Health check** | https://smps.bowdot.online/api/health |
 | **SuperAdmin** | lab@bowdot.com / 3791 |
 | **CI pipeline** | GitHub Actions (build + test) |
 | **Deployment** | Webhook → git pull → restart |
-| **Webhook URL** | https://bowdot.online/deploy-webhook.php |
+| **Webhook URL** | https://smps.bowdot.online/deploy-webhook.php |

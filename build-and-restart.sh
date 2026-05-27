@@ -6,10 +6,10 @@ set -e
 # This script only installs prod deps and restarts Passenger.
 
 export HOME="/home/u906489923"
-export PATH="/home/u906489923/domains/bowdot.online/nodejs/node_modules/.bin:/opt/alt/alt-nodejs22/root/usr/bin:/usr/local/bin:/usr/bin:/bin"
+export PATH="/home/u906489923/domains/bowdot.online/smps-app/node_modules/.bin:/opt/alt/alt-nodejs22/root/usr/bin:/usr/local/bin:/usr/bin:/bin"
 export LD_LIBRARY_PATH="/opt/alt/alt-nodejs22/root/usr/lib64"
 
-cd /home/u906489923/domains/bowdot.online/nodejs
+cd /home/u906489923/domains/bowdot.online/smps-app
 
 echo "=== Post-deploy starting ==="
 echo "Working directory: $(pwd)"

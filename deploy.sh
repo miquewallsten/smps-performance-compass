@@ -19,7 +19,7 @@ fi
 SSH_HOST="${HOSTINGER_HOST:-82.29.157.108}"
 SSH_PORT="${HOSTINGER_PORT:-65002}"
 SSH_USER="${HOSTINGER_USER:-u906489923}"
-REMOTE_PATH="${HOSTINGER_PATH:-~/domains/bowdot.online/nodejs}"
+REMOTE_PATH="${HOSTINGER_PATH:-~/domains/bowdot.online/smps-app}"
 
 SSH_CMD="ssh -i $SSH_KEY -p $SSH_PORT -o StrictHostKeyChecking=no $SSH_USER@$SSH_HOST"
 SCP_CMD="scp -i $SSH_KEY -P $SSH_PORT -o StrictHostKeyChecking=no"

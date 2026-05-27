@@ -8,7 +8,7 @@ export PATH="/opt/alt/alt-nodejs22/root/usr/bin:$PATH"
 export LD_LIBRARY_PATH="/opt/alt/alt-nodejs22/root/usr/lib64:$LD_LIBRARY_PATH"
 export NODE_ENV=production
 
-APP_DIR=~/domains/bowdot.online/nodejs
+APP_DIR=~/domains/bowdot.online/smps-app
 cd "$APP_DIR"
 
 echo "=== CI Deploy Starting ==="
