@@ -2,7 +2,7 @@ import { useState, useMemo, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCustomQuestions, useLibraryQuestions, useCreateLibraryQuestion, useUpdateLibraryQuestion, useDeleteLibraryQuestion, useSeedOverrides, useUpdateSeedOverride } from '@/api/queries';
 import { QUESTIONS_BY_POSITION, getSectionByCategory, getSectionForQuestion, SECTION_LABELS, SECTION_ORDER, getQuestionsForUser } from '@/data/questions';
-import { POSITION_LABELS, QuestionCategory, EvalQuestion, LibraryQuestion, EvalSection, POSITION_LEVELS, Position } from '@/types';
+import { POSITION_LABELS, QuestionCategory, EvalQuestion, LibraryQuestion, EvalSection, POSITION_LEVELS, Position, LEGAL_HIERARCHY, ADMIN_HIERARCHY } from '@/types';
 import { BookOpen, Search, Plus, Pencil, Trash2, Save, X, Download, SlidersHorizontal, Layers, ChevronDown, ChevronRight, XCircle, LayoutList, LayoutGrid, Hash, Info } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -505,33 +505,61 @@ export default function QuestionLibrary() {
 
       {/* Filter panel */}
       {showFilters && (
-        <div className="bg-card rounded-xl border p-4 space-y-3">
-          <div>
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Tipo</p>
-            <div className="flex gap-2">
-              <button onClick={() => addFilter('type', 'seed', 'Base')} className="text-xs px-3 py-1.5 rounded-lg border border-input bg-background hover:bg-muted transition-colors">Base</button>
-              <button onClick={() => addFilter('type', 'custom', 'Personalizada')} className="text-xs px-3 py-1.5 rounded-lg border border-input bg-background hover:bg-muted transition-colors">Personalizada</button>
-            </div>
+        <div className="bg-card rounded-xl border p-3 space-y-2">
+          {/* Row 1: Type + Section */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-[10px] font-semibold text-muted-foreground uppercase">Tipo</span>
+            <button onClick={() => addFilter('type', 'seed', 'Base')} className={`text-[10px] px-2 py-0.5 rounded border ${filters.some(f => f.type === 'type' && f.value === 'seed') ? 'bg-accent text-accent-foreground border-accent' : 'border-input bg-background hover:bg-muted'}`}>Base</button>
+            <button onClick={() => addFilter('type', 'custom', 'Personalizada')} className={`text-[10px] px-2 py-0.5 rounded border ${filters.some(f => f.type === 'type' && f.value === 'custom') ? 'bg-accent text-accent-foreground border-accent' : 'border-input bg-background hover:bg-muted'}`}>Personalizada</button>
+            <span className="text-muted-foreground/30 mx-1">|</span>
+            <span className="text-[10px] font-semibold text-muted-foreground uppercase">Sección</span>
+            {SECTION_ORDER.map(sec => (
+              <button key={sec} onClick={() => { if (filters.some(f => f.type === 'section' && f.value === sec)) removeFilter('section', sec); else addFilter('section', sec, SECTION_LABELS[sec]); }}
+                className={`text-[10px] px-2 py-0.5 rounded border ${filters.some(f => f.type === 'section' && f.value === sec) ? 'bg-accent text-accent-foreground border-accent' : 'border-input bg-background hover:bg-muted'}`}>
+                {SECTION_LABELS[sec]}
+              </button>
+            ))}
           </div>
-          <div>
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Categoría</p>
-            <div className="flex gap-1.5 flex-wrap">
-              {ALL_CATEGORIES.map(c => (
-                <button key={c} onClick={() => addFilter('category', c, c)}
-                  className="text-xs px-2.5 py-1 rounded-lg border border-input bg-background hover:bg-muted transition-colors">{c}</button>
-              ))}
-            </div>
+          {/* Row 2: Position dropdown */}
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-semibold text-muted-foreground uppercase">Puesto</span>
+            <select value={filters.find(f => f.type === 'position')?.value || ''} onChange={e => {
+              const existing = filters.find(f => f.type === 'position');
+              if (existing) removeFilter('position', existing.value);
+              if (e.target.value) addFilter('position', e.target.value, POSITION_LABELS[e.target.value as Position] || e.target.value);
+            }}
+              className="text-[10px] px-2 py-0.5 rounded border border-input bg-background">
+              <option value="">Todos</option>
+              <optgroup label="Legal">
+                {LEGAL_HIERARCHY.map(p => <option key={p} value={p}>{POSITION_LABELS[p]}</option>)}
+              </optgroup>
+              <optgroup label="Administrativo">
+                {ADMIN_HIERARCHY.map(p => <option key={p} value={p}>{POSITION_LABELS[p]}</option>)}
+              </optgroup>
+            </select>
           </div>
-          <div>
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Puesto</p>
-            <div className="flex gap-1.5 flex-wrap">
-              {[...POSITION_LABELS.socio ? ['socio'] : [], 'salary_partner', 'counsel', 'asociado_sr', 'asociado_mid', 'asociado_jr', 'pasante_carrera', 'pasante', 'director', 'gerente', 'coordinador', 'analista', 'asistente', 'soporte', 'archivista'].map(p => (
-                <button key={p} onClick={() => addFilter('position', p, POSITION_LABELS[p as Position] || p)}
-                  className="text-xs px-2.5 py-1 rounded-lg border border-input bg-background hover:bg-muted transition-colors">
-                  {POSITION_LABELS[p as Position] || p}
-                </button>
-              ))}
-            </div>
+          {/* Row 3: Categories — short labels, toggleable */}
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="text-[10px] font-semibold text-muted-foreground uppercase">Cat.</span>
+            {[
+              ['Liderazgo','Lider.'], ['Trabajo en Equipo','Equipo'], ['Habilidades Blandas','Blandas'],
+              ['Actitud','Actitud'], ['Disponibilidad','Dispon.'], ['Desarrollo','Desarr.'],
+              ['Desempeño','Desemp.'], ['Cumplimiento','Cumpl.'], ['Criterio Técnico','Técnico'],
+              ['Conocimiento normativo','Normat.'], ['Redacción legal','Redacc.'], ['Due diligence','DD'],
+              ['Constitución y modificaciones','Const.'], ['Atención a clientes','Clientes'],
+              ['Normatividad fiscal','N. Fiscal'], ['Opiniones fiscales','Opiniones'], ['Planeación fiscal','Pl. Fiscal'],
+              ['Criterios y jurisprudencia','Jurisp.'], ['Impactos fiscales','Impactos'],
+              ['Redacción de escritos','Escritos'], ['Estrategia procesal','Estrat.'], ['Audiencias y diligencias','Audienc.'],
+              ['Seguimiento de expedientes','Exped.'],
+            ].map(([val, label]) => (
+              <button key={val} onClick={() => {
+                if (filters.some(f => f.type === 'category' && f.value === val)) removeFilter('category', val);
+                else addFilter('category', val, label);
+              }}
+                className={`text-[10px] px-1.5 py-0.5 rounded border ${filters.some(f => f.type === 'category' && f.value === val) ? 'bg-accent text-accent-foreground border-accent' : 'border-input bg-background hover:bg-muted'}`}>
+                {label}
+              </button>
+            ))}
           </div>
         </div>
       )}
