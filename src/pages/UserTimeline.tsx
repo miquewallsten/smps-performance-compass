@@ -99,8 +99,8 @@ export default function UserTimeline() {
   // Group by month
   const months = useMemo(() => {
     const m: Record<string, typeof filtered> = {};
-    filtered.forEach(e => { const k = getMonthKey(e.event_date || e.created_at); if (!m[k]) m[k] = []; m[k].push(e); });
-    Object.values(m).forEach(arr => arr.sort((a,b) => (b.event_date||b.created_at).localeCompare(a.event_date||a.created_at)));
+    filtered.forEach(e => { const k = getMonthKey(e.event_date || e.created_at || ""); if (!m[k]) m[k] = []; m[k].push(e); });
+    Object.values(m).forEach(arr => arr.sort((a,b) => String(b.event_date||b.created_at||"").localeCompare(String(a.event_date||a.created_at||""))));
     return m;
   }, [filtered]);
 
@@ -281,7 +281,7 @@ export default function UserTimeline() {
                                         )}
                                       </div>
                                       <div className="flex items-center gap-1.5 mt-0.5">
-                                        <span className="text-[10px] text-muted-foreground">{fmtDay(ev.event_date||ev.created_at)} {fmtMon(ev.event_date||ev.created_at)}</span>
+                                        <span className="text-[10px] text-muted-foreground">{fmtDay(ev.event_date||ev.created_at||"")} {fmtMon(ev.event_date||ev.created_at||"")}</span>
                                         {fmtTime(ev.created_at) && <span className="text-[10px] text-muted-foreground/60">{fmtTime(ev.created_at)}</span>}
                                       </div>
                                     </div>
@@ -290,7 +290,7 @@ export default function UserTimeline() {
                                   {/* Expanded details */}
                                   {isExp && (
                                     <div className="tm-expand mt-2 pt-2 border-t border-border/50">
-                                      <p className="text-[11px] text-muted-foreground mb-1.5">{fmtFull(ev.event_date||ev.created_at)}</p>
+                                      <p className="text-[11px] text-muted-foreground mb-1.5">{fmtFull(ev.event_date||ev.created_at||"")}</p>
                                       {ev.meta?.newPosition && (
                                         <p className="text-xs">
                                           <span className="text-muted-foreground">Nuevo puesto: </span>
