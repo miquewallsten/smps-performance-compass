@@ -522,3 +522,23 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     process.exit(1);
   });
 }
+
+// Cleanup: Delete old custom_eval_questions and template_questions with empty section
+export async function cleanupOldCustomQuestions(): Promise<void> {
+  console.log('  Cleaning up old custom_eval_questions...');
+  try {
+    await db.run('DELETE FROM custom_eval_questions');
+    console.log('  ✓ Deleted all custom_eval_questions');
+  } catch (err) {
+    console.error('  Error cleaning custom_eval_questions:', err);
+  }
+  
+  console.log('  Cleaning up template_questions with empty section...');
+  try {
+    await db.run("DELETE FROM template_questions WHERE section IS NULL OR section = ''");
+    const deleted = await db.getScalar<number>('SELECT COUNT(*) as cnt FROM template_questions WHERE section IS NULL OR section = ""');
+    console.log(`  ✓ Cleaned template_questions with empty section`);
+  } catch (err) {
+    console.error('  Error cleaning template_questions:', err);
+  }
+}

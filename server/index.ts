@@ -5,7 +5,7 @@ import dotenv from 'dotenv';
 import { pool } from './db/connection.js';
 import { migrate } from './db/migrate.js';
 import { seed } from './db/seed-users.js';
-import { seedEvaluationData } from './db/seed-evaluation-data.js';
+import { seedEvaluationData, cleanupOldCustomQuestions } from './db/seed-evaluation-data.js';
 import authRoutes from './routes/auth.js';
 import userRoutes from './routes/users.js';
 import assignmentRoutes from './routes/assignments.js';
@@ -100,6 +100,7 @@ async function startServer() {
     await seed();
     console.log('Seeding evaluation data...');
     await seedEvaluationData();
+    await cleanupOldCustomQuestions();
     
     app.listen(PORT, () => {
       console.log(`Server running on port ${PORT} in ${process.env.NODE_ENV || 'development'} mode`);
