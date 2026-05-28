@@ -699,4 +699,25 @@ export async function migrate(): Promise<void> {
     console.log('  ⚠ Could not round total_score values:', (e as Error).message);
   }
 
+
+  // Migration: Round all weight values to whole numbers in evaluation_responses and custom_eval_questions
+  try {
+    const result1 = await run('UPDATE evaluation_responses SET weight = ROUND(weight) WHERE weight != ROUND(weight)');
+    console.log('✅ Rounded evaluation_responses weight values to whole numbers');
+  } catch (e) {
+    console.log('  ⚠ Could not round evaluation_responses weight values:', (e as Error).message);
+  }
+  try {
+    const result2 = await run('UPDATE custom_eval_questions SET weight = ROUND(weight) WHERE weight != ROUND(weight)');
+    console.log('✅ Rounded custom_eval_questions weight values to whole numbers');
+  } catch (e) {
+    console.log('  ⚠ Could not round custom_eval_questions weight values:', (e as Error).message);
+  }
+  try {
+    const result3 = await run('UPDATE seed_question_overrides SET weight = ROUND(weight) WHERE weight IS NOT NULL AND weight != ROUND(weight)');
+    console.log('✅ Rounded seed_question_overrides weight values to whole numbers');
+  } catch (e) {
+    console.log('  ⚠ Could not round seed_question_overrides weight values:', (e as Error).message);
+  }
+
 }

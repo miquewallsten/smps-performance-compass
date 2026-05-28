@@ -224,7 +224,7 @@ router.post('/', authMiddleware, async (req: Request, res: Response) => {
         await tx.run(
           conn,
           `INSERT INTO evaluation_responses (id, evaluation_id, question_id, score, not_applicable, no_elements, weight) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-          [uuidv4(), id, r.questionId, r.score, r.notApplicable ? 1 : 0, r.noElements ? 1 : 0, r.weight || 1]
+          [uuidv4(), id, r.questionId, r.score, r.notApplicable ? 1 : 0, r.noElements ? 1 : 0, Math.round(r.weight || 1)]
         );
       }
     });
@@ -265,7 +265,7 @@ router.put('/:id', authMiddleware, async (req: Request, res: Response) => {
           await tx.run(
             conn,
             `INSERT INTO evaluation_responses (id, evaluation_id, question_id, score, not_applicable, no_elements, weight) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-            [uuidv4(), req.params.id, r.questionId, r.score, r.notApplicable ? 1 : 0, r.noElements ? 1 : 0, r.weight || 1]
+            [uuidv4(), req.params.id, r.questionId, r.score, r.notApplicable ? 1 : 0, r.noElements ? 1 : 0, Math.round(r.weight || 1)]
           );
         }
       });

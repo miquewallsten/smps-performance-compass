@@ -2,7 +2,6 @@ import { Router, Request, Response } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import { db, tx } from '../db/connection.js';
 import { authMiddleware } from '../middleware/auth.js';
-import { requireAdmin } from '../middleware/rbac.js';
 
 const router = Router();
 
@@ -20,7 +19,9 @@ router.get('/library', authMiddleware, async (_req: Request, res: Response) => {
 
 router.post('/library', authMiddleware, requireAdmin, async (req: Request, res: Response) => {
   try {
-    const { questionId, category, text, defaultWeight } = req.body;
+    // Accept both `questionId` (from API clients) and `id` (from frontend)
+    const questionId = req.body.questionId || req.body.id;
+    const { category, text, defaultWeight } = req.body;
     if (!questionId || !category || !text || !defaultWeight) {
       return res.status(400).json({ error: 'questionId, category, text, and defaultWeight are required' });
     }
@@ -98,9 +99,14 @@ router.post('/custom', authMiddleware, requireAdmin, async (req: Request, res: R
     await db.transaction(async (conn) => {
       await tx.run(conn, 'DELETE FROM custom_eval_questions WHERE position = ?', [position]);
       for (const q of questions) {
+        // Frontend sends `id` for new questions; loaded questions may have `questionId` (after camelCase conversion)
+        const questionId = q.questionId || q.id;
+        if (!questionId) {
+          throw new Error('Each question must have an id or questionId');
+        }
         await tx.run(conn,
-          'INSERT INTO custom_eval_questions (id, position, question_id, category, text, weight, section, practice_area) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-          [uuidv4(), position, q.questionId, q.category, q.text, q.weight, q.section || null, q.practiceArea || null]);
+          'INSERT INTO custom_eval_questions (id, position, question_id, category, text, weight) VALUES (?, ?, ?, ?, ?, ?)',
+          [uuidv4(), position, questionId, q.category, q.text, q.weight]);
       }
     });
 

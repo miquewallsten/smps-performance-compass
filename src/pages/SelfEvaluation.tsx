@@ -123,8 +123,8 @@ export default function SelfEvaluation() {
   const handleSubmit = () => {
     if (!canSubmit) return;
     const evalResponses = [
-      ...Object.entries(responses).map(([questionId, score]) => ({ questionId, score, notApplicable: false, weight: questions.find(q => q.id === questionId)?.weight || 1 })),
-      ...Object.keys(naQuestions).map(questionId => ({ questionId, score: 0, notApplicable: true, weight: questions.find(q => q.id === questionId)?.weight || 1 })),
+      ...Object.entries(responses).map(([questionId, score]) => ({ questionId, score, notApplicable: false, weight: Math.round(questions.find(q => q.id === questionId)?.weight || 1) })),
+      ...Object.keys(naQuestions).map(questionId => ({ questionId, score: 0, notApplicable: true, weight: Math.round(questions.find(q => q.id === questionId)?.weight || 1) })),
     ];
     const totalScore = calculateScore(questions, evalResponses);
     createEvaluationMut.mutate(
