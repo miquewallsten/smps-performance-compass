@@ -26,8 +26,17 @@ export default function SelfEvaluation() {
   const { data: assignments = [] } = useAssignments();
   const { data: actionPlans = [] } = useActionPlans();
   const createEvaluationMut = useCreateEvaluation();
-  const { data: customQuestionsData = [] } = useCustomQuestions();
-  const customQuestions = Array.isArray(customQuestionsData) ? {} : customQuestionsData;
+  const { data: customQuestionsRaw = [] } = useCustomQuestions();
+  // Group raw custom questions by position (API returns flat array)
+  const customQuestions = useMemo(() => {
+    if (!Array.isArray(customQuestionsRaw)) return customQuestionsRaw as unknown as Record<string, EvalQuestion[]>;
+    const grouped: Record<string, EvalQuestion[]> = {};
+    for (const q of customQuestionsRaw) {
+      const pos = q.position || q.practiceArea;
+      if (pos) { if (!grouped[pos]) grouped[pos] = []; grouped[pos].push(q); }
+    }
+    return grouped;
+  }, [customQuestionsRaw]);
   const navigate = useNavigate();
 
   // Load draft from localStorage on mount

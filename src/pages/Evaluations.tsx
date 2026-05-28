@@ -1,10 +1,10 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUsers, useEvaluations, useAssignments, useCreateEvaluation, useUpdateEvaluation, useCompleteFeedback, useApproveNA, useActionPlans, useCreateActionPlan, useCustomQuestions, useExportEvaluationsCSV } from '@/api/queries';
 import { QUESTIONS_BY_POSITION, getQuestionsForUser, calculateScore, getSectionForQuestion, SECTION_LABELS, SECTION_ORDER } from '@/data/questions';
 import { getSectionWeights } from '@/data/sectionWeights';
 
-import { User, CURRENT_PERIOD, SCORE_LABELS, POSITION_LABELS, PERIODS, ActionPlan, LEGAL_HIERARCHY, ADMIN_HIERARCHY } from '@/types';
+import { User, EvalQuestion, CURRENT_PERIOD, SCORE_LABELS, POSITION_LABELS, PERIODS, ActionPlan, LEGAL_HIERARCHY, ADMIN_HIERARCHY } from '@/types';
 import { Download } from 'lucide-react';
 import { toast } from 'sonner';
 import { CheckCircle, AlertCircle, Eye, ArrowLeft, Ban, ShieldCheck, ShieldX, FileText, MessageSquare, MinusCircle } from 'lucide-react';
@@ -40,7 +40,17 @@ export default function Evaluations() {
   const approveNA = useApproveNA().mutate;
   const { data: actionPlans = [] } = useActionPlans();
   const addOrUpdateActionPlan = useCreateActionPlan().mutate;
-  const { data: customQuestions = [] } = useCustomQuestions();
+  const { data: customQuestionsRaw = [] } = useCustomQuestions();
+  // Group raw custom questions by position (API returns flat array)
+  const customQuestions = useMemo(() => {
+    if (!Array.isArray(customQuestionsRaw)) return customQuestionsRaw as unknown as Record<string, EvalQuestion[]>;
+    const grouped: Record<string, EvalQuestion[]> = {};
+    for (const q of customQuestionsRaw) {
+      const pos = q.position || q.practiceArea;
+      if (pos) { if (!grouped[pos]) grouped[pos] = []; grouped[pos].push(q); }
+    }
+    return grouped;
+  }, [customQuestionsRaw]);
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [selectedEmployee, setSelectedEmployee] = useState<string | null>(searchParams.get('evaluate'));
@@ -146,7 +156,7 @@ export default function Evaluations() {
         </div>
       );
     }
-    const questions = getQuestionsForUser(emp, Array.isArray(customQuestions) ? {} : customQuestions);
+    const questions = getQuestionsForUser(emp, customQuestions);
 
     const totalResponded = Object.keys(responses).length + Object.keys(naQuestions).length + Object.keys(noElementsQuestions).length;
     const allAnswered = totalResponded === questions.length;
@@ -431,7 +441,7 @@ export default function Evaluations() {
             <div className="space-y-3">
               {evalsWithPendingNA.map(ev => {
                 const evaluated = users.find(u => u.id === ev.evaluatedId);
-                const questions = evaluated ? getQuestionsForUser(evaluated, Array.isArray(customQuestions) ? {} : customQuestions) : [];
+                const questions = evaluated ? getQuestionsForUser(evaluated, customQuestions) : [];
                 const pendingNAResponses = (ev.responses || []).filter(r => r.notApplicable && !normalizeNA(ev.naApprovals)[r.questionId]);
                 return (
                   <div key={ev.id} className="smps-surface-card">

@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUsers, useAssignments, useUpdateEvaluation, useCompleteFeedback, useApproveNA, useActionPlans, useCustomQuestions } from '@/api/queries';
 import { QUESTIONS_BY_POSITION, getQuestionsForUser } from '@/data/questions';
-import { SCORE_LABELS, POSITION_LABELS, Evaluation } from '@/types';
+import { SCORE_LABELS, POSITION_LABELS, Evaluation, EvalQuestion } from '@/types';
 import { Ban, ShieldCheck, ShieldX, MinusCircle, FileText } from 'lucide-react';
 import { calculateScore } from '@/data/questions';
 
@@ -19,8 +19,17 @@ export default function EvaluationViewer({ evaluation, onClose }: Props) {
   const completeFeedback = useCompleteFeedback().mutate;
   const approveNA = useApproveNA().mutate;
   const { data: actionPlans = [] } = useActionPlans();
-  const { data: customQuestionsData = [] } = useCustomQuestions();
-  const customQuestions = Array.isArray(customQuestionsData) ? {} : customQuestionsData;
+  const { data: customQuestionsRaw = [] } = useCustomQuestions();
+  // Group raw custom questions by position (API returns flat array)
+  const customQuestions = useMemo(() => {
+    if (!Array.isArray(customQuestionsRaw)) return customQuestionsRaw as unknown as Record<string, EvalQuestion[]>;
+    const grouped: Record<string, EvalQuestion[]> = {};
+    for (const q of customQuestionsRaw) {
+      const pos = q.position || q.practiceArea;
+      if (pos) { if (!grouped[pos]) grouped[pos] = []; grouped[pos].push(q); }
+    }
+    return grouped;
+  }, [customQuestionsRaw]);
   const [supComments, setSupComments] = useState(evaluation.supervisorComments || '');
   const [saved, setSaved] = useState(false);
 

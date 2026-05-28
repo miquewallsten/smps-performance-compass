@@ -58,7 +58,17 @@ type DisplayItem = {
 
 export default function QuestionLibrary() {
   const { user: currentUser } = useAuth();
-  const { data: customQuestions = [] } = useCustomQuestions();
+  const { data: customQuestionsRaw = [] } = useCustomQuestions();
+  // Group raw custom questions by position, same as EvaluationTemplates does
+  const customQuestions = useMemo(() => {
+    if (!Array.isArray(customQuestionsRaw)) return customQuestionsRaw as unknown as Record<string, EvalQuestion[]>;
+    const grouped: Record<string, EvalQuestion[]> = {};
+    for (const q of customQuestionsRaw) {
+      const pos = q.position || q.practiceArea;
+      if (pos) { if (!grouped[pos]) grouped[pos] = []; grouped[pos].push(q); }
+    }
+    return grouped;
+  }, [customQuestionsRaw]);
   const { data: libraryQuestions = [] } = useLibraryQuestions();
   const addLibraryQuestion = useCreateLibraryQuestion().mutate;
   const updateLibraryQuestion = useUpdateLibraryQuestion().mutate;
@@ -141,7 +151,7 @@ export default function QuestionLibrary() {
     for (const pos of allPositions) {
       const evalQuestions = getQuestionsForUser(
         { position: pos as Position, practiceArea: POSITION_LEVELS[pos as Position] === 'legal' ? 'corporativo' : undefined },
-        Array.isArray(customQuestions) ? {} : customQuestions
+        customQuestions
       );
       const items: DisplayItem[] = evalQuestions.map(q => {
         const section = getSectionForQuestion(q, pos as Position);
@@ -364,7 +374,7 @@ export default function QuestionLibrary() {
       // Use getQuestionsForUser() — the exact same function the evaluation UI uses.
       const evalQuestions = getQuestionsForUser(
         { position: pos as Position, practiceArea: POSITION_LEVELS[pos as Position] === 'legal' ? 'corporativo' : undefined },
-        Array.isArray(customQuestions) ? {} : customQuestions
+        customQuestions
       );
       evalQuestions.forEach(q => {
         const section = getSectionForQuestion(q, pos as Position);
