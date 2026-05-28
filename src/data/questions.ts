@@ -276,6 +276,7 @@ export const QUESTIONS_BY_POSITION: Record<Position, EvalQuestion[]> = {
   archivo_soporte: archivoSoporteQuestions,
   soporte: archivoSoporteQuestions,
   archivista: archivoSoporteQuestions,
+  abogado: asociadoJrQuestions,  // legacy — maps to asociado_jr
   dummy: socioQuestions,
 };
 

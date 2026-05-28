@@ -35,6 +35,7 @@ export const SECTION_WEIGHTS: Record<Position, SectionWeights> = {
   archivo_soporte:      { tecnico: 0, competencias: 50, blandas: 50 },
   soporte:             { tecnico: 0, competencias: 50, blandas: 50 },
   archivista:           { tecnico: 0, competencias: 50, blandas: 50 },
+  abogado:              { tecnico: 60, competencias: 20, blandas: 20 },  // legacy — maps to asociado_jr
   dummy:                { tecnico: 40, competencias: 40, blandas: 20 },
 };
 

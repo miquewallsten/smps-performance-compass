@@ -89,5 +89,6 @@ export const COMPETENCIES_BY_POSITION: Record<Position, Competency[]> = {
   archivo_soporte: SOPORTE,
   soporte: SOPORTE,
   archivista: SOPORTE,
+  abogado: [...LEGAL_ALL, ...LEGAL_JR_PLUS],
   dummy: [],
 };

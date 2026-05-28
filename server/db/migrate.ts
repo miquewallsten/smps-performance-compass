@@ -751,6 +751,7 @@ export async function migrate(): Promise<void> {
   const positionMigrations: [string, string][] = [
     ['pasante_corporativo', 'pasante'],
     ['archivo_soporte', 'soporte'],
+    ['abogado', 'asociado_jr'],  // Legacy position, map to closest equivalent
   ];
   for (const [oldVal, newVal] of positionMigrations) {
     try {
