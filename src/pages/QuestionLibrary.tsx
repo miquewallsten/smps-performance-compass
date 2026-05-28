@@ -6,7 +6,7 @@ import { POSITION_LABELS, QuestionCategory, EvalQuestion, LibraryQuestion, EvalS
 import { BookOpen, Search, Plus, Pencil, Trash2, Save, X, Download, SlidersHorizontal, Layers, ChevronDown, ChevronRight, XCircle, LayoutList, LayoutGrid, Hash, Info } from 'lucide-react';
 import { toast } from 'sonner';
 
-const ALL_CATEGORIES: QuestionCategory[] = [
+export const ALL_CATEGORIES: QuestionCategory[] = [
   // Competencias / Blandas
   'Liderazgo', 'Trabajo en Equipo', 'Habilidades Blandas',
   'Actitud', 'Disponibilidad', 'Desarrollo',

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUsers, useEvaluations, useUpdateUser, useResetUserPassword, useCreateUser, useDeleteUser, useSystemStatus, useUpdateUserRole, usePositions, useWorkAreas, useLocations } from '@/api/queries';
 import { POSITION_LABELS, PERIODS, Position, LEGAL_HIERARCHY, ADMIN_HIERARCHY } from '@/types';
-import { Eye, Key, UserCheck, UserX, Search, Plus, Trash2, Star, Shield, Pencil, MapPin, Clock } from 'lucide-react';
+import { Eye, Key, UserCheck, UserX, Search, Plus, Trash2, Star, Shield, Pencil, MapPin, Clock, Loader2 } from 'lucide-react';
 import EvaluationViewer from '@/components/EvaluationViewer';
 import { toast } from 'sonner';
 
@@ -89,9 +89,15 @@ export default function UserManagement() {
       toast.error(`Se ha alcanzado el máximo de usuarios activos (${maxUsers}).`);
       return;
     }
+    const newActiveState = !user.isActive;
     updateUserMut.mutate(
-      { id: userId, isActive: !user.isActive },
-      { onSuccess: () => toast.success(user.isActive ? 'Usuario desactivado' : 'Usuario activado'), onError: (err: Error) => toast.error(err.message || 'Error') }
+      { id: userId, isActive: newActiveState },
+      {
+        onSuccess: () => toast.success(newActiveState ? 'Usuario activado' : 'Usuario desactivado'),
+        onError: (err: Error) => {
+          toast.error(err.message || 'Error al cambiar estado del usuario');
+        },
+      }
     );
   }, [users, maxReached, updateUserMut]);
 

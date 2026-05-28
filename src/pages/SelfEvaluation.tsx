@@ -7,6 +7,7 @@ import { getSectionWeights } from '@/data/sectionWeights';
 import { CURRENT_PERIOD, SCORE_LABELS, POSITION_LABELS, Evaluation } from '@/types';
 import { CheckCircle, AlertCircle, Ban, Clock, Users, MessageSquare, FileText, ClipboardCheck, ChevronDown, RotateCcw } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 
 type EvalStage = 'self' | 'supervisor' | 'feedback' | 'action_plan';
 
@@ -24,7 +25,7 @@ export default function SelfEvaluation() {
   const { data: evaluations = [] } = useEvaluations();
   const { data: assignments = [] } = useAssignments();
   const { data: actionPlans = [] } = useActionPlans();
-  const addEvaluation = useCreateEvaluation().mutate;
+  const createEvaluationMut = useCreateEvaluation();
   const { data: customQuestionsData = [] } = useCustomQuestions();
   const customQuestions = Array.isArray(customQuestionsData) ? {} : customQuestionsData;
   const navigate = useNavigate();
@@ -126,19 +127,29 @@ export default function SelfEvaluation() {
       ...Object.keys(naQuestions).map(questionId => ({ questionId, score: 0, notApplicable: true, weight: questions.find(q => q.id === questionId)?.weight || 1 })),
     ];
     const totalScore = calculateScore(questions, evalResponses);
-    addEvaluation({
-      id: `eval-${Date.now()}`,
-      evaluatorId: currentUser.id,
-      evaluatedId: currentUser.id,
-      period: CURRENT_PERIOD,
-      type: 'self',
-      responses: evalResponses,
-      comments,
-      completedAt: new Date().toISOString().split('T')[0],
-      totalScore,
-    });
-    clearDraft();
-    setSubmitted(true);
+    createEvaluationMut.mutate(
+      {
+        id: `eval-${Date.now()}`,
+        evaluatorId: currentUser.id,
+        evaluatedId: currentUser.id,
+        period: CURRENT_PERIOD,
+        type: 'self',
+        responses: evalResponses,
+        comments,
+        completedAt: new Date().toISOString().split('T')[0],
+        totalScore,
+      },
+      {
+        onSuccess: () => {
+          clearDraft();
+          setSubmitted(true);
+          toast.success('Autoevaluación guardada correctamente');
+        },
+        onError: (err: Error) => {
+          toast.error('Error al guardar la autoevaluación: ' + (err.message || 'Intente de nuevo'));
+        },
+      }
+    );
   };
 
   const toggleSection = (section: string) => {

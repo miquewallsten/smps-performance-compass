@@ -10,12 +10,19 @@ import { COMPETENCIES_BY_POSITION } from '@/data/competencyDictionary';
 type Audience = 'all' | 'admin' | 'evaluator' | 'staff';
 type Module = 'communications' | 'vacations';
 
+interface SmartItem {
+  letter: string;
+  title: string;
+  detail: string;
+}
+
 interface Section {
   icon: any;
   title: string;
   desc: string;
   audiences: Audience[];
   module?: Module; // si el módulo está desactivado, no se muestra
+  smartDesc?: SmartItem[];
 }
 
 const sections: Section[] = [
@@ -25,6 +32,16 @@ const sections: Section[] = [
     desc: 'Los evaluadores asignados completan la evaluación de cada miembro de su equipo. Una vez enviada, la evaluación no puede modificarse. Tras todas las evaluaciones, debe celebrarse la sesión de feedback y aprobarse el plan de acción.' },
   { icon: FileText, title: 'Evaluaciones (Plantillas)', audiences: ['admin'],
     desc: 'Solo Administradores pueden modificar plantillas. Cada nivel tiene preguntas configurables, máximo 20, y la suma de pesos debe ser exactamente 100%.' },
+  { icon: Target, title: 'Plan de Acción', audiences: ['all'],
+    desc: 'En función de los resultados de la Evaluación de Desempeño, en conjunto con el colaborador establezcan entre 1 a 3 objetivos de trabajo para mejorar su desempeño. Redacta objetivos que cumplan con las características S.M.A.R.T. y estén enfocados a las competencias.',
+    smartDesc: [
+      { letter: 'S', title: 'Específico (Specific)', detail: 'Acciones requeridas lo más detallado posible.' },
+      { letter: 'M', title: 'Medible (Mensurable)', detail: 'Puntos de referencia para medir el progreso y eficacia (índices, frecuencia, cantidad, porcentaje, etc.).' },
+      { letter: 'A', title: 'Alcanzable (Achievable)', detail: 'Que exista la posibilidad de llegar a las proyecciones.' },
+      { letter: 'R', title: 'Orientado hacia los resultados (Result-oriented)', detail: 'Enfocados en lo que se quiere, no en lo que NO se quiere.' },
+      { letter: 'T', title: 'Con tiempo determinado (Time-limited)', detail: 'Con un tiempo definido para lograrlo.' },
+    ]
+  },
   { icon: BookOpen, title: 'Biblioteca de Preguntas', audiences: ['admin'],
     desc: 'Catálogo de preguntas existentes agrupadas por categoría. Puedes agregar, editar o eliminar preguntas personalizadas, e importarlas al crear una plantilla.' },
   { icon: Target, title: 'Objetivos Personales', audiences: ['admin', 'evaluator'],
@@ -156,6 +173,19 @@ export default function Help() {
               <div className="flex-1">
                 <h2 className="font-display text-base font-semibold mb-1">{s.title}</h2>
                 <p className="text-sm text-muted-foreground leading-relaxed">{s.desc}</p>
+                {s.smartDesc && (
+                  <div className="mt-3 space-y-2">
+                    {s.smartDesc.map((item, j) => (
+                      <div key={j} className="flex items-start gap-2">
+                        <span className="flex-shrink-0 w-7 h-7 rounded-full bg-accent/10 text-accent text-xs font-bold flex items-center justify-center">{item.letter}</span>
+                        <div>
+                          <p className="text-sm font-medium">{item.title}</p>
+                          <p className="text-xs text-muted-foreground">{item.detail}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           </section>

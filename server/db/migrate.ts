@@ -678,4 +678,16 @@ export async function migrate(): Promise<void> {
     `SELECT COUNT(*) AS cnt FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = DATABASE()`
   );
   console.log(`Migration completed successfully. ${tableCount} tables in database.`);
+
+  // Migration: Add unique constraint to announcement_reads for (announcement_id, user_id)
+  try {
+    await db.run('ALTER TABLE announcement_reads ADD UNIQUE INDEX ar_announcement_user_unique (announcement_id, user_id)');
+    console.log('✅ Added unique constraint to announcement_reads');
+  } catch (err: any) {
+    if (err.code === 'ER_DUP_KEYNAME' || err.message?.includes('Duplicate key name')) {
+      console.log('⏭️  Unique constraint on announcement_reads already exists');
+    } else {
+      console.error('⚠️  Could not add unique constraint to announcement_reads:', err.message);
+    }
+  }
 }

@@ -18,7 +18,8 @@ export default function Evaluations() {
   const { data: users = [] } = useUsers();
   const { data: evaluations = [] } = useEvaluations();
   const { data: assignments = [] } = useAssignments();
-  const addEvaluation = useCreateEvaluation().mutate;
+  const createEvaluationMut = useCreateEvaluation();
+  const addEvaluation = createEvaluationMut.mutate;
   const updateEvaluation = useUpdateEvaluation().mutate;
   const { data: actionPlans = [] } = useActionPlans();
   const addOrUpdateActionPlan = useCreateActionPlan().mutate;
@@ -151,20 +152,30 @@ export default function Evaluations() {
         ...Object.keys(noElementsQuestions).map(questionId => ({ questionId, score: 0, notApplicable: false, noElements: true, weight: questions.find(q => q.id === questionId)?.weight || 1 })),
       ];
       const totalScore = calculateScore(questions, evalResponses);
-      addEvaluation({
-        id: `eval-${Date.now()}`,
-        evaluatorId: currentUser.id,
-        evaluatedId: selectedEmployee,
-        period: CURRENT_PERIOD,
-        type: 'supervisor',
-        responses: evalResponses,
-        comments,
-        supervisorComments: (isSocio || isSupervisor(selectedEmployee)) ? supervisorComments : undefined,
-        completedAt: new Date().toISOString().split('T')[0],
-        totalScore,
-      });
-      setSubmitted(true);
-      setShowConfirm(false);
+      createEvaluationMut.mutate(
+        {
+          id: `eval-${Date.now()}`,
+          evaluatorId: currentUser.id,
+          evaluatedId: selectedEmployee,
+          period: CURRENT_PERIOD,
+          type: 'supervisor',
+          responses: evalResponses,
+          comments,
+          supervisorComments: (isSocio || isSupervisor(selectedEmployee)) ? supervisorComments : undefined,
+          completedAt: new Date().toISOString().split('T')[0],
+          totalScore,
+        },
+        {
+          onSuccess: () => {
+            setSubmitted(true);
+            setShowConfirm(false);
+            toast.success('Evaluación guardada correctamente');
+          },
+          onError: (err: Error) => {
+            toast.error('Error al guardar la evaluación: ' + (err.message || 'Intente de nuevo'));
+          },
+        }
+      );
     };
 
     return (

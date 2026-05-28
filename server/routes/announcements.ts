@@ -97,8 +97,8 @@ router.post('/:id/read', authMiddleware, async (req: Request, res: Response) => 
     if (!announcement) return res.status(404).json({ error: 'Announcement not found' });
 
     await db.run(
-      'INSERT IGNORE INTO announcement_reads (announcement_id, user_id) VALUES (?, ?)',
-      [req.params.id, req.user!.id]
+      'INSERT INTO announcement_reads (id, announcement_id, user_id) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE read_at = CURRENT_TIMESTAMP',
+      [uuidv4(), req.params.id, req.user!.id]
     );
     return res.json({ message: 'Marked as read' });
   } catch (err) {

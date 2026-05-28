@@ -51,20 +51,39 @@ function defaultsFor(period: string): PeriodConfig {
 export default function PeriodConfigPage() {
   const { user: currentUser } = useAuth();
   const { data: periodConfigs = [] } = usePeriods();
-  const createPeriod = useCreatePeriod().mutate;
+  const createPeriodMut = useCreatePeriod();
   const [selectedPeriod, setSelectedPeriod] = useState(PERIODS[0]);
+  const [saving, setSaving] = useState(false);
+  const [seeded, setSeeded] = useState(false);
+
+  // Derive current config from server data, fall back to defaults
   const existing = periodConfigs.find(c => c.period === selectedPeriod);
   const [cfg, setCfg] = useState<PeriodConfig>(existing || defaultsFor(selectedPeriod));
 
+  // Sync cfg when server data changes or when switching periods
+  useEffect(() => {
+    const found = periodConfigs.find(c => c.period === selectedPeriod);
+    setCfg(found || defaultsFor(selectedPeriod));
+  }, [selectedPeriod, JSON.stringify(periodConfigs)]);
+
   // Seed defaults for any missing period configs on first render
   useEffect(() => {
+    if (seeded || periodConfigs.length === 0) return;
+    let needsSeed = false;
     PERIODS.forEach(p => {
       if (!periodConfigs.find(c => c.period === p)) {
-        createPeriod(defaultsFor(p));
+        needsSeed = true;
       }
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    if (needsSeed) {
+      PERIODS.forEach(p => {
+        if (!periodConfigs.find(c => c.period === p)) {
+          createPeriodMut.mutate(defaultsFor(p));
+        }
+      });
+    }
+    setSeeded(true);
+  }, [periodConfigs.length > 0]);
 
   if (!currentUser?.isAdmin && !currentUser?.isSuperUser) {
     return <p className="text-center py-12 text-muted-foreground">Acceso restringido al administrador.</p>;
@@ -72,13 +91,20 @@ export default function PeriodConfigPage() {
 
   const handlePeriodChange = (p: string) => {
     setSelectedPeriod(p);
-    const found = periodConfigs.find(c => c.period === p);
-    setCfg(found || defaultsFor(p));
   };
 
   const handleSave = () => {
-    createPeriod(cfg);
-    toast.success(`Configuración del periodo ${cfg.period} guardada`);
+    setSaving(true);
+    createPeriodMut.mutate(cfg, {
+      onSuccess: () => {
+        toast.success(`Configuración del periodo ${cfg.period} guardada`);
+        setSaving(false);
+      },
+      onError: (err: Error) => {
+        toast.error('Error al guardar: ' + (err.message || 'Intente de nuevo'));
+        setSaving(false);
+      },
+    });
   };
 
   const handleResetDefaults = () => {

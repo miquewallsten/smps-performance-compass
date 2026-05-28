@@ -6,22 +6,9 @@ import {
   POSITION_LABELS, LEGAL_HIERARCHY, ADMIN_HIERARCHY, Position, SCORE_LABELS,
   EvalQuestion, QuestionCategory,
 } from '@/types';
-import { ChevronDown, ChevronRight, FileText, Plus, Trash2, AlertCircle, Save, BookOpen } from 'lucide-react';
+import { ChevronDown, ChevronRight, FileText, Plus, Trash2, AlertCircle, Save, BookOpen, Search } from 'lucide-react';
 
-const ALL_CATEGORIES: QuestionCategory[] = [
-  // Competencias / Blandas
-  'Liderazgo', 'Trabajo en Equipo', 'Habilidades Blandas',
-  'Actitud', 'Disponibilidad', 'Desarrollo',
-  'Desempeño', 'Cumplimiento',
-  // Criterio Técnico (general + sub-categorías)
-  'Criterio Técnico',
-  'Conocimiento normativo', 'Redacción legal', 'Due diligence',
-  'Constitución y modificaciones', 'Atención a clientes',
-  'Normatividad fiscal', 'Opiniones fiscales', 'Planeación fiscal',
-  'Criterios y jurisprudencia', 'Impactos fiscales',
-  'Redacción de escritos', 'Estrategia procesal', 'Audiencias y diligencias',
-  'Seguimiento de expedientes',
-];
+import { ALL_CATEGORIES } from './QuestionLibrary';
 
 const MAX_QUESTIONS = 20;
 
@@ -46,6 +33,7 @@ export default function EvaluationTemplates() {
   const [newText, setNewText] = useState('');
   const [newWeight, setNewWeight] = useState(5);
   const [showLibrary, setShowLibrary] = useState(false);
+  const [librarySearch, setLibrarySearch] = useState('');
 
   const canEdit = currentUser?.isAdmin || currentUser?.isSuperUser;
 
@@ -315,15 +303,25 @@ export default function EvaluationTemplates() {
           <div className="bg-card rounded-xl border w-full max-w-2xl max-h-[80vh] overflow-hidden flex flex-col shadow-xl" onClick={e => e.stopPropagation()}>
             <div className="px-5 py-3 border-b flex items-center justify-between">
               <h3 className="font-display font-semibold flex items-center gap-2"><BookOpen className="h-4 w-4" /> Importar de Biblioteca</h3>
-              <button onClick={() => setShowLibrary(false)} className="text-sm text-muted-foreground hover:text-foreground">Cerrar</button>
+              <button onClick={() => { setShowLibrary(false); setLibrarySearch(''); }} className="text-sm text-muted-foreground hover:text-foreground">Cerrar</button>
             </div>
             <div className="overflow-y-auto p-4 space-y-2">
+              {libraryQuestions.length > 0 && (
+                <div className="mb-3">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <input type="text" value={librarySearch} onChange={e => setLibrarySearch(e.target.value)}
+                      placeholder="Buscar por texto o categoría..."
+                      className="w-full pl-9 pr-3 py-2 rounded-lg border border-input bg-background text-sm" />
+                  </div>
+                </div>
+              )}
               {libraryQuestions.length === 0 && (
                 <p className="text-sm text-muted-foreground text-center py-8">
                   No hay preguntas personalizadas en la biblioteca. Agrégalas desde "Biblioteca Preguntas".
                 </p>
               )}
-              {libraryQuestions.map(q => {
+              {libraryQuestions.filter(q => !librarySearch || q.text.toLowerCase().includes(librarySearch.toLowerCase()) || q.category.toLowerCase().includes(librarySearch.toLowerCase())).map(q => {
                 const already = editQuestions.some(e => e.text.trim().toLowerCase() === q.text.trim().toLowerCase());
                 return (
                   <div key={q.id} className="flex items-start gap-3 p-3 rounded-lg border hover:bg-muted/30">

@@ -1,7 +1,8 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUsers, useEvaluations, useAssignments, useActionPlans, useCreateActionPlan, useApproveActionPlan } from '@/api/queries';
-import { CURRENT_PERIOD, PERIODS, ActionPlan, POSITION_LABELS, POSITION_RANK, SmartActionItem } from '@/types';
+import { CURRENT_PERIOD, PERIODS, ActionPlan, POSITION_LABELS, POSITION_RANK, SmartActionItem, QuestionCategory } from '@/types';
+import { ALL_CATEGORIES } from '@/pages/QuestionLibrary';
 import { FileText, Save, ShieldCheck, ShieldX, Clock, Plus, Trash2, Target } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -211,8 +212,15 @@ export default function MyActionPlan() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="text-xs text-muted-foreground">Competencia / Área *</label>
+                    <select value={it.competencia} onChange={e => updateItem(it.id, { competencia: e.target.value })}
+                      className="w-full mt-1 px-3 py-2 rounded-lg border border-input bg-background text-sm">
+                      <option value="">Selecciona una competencia...</option>
+                      {ALL_CATEGORIES.map(c => (
+                        <option key={c} value={c}>{c}</option>
+                      ))}
+                    </select>
                     <input value={it.competencia} onChange={e => updateItem(it.id, { competencia: e.target.value })}
-                      placeholder="Ej. Liderazgo, Redacción de demandas..."
+                      placeholder="O escribe una competencia personalizada..."
                       className="w-full mt-1 px-3 py-2 rounded-lg border border-input bg-background text-sm" />
                   </div>
                   <div>
