@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useUsers, useEvaluations, useAssignments, useCreateEvaluation, useUpdateEvaluation, useActionPlans, useCreateActionPlan, useCustomQuestions } from '@/api/queries';
+import { useUsers, useEvaluations, useAssignments, useCreateEvaluation, useUpdateEvaluation, useActionPlans, useCreateActionPlan, useCustomQuestions, useExportEvaluationsCSV } from '@/api/queries';
 import { QUESTIONS_BY_POSITION, getQuestionsForUser, calculateScore, getSectionForQuestion, SECTION_LABELS, SECTION_ORDER } from '@/data/questions';
 import { getSectionWeights } from '@/data/sectionWeights';
 
 import { User, CURRENT_PERIOD, SCORE_LABELS, POSITION_LABELS, PERIODS, ActionPlan, LEGAL_HIERARCHY, ADMIN_HIERARCHY } from '@/types';
+import { Download } from 'lucide-react';
+import { toast } from 'sonner';
 import { CheckCircle, AlertCircle, Eye, ArrowLeft, Ban, ShieldCheck, ShieldX, FileText, MessageSquare, MinusCircle } from 'lucide-react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import EvaluationViewer from '@/components/EvaluationViewer';
@@ -35,6 +37,14 @@ export default function Evaluations() {
   const [viewPeriod, setViewPeriod] = useState(CURRENT_PERIOD);
   const [actionPlanEmployee, setActionPlanEmployee] = useState<string | null>(null);
   const [actionPlanContent, setActionPlanContent] = useState('');
+
+  const exportEvaluationsCSV = useExportEvaluationsCSV().mutate;
+  const handleExportCSV = () => {
+    exportEvaluationsCSV({ period: viewPeriod }, {
+      onSuccess: () => toast.success(`Evaluaciones ${viewPeriod} exportadas`),
+      onError: () => toast.error("Error al exportar evaluaciones"),
+    });
+  };
 
   // History filters
   const [histLevelFilter, setHistLevelFilter] = useState('all');
@@ -427,6 +437,9 @@ export default function Evaluations() {
           <div className="flex items-center justify-between flex-wrap gap-3 mb-4">
             <h3 className="smps-section-title font-display text-base font-semibold">Historial de Evaluaciones</h3>
             <div className="flex items-center gap-2 flex-wrap">
+              <button onClick={handleExportCSV} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-input bg-background text-sm font-medium hover:bg-muted transition-colors" title="Exportar evaluaciones a CSV (pesos desde la base de datos)">
+                <Download className="h-3.5 w-3.5" /> CSV
+              </button>
               <HierarchyFilters levelFilter={histLevelFilter} setLevelFilter={setHistLevelFilter} positionFilter={histPosFilter} setPositionFilter={setHistPosFilter} />
               <select value={viewPeriod} onChange={e => setViewPeriod(e.target.value)}
                 className="px-3 py-1.5 rounded-lg border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-accent">

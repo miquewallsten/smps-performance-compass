@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { api } from './client';
+import { api, getToken } from './client';
 
 // ── Users ──
 export function useUsers() {
@@ -63,6 +63,25 @@ export function useApproveNA() {
   return useMutation({ mutationFn: ({ id, questionId, approved }: any) => api.patch(`/api/evaluations/${id}/na-approval`, { questionId, approved }), onSuccess: () => qc.invalidateQueries({ queryKey: ['evaluations'] }) });
 }
 
+
+export function useExportEvaluationsCSV() {
+  return useMutation({
+    mutationFn: async ({ period }: { period: string }) => {
+      const token = getToken();
+      const res = await fetch(`${import.meta.env.VITE_API_URL || ""}/api/evaluations/export/csv?period=${encodeURIComponent(period)}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error("Export failed");
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `evaluaciones-${period}-${new Date().toISOString().split("T")[0]}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    },
+  });
+}
 // ── Action Plans ──
 export function useActionPlans(filters?: Record<string, string>) {
   const params = filters ? '?' + new URLSearchParams(filters).toString() : '';

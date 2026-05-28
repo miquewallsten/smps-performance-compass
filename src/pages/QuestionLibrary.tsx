@@ -3,7 +3,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useCustomQuestions, useLibraryQuestions, useCreateLibraryQuestion, useUpdateLibraryQuestion, useDeleteLibraryQuestion, useSeedOverrides, useUpdateSeedOverride } from '@/api/queries';
 import { QUESTIONS_BY_POSITION, getSectionByCategory, getSectionForQuestion, SECTION_LABELS, SECTION_ORDER, getQuestionsForUser } from '@/data/questions';
 import { POSITION_LABELS, QuestionCategory, EvalQuestion, LibraryQuestion, EvalSection, POSITION_LEVELS, Position } from '@/types';
-import { BookOpen, Search, Plus, Pencil, Trash2, Save, X, Download, SlidersHorizontal, Layers, ChevronDown, ChevronRight, XCircle, LayoutList, LayoutGrid, Hash } from 'lucide-react';
+import { BookOpen, Search, Plus, Pencil, Trash2, Save, X, Download, SlidersHorizontal, Layers, ChevronDown, ChevronRight, XCircle, LayoutList, LayoutGrid, Hash, Info } from 'lucide-react';
 import { toast } from 'sonner';
 
 const ALL_CATEGORIES: QuestionCategory[] = [
@@ -39,6 +39,23 @@ interface FilterChip {
   label: string;
 }
 
+/**
+ * When grouping by position, we show rescaled weights (what evaluators actually see).
+ * Otherwise we show raw reference weights from the seed data.
+ */
+type DisplayItem = {
+  id: string;
+  text: string;
+  category: QuestionCategory;
+  section: EvalSection;
+  weight: number;           // displayed weight (rescaled when in position mode, raw otherwise)
+  rawWeight: number;         // always the raw reference weight
+  isSeed: boolean;
+  positions: string[];
+  rawQuestion: SeedItem | LibraryQuestion;
+  positionKey?: string;      // when in position group mode, the position this row belongs to
+};
+
 export default function QuestionLibrary() {
   const { user: currentUser } = useAuth();
   const { data: customQuestions = [] } = useCustomQuestions();
@@ -51,7 +68,7 @@ export default function QuestionLibrary() {
   const hideSeedQuestion = (id: string) => updateSeedQuestion({ id, hidden: true });
 
   const [search, setSearch] = useState('');
-  const [groupMode, setGroupMode] = useState<GroupMode>('section');
+  const [groupMode, setGroupMode] = useState<GroupMode>('position');
   const [viewMode, setViewMode] = useState<ViewMode>('compact');
   const [sortMode, setSortMode] = useState<SortMode>('weight');
   const [filters, setFilters] = useState<FilterChip[]>([]);
@@ -113,17 +130,64 @@ export default function QuestionLibrary() {
     return items;
   }, [seedByCategory]);
 
-  // Combined items for rendering
-  type DisplayItem = { id: string; text: string; category: QuestionCategory; section: EvalSection; weight: number; isSeed: boolean; positions: string[]; rawQuestion: SeedItem | LibraryQuestion };
+  // When grouped by position, compute rescaled weights per position using getQuestionsForUser()
+  // This is the SAME function used by the evaluation forms, guaranteeing weights match.
+  const rescaledByPosition = useMemo(() => {
+    if (groupMode !== 'position') return null;
+    const map: Record<string, { items: DisplayItem[]; totalWeight: number }> = {};
+    const allPositions = new Set<string>();
+    allSeedItems.forEach(item => item.positions.forEach(p => allPositions.add(p)));
+
+    for (const pos of allPositions) {
+      const evalQuestions = getQuestionsForUser(
+        { position: pos as Position, practiceArea: POSITION_LEVELS[pos as Position] === 'legal' ? 'corporativo' : undefined },
+        Array.isArray(customQuestions) ? {} : customQuestions
+      );
+      const items: DisplayItem[] = evalQuestions.map(q => {
+        const section = getSectionForQuestion(q, pos as Position);
+        return {
+          id: `${pos}::${q.id}`,
+          text: q.text,
+          category: q.category as QuestionCategory,
+          section,
+          weight: q.weight,      // rescaled weight — what evaluators see
+          rawWeight: 0,          // not applicable in position mode
+          isSeed: true,
+          positions: [pos],
+          rawQuestion: allSeedItems.find(s => s.id === q.id) || ({ id: q.id, text: q.text, category: q.category, weight: q.weight, positions: [pos], isSeed: true, section } as SeedItem),
+          positionKey: pos,
+        };
+      });
+      const totalWeight = items.reduce((s, i) => s + i.weight, 0);
+      map[pos] = { items, totalWeight };
+    }
+    return map;
+  }, [groupMode, allSeedItems, customQuestions]);
+
+  // Combined items for rendering (non-position mode: use raw weights)
   const allItems: DisplayItem[] = useMemo(() => {
+    if (groupMode === 'position' && rescaledByPosition) {
+      // In position mode, flatten all rescaled items
+      const items: DisplayItem[] = [];
+      for (const [pos, data] of Object.entries(rescaledByPosition)) {
+        items.push(...data.items);
+      }
+      return items;
+    }
+    // Non-position mode: use raw reference weights
     const seedItems: DisplayItem[] = allSeedItems.map(q => ({
-      id: q.id, text: q.text, category: q.category, section: q.section, weight: q.weight, isSeed: true, positions: q.positions, rawQuestion: q,
+      id: q.id, text: q.text, category: q.category, section: q.section,
+      weight: q.weight,       // raw reference weight
+      rawWeight: q.weight,
+      isSeed: true, positions: q.positions, rawQuestion: q,
     }));
     const customItems: DisplayItem[] = libraryQuestions.map(q => ({
-      id: q.id, text: q.text, category: q.category, section: getSectionByCategory(q.category), weight: q.defaultWeight, isSeed: false, positions: [], rawQuestion: q,
+      id: q.id, text: q.text, category: q.category, section: getSectionByCategory(q.category),
+      weight: q.defaultWeight, rawWeight: q.defaultWeight,
+      isSeed: false, positions: [], rawQuestion: q,
     }));
     return [...seedItems, ...customItems];
-  }, [allSeedItems, libraryQuestions]);
+  }, [allSeedItems, libraryQuestions, groupMode, rescaledByPosition]);
 
   // Apply filters and search
   const filteredItems = useMemo(() => {
@@ -135,7 +199,7 @@ export default function QuestionLibrary() {
     for (const f of filters) {
       if (f.type === 'section') items = items.filter(i => i.section === f.value);
       if (f.type === 'category') items = items.filter(i => i.category === f.value);
-      if (f.type === 'position') items = items.filter(i => i.positions.includes(f.value));
+      if (f.type === 'position') items = items.filter(i => i.positions.includes(f.value) || i.positionKey === f.value);
       if (f.type === 'type') items = items.filter(i => (f.value === 'seed') === i.isSeed);
     }
     return items;
@@ -166,11 +230,14 @@ export default function QuestionLibrary() {
         groups.set(cat, sortedItems.filter(i => i.category === cat));
       }
     } else if (groupMode === 'position') {
-      groups.set('Sin puesto', sortedItems.filter(i => i.positions.length === 0));
-      const allPositions = [...new Set(sortedItems.flatMap(i => i.positions))].sort();
-      for (const pos of allPositions) {
-        groups.set(pos, sortedItems.filter(i => i.positions.includes(pos)));
+      // In position mode, group by position key (already rescaled)
+      const positions = [...new Set(sortedItems.map(i => i.positionKey).filter(Boolean))].sort();
+      for (const pos of positions) {
+        groups.set(pos, sortedItems.filter(i => i.positionKey === pos));
       }
+      // Library items without position
+      const noPos = sortedItems.filter(i => !i.positionKey);
+      if (noPos.length > 0) groups.set('Sin puesto', noPos);
     }
     return groups;
   }, [sortedItems, groupMode]);
@@ -231,7 +298,7 @@ export default function QuestionLibrary() {
       updateLibraryQuestion({ ...editing.q, ...form, text: form.text.trim() });
       toast.success('Pregunta actualizada');
     } else if (editing?.kind === 'seed') {
-      updateSeedQuestion(editing.q.id, { text: form.text.trim(), category: form.category, weight: form.defaultWeight });
+      updateSeedQuestion(editing.q.id, { text: form.text.trim(), category: form.category, weight: form.defaultWeight } as any);
       toast.success('Pregunta base actualizada');
     } else {
       addLibraryQuestion({
@@ -260,7 +327,7 @@ export default function QuestionLibrary() {
     const newWeight = parseInt(weightInput) || 0;
     if (newWeight < 1 || newWeight > 100) { toast.error('Peso debe ser 1-100'); return; }
     if (item.isSeed) {
-      updateSeedQuestion(item.id, { weight: newWeight });
+      updateSeedQuestion(item.id, { weight: newWeight } as any);
     } else {
       updateLibraryQuestion({ id: item.id, defaultWeight: newWeight } as any);
     }
@@ -283,17 +350,20 @@ export default function QuestionLibrary() {
     setExpandedGroups(autoExpand);
   }, [groupMode]);
 
+  /**
+   * CSV export — always uses rescaled weights per position (same as evaluation forms).
+   * This guarantees the CSV percentages match exactly what users see on screen.
+   */
   const exportCSV = () => {
-    // Use getQuestionsForUser() — the exact same function the evaluation UI uses.
-    // This guarantees rescaled weights match what the user sees in the app (summing to 100% per position).
     const rows: string[] = ['Posición,Sección,Categoría,Peso (%),Texto'];
     const allPositions = new Set<string>();
     allSeedItems.forEach(item => item.positions.forEach(p => allPositions.add(p)));
 
     for (const pos of allPositions) {
       const posLabel = POSITION_LABELS[pos as Position] || pos;
+      // Use getQuestionsForUser() — the exact same function the evaluation UI uses.
       const evalQuestions = getQuestionsForUser(
-        { position: pos as Position, practiceArea: 'corporativo' },
+        { position: pos as Position, practiceArea: POSITION_LEVELS[pos as Position] === 'legal' ? 'corporativo' : undefined },
         Array.isArray(customQuestions) ? {} : customQuestions
       );
       evalQuestions.forEach(q => {
@@ -323,6 +393,9 @@ export default function QuestionLibrary() {
           <h1 className="font-display text-2xl font-bold">Biblioteca de Preguntas</h1>
           <p className="text-muted-foreground text-sm mt-1">
             {stats.total} preguntas &middot; {stats.seed} base &middot; {stats.custom} personalizadas
+            {groupMode === 'position' && (
+              <span className="ml-2 text-accent">· Pesos reescalados por posición (igual que en evaluaciones)</span>
+            )}
           </p>
         </div>
         <div className="flex gap-2">
@@ -334,6 +407,14 @@ export default function QuestionLibrary() {
           </button>
         </div>
       </div>
+
+      {/* Info banner when in position mode */}
+      {groupMode === 'position' && (
+        <div className="flex items-start gap-2 px-4 py-2.5 rounded-lg bg-accent/5 border border-accent/20 text-xs text-muted-foreground">
+          <Info className="h-4 w-4 text-accent flex-shrink-0 mt-0.5" />
+          <p>Los pesos mostrados son <strong className="text-foreground">reescalados por sección</strong> para cada posición (suman 100%). Son los mismos porcentajes que los evaluadores ven en el formulario de evaluación. El CSV exporta estos mismos valores.</p>
+        </div>
+      )}
 
       {/* Stats strip */}
       <div className="grid grid-cols-3 gap-3">
@@ -384,7 +465,7 @@ export default function QuestionLibrary() {
           <button onClick={() => setGroupMode('category')} className={`px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors ${groupMode === 'category' ? 'bg-accent text-accent-foreground' : 'hover:bg-muted'}`} title="Agrupar por categoría">
             <BookOpen className="h-3.5 w-3.5" />
           </button>
-          <button onClick={() => setGroupMode('position')} className={`px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors ${groupMode === 'position' ? 'bg-accent text-accent-foreground' : 'hover:bg-muted'}`} title="Agrupar por puesto">
+          <button onClick={() => setGroupMode('position')} className={`px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors ${groupMode === 'position' ? 'bg-accent text-accent-foreground' : 'hover:bg-muted'}`} title="Agrupar por puesto (pesos reescalados)">
             <Hash className="h-3.5 w-3.5" />
           </button>
           <button onClick={() => setGroupMode('none')} className={`px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors ${groupMode === 'none' ? 'bg-accent text-accent-foreground' : 'hover:bg-muted'}`} title="Sin agrupar">
@@ -467,6 +548,11 @@ export default function QuestionLibrary() {
           const groupColor = groupMode === 'section' ? SECTION_COLORS[groupKey as EvalSection] : null;
           const label = getGroupLabel(groupKey);
 
+          // Show total weight for this group when in position mode
+          const groupTotalWeight = groupMode === 'position' && rescaledByPosition?.[groupKey]
+            ? rescaledByPosition[groupKey].totalWeight
+            : null;
+
           return (
             <div key={groupKey} className="bg-card rounded-xl border overflow-hidden">
               <button onClick={() => toggleGroup(groupKey)}
@@ -475,6 +561,9 @@ export default function QuestionLibrary() {
                   {groupColor && <span className={`w-2.5 h-2.5 rounded-full ${groupColor.dot}`} />}
                   <span className="text-sm font-semibold">{label}</span>
                   <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">{items.length}</span>
+                  {groupTotalWeight !== null && (
+                    <span className="text-xs text-accent font-medium">Σ {groupTotalWeight}%</span>
+                  )}
                 </div>
                 {isExpanded ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
               </button>
@@ -493,7 +582,7 @@ export default function QuestionLibrary() {
                           <p className="text-sm leading-snug truncate">{item.text}</p>
                           <div className="flex items-center gap-2 mt-0.5">
                             <span className="text-[10px] text-muted-foreground">{item.category}</span>
-                            {item.isSeed && item.positions.length > 0 && (
+                            {item.isSeed && item.positions.length > 0 && groupMode !== 'position' && (
                               <span className="text-[10px] text-muted-foreground">
                                 {item.positions.length} puesto{item.positions.length !== 1 ? 's' : ''}
                               </span>
@@ -512,9 +601,9 @@ export default function QuestionLibrary() {
                               <span className="text-[10px] text-muted-foreground">%</span>
                             </div>
                           ) : (
-                            <button onClick={() => { if (canEdit) { setEditingWeight(item.id); setWeightInput(String(item.weight)); }}}
-                              className="text-xs font-medium tabular-nums text-muted-foreground hover:text-foreground px-1.5 py-0.5 rounded hover:bg-muted transition-colors min-w-[2rem] text-right"
-                              title="Click para editar peso">
+                            <button onClick={() => { if (canEdit && groupMode !== 'position') { setEditingWeight(item.id); setWeightInput(String(item.rawWeight)); }}}
+                              className={`text-xs font-medium tabular-nums text-muted-foreground hover:text-foreground px-1.5 py-0.5 rounded hover:bg-muted transition-colors min-w-[2rem] text-right ${groupMode === 'position' ? 'text-accent' : ''}`}
+                              title={groupMode === 'position' ? 'Peso reescalado (calculado automáticamente)' : 'Click para editar peso'}>
                               {item.weight}%
                             </button>
                           )}
@@ -537,12 +626,12 @@ export default function QuestionLibrary() {
                             <div className="flex items-center gap-2 mt-2 flex-wrap">
                               <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${color.bg} ${color.text}`}>{SECTION_LABELS[item.section]}</span>
                               <span className="text-[10px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground">{item.category}</span>
-                              <span className="text-[10px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground font-medium tabular-nums">{item.weight}%</span>
+                              <span className={`text-[10px] px-2 py-0.5 rounded-full bg-muted font-medium tabular-nums ${groupMode === 'position' ? 'text-accent' : 'text-muted-foreground'}`}>{item.weight}%</span>
                               <span className={`text-[10px] px-2 py-0.5 rounded-full ${item.isSeed ? 'bg-foreground/5 text-foreground/50' : 'bg-accent/10 text-accent'}`}>
                                 {item.isSeed ? 'Base' : 'Personalizada'}
                               </span>
                             </div>
-                            {item.isSeed && item.positions.length > 0 && (
+                            {item.isSeed && item.positions.length > 0 && groupMode !== 'position' && (
                               <div className="flex items-center gap-1 mt-1.5 flex-wrap">
                                 {item.positions.map(p => (
                                   <span key={p} className="text-[10px] bg-muted/50 text-muted-foreground px-1.5 py-0.5 rounded">
