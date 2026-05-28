@@ -9,6 +9,8 @@ const DEPLOY_SECRET = process.env.DEPLOY_WEBHOOK_SECRET || 'smps-deploy-webhook-
 
 // ─── POST /api/deploy ──────────────────────────────────────────────────────
 // Called by GitHub Actions after pushing built artifacts
+// NOTE: Build artifacts (dist/, server.cjs) are uploaded via SCP by CI,
+// they are NOT in git. This webhook only handles git pull + npm install + restart.
 router.post('/', async (req: Request, res: Response) => {
   try {
     const signature = req.headers['x-hub-signature-256'] as string;
@@ -51,10 +53,9 @@ async function deployAsync() {
       NODE_ENV: 'production',
     };
 
-    // Git pull
-    // Reset local changes, clean stale build artifacts, then pull
+    // Git pull — only source code, NOT build artifacts
+    // Do NOT delete dist/ or dist/assets/ — those are managed by CI SCP uploads
     await execAsync(`cd ${appDir} && git checkout -- . 2>&1`, { env });
-    await execAsync(`cd ${appDir} && rm -rf dist/assets/ && git clean -fd dist/ 2>&1`, { env });
     const { stdout: gitOut } = await execAsync(`cd ${appDir} && git pull origin main 2>&1`, { env });
     console.log('[Deploy] Git pull:', gitOut);
 
