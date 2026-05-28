@@ -3,9 +3,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useUsers, useEvaluations, useAssignments, useCreateEvaluation, useUpdateEvaluation, useCompleteFeedback, useApproveNA, useActionPlans, useCreateActionPlan, useExportEvaluationsCSV } from '@/api/queries';
 import { calculateScore, getSectionForQuestion, SECTION_LABELS, SECTION_ORDER } from '@/lib/evaluationConfig';
 
-
 import { User, EvalQuestion, ActionPlan } from '@/types';
-import { CURRENT_PERIOD, SECTION_LABELS, SECTION_ORDER, getSectionForQuestion, calculateScore, getSectionWeights, getPositionLabel, getScoreLabels, getLegalHierarchy, getAdminHierarchy, PERIODS } from '@/lib/evaluationConfig';
+import { CURRENT_PERIOD, getSectionWeights, getPositionLabel, getScoreLabels, getLegalHierarchy, getAdminHierarchy, PERIODS } from '@/lib/evaluationConfig';
 import { useFullTemplate, usePositionConfig, useTemplateQuestions } from '@/hooks/useEvaluationConfig';
 import { Download } from 'lucide-react';
 import { toast } from 'sonner';

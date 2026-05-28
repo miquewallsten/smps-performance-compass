@@ -243,7 +243,6 @@ export default function EvaluationTemplates() {
     );
   };
 
-  // Need Pencil from lucide
 
   return (
     <div>
