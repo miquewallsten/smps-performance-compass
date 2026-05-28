@@ -321,7 +321,7 @@ export default function QuestionLibrary() {
     allSeedItems.forEach(item => item.positions.forEach(p => allPositions.add(p)));
 
     for (const pos of allPositions) {
-      const posLabel = POSITION_LABELS[pos as Position] || pos;
+      const posLabel = getPositionLabel(pos as Position) || pos;
       // Use getQuestionsForUser() — the exact same function the evaluation UI uses.
       const evalQuestions = getQuestionsForUser(
       );
@@ -481,10 +481,10 @@ export default function QuestionLibrary() {
               className="text-[10px] px-2 py-0.5 rounded border border-input bg-background">
               <option value="">Todos</option>
               <optgroup label="Legal">
-                {getLegalHierarchy().map(p => <option key={p} value={p}>{POSITION_LABELS[p]}</option>)}
+                {getLegalHierarchy().map(p => <option key={p} value={p}>{getPositionLabel(p)}</option>)}
               </optgroup>
               <optgroup label="Administrativo">
-                {getAdminHierarchy().map(p => <option key={p} value={p}>{POSITION_LABELS[p]}</option>)}
+                {getAdminHierarchy().map(p => <option key={p} value={p}>{getPositionLabel(p)}</option>)}
               </optgroup>
             </select>
           </div>

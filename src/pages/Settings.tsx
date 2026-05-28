@@ -85,7 +85,7 @@ export default function SettingsPage() {
                             N/A {naApproved ? '✓' : '(pendiente)'}
                           </span>
                         ) : (
-                          response ? SCORE_LABELS[response.score] : '—'
+                          response ? getScoreLabels()[response.score] : '—'
                         )}
                       </span>
                     </div>

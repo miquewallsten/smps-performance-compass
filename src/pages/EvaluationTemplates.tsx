@@ -231,7 +231,7 @@ export default function EvaluationTemplates() {
                 <div className="flex flex-wrap gap-2 mt-2">
                   {[1, 2, 3, 4, 5].map(s => (
                     <span key={s} className="text-xs px-2.5 py-1 rounded-lg bg-muted text-muted-foreground">
-                      {s} — {SCORE_LABELS[s]}
+                      {s} — {getScoreLabels()[s]}
                     </span>
                   ))}
                 </div>
