@@ -217,7 +217,7 @@ router.post('/', authMiddleware, async (req: Request, res: Response) => {
         conn,
         `INSERT INTO evaluations (id, evaluator_id, evaluated_id, period, type, comments, supervisor_comments, total_score, completed_at, feedback_completed, created_at)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?)`,
-        [id, evaluatorId, evaluatedId, period, type, comments || '', supervisorComments || null, Math.round(totalScore), now]
+        [id, evaluatorId, evaluatedId, period, type, comments || '', supervisorComments || null, Math.round(totalScore), now, now]
       );
 
       for (const r of respArr) {
@@ -234,6 +234,9 @@ router.post('/', authMiddleware, async (req: Request, res: Response) => {
     const evalNaApprovals = await db.all('SELECT * FROM evaluation_na_approvals WHERE evaluation_id = ?', [id]);
     return res.json({ ...evaluation, responses: evalResponses, naApprovals: evalNaApprovals });
   } catch (err) {
+    if ((err as any).code === 'ER_DUP_ENTRY') {
+      return res.status(409).json({ error: 'Evaluation already exists for this evaluator, evaluated, period, and type' });
+    }
     console.error('Create evaluation error:', err);
     return res.status(500).json({ error: 'Internal server error' });
   }
