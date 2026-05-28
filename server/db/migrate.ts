@@ -690,4 +690,13 @@ export async function migrate(): Promise<void> {
       console.error('⚠️  Could not add unique constraint to announcement_reads:', err.message);
     }
   }
+
+  // Migration: Round all total_score values to whole numbers (remove decimals)
+  try {
+    const rounded = await run('UPDATE evaluations SET total_score = ROUND(total_score) WHERE total_score != ROUND(total_score)');
+    console.log('✅ Rounded total_score values to whole numbers');
+  } catch (e) {
+    console.log('  ⚠ Could not round total_score values:', (e as Error).message);
+  }
+
 }

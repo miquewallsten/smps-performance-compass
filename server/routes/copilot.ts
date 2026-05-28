@@ -596,7 +596,7 @@ function getTools(cfg: Record<string, unknown>): Tool[] {
           // Recalculate total_score
           const responses = await db.all('SELECT score, weight, not_applicable, no_elements FROM evaluation_responses WHERE evaluation_id=?', [args.id]);
           const applicable = responses.filter((r: any) => !r.not_applicable && !r.no_elements);
-          const totalScore = applicable.length ? Math.round(applicable.reduce((s: number, r: any) => s + r.score * r.weight, 0) / applicable.reduce((s: number, r: any) => s + r.weight, 0) * 20 * 10) / 10 : 0;
+          const totalScore = applicable.length ? Math.round(applicable.reduce((s: number, r: any) => s + r.score * r.weight, 0) / applicable.reduce((s: number, r: any) => s + r.weight, 0) * 20) : 0;
           await db.run('UPDATE evaluations SET total_score=? WHERE id=?', [totalScore, args.id]);
           return JSON.stringify({ ok: true, score, weight, total_score: totalScore, msg: `Calificación guardada. Total actualizado: ${totalScore}` });
         }
@@ -606,7 +606,7 @@ function getTools(cfg: Record<string, unknown>): Tool[] {
           // Recalculate score
           const responses = await db.all('SELECT score, weight, not_applicable, no_elements FROM evaluation_responses WHERE evaluation_id=?', [args.id]);
           const applicable = responses.filter((r: any) => !r.not_applicable && !r.no_elements);
-          const totalScore = applicable.length ? Math.round(applicable.reduce((s: number, r: any) => s + r.score * r.weight, 0) / applicable.reduce((s: number, r: any) => s + r.weight, 0) * 20 * 10) / 10 : 0;
+          const totalScore = applicable.length ? Math.round(applicable.reduce((s: number, r: any) => s + r.score * r.weight, 0) / applicable.reduce((s: number, r: any) => s + r.weight, 0) * 20) : 0;
           await db.run('UPDATE evaluations SET total_score=? WHERE id=?', [totalScore, args.id]);
           return JSON.stringify({ ok: true, msg: 'Evaluación completada', total_score: totalScore });
         }

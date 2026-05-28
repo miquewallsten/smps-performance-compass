@@ -66,7 +66,10 @@ function toCamelCase(value: unknown): unknown {
     const camelKey = key.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
 
     // Convert known boolean fields from 0/1 to true/false
-    if (booleanFields.has(camelKey) && typeof val === 'number') {
+    // Round totalScore to whole number (no decimals)
+    if (camelKey === 'totalScore' && typeof val === 'number') {
+      result[camelKey] = Math.round(val);
+    } else if (booleanFields.has(camelKey) && typeof val === 'number') {
       result[camelKey] = val !== 0;
     } else {
       result[camelKey] = toCamelCase(val);

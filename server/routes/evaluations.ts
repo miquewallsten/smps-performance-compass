@@ -231,7 +231,8 @@ router.post('/', authMiddleware, async (req: Request, res: Response) => {
 
     const evaluation = await db.get('SELECT * FROM evaluations WHERE id = ?', [id]);
     const evalResponses = await db.all('SELECT * FROM evaluation_responses WHERE evaluation_id = ?', [id]);
-    return res.json({ ...evaluation, responses: evalResponses });
+    const evalNaApprovals = await db.all('SELECT * FROM evaluation_na_approvals WHERE evaluation_id = ?', [id]);
+    return res.json({ ...evaluation, responses: evalResponses, naApprovals: evalNaApprovals });
   } catch (err) {
     console.error('Create evaluation error:', err);
     return res.status(500).json({ error: 'Internal server error' });
@@ -251,7 +252,7 @@ router.put('/:id', authMiddleware, async (req: Request, res: Response) => {
     const params: any[] = [];
     if (comments !== undefined) { updates.push('comments = ?'); params.push(comments); }
     if (supervisorComments !== undefined) { updates.push('supervisor_comments = ?'); params.push(supervisorComments); }
-    if (totalScore !== undefined) { updates.push('total_score = ?'); params.push(totalScore); }
+    if (totalScore !== undefined) { updates.push('total_score = ?'); params.push(Math.round(totalScore)); }
     updates.push('completed_at = ?'); params.push(now);
 
     if (responses && Array.isArray(responses)) {
@@ -283,7 +284,8 @@ router.put('/:id', authMiddleware, async (req: Request, res: Response) => {
         createdBy: req.user!.id
       });
     }
-    return res.json({ ...updated, responses: evalResponses });
+    const evalNaApprovals = await db.all('SELECT * FROM evaluation_na_approvals WHERE evaluation_id = ?', [req.params.id]);
+    return res.json({ ...updated, responses: evalResponses, naApprovals: evalNaApprovals });
   } catch (err) {
     console.error('Update evaluation error:', err);
     return res.status(500).json({ error: 'Internal server error' });
@@ -299,6 +301,8 @@ router.patch('/:id/feedback', authMiddleware, async (req: Request, res: Response
     await db.run('UPDATE evaluations SET feedback_completed = 1, feedback_completed_at = ?, feedback_completed_by = ? WHERE id = ?',
       [now, req.user!.id, req.params.id]);
     const updated = await db.get('SELECT * FROM evaluations WHERE id = ?', [req.params.id]);
+    const evalResponses = await db.all('SELECT * FROM evaluation_responses WHERE evaluation_id = ?', [req.params.id]);
+    const evalNaApprovals = await db.all('SELECT * FROM evaluation_na_approvals WHERE evaluation_id = ?', [req.params.id]);
     // Log feedback completion to timeline
     if (updated) {
       await logTimelineEvent(updated.evaluated_id, 'evaluation_completed', {
@@ -307,7 +311,7 @@ router.patch('/:id/feedback', authMiddleware, async (req: Request, res: Response
         createdBy: req.user!.id
       });
     }
-    return res.json(updated);
+    return res.json({ ...updated, responses: evalResponses, naApprovals: evalNaApprovals });
   } catch (err) {
     console.error('Feedback error:', err);
     return res.status(500).json({ error: 'Internal server error' });
@@ -330,8 +334,11 @@ router.patch('/:id/na-approval', authMiddleware, async (req: Request, res: Respo
       [uuidv4(), req.params.id, questionId, approved ? 1 : 0, req.user!.id, new Date().toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, '')]
     );
 
-    const approvals = await db.all('SELECT * FROM evaluation_na_approvals WHERE evaluation_id = ?', [req.params.id]);
-    return res.json(approvals);
+    // Return the full evaluation with responses and naApprovals so the frontend stays in sync
+    const evalResponses = await db.all('SELECT * FROM evaluation_responses WHERE evaluation_id = ?', [req.params.id]);
+    const allApprovals = await db.all('SELECT * FROM evaluation_na_approvals WHERE evaluation_id = ?', [req.params.id]);
+    const updated = await db.get('SELECT * FROM evaluations WHERE id = ?', [req.params.id]);
+    return res.json({ ...updated, responses: evalResponses, naApprovals: allApprovals });
   } catch (err) {
     console.error('NA approval error:', err);
     return res.status(500).json({ error: 'Internal server error' });
