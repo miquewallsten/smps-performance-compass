@@ -37,7 +37,7 @@ export { getPositionHierarchy as POSITION_HIERARCHY_DEPRECATED } from '@/lib/eva
 
 export type QuestionCategory =
   | 'Desempeño' | 'Liderazgo' | 'Cumplimiento' | 'Habilidades Blandas'
-  | 'Trabajo en Equipo' | 'Actitud' | 'Disponibilidad' | 'Desarrollo'
+  | 'Trabajo en Equipo' | 'Actitud' | 'Disponibilidad' | 'Desarrollo' | 'Comunicación'
   | 'Criterio Técnico'
   // Sub-categorías de Criterio Técnico (Corporativo)
   | 'Conocimiento normativo' | 'Redacción legal' | 'Due diligence'

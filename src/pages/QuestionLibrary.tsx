@@ -9,7 +9,7 @@ import { toast } from 'sonner';
 export const ALL_CATEGORIES: QuestionCategory[] = [
   // Competencias / Blandas
   'Liderazgo', 'Trabajo en Equipo', 'Habilidades Blandas',
-  'Actitud', 'Disponibilidad', 'Desarrollo',
+  'Actitud', 'Disponibilidad', 'Desarrollo', 'Comunicación',
   'Desempeño', 'Cumplimiento',
   // Criterio Técnico (general + sub-categorías)
   'Criterio Técnico',

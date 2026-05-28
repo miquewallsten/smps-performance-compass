@@ -24,7 +24,7 @@ export const SECTION_ORDER: EvalSection[] = ['competencias', 'tecnico', 'blandas
 
 export const ALL_CATEGORIES: QuestionCategory[] = [
   'Desempeño', 'Liderazgo', 'Cumplimiento', 'Habilidades Blandas',
-  'Trabajo en Equipo', 'Actitud', 'Disponibilidad', 'Desarrollo',
+  'Trabajo en Equipo', 'Actitud', 'Disponibilidad', 'Desarrollo', 'Comunicación',
   'Criterio Técnico',
   'Conocimiento normativo', 'Redacción legal', 'Due diligence',
   'Constitución y modificaciones', 'Atención a clientes',
@@ -38,7 +38,7 @@ export const ALL_CATEGORIES: QuestionCategory[] = [
  * Determine section from category (for Question Library grouping).
  */
 export function getSectionByCategory(category: QuestionCategory): EvalSection {
-  if (category === 'Habilidades Blandas' || category === 'Actitud' || category === 'Disponibilidad' || category === 'Desarrollo') {
+  if (category === 'Habilidades Blandas' || category === 'Actitud' || category === 'Disponibilidad' || category === 'Desarrollo' || category === 'Comunicación') {
     return 'blandas';
   }
   if (category === 'Criterio Técnico') return 'tecnico';
@@ -58,7 +58,7 @@ export function getSectionByCategory(category: QuestionCategory): EvalSection {
  * Determine section for a question given its category and position level.
  */
 export function getSectionForQuestion(category: QuestionCategory, position: Position): EvalSection {
-  const isSoft = category === 'Habilidades Blandas' || category === 'Actitud' || category === 'Disponibilidad' || category === 'Desarrollo';
+  const isSoft = category === 'Habilidades Blandas' || category === 'Actitud' || category === 'Disponibilidad' || category === 'Desarrollo' || category === 'Comunicación';
   if (isSoft) return 'blandas';
 
   const level = getPositionLevel(position);
