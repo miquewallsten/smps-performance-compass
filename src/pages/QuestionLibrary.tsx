@@ -1,9 +1,8 @@
 import { useState, useMemo, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTemplateQuestions, useLibraryQuestionsConfig, useCreateLibraryQuestionConfig, useUpdateLibraryQuestionConfig, useDeleteLibraryQuestionConfig } from '@/hooks/useEvaluationConfig';
-import { SECTION_LABELS, SECTION_ORDER, getSectionByCategory, getSectionForQuestion } from '@/lib/evaluationConfig';
+import { SECTION_LABELS, SECTION_ORDER, getSectionByCategory, getSectionForQuestion, getPositionLabel, getLegalHierarchy, getAdminHierarchy, getPositionLevel } from '@/lib/evaluationConfig';
 import { QuestionCategory, EvalQuestion, LibraryQuestion, EvalSection, Position } from '@/types';
-import { getPositionLabel, getLegalHierarchy, getAdminHierarchy, getPositionLevel } from '@/lib/evaluationConfig';
 import { BookOpen, Search, Plus, Pencil, Trash2, Save, X, Download, SlidersHorizontal, Layers, ChevronDown, ChevronRight, XCircle, LayoutList, LayoutGrid, Hash, Info } from 'lucide-react';
 import { toast } from 'sonner';
 
