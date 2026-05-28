@@ -4,7 +4,8 @@ import { HelpCircle, ClipboardCheck, ClipboardList, FileText, Target, Map, BarCh
 import { useAuth } from '@/contexts/AuthContext';
 import { useUsers, useEvaluations, useAssignments, useSystemModules, useSystemStatus, usePeriods, useAnnouncements, useVacationRequests } from '@/api/queries';
 
-import { POSITION_LABELS, POSITION_LEVELS, Position } from '@/types';
+import { Position } from '@/types';
+import { getPositionLabel, getPositionLevel } from '@/lib/evaluationConfig';
 import { getLegalHierarchy, getAdminHierarchy } from '@/lib/evaluationConfig';
 import { useCompetencies } from '@/hooks/useEvaluationConfig';
 

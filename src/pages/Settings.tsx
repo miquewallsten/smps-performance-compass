@@ -132,7 +132,7 @@ export default function SettingsPage() {
           <div className="flex justify-between"><span className="text-muted-foreground">Email:</span><span>{currentUser.email}</span></div>
           <div className="flex justify-between">
             <span className="text-muted-foreground">Posición:</span>
-            <span>{getPositionLabel(currentUser.position as keyof typeof POSITION_LABELS) || currentUser.position}</span>
+            <span>{getPositionLabel(currentUser.position) || currentUser.position}</span>
           </div>
           {currentUser.isAdmin && <div className="flex justify-between"><span className="text-muted-foreground">Rol:</span><span className="font-medium text-accent">Administrador</span></div>}
           {currentUser.isSuperUser && <div className="flex justify-between"><span className="text-muted-foreground">Rol:</span><span className="font-medium text-yellow-500">Super Administrador</span></div>}

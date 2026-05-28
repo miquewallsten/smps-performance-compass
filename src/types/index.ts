@@ -1,60 +1,21 @@
-export type Position =
-  | 'socio'
-  | 'salary_partner'
-  | 'counsel'
-  | 'asociado_sr'
-  | 'asociado_mid'
-  | 'asociado_jr'
-  | 'pasante_carrera'
-  | 'pasante_corporativo'  // backward compat
-  | 'pasante'
-  | 'director'
-  | 'gerente'
-  | 'coordinador'
-  | 'analista'
-  | 'asistente'
-  | 'archivo_soporte'      // backward compat
-  | 'soporte'
-  | 'archivista'
-  | 'dummy';
+/**
+ * Types for SMPS Performance Compass.
+ *
+ * Position and QuestionCategory are now dynamic strings — 
+ * all data comes from the database, not from hardcoded unions.
+ */
+
+export type Position = string;
 
 export type PositionLevel = 'legal' | 'administrativo';
 
-export { getPositionLabel as POSITION_LABELS_DEPRECATED } from '@/lib/evaluationConfig';  // Use getPositionLabel() instead
-
-export { getPositionLevel as POSITION_LEVELS_DEPRECATED } from '@/lib/evaluationConfig';  // Use getPositionLevel() instead
-
 export { LEVEL_LABELS } from '@/lib/evaluationConfig';
 
-// Position rank for "evaluador de mayor rango" calculations (lower index = higher rank)
-export { getPositionRank as POSITION_RANK_DEPRECATED } from '@/lib/evaluationConfig';  // Use getPositionRank() instead
-
-export { getLegalHierarchy as LEGAL_HIERARCHY_DEPRECATED } from '@/lib/evaluationConfig';  // Use getLegalHierarchy() instead
-
-export { getAdminHierarchy as ADMIN_HIERARCHY_DEPRECATED } from '@/lib/evaluationConfig';  // Use getAdminHierarchy() instead
-
-export { getPositionHierarchy as POSITION_HIERARCHY_DEPRECATED } from '@/lib/evaluationConfig';  // Use getPositionHierarchy() instead
-
-export type QuestionCategory =
-  | 'Desempeño' | 'Liderazgo' | 'Cumplimiento' | 'Habilidades Blandas'
-  | 'Trabajo en Equipo' | 'Actitud' | 'Disponibilidad' | 'Desarrollo' | 'Comunicación'
-  | 'Criterio Técnico'
-  // Sub-categorías de Criterio Técnico (Corporativo)
-  | 'Conocimiento normativo' | 'Redacción legal' | 'Due diligence'
-  | 'Constitución y modificaciones' | 'Atención a clientes'
-  // Sub-categorías de Criterio Técnico (Consultoría Fiscal)
-  | 'Normatividad fiscal' | 'Opiniones fiscales' | 'Planeación fiscal'
-  | 'Criterios y jurisprudencia' | 'Impactos fiscales'
-  // Sub-categorías de Criterio Técnico (Litigio Fiscal)
-  | 'Redacción de escritos' | 'Estrategia procesal' | 'Audiencias y diligencias'
-  | 'Seguimiento de expedientes';
+export type QuestionCategory = string;
 
 export type EvalSection = 'competencias' | 'tecnico' | 'blandas';
 
-export type PracticeArea = 'fiscal_consultoria' | 'fiscal_litigio' | 'corporativo' | 'backoffice'
-  | 'consultoria_fiscal' | 'litigio_fiscal' | 'general';  // backward compat
-
-// PRACTICE_AREA_LABELS - use practice area labels from DB
+export type PracticeArea = string;
 
 export interface EvalQuestion {
   id: string;
@@ -75,14 +36,11 @@ export interface LibraryQuestion {
 
 /**
  * Normalize a practice area to its canonical form.
- * Maps old keys to new keys so the rest of the code only needs to handle canonical keys.
  */
 export { normalizePracticeArea } from '@/lib/evaluationConfig';
 
 /**
  * Normalize a position to its canonical form.
- * Maps old position keys to their current equivalents so the rest of the code
- * only needs to handle canonical positions.
  */
 export { normalizePosition } from '@/lib/evaluationConfig';
 
@@ -129,9 +87,9 @@ export interface User {
   name: string;
   email: string;
   position: Position;
-  practiceArea?: PracticeArea; // solo aplica a posiciones legales
-  customPositionId?: string;   // referencia al catálogo de puestos (cve_puesto)
-  locationId?: string;        // FK → Location.id
+  practiceArea?: PracticeArea;
+  customPositionId?: string;
+  locationId?: string;
   isAdmin: boolean;
   isActive: boolean;
   password: string;
@@ -176,24 +134,23 @@ export interface Evaluation {
 
 export interface SmartActionItem {
   id: string;
-  competencia: string;       // Qué competencia / área se busca desarrollar
-  objetivo: string;          // SMART: específico, medible, alcanzable, relevante, con tiempo
-  acciones: string;          // Acciones concretas a ejecutar
-  queEvitar: string;         // Conductas o hábitos a evitar
-  fechaRevision: string;     // ISO yyyy-mm-dd
-  apoyos: string;            // Apoyos requeridos del supervisor/jefe
+  competencia: string;
+  objetivo: string;
+  acciones: string;
+  queEvitar: string;
+  fechaRevision: string;
+  apoyos: string;
 }
 
 export interface ActionPlan {
   id: string;
   employeeId: string;
-  supervisorId: string; // The senior evaluator who reviews/approves
+  supervisorId: string;
   period: string;
-  content: string;                       // legacy: texto libre (compatibilidad)
-  items?: SmartActionItem[];             // nueva estructura SMART
+  content: string;
+  items?: SmartActionItem[];
   createdAt: string;
   updatedAt: string;
-  // Approval flow by senior evaluator
   approvalStatus?: 'pending' | 'approved' | 'rejected';
   approvalComments?: string;
   approvedBy?: string;
@@ -212,8 +169,6 @@ export interface PeriodConfig {
   actionPlanEnd: string;
 }
 
-export { getScoreLabels as SCORE_LABELS_DEPRECATED } from '@/lib/evaluationConfig';  // Use getScoreLabels() instead
-
 export { PERIODS } from '@/lib/evaluationConfig';
 export { CURRENT_PERIOD } from '@/lib/evaluationConfig';
 
@@ -226,10 +181,10 @@ export interface AdminObjective {
   pilaresEstrategicos: string;
   alcance: string;
   porcentajeAvance: number;
-  status?: AdminObjectiveStatus;       // default 'draft'
+  status?: AdminObjectiveStatus;
   submittedAt?: string;
   reviewedAt?: string;
-  reviewedBy?: string;                 // userId del evaluador
+  reviewedBy?: string;
   reviewerComment?: string;
 }
 
@@ -268,7 +223,7 @@ export interface Announcement {
   audience: 'all' | 'legal' | 'administrativo';
   createdAt: string;
   readBy: string[];
-  expiresAt?: string; // expiry date
+  expiresAt?: string;
   archived?: boolean;
 }
 
@@ -289,7 +244,7 @@ export interface VacationRequest {
   status: 'pending' | 'approved' | 'rejected';
   createdAt: string;
   approvals: VacationApproval[];
-  period?: string; // year period
+  period?: string;
 }
 
 export interface ExtraVacationDays {
@@ -299,7 +254,7 @@ export interface ExtraVacationDays {
   reason: string;
   addedBy: string;
   addedAt: string;
-  period: string; // e.g. "2025", "2026"
+  period: string;
 }
 
 export interface ModuleConfig {

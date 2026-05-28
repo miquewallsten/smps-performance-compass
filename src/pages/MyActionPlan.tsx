@@ -3,7 +3,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useUsers, useEvaluations, useAssignments, useActionPlans, useCreateActionPlan, useApproveActionPlan } from '@/api/queries';
 import { ActionPlan, SmartActionItem, QuestionCategory } from '@/types';
 import { CURRENT_PERIOD, PERIODS, getPositionLabel, getPositionRank, SECTION_LABELS, getSectionByCategory } from '@/lib/evaluationConfig';
-import { ALL_CATEGORIES } from '@/pages/QuestionLibrary';
+import { getCategoriesList } from '@/pages/QuestionLibrary';
 
 import { FileText, Save, ShieldCheck, ShieldX, Clock, Plus, Trash2, Target } from 'lucide-react';
 import { toast } from 'sonner';
@@ -218,17 +218,17 @@ export default function MyActionPlan() {
                       className="w-full mt-1 px-3 py-2 rounded-lg border border-input bg-background text-sm">
                       <option value="">Selecciona una categoría...</option>
                       <optgroup label="Competencias">
-                        {ALL_CATEGORIES.filter(c => getSectionByCategory(c) === 'competencias').map(c => (
+                        {getCategoriesList().filter(c => getSectionByCategory(c) === 'competencias').map(c => (
                           <option key={c} value={c}>{c}</option>
                         ))}
                       </optgroup>
                       <optgroup label="Criterio Técnico">
-                        {ALL_CATEGORIES.filter(c => getSectionByCategory(c) === 'tecnico').map(c => (
+                        {getCategoriesList().filter(c => getSectionByCategory(c) === 'tecnico').map(c => (
                           <option key={c} value={c}>{c}</option>
                         ))}
                       </optgroup>
                       <optgroup label="Habilidades Blandas">
-                        {ALL_CATEGORIES.filter(c => getSectionByCategory(c) === 'blandas').map(c => (
+                        {getCategoriesList().filter(c => getSectionByCategory(c) === 'blandas').map(c => (
                           <option key={c} value={c}>{c}</option>
                         ))}
                       </optgroup>

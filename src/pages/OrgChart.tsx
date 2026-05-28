@@ -1,6 +1,6 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { useUsers, useEvaluations, useAssignments, useSystemModules, useSystemStatus, usePeriods, useAnnouncements, useVacationRequests } from '@/api/queries';
-import { POSITION_LABELS } from '@/types';
+import { getPositionLabel } from '@/lib/evaluationConfig';
 import { CURRENT_PERIOD, getLegalHierarchy, getAdminHierarchy } from '@/lib/evaluationConfig';
 import { Users, ChevronDown, ChevronRight } from 'lucide-react';
 import { useState } from 'react';

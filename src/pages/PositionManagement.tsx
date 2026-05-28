@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useWorkAreas, useCreateWorkArea, useUpdateWorkArea, useDeleteWorkArea, usePositions, useCreatePosition, useUpdatePosition, useDeletePosition, useLocations, useCreateLocation, useUpdateLocation, useDeleteLocation } from '@/api/queries';
-import { POSITION_LABELS, Position, PositionLevel } from '@/types';
+import { Position, PositionLevel } from '@/types';
+import { getPositionLabel } from '@/lib/evaluationConfig';
 import { getLegalHierarchy, getAdminHierarchy } from '@/lib/evaluationConfig';
 import { Briefcase, MapPin, Plus, Pencil, Trash2, ChevronDown, ChevronRight, X, Save, Building2 } from 'lucide-react';
 import { toast } from 'sonner';

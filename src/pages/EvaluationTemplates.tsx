@@ -7,7 +7,7 @@ import {
 } from '@/lib/evaluationConfig';
 import { Position, QuestionCategory, EvalQuestion, EvalSection } from '@/types';
 import { ChevronDown, ChevronRight, Plus, Trash2, AlertCircle, Save, BookOpen, Search, Pencil } from 'lucide-react';
-import { ALL_CATEGORIES } from './QuestionLibrary';
+import { getCategoriesList } from './QuestionLibrary';
 
 const MAX_QUESTIONS = 20;
 
@@ -225,7 +225,7 @@ export default function EvaluationTemplates() {
                 <div className="flex gap-2">
                   <select value={newCategory} onChange={e => setNewCategory(e.target.value as QuestionCategory)}
                     className="flex-1 px-2 py-1.5 rounded-lg border border-input bg-background text-sm">
-                    {ALL_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                    {getCategoriesList().map(c => <option key={c} value={c}>{c}</option>)}
                   </select>
                   <input type="text" value={newText} onChange={e => setNewText(e.target.value)}
                     placeholder="Nueva pregunta..."

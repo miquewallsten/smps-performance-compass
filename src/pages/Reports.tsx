@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUsers, useEvaluations, useAssignments, useActionPlans } from '@/api/queries';
-import { POSITION_LABELS, POSITION_LEVELS } from '@/types';
+import { getPositionLabel, getPositionLevel } from '@/lib/evaluationConfig';
 import { CURRENT_PERIOD, getPositionHierarchy, getLegalHierarchy, getAdminHierarchy } from '@/lib/evaluationConfig';
 import { canViewUserEvaluations } from '@/lib/visibility';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';

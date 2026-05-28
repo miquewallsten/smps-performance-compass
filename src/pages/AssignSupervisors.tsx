@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUsers, useAssignments, useCreateAssignment, useDeleteAssignment, useEvaluations } from '@/api/queries';
-import { POSITION_LABELS, Position } from '@/types';
+import { Position } from '@/types';
+import { getPositionLabel } from '@/lib/evaluationConfig';
 import { CURRENT_PERIOD, PERIODS, getLegalHierarchy, getAdminHierarchy } from '@/lib/evaluationConfig';
 import { Plus, X, AlertTriangle } from 'lucide-react';
 import HierarchyFilters, { filterByHierarchy } from '@/components/HierarchyFilters';

@@ -1,25 +1,23 @@
 import { useState, useMemo, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTemplateQuestions, useLibraryQuestionsConfig, useCreateLibraryQuestionConfig, useUpdateLibraryQuestionConfig, useDeleteLibraryQuestionConfig } from '@/hooks/useEvaluationConfig';
-import { SECTION_LABELS, SECTION_ORDER, getSectionByCategory, getSectionForQuestion, getPositionLabel, getLegalHierarchy, getAdminHierarchy, getPositionLevel } from '@/lib/evaluationConfig';
+import { SECTION_LABELS, SECTION_ORDER, getSectionByCategory, getSectionForQuestion, getPositionLabel, getLegalHierarchy, getAdminHierarchy, getPositionLevel, getCategories } from '@/lib/evaluationConfig';
 import { QuestionCategory, EvalQuestion, LibraryQuestion, EvalSection, Position } from '@/types';
 import { BookOpen, Search, Plus, Pencil, Trash2, Save, X, Download, SlidersHorizontal, Layers, ChevronDown, ChevronRight, XCircle, LayoutList, LayoutGrid, Hash, Info } from 'lucide-react';
 import { toast } from 'sonner';
 
-export const ALL_CATEGORIES: QuestionCategory[] = [
-  // Competencias / Blandas
-  'Liderazgo', 'Trabajo en Equipo', 'Habilidades Blandas',
-  'Actitud', 'Disponibilidad', 'Desarrollo', 'Comunicación',
-  'Desempeño', 'Cumplimiento',
-  // Criterio Técnico (general + sub-categorías)
-  'Criterio Técnico',
-  'Conocimiento normativo', 'Redacción legal', 'Due diligence',
-  'Constitución y modificaciones', 'Atención a clientes',
-  'Normatividad fiscal', 'Opiniones fiscales', 'Planeación fiscal',
-  'Criterios y jurisprudencia', 'Impactos fiscales',
-  'Redacción de escritos', 'Estrategia procesal', 'Audiencias y diligencias',
-  'Seguimiento de expedientes',
-];
+
+
+
+// Categories derived from DB (populated via useEvalConfigInit → setCategories)
+export function getCategoriesList(): QuestionCategory[] {
+  const dbCats = getCategories();
+  if (dbCats && dbCats.length > 0) {
+    return dbCats.map((c: any) => c.label || c.id);
+  }
+  // Minimal fallback while DB loads
+  return ['Desempeño', 'Liderazgo', 'Cumplimiento', 'Habilidades Blandas', 'Trabajo en Equipo', 'Actitud', 'Disponibilidad', 'Desarrollo', 'Comunicación', 'Criterio Técnico'];
+}
 
 type SeedItem = EvalQuestion & { positions: string[]; isSeed: true; section: EvalSection };
 type CustomItem = LibraryQuestion & { isSeed: false };
@@ -131,7 +129,7 @@ export default function QuestionLibrary() {
   // Combined items for rendering
   const allItems: DisplayItem[] = useMemo(() => {
     if (groupMode === 'position') {
-      // In position mode, build items per position from getQuestionsForUser
+      // In position mode, build items per position from DB template questions
       const items: DisplayItem[] = [];
       const allPositions = new Set<string>();
       allSeedItems.forEach(item => item.positions.forEach(p => allPositions.add(p)));
@@ -321,9 +319,8 @@ export default function QuestionLibrary() {
 
     for (const pos of allPositions) {
       const posLabel = getPositionLabel(pos as Position) || pos;
-      // Use getQuestionsForUser() — the exact same function the evaluation UI uses.
-      const evalQuestions = getQuestionsForUser(
-      );
+      // CSV uses template questions from DB (already loaded via useTemplateQuestions)
+      const evalQuestions = customQuestions[pos as Position] || [];
       evalQuestions.forEach(q => {
         const section = getSectionForQuestion(q.category, pos as Position);
         const text = `"${q.text.replace(/"/g, '""')}"`;
@@ -636,7 +633,7 @@ export default function QuestionLibrary() {
                   <label className="text-xs text-muted-foreground">Categoría</label>
                   <select value={form.category} onChange={e => setForm({ ...form, category: e.target.value as QuestionCategory })}
                     className="w-full mt-1 px-3 py-2 rounded-lg border border-input bg-background text-sm">
-                    {ALL_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                    {getCategoriesList().map(c => <option key={c} value={c}>{c}</option>)}
                   </select>
                 </div>
             </div>
