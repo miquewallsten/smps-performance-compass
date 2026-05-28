@@ -1,21 +1,39 @@
 import { useState, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useFullTemplate, useSectionWeights, usePutTemplateQuestions, usePositionConfig, useScoreLabels, useLibraryQuestionsConfig, useCategories } from '@/hooks/useEvaluationConfig';
+import { useTemplateQuestions, useSectionWeights, usePutTemplateQuestions, usePositionConfig, useScoreLabels, useLibraryQuestionsConfig, useCategories } from '@/hooks/useEvaluationConfig';
 import {
   getPositionLabel, getLegalHierarchy, getAdminHierarchy, getPositionLevel,
-  SECTION_LABELS, SECTION_ORDER, normalizePosition,
+  SECTION_LABELS, SECTION_ORDER, getSectionWeights, getSectionByCategory,
 } from '@/lib/evaluationConfig';
-import { Position, QuestionCategory, EvalQuestion } from '@/types';
-import { ChevronDown, ChevronRight, FileText, Plus, Trash2, AlertCircle, Save, BookOpen, Search, Pencil } from 'lucide-react';
+import { Position, QuestionCategory, EvalQuestion, EvalSection } from '@/types';
+import { ChevronDown, ChevronRight, Plus, Trash2, AlertCircle, Save, BookOpen, Search, Pencil } from 'lucide-react';
 import { ALL_CATEGORIES } from './QuestionLibrary';
 
 const MAX_QUESTIONS = 20;
+
+function rescale(questions: EvalQuestion[], sectionWeights: { tecnico: number; competencias: number; blandas: number }): EvalQuestion[] {
+  const tecnico = questions.filter(q => q.section === 'tecnico');
+  const competencias = questions.filter(q => q.section === 'competencias');
+  const blandas = questions.filter(q => q.section === 'blandas');
+  const doRescale = (qs: EvalQuestion[], target: number): EvalQuestion[] => {
+    if (qs.length === 0 || target <= 0) return [];
+    const sum = qs.reduce((s, q) => s + (q.weight || 1), 0) || qs.length;
+    return qs.map(q => ({ ...q, weight: Math.round(((q.weight || 1) / sum) * target * 100) / 100 }));
+  };
+  return [
+    ...doRescale(tecnico, sectionWeights.tecnico),
+    ...doRescale(competencias, sectionWeights.competencias),
+    ...doRescale(blandas, sectionWeights.blandas),
+  ];
+}
 
 export default function EvaluationTemplates() {
   const { user: currentUser } = useAuth();
   const { data: posConfig } = usePositionConfig();
   const { data: scoreLabelsData } = useScoreLabels();
   const { data: libQuestions = [] } = useLibraryQuestionsConfig();
+  const { data: allQuestions = [] } = useTemplateQuestions();
+  const { data: sectionWeightsData = [] } = useSectionWeights();
 
   const [expandedPosition, setExpandedPosition] = useState<Position | null>(null);
   const [editingPosition, setEditingPosition] = useState<Position | null>(null);
@@ -40,27 +58,47 @@ export default function EvaluationTemplates() {
   const LEGAL_HIERARCHY = getLegalHierarchy();
   const ADMIN_HIERARCHY = getAdminHierarchy();
 
+  // Build section weights lookup
+  const sectionWeightsMap = useMemo(() => {
+    const map: Record<string, { tecnico: number; competencias: number; blandas: number }> = {};
+    for (const sw of sectionWeightsData) {
+      map[sw.position] = { tecnico: sw.tecnico, competencias: sw.competencias, blandas: sw.blandas };
+    }
+    return map;
+  }, [sectionWeightsData]);
+
+  // Group all questions by position and assemble full templates
+  const templatesByPosition = useMemo(() => {
+    const grouped: Record<string, EvalQuestion[]> = {};
+    for (const q of allQuestions) {
+      if (!q.is_active && q.is_active !== undefined) continue;
+      const pos = q.position;
+      if (!grouped[pos]) grouped[pos] = [];
+      grouped[pos].push({
+        id: q.question_id || q.id,
+        category: q.category,
+        text: q.question_text || q.text || '',
+        weight: q.weight || 1,
+        section: q.section,
+        practiceArea: q.practice_area,
+      });
+    }
+    // Rescale each position's questions using section weights
+    const rescaled: Record<string, EvalQuestion[]> = {};
+    for (const [pos, qs] of Object.entries(grouped)) {
+      const sw = sectionWeightsMap[pos] || { tecnico: 0, competencias: 80, blandas: 20 };
+      rescaled[pos] = rescale(qs, sw);
+    }
+    return rescaled;
+  }, [allQuestions, sectionWeightsMap]);
+
   const toggle = (pos: Position) => {
     if (editingPosition) return;
     setExpandedPosition(prev => (prev === pos ? null : pos));
   };
 
-  // Fetch full template when viewing a position
-  const { data: templateData } = useFullTemplate(expandedPosition || 'socio', currentUser?.practiceArea || 'corporativo');
-
   const getQuestions = (pos: Position): EvalQuestion[] => {
-    // Use the full template from API if available
-    if (templateData && templateData.questions && expandedPosition === pos) {
-      return templateData.questions.map((q: any) => ({
-        id: q.question_id || q.id,
-        category: q.category,
-        text: q.question_text || q.text,
-        weight: q.weight,
-        section: q.section,
-        practiceArea: q.practice_area,
-      }));
-    }
-    return [];
+    return templatesByPosition[pos] || [];
   };
 
   const startEditing = (pos: Position) => {
@@ -137,8 +175,8 @@ export default function EvaluationTemplates() {
             <span className="text-xs text-muted-foreground">{questions.length} preguntas</span>
           </div>
           <div className="flex items-center gap-3">
-            <span className={`text-xs font-medium ${tw === 100 ? 'text-smps-success' : 'text-smps-warning'}`}>
-              Σ {tw}%
+            <span className={`text-xs font-medium ${Math.abs(tw - 100) < 0.5 ? 'text-smps-success' : 'text-smps-warning'}`}>
+              Σ {Math.round(tw)}%
             </span>
             {questions.length > 0 && categories.length > 0 && (
               <span className="text-[10px] text-muted-foreground">{categories.length} categorías</span>
@@ -158,7 +196,7 @@ export default function EvaluationTemplates() {
                   <div key={cat}>
                     <div className="flex items-center gap-2 mb-1.5">
                       <span className="text-xs font-semibold text-foreground">{cat}</span>
-                      <span className="text-[10px] text-muted-foreground">{catWeight}%</span>
+                      <span className="text-[10px] text-muted-foreground">{Math.round(catWeight)}%</span>
                     </div>
                     <div className="space-y-1.5">
                       {catQuestions.map(q => (
@@ -231,7 +269,7 @@ export default function EvaluationTemplates() {
                 <div className="flex flex-wrap gap-2 mt-2">
                   {[1, 2, 3, 4, 5].map(s => (
                     <span key={s} className="text-xs px-2.5 py-1 rounded-lg bg-muted text-muted-foreground">
-                      {s} — {getScoreLabels()[s]}
+                      {s} — {SCORE_LABELS[s]}
                     </span>
                   ))}
                 </div>
@@ -242,7 +280,6 @@ export default function EvaluationTemplates() {
       </div>
     );
   };
-
 
   return (
     <div>
