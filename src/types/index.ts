@@ -16,7 +16,6 @@ export type Position =
   | 'archivo_soporte'      // backward compat
   | 'soporte'
   | 'archivista'
-  | 'abogado'       // legacy — will be migrated to asociado_jr
   | 'dummy';
 
 
@@ -40,7 +39,6 @@ export const POSITION_LABELS: Record<Position, string> = {
   archivo_soporte: 'Archivo y Soporte',
   soporte: 'Soporte',
   archivista: 'Archivista',
-  abogado: 'Abogado',
   dummy: 'Dummy',
 };
 
@@ -62,7 +60,6 @@ export const POSITION_LEVELS: Record<Position, PositionLevel> = {
   archivo_soporte: 'administrativo',
   soporte: 'administrativo',
   archivista: 'administrativo',
-  abogado: 'legal',
   dummy: 'administrativo',
 };
 
@@ -90,12 +87,11 @@ export const POSITION_RANK: Record<Position, number> = {
   soporte: 6,
   archivista: 6,
   archivo_soporte: 6,
-  abogado: 4,
   dummy: 99,
 };
 
 export const LEGAL_HIERARCHY: Position[] = [
-  'socio', 'salary_partner', 'counsel', 'asociado_sr', 'asociado_mid', 'asociado_jr', 'abogado', 'pasante_carrera', 'pasante_corporativo', 'pasante',
+  'socio', 'salary_partner', 'counsel', 'asociado_sr', 'asociado_mid', 'asociado_jr', 'pasante_carrera', 'pasante_corporativo', 'pasante',
 ];
 
 export const ADMIN_HIERARCHY: Position[] = [
@@ -167,11 +163,12 @@ export function normalizePracticeArea(area: PracticeArea): 'fiscal_consultoria' 
  * Maps old position keys to their current equivalents so the rest of the code
  * only needs to handle canonical positions.
  */
-export function normalizePosition(pos: Position): Position {
+export function normalizePosition(pos: Position | string): Position {
   if (pos === 'pasante_corporativo') return 'pasante';
   if (pos === 'archivo_soporte') return 'soporte';
-  if (pos === 'abogado') return 'asociado_jr';
-  return pos;
+  if (pos === 'abogado') return 'asociado_jr'; // legacy DB value
+  if (!POSITION_LABELS[pos as Position]) return 'asistente'; // fallback for unknown positions
+  return pos as Position;
 }
 
 /** Posición (CVE Puesto) dada de alta por el admin. */

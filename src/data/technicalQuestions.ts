@@ -17,7 +17,7 @@ import { EvalQuestion, Position, PracticeArea, normalizePosition, normalizePract
  */
 
 type LegalPosition = 'socio' | 'salary_partner' | 'counsel' | 'asociado_sr' | 'asociado_mid'
-  | 'asociado_jr' | 'pasante_carrera' | 'pasante' | 'pasante_corporativo' | 'abogado';
+  | 'asociado_jr' | 'pasante_carrera' | 'pasante' | 'pasante_corporativo';
 
 // Canonical practice area keys used in TECHNICAL_BY_AREA
 type CanonicalPracticeArea = 'fiscal_consultoria' | 'fiscal_litigio' | 'corporativo';
@@ -45,13 +45,6 @@ const corporativo: Record<LegalPosition, EvalQuestion[]> = {
     { id: 'tc-corp-pct-3', category: 'Due diligence', section: 'tecnico', practiceArea: 'corporativo', weight: 8, text: '¿Sistematiza documentos y apoya en la identificación de hallazgos simples de relevancia legal?' },
     { id: 'tc-corp-pct-4', category: 'Constitución y modificaciones', section: 'tecnico', practiceArea: 'corporativo', weight: 8, text: '¿Prepara formatos con supervisión, asegurando precisión y congruencia en la información?' },
     { id: 'tc-corp-pct-5', category: 'Atención a clientes', section: 'tecnico', practiceArea: 'corporativo', weight: 8, text: '¿Participa como apoyo en la elaboración de respuestas básicas a clientes o autoridades?' },
-  ],
-  abogado: [
-    { id: 'tc-corp-ajr-1', category: 'Conocimiento normativo', section: 'tecnico', practiceArea: 'corporativo', weight: 8, text: '¿Aplica correctamente las normas societarias básicas en los asuntos que gestiona?' },
-    { id: 'tc-corp-ajr-2', category: 'Redacción legal', section: 'tecnico', practiceArea: 'corporativo', weight: 8, text: '¿Redacta documentos sencillos utilizando vocabulario técnico en inglés y español de manera adecuada?' },
-    { id: 'tc-corp-ajr-3', category: 'Due diligence', section: 'tecnico', practiceArea: 'corporativo', weight: 8, text: '¿Identifica irregularidades evidentes en documentos o procesos societarios?' },
-    { id: 'tc-corp-ajr-4', category: 'Constitución y modificaciones', section: 'tecnico', practiceArea: 'corporativo', weight: 8, text: '¿Tramita asambleas y poderes básicos siguiendo los procedimientos establecidos?' },
-    { id: 'tc-corp-ajr-5', category: 'Atención a clientes', section: 'tecnico', practiceArea: 'corporativo', weight: 8, text: '¿Da seguimiento técnico inicial a los asuntos, asegurando su avance conforme a lo planificado?' },
   ],
   asociado_jr: [
     { id: 'tc-corp-ajr-1', category: 'Conocimiento normativo', section: 'tecnico', practiceArea: 'corporativo', weight: 8, text: '¿Aplica correctamente las normas societarias básicas en los asuntos que gestiona?' },
@@ -121,13 +114,6 @@ const consultoria: Record<LegalPosition, EvalQuestion[]> = {
     { id: 'tc-cf-pct-4', category: 'Criterios y jurisprudencia', section: 'tecnico', practiceArea: 'fiscal_consultoria', weight: 8, text: '¿Busca y resume criterios y jurisprudencia relevante bajo supervisión?' },
     { id: 'tc-cf-pct-5', category: 'Impactos fiscales', section: 'tecnico', practiceArea: 'fiscal_consultoria', weight: 8, text: '¿Organiza y sistematiza la información fiscal de los casos asignados?' },
   ],
-  abogado: [
-    { id: 'tc-cf-ajr-1', category: 'Normatividad fiscal', section: 'tecnico', practiceArea: 'fiscal_consultoria', weight: 8, text: '¿Aplica correctamente las disposiciones fiscales vigentes en los asuntos que gestiona?' },
-    { id: 'tc-cf-ajr-2', category: 'Opiniones fiscales', section: 'tecnico', practiceArea: 'fiscal_consultoria', weight: 8, text: '¿Prepara opiniones fiscales sencillas con supervisión y precisión?' },
-    { id: 'tc-cf-ajr-3', category: 'Planeación fiscal', section: 'tecnico', practiceArea: 'fiscal_consultoria', weight: 8, text: '¿Apoya en la elaboración de estrategias de planeación fiscal básicas?' },
-    { id: 'tc-cf-ajr-4', category: 'Criterios y jurisprudencia', section: 'tecnico', practiceArea: 'fiscal_consultoria', weight: 8, text: '¿Identifica criterios y jurisprudencia relevante para los casos bajo su responsabilidad?' },
-    { id: 'tc-cf-ajr-5', category: 'Impactos fiscales', section: 'tecnico', practiceArea: 'fiscal_consultoria', weight: 8, text: '¿Calcula impactos fiscales básicos con guía y precisión?' },
-  ],
   asociado_jr: [
     { id: 'tc-cf-ajr-1', category: 'Normatividad fiscal', section: 'tecnico', practiceArea: 'fiscal_consultoria', weight: 8, text: '¿Aplica correctamente las disposiciones fiscales vigentes en los asuntos que gestiona?' },
     { id: 'tc-cf-ajr-2', category: 'Opiniones fiscales', section: 'tecnico', practiceArea: 'fiscal_consultoria', weight: 8, text: '¿Prepara opiniones fiscales sencillas con supervisión y precisión?' },
@@ -196,13 +182,6 @@ const litigio: Record<LegalPosition, EvalQuestion[]> = {
     { id: 'tc-lf-pct-4', category: 'Conocimiento normativo', section: 'tecnico', practiceArea: 'fiscal_litigio', weight: 8, text: '¿Prepara formatos con supervisión, asegurando precisión y congruencia en la información?' },
     { id: 'tc-lf-pct-5', category: 'Seguimiento de expedientes', section: 'tecnico', practiceArea: 'fiscal_litigio', weight: 8, text: '¿Participa como apoyo en la elaboración de respuestas básicas a clientes o autoridades?' },
   ],
-  abogado: [
-    { id: 'tc-lf-ajr-1', category: 'Redacción de escritos', section: 'tecnico', practiceArea: 'fiscal_litigio', weight: 8, text: '¿Redacta escritos iniciales y respuestas con precisión y fundamento jurídico?' },
-    { id: 'tc-lf-ajr-2', category: 'Estrategia procesal', section: 'tecnico', practiceArea: 'fiscal_litigio', weight: 8, text: '¿Aplica correctamente las normas procesales básicas en los asuntos que gestiona?' },
-    { id: 'tc-lf-ajr-3', category: 'Audiencias y diligencias', section: 'tecnico', practiceArea: 'fiscal_litigio', weight: 8, text: '¿Prepara adecuadamente los expedientes para audiencias y diligencias?' },
-    { id: 'tc-lf-ajr-4', category: 'Conocimiento normativo', section: 'tecnico', practiceArea: 'fiscal_litigio', weight: 8, text: '¿Identifica la normativa aplicable y la aplica de forma correcta en los asuntos asignados?' },
-    { id: 'tc-lf-ajr-5', category: 'Seguimiento de expedientes', section: 'tecnico', practiceArea: 'fiscal_litigio', weight: 8, text: '¿Da seguimiento oportuno a los expedientes bajo su responsabilidad?' },
-  ],
   asociado_jr: [
     { id: 'tc-lf-ajr-1', category: 'Redacción de escritos', section: 'tecnico', practiceArea: 'fiscal_litigio', weight: 8, text: '¿Redacta escritos iniciales y respuestas con precisión y fundamento jurídico?' },
     { id: 'tc-lf-ajr-2', category: 'Estrategia procesal', section: 'tecnico', practiceArea: 'fiscal_litigio', weight: 8, text: '¿Aplica correctamente las normas procesales básicas en los asuntos que gestiona?' },
@@ -254,7 +233,7 @@ export const TECHNICAL_BY_AREA: Record<CanonicalPracticeArea, Record<LegalPositi
 };
 
 const LEGAL_POSITIONS: LegalPosition[] = [
-  'socio', 'salary_partner', 'counsel', 'asociado_sr', 'asociado_mid', 'asociado_jr', 'abogado', 'pasante_carrera', 'pasante', 'pasante_corporativo',
+  'socio', 'salary_partner', 'counsel', 'asociado_sr', 'asociado_mid', 'asociado_jr', 'pasante_carrera', 'pasante', 'pasante_corporativo',
 ];
 
 /**

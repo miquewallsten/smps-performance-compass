@@ -131,7 +131,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const saved = localStorage.getItem('smps_vacation_config');
     const defaults = {
       socio: 15, salary_partner: 15, asociado_sr: 15, asociado_mid: 12, asociado_jr: 12,
-      pasante_carrera: 6, pasante_corporativo: 6, pasante: 6, abogado: 12,
+      pasante_carrera: 6, pasante_corporativo: 6, pasante: 6,
       director: 15, gerente: 15, coordinador: 12, analista: 12,
       asistente: 12, archivo_soporte: 12, soporte: 12, archivista: 12,
       _carryoverExpiryMonths: 12, // vigencia (meses) para días pendientes de años anteriores
