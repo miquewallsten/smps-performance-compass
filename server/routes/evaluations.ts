@@ -122,8 +122,8 @@ router.get('/export/csv', authMiddleware, async (req: Request, res: Response) =>
           isNA || isNE ? '' : r.score,
           isNA ? 'Sí' : '',
           isNE ? 'Sí' : '',
-          weight,
-          evaluation.total_score,
+          Math.round(weight),
+          Math.round(evaluation.total_score),
         ].join(','));
       }
     }
@@ -138,7 +138,7 @@ router.get('/export/csv', authMiddleware, async (req: Request, res: Response) =>
         POSITION_LABELS_CSV[evaluation.evaluated_position] || evaluation.evaluated_position,
         evaluation.type === 'self' ? 'Autoevaluación' : 'Evaluador',
         `"${evaluation.evaluator_name || ''}"`,
-        evaluation.total_score,
+        Math.round(evaluation.total_score),
         evaluation.feedback_completed ? 'Sí' : 'No',
       ].join(','));
     }
