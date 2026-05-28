@@ -8,9 +8,8 @@ import { getSectionWeights } from './sectionWeights';
  * - Legal: Competencias / Criterio Técnico / Habilidades Blandas
  * - Administrativo: Competencias / Habilidades Blandas (sin Técnico)
  *
- * Para posiciones legales: Desempeño y Cumplimiento → criterio técnico.
- * Para posiciones administrativas: Desempeño y Cumplimiento → competencias (NO técnico).
- * Las sub-categorías de Criterio Técnico siempre van a técnico (solo aplican a legal).
+ * Desempeño y Cumplimiento siempre van a competencias (no a técnico).
+ * Solo las sub-categorías de Criterio Técnico y la categoría "Criterio Técnico" van a técnico (solo para legal).
  */
 export function getSectionForQuestion(question: EvalQuestion, position: Position): EvalSection {
   if (question.section) return question.section;
@@ -21,12 +20,14 @@ export function getSectionForQuestion(question: EvalQuestion, position: Position
   if (isSoft) return 'blandas';
 
   if (level === 'legal') {
-    if (cat === 'Criterio Técnico' || cat === 'Desempeño' || cat === 'Cumplimiento') return 'tecnico';
+    // Only Criterio Técnico and its sub-categories go to técnico.
+    // Desempeño and Cumplimiento go to competencias (per Excel structure).
+    if (cat === 'Criterio Técnico') return 'tecnico';
     if (isTechnicalSubcategory(cat)) return 'tecnico';
     return 'competencias';
   }
 
-  // Administrativo: Desempeño y Cumplimiento → competencias (NO técnico)
+  // Administrativo: everything non-blandas goes to competencias
   return 'competencias';
 }
 
@@ -63,7 +64,7 @@ export function getSectionByCategory(category: QuestionCategory): EvalSection {
   if (category === 'Habilidades Blandas' || category === 'Actitud' || category === 'Disponibilidad' || category === 'Desarrollo') {
     return 'blandas';
   }
-  if (category === 'Criterio Técnico' || category === 'Desempeño' || category === 'Cumplimiento') return 'tecnico';
+  if (category === 'Criterio Técnico') return 'tecnico';
   if (isTechnicalSubcategory(category)) return 'tecnico';
   // Liderazgo y Trabajo en Equipo
   return 'competencias';
