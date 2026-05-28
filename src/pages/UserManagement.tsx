@@ -39,7 +39,7 @@ export default function UserManagement() {
   const resolvePositionLabel = (customPositionId: string | undefined) => {
     if (!customPositionId) return null;
     const pos = sortedPositions.find((p: any) => p.id === customPositionId);
-    return pos ? `${pos.id} · ${(pos as any).label}` : null;
+    return pos ? (pos as any).label : null;
   };
 
   const resolveLocationLabel = (locationId: string | undefined) => {
@@ -191,7 +191,7 @@ export default function UserManagement() {
               {sortedAreas.map((area: any) => (
                 <optgroup key={area.id} label={area.label}>
                   {sortedPositions.filter((p: any) => p.workAreaId === area.id).map((p: any) => (
-                    <option key={p.id} value={p.id}>{p.id} · {p.label}</option>
+                    <option key={p.id} value={p.id}>{p.label}</option>
                   ))}
                 </optgroup>
               ))}
@@ -338,14 +338,14 @@ export default function UserManagement() {
                   placeholder="correo@smps.com" className="w-full px-3 py-2 rounded-lg border border-input bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent text-sm" />
               </div>
               <div>
-                <label className="text-sm font-medium text-foreground">Puesto (CVE)</label>
+                <label className="text-sm font-medium text-foreground">Puesto</label>
                 <select value={newUser.cve} onChange={e => setNewUser(prev => ({ ...prev, cve: e.target.value }))}
                   className="w-full px-3 py-2 rounded-lg border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-accent text-sm">
                   <option value="" disabled>Selecciona un puesto</option>
                   {sortedAreas.map((area: any) => (
                     <optgroup key={area.id} label={area.label}>
                       {sortedPositions.filter((p: any) => p.workAreaId === area.id).map((p: any) => (
-                        <option key={p.id} value={p.id}>{p.id} · {p.label}</option>
+                        <option key={p.id} value={p.id}>{p.label}</option>
                       ))}
                     </optgroup>
                   ))}
