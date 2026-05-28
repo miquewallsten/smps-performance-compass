@@ -99,8 +99,8 @@ jobs:
             echo "SSH key is valid"
             ssh-keyscan -p ${{ secrets.HOSTINGER_PORT }} ${{ secrets.HOSTINGER_HOST }} >> ~/.ssh/known_hosts 2>/dev/null
             SSH_CMD="ssh -i ~/.ssh/deploy_key -p ${{ secrets.HOSTINGER_PORT }} -o StrictHostKeyChecking=no -o ConnectTimeout=10 ${{ secrets.HOSTINGER_USER }}@${{ secrets.HOSTINGER_HOST }}"
-            # Reset any local changes (from manual SCP uploads) then pull
-            $SSH_CMD "cd ${{ secrets.HOSTINGER_PATH }} && git checkout -- . && git pull origin main && touch tmp/restart.txt" || true
+            # Clean untracked files (old build assets) and reset before pulling
+            $SSH_CMD "cd ${{ secrets.HOSTINGER_PATH }} && git checkout -- . && rm -rf dist/assets/ && git pull origin main && touch tmp/restart.txt" || true
           else
             echo "⚠️ SSH key format error, skipping SSH deploy"
           fi
