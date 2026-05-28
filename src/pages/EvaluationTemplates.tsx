@@ -4,7 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useCustomQuestions, useSetCustomQuestions, useLibraryQuestions } from '@/api/queries';
 import {
   POSITION_LABELS, LEGAL_HIERARCHY, ADMIN_HIERARCHY, Position, SCORE_LABELS,
-  EvalQuestion, QuestionCategory,
+  EvalQuestion, QuestionCategory, normalizePosition,
 } from '@/types';
 import { ChevronDown, ChevronRight, FileText, Plus, Trash2, AlertCircle, Save, BookOpen, Search } from 'lucide-react';
 
@@ -43,7 +43,8 @@ export default function EvaluationTemplates() {
   };
 
   const getQuestions = (pos: Position): EvalQuestion[] => {
-    return customQuestions[pos] || QUESTIONS_BY_POSITION[pos] || [];
+    const normalized = normalizePosition(pos);
+    return customQuestions[normalized] || customQuestions[pos] || QUESTIONS_BY_POSITION[normalized] || QUESTIONS_BY_POSITION[pos] || [];
   };
 
   const startEditing = (pos: Position) => {

@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import { db, tx } from '../db/connection.js';
 import { authMiddleware } from '../middleware/auth.js';
+import { requireAdmin } from '../middleware/rbac.js';
 
 const router = Router();
 
@@ -19,7 +20,7 @@ router.get('/library', authMiddleware, async (_req: Request, res: Response) => {
 
 router.post('/library', authMiddleware, requireAdmin, async (req: Request, res: Response) => {
   try {
-    // Accept both `questionId` (from API clients) and `id` (from frontend)
+    // Accept both `questionId` (explicit) and `id` (from frontend EvalQuestion shape)
     const questionId = req.body.questionId || req.body.id;
     const { category, text, defaultWeight } = req.body;
     if (!questionId || !category || !text || !defaultWeight) {
@@ -105,8 +106,8 @@ router.post('/custom', authMiddleware, requireAdmin, async (req: Request, res: R
           throw new Error('Each question must have an id or questionId');
         }
         await tx.run(conn,
-          'INSERT INTO custom_eval_questions (id, position, question_id, category, text, weight) VALUES (?, ?, ?, ?, ?, ?)',
-          [uuidv4(), position, questionId, q.category, q.text, q.weight]);
+          'INSERT INTO custom_eval_questions (id, position, question_id, category, text, weight, section, practice_area) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+          [uuidv4(), position, questionId, q.category, q.text, q.weight, q.section || null, q.practiceArea || null]);
       }
     });
 

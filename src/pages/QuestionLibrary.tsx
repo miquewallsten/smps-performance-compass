@@ -302,7 +302,7 @@ export default function QuestionLibrary() {
       toast.success('Pregunta base actualizada');
     } else {
       addLibraryQuestion({
-        id: `lib-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        questionId: `lib-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
         category: form.category, text: form.text.trim(), defaultWeight: form.defaultWeight,
         createdAt: new Date().toISOString(), createdBy: currentUser?.id,
       });

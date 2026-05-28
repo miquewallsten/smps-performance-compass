@@ -10,6 +10,10 @@ export const WORK_AREAS: SeedWorkArea[] = [
   { id: 'fiscal_litigio', label: 'Fiscal Litigio', level: 'legal', sortOrder: 2 },
   { id: 'corporativo', label: 'Corporativo', level: 'legal', sortOrder: 3 },
   { id: 'backoffice', label: 'Backoffice', level: 'administrativo', sortOrder: 4 },
+  // Legacy aliases for backward compatibility
+  { id: 'consultoria_fiscal', label: 'Fiscal Consultoría (legacy)', level: 'legal', sortOrder: 5 },
+  { id: 'litigio_fiscal', label: 'Fiscal Litigio (legacy)', level: 'legal', sortOrder: 6 },
+  { id: 'general', label: 'General (legacy)', level: 'legal', sortOrder: 7 },
 ];
 
 export interface SeedPosition {

@@ -720,4 +720,73 @@ export async function migrate(): Promise<void> {
     console.log('  ⚠ Could not round seed_question_overrides weight values:', (e as Error).message);
   }
 
+
+  // Migration: Add section and practice_area columns to custom_eval_questions if missing
+  try {
+    const secColCheck = await getScalar<number>(
+      `SELECT COUNT(*) AS cnt FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'custom_eval_questions' AND COLUMN_NAME = 'section'`
+    );
+    if (secColCheck === 0) {
+      await run('ALTER TABLE custom_eval_questions ADD COLUMN section VARCHAR(50) AFTER weight');
+      console.log('  ✓ Added section column to custom_eval_questions');
+    }
+  } catch (e) {
+    console.log('  ⚠ Could not add section column:', (e as Error).message);
+  }
+  try {
+    const paColCheck = await getScalar<number>(
+      `SELECT COUNT(*) AS cnt FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'custom_eval_questions' AND COLUMN_NAME = 'practice_area'`
+    );
+    if (paColCheck === 0) {
+      await run('ALTER TABLE custom_eval_questions ADD COLUMN practice_area VARCHAR(255) AFTER section');
+      console.log('  ✓ Added practice_area column to custom_eval_questions');
+    }
+  } catch (e) {
+    console.log('  ⚠ Could not add practice_area column:', (e as Error).message);
+  }
+
+
+  // ─── Migration: Normalize legacy position and practice_area values ──────
+  // Convert old position keys to new canonical keys
+  const positionMigrations: [string, string][] = [
+    ['pasante_corporativo', 'pasante'],
+    ['archivo_soporte', 'soporte'],
+  ];
+  for (const [oldVal, newVal] of positionMigrations) {
+    try {
+      const result = await run(`UPDATE users SET position = ? WHERE position = ?`, [newVal, oldVal]);
+      if (result.affectedRows > 0) {
+        console.log(`  ✓ Migrated ${result.affectedRows} user(s) from position '${oldVal}' to '${newVal}'`);
+      }
+    } catch (e) {
+      console.log(`  ⚠ Could not migrate position '${oldVal}':`, (e as Error).message);
+    }
+    try {
+      const result2 = await run(`UPDATE custom_eval_questions SET position = ? WHERE position = ?`, [newVal, oldVal]);
+      if (result2.affectedRows > 0) {
+        console.log(`  ✓ Migrated ${result2.affectedRows} custom question(s) from position '${oldVal}' to '${newVal}'`);
+      }
+    } catch (e) {
+      console.log(`  ⚠ Could not migrate custom_eval_questions position '${oldVal}':`, (e as Error).message);
+    }
+  }
+
+  // Convert old practice_area keys to new canonical keys
+  const practiceAreaMigrations: [string, string][] = [
+    ['consultoria_fiscal', 'fiscal_consultoria'],
+    ['litigio_fiscal', 'fiscal_litigio'],
+    ['general', 'corporativo'],
+  ];
+  for (const [oldVal, newVal] of practiceAreaMigrations) {
+    try {
+      const result = await run(`UPDATE users SET practice_area = ? WHERE practice_area = ?`, [newVal, oldVal]);
+      if (result.affectedRows > 0) {
+        console.log(`  ✓ Migrated ${result.affectedRows} user(s) from practice_area '${oldVal}' to '${newVal}'`);
+      }
+    } catch (e) {
+      console.log(`  ⚠ Could not migrate practice_area '${oldVal}':`, (e as Error).message);
+    }
+  }
+
+
 }

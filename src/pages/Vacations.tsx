@@ -62,7 +62,7 @@ export default function Vacations() {
     vacationConfig.forEach((c: any) => { vacConfigMap[c.position] = c.days; });
   }
   const carryoverExpiryMonths = 12;
-  const isPasante = (pos: Position) => pos === 'pasante_carrera' || pos === 'pasante';
+  const isPasante = (pos: Position) => pos === 'pasante_carrera' || pos === 'pasante' || pos === 'pasante_corporativo';
 
   const getUserVacationSummary = (userId: string) => {
     const user = users.find(u => u.id === userId);
@@ -181,8 +181,8 @@ export default function Vacations() {
   };
 
   const positionsToConfig: Position[] = [
-    'socio', 'asociado_sr', 'asociado_mid', 'asociado_jr', 'pasante_carrera', 'pasante',
-    'director', 'gerente', 'coordinador', 'analista', 'asistente', 'soporte', 'archivista',
+    'socio', 'asociado_sr', 'asociado_mid', 'asociado_jr', 'pasante_carrera', 'pasante_corporativo', 'pasante',
+    'director', 'gerente', 'coordinador', 'analista', 'asistente', 'archivo_soporte', 'soporte', 'archivista',
   ];
 
   // Admin employee list for download
@@ -277,7 +277,7 @@ export default function Vacations() {
                                 <span className="text-sm text-foreground">{POSITION_LABELS[pos]}{!isPasante(pos) && <span className="text-[10px] text-muted-foreground ml-1">(mín. 12)</span>}</span>
                                 <Input type="number" min={minDays} max={365} className="w-20 text-center"
                                   value={vacationConfig[pos] || 0}
-                                  onChange={e => updateVacationConfig(pos, Math.max(minDays, parseInt(e.target.value) || 0))} />
+                                  onChange={e => updateVacationConfig([{ position: pos, days: Math.max(minDays, parseInt(e.target.value) || 0) }])} />
                               </div>
                             );
                           })}

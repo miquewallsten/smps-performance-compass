@@ -71,6 +71,7 @@ const SOPORTE: Competency[] = [
 export const COMPETENCIES_BY_POSITION: Record<Position, Competency[]> = {
   // Legal
   pasante: LEGAL_ALL,
+  pasante_corporativo: LEGAL_ALL,
   pasante_carrera: LEGAL_ALL,
   asociado_jr: [...LEGAL_ALL, ...LEGAL_JR_PLUS],
   asociado_mid: [...LEGAL_ALL, ...LEGAL_JR_PLUS, ...LEGAL_MID_PLUS],
@@ -85,6 +86,7 @@ export const COMPETENCIES_BY_POSITION: Record<Position, Competency[]> = {
   coordinador: COORDINACION,
   analista: COORDINACION,
   asistente: SOPORTE,
+  archivo_soporte: SOPORTE,
   soporte: SOPORTE,
   archivista: SOPORTE,
   dummy: [],
