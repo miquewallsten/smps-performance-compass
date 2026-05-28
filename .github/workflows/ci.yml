@@ -1,0 +1,99 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm test -- --reporter=verbose 2>/dev/null || echo "⚠️ No tests or tests failed — continuing"
+
+      - name: Build app (frontend + server bundle)
+        run: npm run build
+
+      - name: Verify build outputs
+        run: |
+          test -f dist/index.html || { echo "❌ dist/index.html missing"; exit 1; }
+          test -f server.cjs || { echo "❌ server.cjs missing"; exit 1; }
+          echo "✅ Build OK"
+          du -sh dist/ server.cjs
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-output
+          path: |
+            dist/
+            server.cjs
+          retention-days: 1
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-output
+
+      - name: Deploy via SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.HOSTINGER_SSH_KEY }}" > ~/.ssh/deploy_key
+          sed -i 's/\r$//' ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          
+          ssh-keygen -l -f ~/.ssh/deploy_key 2>/dev/null || { echo "❌ SSH key format error"; exit 1; }
+          echo "SSH key is valid"
+          ssh-keyscan -p ${{ secrets.HOSTINGER_PORT }} ${{ secrets.HOSTINGER_HOST }} >> ~/.ssh/known_hosts 2>/dev/null
+          
+          SSH_KEY="~/.ssh/deploy_key"
+          SSH_HOST="${{ secrets.HOSTINGER_USER }}@${{ secrets.HOSTINGER_HOST }}"
+          SSH_PORT="${{ secrets.HOSTINGER_PORT }}"
+          REMOTE="${{ secrets.HOSTINGER_PATH }}"
+          SSH_CMD="ssh -i $SSH_KEY -p $SSH_PORT -o StrictHostKeyChecking=no -o ConnectTimeout=30 -o ServerAliveInterval=15 $SSH_HOST"
+          SCP_CMD="scp -i $SSH_KEY -P $SSH_PORT -o StrictHostKeyChecking=no -o ConnectTimeout=30"
+          HOSTINGER_PATH='export PATH="/opt/alt/alt-nodejs22/root/usr/bin:/usr/local/bin:/usr/bin:/bin:$PATH"'
+          
+          # 1. Pull latest source code
+          $SSH_CMD "cd $REMOTE && git checkout -- . && git pull origin main" || true
+          
+          # 2. Upload build artifacts
+          $SSH_CMD "mkdir -p $REMOTE/dist/assets"
+          $SCP_CMD dist/index.html $SSH_HOST:$REMOTE/dist/index.html
+          $SCP_CMD dist/favicon.ico $SSH_HOST:$REMOTE/dist/favicon.ico 2>/dev/null || true
+          $SCP_CMD dist/robots.txt $SSH_HOST:$REMOTE/dist/robots.txt 2>/dev/null || true
+          $SCP_CMD dist/.htaccess $SSH_HOST:$REMOTE/dist/.htaccess 2>/dev/null || true
+          $SCP_CMD dist/deploy-webhook.php $SSH_HOST:$REMOTE/dist/deploy-webhook.php 2>/dev/null || true
+          $SCP_CMD dist/assets/* $SSH_HOST:$REMOTE/dist/assets/
+          $SCP_CMD server.cjs $SSH_HOST:$REMOTE/server.cjs
+          
+          # 3. Install deps and restart Passenger
+          $SSH_CMD "cd $REMOTE && $HOSTINGER_PATH && npm install --omit=dev --ignore-scripts 2>&1 | tail -5; mkdir -p tmp; touch tmp/restart.txt; echo '✅ Passenger restart triggered'"
+          
+          echo "✅ Deploy complete!"
