@@ -68,13 +68,13 @@ export default function PersonalObjectivesPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   if (!currentUser) return null;
-  const isAdminUser = currentUser.isAdmin || currentUser.isSuperUser || !!currentUser.isManagingPartner;
+  const isAdminOrSocio = currentUser.isAdmin || currentUser.isSuperUser || !!currentUser.isManagingPartner || currentUser.position === 'socio' || currentUser.position === 'salary_partner';
   const isSupervisorOf = (userId: string) => assignments.some(a => a.employeeId === userId && a.supervisorId === currentUser.id && a.period === period);
-  const canEditUser = (userId: string) => isAdminUser || userId === currentUser.id;
-  const canReview = (userId: string) => isAdminUser || isSupervisorOf(userId);
+  const canEditUser = (userId: string) => isAdminOrSocio || userId === currentUser.id;
+  const canReview = (userId: string) => isAdminOrSocio || isSupervisorOf(userId);
 
 
-  const activeUsers = users.filter(u => u.isActive && !u.isSuperUser && !u.isDummy && u.position !== 'dummy');
+  const activeUsers = users.filter(u => u.isActive && !u.isSuperUser && !u.isDummy && u.position !== 'dummy' && (isAdminOrSocio || u.id === currentUser.id));
   const adminUsers = activeUsers.filter(u => POSITION_LEVELS[u.position] === 'administrativo').sort((a, b) => a.name.localeCompare(b.name, 'es'));
   const legalUsers = activeUsers.filter(u => POSITION_LEVELS[u.position] === 'legal').sort((a, b) => a.name.localeCompare(b.name, 'es'));
 
@@ -434,11 +434,11 @@ export default function PersonalObjectivesPage() {
         <div>
           <h1 className="font-display text-2xl font-bold">Objetivos Personales</h1>
           <p className="text-muted-foreground text-sm">
-            Objetivos individuales por colaborador {!isAdminUser && '(edita los tuyos y consulta los del equipo)'}
+            Objetivos individuales por colaborador  {!isAdminOrSocio ? '(edita los tuyos)' : ''}
           </p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
-          {isAdminUser && (
+          {isAdminOrSocio && (
 
             <>
               <button onClick={downloadAdminTemplate}
