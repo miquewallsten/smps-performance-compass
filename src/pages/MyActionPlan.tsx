@@ -3,6 +3,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useUsers, useEvaluations, useAssignments, useActionPlans, useCreateActionPlan, useApproveActionPlan } from '@/api/queries';
 import { CURRENT_PERIOD, PERIODS, ActionPlan, POSITION_LABELS, POSITION_RANK, SmartActionItem, QuestionCategory } from '@/types';
 import { ALL_CATEGORIES } from '@/pages/QuestionLibrary';
+import { getSectionByCategory, SECTION_LABELS } from '@/data/questions';
 import { FileText, Save, ShieldCheck, ShieldX, Clock, Plus, Trash2, Target } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -214,10 +215,22 @@ export default function MyActionPlan() {
                     <label className="text-xs text-muted-foreground">Competencia / Área *</label>
                     <select value={it.competencia} onChange={e => updateItem(it.id, { competencia: e.target.value })}
                       className="w-full mt-1 px-3 py-2 rounded-lg border border-input bg-background text-sm">
-                      <option value="">Selecciona una competencia...</option>
-                      {ALL_CATEGORIES.map(c => (
-                        <option key={c} value={c}>{c}</option>
-                      ))}
+                      <option value="">Selecciona una categoría...</option>
+                      <optgroup label="Competencias">
+                        {ALL_CATEGORIES.filter(c => getSectionByCategory(c) === 'competencias').map(c => (
+                          <option key={c} value={c}>{c}</option>
+                        ))}
+                      </optgroup>
+                      <optgroup label="Criterio Técnico">
+                        {ALL_CATEGORIES.filter(c => getSectionByCategory(c) === 'tecnico').map(c => (
+                          <option key={c} value={c}>{c}</option>
+                        ))}
+                      </optgroup>
+                      <optgroup label="Habilidades Blandas">
+                        {ALL_CATEGORIES.filter(c => getSectionByCategory(c) === 'blandas').map(c => (
+                          <option key={c} value={c}>{c}</option>
+                        ))}
+                      </optgroup>
                     </select>
                     <input value={it.competencia} onChange={e => updateItem(it.id, { competencia: e.target.value })}
                       placeholder="O escribe una competencia personalizada..."
