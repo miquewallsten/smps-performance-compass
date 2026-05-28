@@ -142,7 +142,6 @@ export interface LibraryQuestion {
   id: string;
   category: QuestionCategory;
   text: string;
-  defaultWeight: number;
   createdAt: string;
   createdBy?: string;
 }

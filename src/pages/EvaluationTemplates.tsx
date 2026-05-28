@@ -330,14 +330,13 @@ export default function EvaluationTemplates() {
                       <p className="text-sm">{q.text}</p>
                       <div className="flex gap-2 mt-1">
                         <span className="text-[10px] bg-accent/10 text-accent px-2 py-0.5 rounded-full">{q.category}</span>
-                        <span className="text-[10px] bg-muted px-2 py-0.5 rounded-full text-muted-foreground">Peso ref: {q.defaultWeight}%</span>
                       </div>
                     </div>
                     <button
                       disabled={already || editQuestions.length >= MAX_QUESTIONS}
                       onClick={() => {
                         const id = `lib-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
-                        setEditQuestions(prev => [...prev, { id, category: q.category, text: q.text, weight: q.defaultWeight }]);
+                        setEditQuestions(prev => [...prev, { id, category: q.category, text: q.text, weight: 5 }]);
                       }}
                       className="text-xs px-3 py-1.5 rounded-lg bg-accent text-accent-foreground hover:opacity-90 disabled:opacity-40"
                     >

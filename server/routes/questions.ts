@@ -23,13 +23,14 @@ router.post('/library', authMiddleware, requireAdmin, async (req: Request, res: 
     // Accept both `questionId` (explicit) and `id` (from frontend EvalQuestion shape)
     const questionId = req.body.questionId || req.body.id;
     const { category, text, defaultWeight } = req.body;
-    if (!questionId || !category || !text || !defaultWeight) {
-      return res.status(400).json({ error: 'questionId, category, text, and defaultWeight are required' });
+    const weight = defaultWeight || 0;
+    if (!questionId || !category || !text) {
+      return res.status(400).json({ error: 'questionId, category, and text are required' });
     }
     const id = uuidv4();
     const now = new Date().toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, '');
     await db.run('INSERT INTO library_questions (id, question_id, category, text, default_weight, created_at, created_by) VALUES (?, ?, ?, ?, ?, ?, ?)',
-      [id, questionId, category, text, defaultWeight, now, req.user!.id]);
+      [id, questionId, category, text, weight, now, req.user!.id]);
     const question = await db.get('SELECT * FROM library_questions WHERE id = ?', [id]);
     return res.status(201).json(question);
   } catch (err: any) {

@@ -85,12 +85,11 @@ export default function QuestionLibrary() {
   const [showFilters, setShowFilters] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<{ kind: 'lib'; q: LibraryQuestion } | { kind: 'seed'; q: SeedItem } | null>(null);
-  const [form, setForm] = useState<{ category: QuestionCategory; text: string; defaultWeight: number }>({
-    category: 'Desempeño', text: '', defaultWeight: 5,
+  const [form, setForm] = useState<{ category: QuestionCategory; text: string }>({
+    category: 'Desempeño', text: '',
   });
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
-  const [editingWeight, setEditingWeight] = useState<string | null>(null);
-  const [weightInput, setWeightInput] = useState('');
+
 
   const canEdit = !!(currentUser?.isAdmin || currentUser?.isSuperUser);
   const isSuperUser = !!currentUser?.isSuperUser;
@@ -193,7 +192,7 @@ export default function QuestionLibrary() {
     }));
     const customItems: DisplayItem[] = libraryQuestions.map(q => ({
       id: q.id, text: q.text, category: q.category, section: getSectionByCategory(q.category),
-      weight: q.defaultWeight, rawWeight: q.defaultWeight,
+      weight: 0, rawWeight: 0,  // library questions have no weight — weights belong to templates
       isSeed: false, positions: [], rawQuestion: q,
     }));
     return [...seedItems, ...customItems];
@@ -285,7 +284,7 @@ export default function QuestionLibrary() {
 
   const openCreate = () => {
     setEditing(null);
-    setForm({ category: 'Desempeño', text: '', defaultWeight: 5 });
+    setForm({ category: 'Desempeño', text: '' });
     setShowForm(true);
   };
 
@@ -293,11 +292,11 @@ export default function QuestionLibrary() {
     if (q.isSeed) {
       const seed = q.rawQuestion as SeedItem;
       setEditing({ kind: 'seed', q: seed });
-      setForm({ category: seed.category, text: seed.text, defaultWeight: seed.weight });
+      setForm({ category: seed.category, text: seed.text });
     } else {
       const lib = q.rawQuestion as LibraryQuestion;
       setEditing({ kind: 'lib', q: lib });
-      setForm({ category: lib.category, text: lib.text, defaultWeight: lib.defaultWeight });
+      setForm({ category: lib.category, text: lib.text });
     }
     setShowForm(true);
   };
@@ -305,15 +304,15 @@ export default function QuestionLibrary() {
   const handleSave = () => {
     if (!form.text.trim()) { toast.error('La pregunta no puede estar vacía'); return; }
     if (editing?.kind === 'lib') {
-      updateLibraryQuestion({ ...editing.q, ...form, text: form.text.trim() });
+      updateLibraryQuestion({ id: editing.q.id, category: form.category, text: form.text.trim() });
       toast.success('Pregunta actualizada');
     } else if (editing?.kind === 'seed') {
-      updateSeedQuestion(editing.q.id, { text: form.text.trim(), category: form.category, weight: form.defaultWeight } as any);
+      updateSeedQuestion(editing.q.id, { text: form.text.trim(), category: form.category } as any);
       toast.success('Pregunta base actualizada');
     } else {
       addLibraryQuestion({
         questionId: `lib-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-        category: form.category, text: form.text.trim(), defaultWeight: form.defaultWeight,
+        category: form.category, text: form.text.trim(),
         createdAt: new Date().toISOString(), createdBy: currentUser?.id,
       });
       toast.success('Pregunta agregada a la biblioteca');
@@ -333,17 +332,6 @@ export default function QuestionLibrary() {
     }
   };
 
-  const handleInlineWeightSave = (item: DisplayItem) => {
-    const newWeight = parseInt(weightInput) || 0;
-    if (newWeight < 1 || newWeight > 100) { toast.error('Peso debe ser 1-100'); return; }
-    if (item.isSeed) {
-      updateSeedQuestion(item.id, { weight: newWeight } as any);
-    } else {
-      updateLibraryQuestion({ id: item.id, defaultWeight: newWeight } as any);
-    }
-    setEditingWeight(null);
-    toast.success('Peso actualizado');
-  };
 
   const getGroupLabel = (key: string): string => {
     if (groupMode === 'section') return SECTION_LABELS[key as EvalSection] || key;
@@ -385,7 +373,7 @@ export default function QuestionLibrary() {
     libraryQuestions.forEach(q => {
       const text = `"${q.text.replace(/"/g, '""')}"`;
       const section = getSectionByCategory(q.category);
-      rows.push(`(biblioteca),${SECTION_LABELS[section]},${q.category},${Math.round(q.defaultWeight || 0)},${text}`);
+      rows.push(`(biblioteca),${SECTION_LABELS[section]},${q.category},,${text}`);
     });
     const blob = new Blob(['\uFEFF' + rows.join('\n')], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
@@ -664,7 +652,9 @@ export default function QuestionLibrary() {
                             <div className="flex items-center gap-2 mt-2 flex-wrap">
                               <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${color.bg} ${color.text}`}>{SECTION_LABELS[item.section]}</span>
                               <span className="text-[10px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground">{item.category}</span>
-                              <span className={`text-[10px] px-2 py-0.5 rounded-full bg-muted font-medium tabular-nums ${groupMode === 'position' ? 'text-accent' : 'text-muted-foreground'}`}>{Math.round(item.weight)}%</span>
+                              {groupMode === 'position' && (
+                                <span className="text-[10px] px-2 py-0.5 rounded-full bg-muted font-medium tabular-nums text-accent">{Math.round(item.weight)}%</span>
+                              )}
                               <span className={`text-[10px] px-2 py-0.5 rounded-full ${item.isSeed ? 'bg-foreground/5 text-foreground/50' : 'bg-accent/10 text-accent'}`}>
                                 {item.isSeed ? 'Base' : 'Personalizada'}
                               </span>
@@ -714,21 +704,13 @@ export default function QuestionLibrary() {
                 <textarea value={form.text} onChange={e => setForm({ ...form, text: e.target.value })} rows={3}
                   className="w-full mt-1 px-3 py-2 rounded-lg border border-input bg-background text-sm" />
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
+              <div>
                   <label className="text-xs text-muted-foreground">Categoría</label>
                   <select value={form.category} onChange={e => setForm({ ...form, category: e.target.value as QuestionCategory })}
                     className="w-full mt-1 px-3 py-2 rounded-lg border border-input bg-background text-sm">
                     {ALL_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
                   </select>
                 </div>
-                <div>
-                  <label className="text-xs text-muted-foreground">Peso ref. %</label>
-                  <input type="number" min={1} max={100} value={form.defaultWeight}
-                    onChange={e => setForm({ ...form, defaultWeight: parseInt(e.target.value) || 0 })}
-                    className="w-full mt-1 px-3 py-2 rounded-lg border border-input bg-background text-sm" />
-                </div>
-              </div>
             </div>
             <div className="flex gap-3 mt-5">
               <button onClick={() => setShowForm(false)} className="flex-1 py-2 rounded-lg border text-sm font-medium hover:bg-muted">Cancelar</button>
