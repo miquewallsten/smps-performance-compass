@@ -52,8 +52,9 @@ async function deployAsync() {
     };
 
     // Git pull
-    // Reset any local changes first (e.g. from manual uploads), then pull
+    // Reset local changes, clean stale build artifacts, then pull
     await execAsync(`cd ${appDir} && git checkout -- . 2>&1`, { env });
+    await execAsync(`cd ${appDir} && rm -rf dist/assets/ && git clean -fd dist/ 2>&1`, { env });
     const { stdout: gitOut } = await execAsync(`cd ${appDir} && git pull origin main 2>&1`, { env });
     console.log('[Deploy] Git pull:', gitOut);
 

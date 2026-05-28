@@ -4,6 +4,8 @@ node_modules/
 .pnp.js
 
 # Build outputs
+dist/
+server.cjs
 dist-ssr/
 
 # Environment files with secrets
