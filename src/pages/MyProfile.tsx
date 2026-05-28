@@ -105,7 +105,7 @@ export default function MyProfile() {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="bg-muted/30 rounded-lg p-4">
             <p className="text-xs text-muted-foreground">Mi Autoevaluación</p>
-            <p className="text-2xl font-bold font-display mt-1">{selfEval ? `${selfEval.totalScore}%` : '—'}</p>
+            <p className="text-2xl font-bold font-display mt-1">{selfEval ? `${Math.round(selfEval.totalScore)}%` : '—'}</p>
           </div>
           <div className="bg-muted/30 rounded-lg p-4">
             <p className="text-xs text-muted-foreground">Promedio Evaluaciones Recibidas ({recvEvals.length})</p>
@@ -123,7 +123,7 @@ export default function MyProfile() {
                 return (
                   <div key={e.id} className="flex justify-between text-sm bg-muted/20 rounded px-3 py-2">
                     <span>{ev?.name || 'Evaluador'}</span>
-                    <span className="font-semibold">{e.totalScore}%</span>
+                    <span className="font-semibold">{Math.round(e.totalScore)}%</span>
                   </div>
                 );
               })}

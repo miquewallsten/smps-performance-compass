@@ -212,7 +212,7 @@ export default function Dashboard() {
               <CheckCircle className="h-5 w-5 text-smps-success" />
               <div>
                 <p className="text-sm font-medium">Completada</p>
-                <p className="text-xs text-muted-foreground">Calificación: {mySelfEval.totalScore}%</p>
+                <p className="text-xs text-muted-foreground">Calificación: {Math.round(mySelfEval.totalScore)}%</p>
               </div>
             </div>
           ) : (

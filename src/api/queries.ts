@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { api, getToken } from './client';
+import { api, getToken, normalizeEvaluations, normalizeEvaluation } from './client';
 
 // ── Users ──
 export function useUsers() {
@@ -41,18 +41,43 @@ export function useDeleteAssignment() {
 // ── Evaluations ──
 export function useEvaluations(filters?: Record<string, string>) {
   const params = filters ? '?' + new URLSearchParams(filters).toString() : '';
-  return useQuery({ queryKey: ['evaluations', filters], queryFn: () => api.get<any[]>(`/api/evaluations${params}`) });
+  return useQuery({
+    queryKey: ['evaluations', filters],
+    queryFn: async () => {
+      const data = await api.get<any[]>(`/api/evaluations${params}`);
+      return normalizeEvaluations(data);
+    }
+  });
 }
 export function useEvaluation(id: string) {
-  return useQuery({ queryKey: ['evaluation', id], queryFn: () => api.get<any>(`/api/evaluations/${id}`), enabled: !!id });
+  return useQuery({
+    queryKey: ['evaluation', id],
+    queryFn: async () => {
+      const data = await api.get<any>(`/api/evaluations/${id}`);
+      return normalizeEvaluation(data);
+    },
+    enabled: !!id
+  });
 }
 export function useCreateEvaluation() {
   const qc = useQueryClient();
-  return useMutation({ mutationFn: (data: any) => api.post('/api/evaluations', data), onSuccess: () => qc.invalidateQueries({ queryKey: ['evaluations'] }) });
+  return useMutation({
+    mutationFn: async (data: any) => {
+      const result = await api.post('/api/evaluations', data);
+      return normalizeEvaluation(result);
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['evaluations'] })
+  });
 }
 export function useUpdateEvaluation() {
   const qc = useQueryClient();
-  return useMutation({ mutationFn: ({ id, ...data }: any) => api.patch(`/api/evaluations/${id}`, data), onSuccess: () => qc.invalidateQueries({ queryKey: ['evaluations'] }) });
+  return useMutation({
+    mutationFn: async ({ id, ...data }: any) => {
+      const result = await api.patch(`/api/evaluations/${id}`, data);
+      return normalizeEvaluation(result);
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['evaluations'] })
+  });
 }
 export function useCompleteFeedback() {
   const qc = useQueryClient();

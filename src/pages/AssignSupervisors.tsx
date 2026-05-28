@@ -222,7 +222,7 @@ export default function AssignSupervisors() {
                         {filteredReceived.length === 0 ? <p className="text-muted-foreground">Sin evaluaciones recibidas</p> : (
                           filteredReceived.map(e => {
                             const evaluator = users.find(u => u.id === e.evaluatorId);
-                            return <p key={e.id} className="py-1">{evaluator?.name} — {e.totalScore}%</p>;
+                            return <p key={e.id} className="py-1">{evaluator?.name} — {Math.round(e.totalScore)}%</p>;
                           })
                         )}
                       </div>
@@ -231,7 +231,7 @@ export default function AssignSupervisors() {
                         {filteredGiven.length === 0 ? <p className="text-muted-foreground">Sin evaluaciones realizadas</p> : (
                           filteredGiven.map(e => {
                             const evaluated = users.find(u => u.id === e.evaluatedId);
-                            return <p key={e.id} className="py-1">{evaluated?.name} — {e.totalScore}%</p>;
+                            return <p key={e.id} className="py-1">{evaluated?.name} — {Math.round(e.totalScore)}%</p>;
                           })
                         )}
                       </div>

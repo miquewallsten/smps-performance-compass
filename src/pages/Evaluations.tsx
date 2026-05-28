@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useUsers, useEvaluations, useAssignments, useCreateEvaluation, useUpdateEvaluation, useActionPlans, useCreateActionPlan, useCustomQuestions, useExportEvaluationsCSV } from '@/api/queries';
+import { useUsers, useEvaluations, useAssignments, useCreateEvaluation, useUpdateEvaluation, useCompleteFeedback, useApproveNA, useActionPlans, useCreateActionPlan, useCustomQuestions, useExportEvaluationsCSV } from '@/api/queries';
 import { QUESTIONS_BY_POSITION, getQuestionsForUser, calculateScore, getSectionForQuestion, SECTION_LABELS, SECTION_ORDER } from '@/data/questions';
 import { getSectionWeights } from '@/data/sectionWeights';
 
@@ -13,6 +13,21 @@ import EvaluationViewer from '@/components/EvaluationViewer';
 import HierarchyFilters, { filterByHierarchy } from '@/components/HierarchyFilters';
 import { canViewUserEvaluations } from '@/lib/visibility';
 
+// Helper to normalize naApprovals from API array format to Record<string, boolean>
+function normalizeNA(naApprovals: any): Record<string, boolean> {
+  if (!naApprovals) return {};
+  if (Array.isArray(naApprovals)) {
+    const result: Record<string, boolean> = {};
+    for (const item of naApprovals as any[]) {
+      if (item && item.questionId) {
+        result[item.questionId] = !!item.approved;
+      }
+    }
+    return result;
+  }
+  return naApprovals as Record<string, boolean>;
+}
+
 export default function Evaluations() {
   const { user: currentUser } = useAuth();
   const { data: users = [] } = useUsers();
@@ -21,6 +36,8 @@ export default function Evaluations() {
   const createEvaluationMut = useCreateEvaluation();
   const addEvaluation = createEvaluationMut.mutate;
   const updateEvaluation = useUpdateEvaluation().mutate;
+  const completeFeedback = useCompleteFeedback().mutate;
+  const approveNA = useApproveNA().mutate;
   const { data: actionPlans = [] } = useActionPlans();
   const addOrUpdateActionPlan = useCreateActionPlan().mutate;
   const { data: customQuestions = [] } = useCustomQuestions();
@@ -111,20 +128,24 @@ export default function Evaluations() {
   };
 
   const handleMarkFeedback = (evalId: string) => {
-    const ev = evaluations.find(e => e.id === evalId);
-    if (ev) {
-      updateEvaluation({
-        ...ev,
-        feedbackCompleted: true,
-        feedbackCompletedAt: new Date().toISOString().split('T')[0],
-        feedbackCompletedBy: currentUser.id,
-      });
-    }
+    // Use the dedicated feedback endpoint instead of the general update
+    completeFeedback(evalId);
   };
 
   if (selectedEmployee && !submitted) {
     const emp = users.find(u => u.id === selectedEmployee);
-    if (!emp) return null;
+    if (!emp) {
+      return (
+        <div>
+          <button onClick={() => { setSelectedEmployee(null); setResponses({}); setNaQuestions({}); setNoElementsQuestions({}); setComments(''); setSupervisorComments(''); }} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-4">
+            <ArrowLeft className="h-4 w-4" /> Volver a la lista
+          </button>
+          <div className="text-center py-8 text-muted-foreground">
+            <p>No se encontró la información del evaluado. Intente recargar la página.</p>
+          </div>
+        </div>
+      );
+    }
     const questions = getQuestionsForUser(emp, Array.isArray(customQuestions) ? {} : customQuestions);
 
     const totalResponded = Object.keys(responses).length + Object.keys(naQuestions).length + Object.keys(noElementsQuestions).length;
@@ -172,7 +193,12 @@ export default function Evaluations() {
             toast.success('Evaluación guardada correctamente');
           },
           onError: (err: Error) => {
-            toast.error('Error al guardar la evaluación: ' + (err.message || 'Intente de nuevo'));
+            const msg = err.message || '';
+            if (msg.includes('already exists') || msg.includes('duplicate') || msg.includes('ER_DUP_ENTRY')) {
+              toast.error('Ya existe una evaluación para este empleado y periodo. Recargue la página.');
+            } else {
+              toast.error('Error al guardar la evaluación: ' + (msg || 'Intente de nuevo'));
+            }
           },
         }
       );
@@ -220,7 +246,7 @@ export default function Evaluations() {
                             <div key={q.id} className="bg-card rounded-lg border p-4">
                               <div className="flex items-start justify-between mb-3">
                                 <p className="text-sm font-medium text-foreground pr-4">{q.text}</p>
-                                <span className="smps-badge bg-muted text-muted-foreground whitespace-nowrap">Peso: {q.weight}%</span>
+                                <span className="smps-badge bg-muted text-muted-foreground whitespace-nowrap">Peso: {Math.round(q.weight)}%</span>
                               </div>
                               <div className="flex gap-2 flex-wrap">
                                 <button onClick={() => { clearQuestion(q.id); setNoElementsQuestions(prev => ({ ...prev, [q.id]: true })); }}
@@ -365,7 +391,7 @@ export default function Evaluations() {
                     <p className="text-xs text-muted-foreground">{POSITION_LABELS[emp.position]}</p>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-semibold">{ev.totalScore}%</span>
+                    <span className="text-sm font-semibold">{Math.round(ev.totalScore)}%</span>
                     <button onClick={() => setViewingEval(ev.id)} className="p-1.5 rounded-lg hover:bg-muted transition-colors" title="Ver evaluación">
                       <Eye className="h-4 w-4 text-muted-foreground" />
                     </button>
@@ -396,7 +422,7 @@ export default function Evaluations() {
           if (ev.period !== CURRENT_PERIOD) return false;
           if (ev.type !== 'self') return false;
           if (!isSupervisor(ev.evaluatedId) && !isAdminOrSocio) return false;
-          return (ev.responses || []).some(r => r.notApplicable && !ev.naApprovals?.[r.questionId]);
+          return (ev.responses || []).some(r => r.notApplicable && !normalizeNA(ev.naApprovals)[r.questionId]);
         });
         if (evalsWithPendingNA.length === 0) return null;
         return (
@@ -406,7 +432,7 @@ export default function Evaluations() {
               {evalsWithPendingNA.map(ev => {
                 const evaluated = users.find(u => u.id === ev.evaluatedId);
                 const questions = evaluated ? getQuestionsForUser(evaluated, Array.isArray(customQuestions) ? {} : customQuestions) : [];
-                const pendingNAResponses = (ev.responses || []).filter(r => r.notApplicable && !ev.naApprovals?.[r.questionId]);
+                const pendingNAResponses = (ev.responses || []).filter(r => r.notApplicable && !normalizeNA(ev.naApprovals)[r.questionId]);
                 return (
                   <div key={ev.id} className="smps-surface-card">
                     <p className="text-sm font-medium mb-1">{evaluated?.name} <span className="text-xs text-muted-foreground">({evaluated ? POSITION_LABELS[evaluated.position] : ''})</span></p>
@@ -419,15 +445,12 @@ export default function Evaluations() {
                           <span className="text-xs pr-3">{q.text}</span>
                           <div className="flex gap-1 flex-shrink-0">
                             <button onClick={() => {
-                              const newApprovals = { ...(ev.naApprovals || {}), [r.questionId]: true };
-                              const newScore = calculateScore(questions, ev.responses, newApprovals);
-                              updateEvaluation({ ...ev, naApprovals: newApprovals, totalScore: newScore });
+                              approveNA({ id: ev.id, questionId: r.questionId, approved: true });
                             }} className="p-1 rounded hover:bg-accent/10 text-smps-success" title="Aprobar">
                               <ShieldCheck className="h-4 w-4" />
                             </button>
                             <button onClick={() => {
-                              const newApprovals = { ...(ev.naApprovals || {}), [r.questionId]: false };
-                              updateEvaluation({ ...ev, naApprovals: newApprovals });
+                              approveNA({ id: ev.id, questionId: r.questionId, approved: false });
                             }} className="p-1 rounded hover:bg-accent/10 text-smps-warning" title="Rechazar">
                               <ShieldX className="h-4 w-4" />
                             </button>
@@ -480,7 +503,7 @@ export default function Evaluations() {
                       <td className="py-3 px-4">{evaluated?.name} <span className="text-xs text-muted-foreground">({evaluated ? POSITION_LABELS[evaluated.position] : ''})</span></td>
                       <td className="py-3 px-4 text-muted-foreground">{ev.type === 'self' ? 'Auto' : 'Evaluador'}</td>
                       <td className="py-3 px-4 text-muted-foreground">{evaluator?.name}</td>
-                      <td className="py-3 px-4 text-center font-semibold">{ev.totalScore}%</td>
+                      <td className="py-3 px-4 text-center font-semibold">{Math.round(ev.totalScore)}%</td>
                       {canViewAllDetails && (
                         <td className="py-3 px-4 text-xs text-muted-foreground max-w-[200px]">
                           {ev.comments && <p className="truncate" title={ev.comments}>📝 {ev.comments.substring(0, 60)}...</p>}

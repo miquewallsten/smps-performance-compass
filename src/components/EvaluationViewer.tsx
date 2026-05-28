@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useUsers, useAssignments, useUpdateEvaluation, useActionPlans, useCustomQuestions } from '@/api/queries';
+import { useUsers, useAssignments, useUpdateEvaluation, useCompleteFeedback, useApproveNA, useActionPlans, useCustomQuestions } from '@/api/queries';
 import { QUESTIONS_BY_POSITION, getQuestionsForUser } from '@/data/questions';
 import { SCORE_LABELS, POSITION_LABELS, Evaluation } from '@/types';
 import { Ban, ShieldCheck, ShieldX, MinusCircle, FileText } from 'lucide-react';
@@ -16,6 +16,8 @@ export default function EvaluationViewer({ evaluation, onClose }: Props) {
   const { data: users = [] } = useUsers();
   const { data: assignments = [] } = useAssignments();
   const updateEvaluation = useUpdateEvaluation().mutate;
+  const completeFeedback = useCompleteFeedback().mutate;
+  const approveNA = useApproveNA().mutate;
   const { data: actionPlans = [] } = useActionPlans();
   const { data: customQuestionsData = [] } = useCustomQuestions();
   const customQuestions = Array.isArray(customQuestionsData) ? {} : customQuestionsData;
@@ -39,21 +41,36 @@ export default function EvaluationViewer({ evaluation, onClose }: Props) {
   const evalActionPlans = actionPlans.filter(p => p.employeeId === evaluation.evaluatedId && p.period === evaluation.period);
 
   const handleSaveComments = () => {
-    updateEvaluation({ ...evaluation, supervisorComments: supComments });
+    updateEvaluation({ id: evaluation.id, supervisorComments: supComments });
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   };
 
   const handleNAApproval = (questionId: string, approved: boolean) => {
-    const newApprovals = { ...(evaluation.naApprovals || {}), [questionId]: approved };
-    const qs = getQuestionsForUser(evaluated, customQuestions || {});
-    const newScore = calculateScore(qs, evaluation.responses, newApprovals);
-    updateEvaluation({ ...evaluation, naApprovals: newApprovals, totalScore: newScore });
+    // Use the dedicated NA approval endpoint instead of the general update
+    approveNA({ id: evaluation.id, questionId, approved });
   };
 
   const questions = getQuestionsForUser(evaluated, customQuestions || {});
   const categories: string[] = [...new Set(questions.map(q => q.category as string))];
   const responses = evaluation.responses || [];
+
+  // Normalize naApprovals: convert from array to Record if needed
+  // (should already be normalized by queries.ts, but defensive check)
+  const naApprovals: Record<string, boolean> = (() => {
+    const raw = evaluation.naApprovals;
+    if (!raw) return {};
+    if (Array.isArray(raw)) {
+      const result: Record<string, boolean> = {};
+      for (const item of raw as any[]) {
+        if (item && item.questionId) {
+          result[item.questionId] = !!item.approved;
+        }
+      }
+      return result;
+    }
+    return raw as Record<string, boolean>;
+  })();
 
 
   return (
@@ -69,7 +86,7 @@ export default function EvaluationViewer({ evaluation, onClose }: Props) {
             </p>
           </div>
           <div className="text-right">
-            <p className="text-2xl font-bold font-display text-accent">{evaluation.totalScore}%</p>
+            <p className="text-2xl font-bold font-display text-accent">{Math.round(evaluation.totalScore)}%</p>
           </div>
         </div>
 
@@ -84,7 +101,7 @@ export default function EvaluationViewer({ evaluation, onClose }: Props) {
                     const response = responses.find(r => r.questionId === q.id);
                     const isNA = response?.notApplicable;
                     const isNE = response?.noElements;
-                    const naApproved = evaluation.naApprovals?.[q.id];
+                    const naApproved = naApprovals?.[q.id];
                     const naPending = isNA && naApproved === undefined;
                     return (
                       <div key={q.id} className={`flex items-center justify-between py-2 px-3 rounded-lg text-sm ${isNA || isNE ? 'bg-muted/30 border border-dashed' : 'bg-muted/50'}`}>

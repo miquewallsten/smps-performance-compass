@@ -194,7 +194,7 @@ export default function SettingsPage() {
       <div className="smps-surface-elevated">
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-display text-lg font-semibold">Autoevaluación — {selectedPeriod}</h3>
-          {selfEval && <span className="text-2xl font-bold font-display text-accent">{selfEval.totalScore}%</span>}
+          {selfEval && <span className="text-2xl font-bold font-display text-accent">{Math.round(selfEval.totalScore)}%</span>}
         </div>
         {selfEval ? (
           <div>
@@ -235,7 +235,7 @@ export default function SettingsPage() {
                       <p className="text-sm font-medium">{evaluator?.name}</p>
                       <p className="text-xs text-muted-foreground">{evaluator ? POSITION_LABELS[evaluator.position] : ''} · {ev.completedAt}</p>
                     </div>
-                    <span className="text-xl font-bold font-display text-accent">{ev.totalScore}%</span>
+                    <span className="text-xl font-bold font-display text-accent">{Math.round(ev.totalScore)}%</span>
                   </div>
                   <button onClick={() => setExpandedEval(expandedEval === ev.id ? null : ev.id)}
                     className="flex items-center gap-2 text-sm text-accent hover:underline">

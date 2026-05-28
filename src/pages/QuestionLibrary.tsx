@@ -158,7 +158,7 @@ export default function QuestionLibrary() {
           positionKey: pos,
         };
       });
-      const totalWeight = items.reduce((s, i) => s + i.weight, 0);
+      const totalWeight = Math.round(items.reduce((s, i) => s + i.weight, 0));
       map[pos] = { items, totalWeight };
     }
     return map;
@@ -369,13 +369,13 @@ export default function QuestionLibrary() {
       evalQuestions.forEach(q => {
         const section = getSectionForQuestion(q, pos as Position);
         const text = `"${q.text.replace(/"/g, '""')}"`;
-        rows.push(`${posLabel},${SECTION_LABELS[section]},${q.category},${q.weight},${text}`);
+        rows.push(`${posLabel},${SECTION_LABELS[section]},${q.category},${Math.round(q.weight)},${text}`);
       });
     }
     libraryQuestions.forEach(q => {
       const text = `"${q.text.replace(/"/g, '""')}"`;
       const section = getSectionByCategory(q.category);
-      rows.push(`(biblioteca),${SECTION_LABELS[section]},${q.category},${q.defaultWeight || 0},${text}`);
+      rows.push(`(biblioteca),${SECTION_LABELS[section]},${q.category},${Math.round(q.defaultWeight || 0)},${text}`);
     });
     const blob = new Blob(['\uFEFF' + rows.join('\n')], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
@@ -632,7 +632,7 @@ export default function QuestionLibrary() {
                             <button onClick={() => { if (canEdit && groupMode !== 'position') { setEditingWeight(item.id); setWeightInput(String(item.rawWeight)); }}}
                               className={`text-xs font-medium tabular-nums text-muted-foreground hover:text-foreground px-1.5 py-0.5 rounded hover:bg-muted transition-colors min-w-[2rem] text-right ${groupMode === 'position' ? 'text-accent' : ''}`}
                               title={groupMode === 'position' ? 'Peso reescalado (calculado automáticamente)' : 'Click para editar peso'}>
-                              {item.weight}%
+                              {Math.round(item.weight)}%
                             </button>
                           )}
                           <span className={`inline-block w-1.5 h-1.5 rounded-full ${item.isSeed ? 'bg-foreground/30' : 'bg-accent'}`} title={item.isSeed ? 'Base' : 'Personalizada'} />
@@ -654,7 +654,7 @@ export default function QuestionLibrary() {
                             <div className="flex items-center gap-2 mt-2 flex-wrap">
                               <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${color.bg} ${color.text}`}>{SECTION_LABELS[item.section]}</span>
                               <span className="text-[10px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground">{item.category}</span>
-                              <span className={`text-[10px] px-2 py-0.5 rounded-full bg-muted font-medium tabular-nums ${groupMode === 'position' ? 'text-accent' : 'text-muted-foreground'}`}>{item.weight}%</span>
+                              <span className={`text-[10px] px-2 py-0.5 rounded-full bg-muted font-medium tabular-nums ${groupMode === 'position' ? 'text-accent' : 'text-muted-foreground'}`}>{Math.round(item.weight)}%</span>
                               <span className={`text-[10px] px-2 py-0.5 rounded-full ${item.isSeed ? 'bg-foreground/5 text-foreground/50' : 'bg-accent/10 text-accent'}`}>
                                 {item.isSeed ? 'Base' : 'Personalizada'}
                               </span>

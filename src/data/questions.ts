@@ -353,7 +353,15 @@ export function getQuestionsForUser(
   const rescale = (qs: EvalQuestion[], target: number): EvalQuestion[] => {
     if (qs.length === 0 || target <= 0) return [];
     const sum = qs.reduce((s, q) => s + (q.weight || 1), 0) || qs.length;
-    return qs.map(q => ({ ...q, weight: Math.round(((q.weight || 1) / sum) * target * 100) / 100 }));
+    // Largest-remainder method: produce whole-number weights that sum exactly to target
+    const ideals = qs.map(q => ((q.weight || 1) / sum) * target);
+    const floors = ideals.map(v => Math.floor(v));
+    const floorSum = floors.reduce((s, v) => s + v, 0);
+    const remainders = ideals.map((v, i) => ({ idx: i, rem: v - floors[i] }));
+    remainders.sort((a, b) => b.rem - a.rem);
+    const extra = target - floorSum;
+    for (let i = 0; i < extra; i++) floors[remainders[i].idx]++;
+    return qs.map((q, i) => ({ ...q, weight: floors[i] }));
   };
 
   return [

@@ -171,7 +171,7 @@ export default function EvaluationTemplates() {
                             </>
                           ) : (
                             <span className="text-xs font-medium bg-muted text-muted-foreground px-2 py-0.5 rounded-full">
-                              {q.weight}%
+                              {Math.round(q.weight)}%
                             </span>
                           )}
                         </div>

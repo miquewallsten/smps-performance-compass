@@ -59,6 +59,7 @@ function toCamelCase(value: unknown): unknown {
     'isAdmin', 'isSuperUser', 'isManagingPartner', 'isActive', 'mustChangePassword',
     'evaluations', 'communications', 'vacations', 'copilot',
     'notApplicable', 'noElements', 'feedbackCompleted', 'archived', 'hidden',
+    'approved',
   ]);
 
   for (const [key, val] of Object.entries(obj)) {
@@ -77,6 +78,48 @@ function toCamelCase(value: unknown): unknown {
   }
 
   return result;
+}
+
+/**
+ * Convert an array of NA approval objects into a Record<string, boolean> keyed by questionId.
+ * The API returns naApprovals as an array like:
+ *   [{ id, evaluationId, questionId, approved: true/false, approvedBy, approvedAt }]
+ * The frontend expects naApprovals as Record<string, boolean> like:
+ *   { questionId: true/false }
+ */
+export function normalizeNaApprovals(naApprovals: unknown): Record<string, boolean> {
+  if (!naApprovals) return {};
+  if (Array.isArray(naApprovals)) {
+    const result: Record<string, boolean> = {};
+    for (const item of naApprovals as any[]) {
+      if (item && item.questionId) {
+        result[item.questionId] = !!item.approved;
+      }
+    }
+    return result;
+  }
+  // If it's already a Record (e.g., from a client-side mutation), return as-is
+  if (typeof naApprovals === 'object') return naApprovals as Record<string, boolean>;
+  return {};
+}
+
+/**
+ * Normalize an evaluation object, converting naApprovals from array to Record.
+ */
+export function normalizeEvaluation(evaluation: any): any {
+  if (!evaluation) return evaluation;
+  return {
+    ...evaluation,
+    naApprovals: normalizeNaApprovals(evaluation.naApprovals),
+  };
+}
+
+/**
+ * Normalize an array of evaluation objects.
+ */
+export function normalizeEvaluations(evaluations: any[]): any[] {
+  if (!evaluations) return evaluations;
+  return evaluations.map(normalizeEvaluation);
 }
 
 // Track if we're already redirecting to prevent loops
@@ -127,6 +170,7 @@ export async function apiFetch<T>(path: string, options?: RequestInit): Promise<
 export const api = {
   get: <T>(path: string) => apiFetch<T>(path),
   post: <T>(path: string, body: unknown) => apiFetch<T>(path, { method: 'POST', body: JSON.stringify(body) }),
+  put: <T>(path: string, body: unknown) => apiFetch<T>(path, { method: 'PUT', body: JSON.stringify(body) }),
   patch: <T>(path: string, body: unknown) => apiFetch<T>(path, { method: 'PATCH', body: JSON.stringify(body) }),
   delete: <T>(path: string) => apiFetch<T>(path, { method: 'DELETE' }),
   upload: <T>(path: string, formData: FormData) => apiFetch<T>(path, {

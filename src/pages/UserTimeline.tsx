@@ -309,7 +309,7 @@ export default function UserTimeline() {
                                         <div className="flex items-center gap-2 mt-1">
                                           <Ring v={ev.meta.score} />
                                           <span className="text-sm font-bold" style={{ color: ev.meta.score >= 80 ? '#10b981' : ev.meta.score >= 60 ? '#f59e0b' : '#ef4444' }}>
-                                            {ev.meta.score}%
+                                            {Math.round(ev.meta.score)}%
                                           </span>
                                         </div>
                                       )}

@@ -4,7 +4,7 @@ import { useEvaluations, useAssignments, useActionPlans, useCreateEvaluation, us
 import { QUESTIONS_BY_POSITION, getQuestionsForUser, calculateScore, getSectionForQuestion, SECTION_LABELS, SECTION_ORDER } from '@/data/questions';
 import { getSectionWeights } from '@/data/sectionWeights';
 
-import { CURRENT_PERIOD, SCORE_LABELS, POSITION_LABELS, Evaluation } from '@/types';
+import { CURRENT_PERIOD, SCORE_LABELS, POSITION_LABELS, Evaluation, Position } from '@/types';
 import { CheckCircle, AlertCircle, Ban, Clock, Users, MessageSquare, FileText, ClipboardCheck, ChevronDown, RotateCcw } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -162,7 +162,7 @@ export default function SelfEvaluation() {
   };
 
   const sectionGroups = SECTION_ORDER.reduce((acc, section) => {
-    const sectionQs = questions.filter(q => getSectionForQuestion(q.id) === section);
+    const sectionQs = questions.filter(q => getSectionForQuestion(q, currentUser.position as Position) === section);
     if (sectionQs.length > 0) acc.push({ section, label: SECTION_LABELS[section] || section, questions: sectionQs });
     return acc;
   }, [] as { section: string; label: string; questions: typeof questions }[]);
@@ -248,7 +248,7 @@ export default function SelfEvaluation() {
                             <div key={q.id} className="rounded-md border bg-background/50 px-4 py-3">
                               <div className="flex items-start justify-between mb-2">
                                 <p className="text-sm font-medium pr-4">{q.text}</p>
-                                <span className="smps-badge bg-muted text-muted-foreground whitespace-nowrap">Peso: {q.weight}%</span>
+                                <span className="smps-badge bg-muted text-muted-foreground whitespace-nowrap">Peso: {Math.round(q.weight)}%</span>
                               </div>
                               <div className="flex gap-1.5 flex-wrap">
                                 <button onClick={() => handleNA(q.id)}
