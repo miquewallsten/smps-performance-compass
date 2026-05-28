@@ -1,10 +1,12 @@
 import { useState, useMemo } from 'react';
-import { QUESTIONS_BY_POSITION } from '@/data/questions';
+import { getQuestionsForUser } from '@/data/questions';
+import { getTechnicalQuestions } from '@/data/technicalQuestions';
+import { getSectionWeights } from '@/data/sectionWeights';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCustomQuestions, useSetCustomQuestions, useLibraryQuestions } from '@/api/queries';
 import {
   POSITION_LABELS, LEGAL_HIERARCHY, ADMIN_HIERARCHY, Position, SCORE_LABELS,
-  EvalQuestion, QuestionCategory, normalizePosition,
+  EvalQuestion, QuestionCategory, normalizePosition, POSITION_LEVELS,
 } from '@/types';
 import { ChevronDown, ChevronRight, FileText, Plus, Trash2, AlertCircle, Save, BookOpen, Search } from 'lucide-react';
 
@@ -43,11 +45,25 @@ export default function EvaluationTemplates() {
   };
 
   const getQuestions = (pos: Position): EvalQuestion[] => {
+    // Use getQuestionsForUser to get the FULL template (technical + competencias + blandas)
+    // with rescaled weights that sum to 100%
+    const level = POSITION_LEVELS[pos];
+    if (level === 'legal') {
+      // Legal positions: combine technical + competencias + blandas
+      const fullQuestions = getQuestionsForUser(
+        { position: pos, practiceArea: 'corporativo' },
+        customQuestions
+      );
+      return fullQuestions;
+    }
+    // Admin positions: just use seed/custom data directly
     const normalized = normalizePosition(pos);
-    return customQuestions[normalized] || customQuestions[pos] || QUESTIONS_BY_POSITION[normalized] || QUESTIONS_BY_POSITION[pos] || [];
+    const base = customQuestions[normalized] || customQuestions[pos] || [];
+    return base.length > 0 ? base : (getQuestionsForUser({ position: pos }, customQuestions));
   };
 
   const startEditing = (pos: Position) => {
+    // For editing, show all questions so user can adjust all weights
     setEditQuestions([...getQuestions(pos)]);
     setEditingPosition(pos);
     setExpandedPosition(pos);
