@@ -17,6 +17,30 @@ router.get('/categories', authMiddleware, async (_req: Request, res: Response) =
   }
 });
 
+// ─── POST /api/evaluation-config/categories ───────────────────────────────────
+// Add a new category (admin only)
+router.post('/categories', authMiddleware, requireAdmin, async (req: Request, res: Response) => {
+  try {
+    const { id, label, section, is_technical_subcategory, sort_order } = req.body;
+    if (!id || !label || !section) {
+      return res.status(400).json({ error: 'id, label, and section are required' });
+    }
+    const validSections = ['competencias', 'tecnico', 'blandas'];
+    if (!validSections.includes(section)) {
+      return res.status(400).json({ error: 'section must be competencias, tecnico, or blandas' });
+    }
+    await db.run(
+      'INSERT IGNORE INTO evaluation_categories (id, label, section, is_technical_subcategory, sort_order) VALUES (?, ?, ?, ?, ?)',
+      [id, label, section, is_technical_subcategory || 0, sort_order || 0]
+    );
+    const category = await db.get('SELECT * FROM evaluation_categories WHERE id = ?', [id]);
+    return res.status(201).json(category);
+  } catch (err) {
+    console.error('Create category error:', err);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // ─── GET /api/evaluation-config/section-weights ────────────────────────────
 router.get('/section-weights', authMiddleware, async (_req: Request, res: Response) => {
   try {
