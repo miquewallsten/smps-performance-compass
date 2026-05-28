@@ -382,6 +382,82 @@ export async function migrate(): Promise<void> {
       max_tokens INT NOT NULL DEFAULT 2048,
       temperature DOUBLE NOT NULL DEFAULT 0.3
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+
+    // ─── New tables for full DB migration (replacing hardcoded .ts data files) ────
+
+    `CREATE TABLE IF NOT EXISTS evaluation_categories (
+      id VARCHAR(50) PRIMARY KEY,
+      label VARCHAR(100) NOT NULL,
+      section ENUM('competencias','tecnico','blandas') NOT NULL,
+      is_technical_subcategory TINYINT(1) NOT NULL DEFAULT 0,
+      sort_order INT NOT NULL DEFAULT 0,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+
+    `CREATE TABLE IF NOT EXISTS template_questions (
+      id VARCHAR(36) PRIMARY KEY,
+      question_id VARCHAR(50) NOT NULL,
+      position VARCHAR(50) NOT NULL,
+      practice_area VARCHAR(50) NOT NULL DEFAULT 'corporativo',
+      section ENUM('competencias','tecnico','blandas') NOT NULL,
+      category VARCHAR(50) NOT NULL,
+      question_text TEXT NOT NULL,
+      weight INT NOT NULL,
+      sort_order INT NOT NULL DEFAULT 0,
+      is_active TINYINT(1) NOT NULL DEFAULT 1,
+      source ENUM('seed','custom') NOT NULL DEFAULT 'seed',
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      INDEX idx_tq_pos_area (position, practice_area),
+      INDEX idx_tq_category (category),
+      INDEX idx_tq_section (section),
+      INDEX idx_tq_question_id (question_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+
+    `CREATE TABLE IF NOT EXISTS section_weights (
+      position VARCHAR(50) PRIMARY KEY,
+      tecnico INT NOT NULL DEFAULT 0,
+      competencias INT NOT NULL DEFAULT 80,
+      blandas INT NOT NULL DEFAULT 20,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+
+    `CREATE TABLE IF NOT EXISTS competency_definitions (
+      id VARCHAR(36) PRIMARY KEY,
+      position_level VARCHAR(50) NOT NULL,
+      name VARCHAR(200) NOT NULL,
+      definition TEXT NOT NULL,
+      sort_order INT NOT NULL DEFAULT 0,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      INDEX idx_cd_level (position_level)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+
+    `CREATE TABLE IF NOT EXISTS position_config (
+      position VARCHAR(50) PRIMARY KEY,
+      label VARCHAR(100) NOT NULL,
+      level ENUM('legal','administrativo') NOT NULL,
+      rank INT NOT NULL DEFAULT 99,
+      sort_order INT NOT NULL DEFAULT 0,
+      is_active TINYINT(1) NOT NULL DEFAULT 1,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+
+    `CREATE TABLE IF NOT EXISTS score_config (
+      score INT PRIMARY KEY,
+      label VARCHAR(50) NOT NULL
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+
+    `CREATE TABLE IF NOT EXISTS question_library (
+      id VARCHAR(36) PRIMARY KEY,
+      question_id VARCHAR(50) NOT NULL UNIQUE,
+      category VARCHAR(50) NOT NULL,
+      text TEXT NOT NULL,
+      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      created_by VARCHAR(36),
+      INDEX idx_ql_category (category)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
   ];
 
   // ─── Execute CREATE TABLE statements ────────────────────────────────────────
