@@ -323,3 +323,23 @@ router.delete('/library/:id', authMiddleware, requireAdmin, async (req: Request,
 });
 
 export default router;
+
+// ─── POST /api/evaluation-config/reseed ────────────────────────────────────
+// Force re-seed evaluation data (admin only)
+router.post('/reseed', authMiddleware, requireAdmin, async (_req: Request, res: Response) => {
+  try {
+    const { seedEvaluationData } = await import('../db/seed-evaluation-data.js');
+    // Delete all seed data first to force re-seed
+    await db.run("DELETE FROM template_questions WHERE source = 'seed'");
+    await db.run("DELETE FROM section_weights");
+    await db.run("DELETE FROM question_library WHERE created_by IS NULL");
+    await db.run("DELETE FROM evaluation_categories WHERE id = 'Comunicación'");
+    console.log('Force reseed: deleted all seed data');
+    await seedEvaluationData();
+    const count = await db.getScalar<number>('SELECT COUNT(*) as cnt FROM template_questions WHERE source = ?', ['seed']);
+    return res.json({ message: `Re-seeded successfully. ${count} template questions.` });
+  } catch (err) {
+    console.error('Reseed error:', err);
+    return res.status(500).json({ error: 'Reseed failed: ' + (err instanceof Error ? err.message : String(err)) });
+  }
+});
