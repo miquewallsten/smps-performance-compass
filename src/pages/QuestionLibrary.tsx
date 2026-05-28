@@ -25,7 +25,7 @@ type SeedItem = EvalQuestion & { positions: string[]; isSeed: true; section: Eva
 type CustomItem = LibraryQuestion & { isSeed: false };
 type GroupMode = 'section' | 'category' | 'position' | 'none';
 type ViewMode = 'compact' | 'detailed';
-type SortMode = 'weight' | 'alpha' | 'positions';
+type SortMode = 'alpha' | 'positions';
 
 const SECTION_COLORS: Record<EvalSection, { border: string; bg: string; text: string; dot: string }> = {
   competencias: { border: 'border-l-blue-500', bg: 'bg-blue-50', text: 'text-blue-700', dot: 'bg-blue-500' },
@@ -39,17 +39,12 @@ interface FilterChip {
   label: string;
 }
 
-/**
- * When grouping by position, we show rescaled weights (what evaluators actually see).
- * Otherwise we show raw reference weights from the seed data.
- */
+
 type DisplayItem = {
   id: string;
   text: string;
   category: QuestionCategory;
   section: EvalSection;
-  weight: number;           // displayed weight (rescaled when in position mode, raw otherwise)
-  rawWeight: number;         // always the raw reference weight
   isSeed: boolean;
   positions: string[];
   rawQuestion: SeedItem | LibraryQuestion;
@@ -80,7 +75,7 @@ export default function QuestionLibrary() {
   const [search, setSearch] = useState('');
   const [groupMode, setGroupMode] = useState<GroupMode>('position');
   const [viewMode, setViewMode] = useState<ViewMode>('compact');
-  const [sortMode, setSortMode] = useState<SortMode>('weight');
+  const [sortMode, setSortMode] = useState<SortMode>('alpha');
   const [filters, setFilters] = useState<FilterChip[]>([]);
   const [showFilters, setShowFilters] = useState(false);
   const [showForm, setShowForm] = useState(false);
@@ -139,60 +134,41 @@ export default function QuestionLibrary() {
     return items;
   }, [seedByCategory]);
 
-  // When grouped by position, compute rescaled weights per position using getQuestionsForUser()
-  // This is the SAME function used by the evaluation forms, guaranteeing weights match.
-  const rescaledByPosition = useMemo(() => {
-    if (groupMode !== 'position') return null;
-    const map: Record<string, { items: DisplayItem[]; totalWeight: number }> = {};
-    const allPositions = new Set<string>();
-    allSeedItems.forEach(item => item.positions.forEach(p => allPositions.add(p)));
 
-    for (const pos of allPositions) {
-      const evalQuestions = getQuestionsForUser(
-        { position: pos as Position, practiceArea: POSITION_LEVELS[pos as Position] === 'legal' ? 'corporativo' : undefined },
-        customQuestions
-      );
-      const items: DisplayItem[] = evalQuestions.map(q => {
-        const section = getSectionForQuestion(q, pos as Position);
-        return {
-          id: `${pos}::${q.id}`,
-          text: q.text,
-          category: q.category as QuestionCategory,
-          section,
-          weight: q.weight,      // rescaled weight — what evaluators see
-          rawWeight: 0,          // not applicable in position mode
-          isSeed: true,
-          positions: [pos],
-          rawQuestion: allSeedItems.find(s => s.id === q.id) || ({ id: q.id, text: q.text, category: q.category, weight: q.weight, positions: [pos], isSeed: true, section } as SeedItem),
-          positionKey: pos,
-        };
-      });
-      const totalWeight = Math.round(items.reduce((s, i) => s + i.weight, 0));
-      map[pos] = { items, totalWeight };
-    }
-    return map;
-  }, [groupMode, allSeedItems, customQuestions]);
-
-  // Combined items for rendering (non-position mode: use raw weights)
+  // Combined items for rendering
   const allItems: DisplayItem[] = useMemo(() => {
-    if (groupMode === 'position' && rescaledByPosition) {
-      // In position mode, flatten all rescaled items
+    if (groupMode === 'position') {
+      // In position mode, build items per position from getQuestionsForUser
       const items: DisplayItem[] = [];
-      for (const [pos, data] of Object.entries(rescaledByPosition)) {
-        items.push(...data.items);
+      const allPositions = new Set<string>();
+      allSeedItems.forEach(item => item.positions.forEach(p => allPositions.add(p)));
+      for (const pos of allPositions) {
+        const evalQuestions = getQuestionsForUser(
+          { position: pos as Position, practiceArea: POSITION_LEVELS[pos as Position] === 'legal' ? 'corporativo' : undefined },
+          customQuestions
+        );
+        evalQuestions.forEach(q => {
+          const section = getSectionForQuestion(q, pos as Position);
+          items.push({
+            id: `${pos}::${q.id}`,
+            text: q.text,
+            category: q.category as QuestionCategory,
+            section,
+            isSeed: true,
+            positions: [pos],
+            rawQuestion: allSeedItems.find(s => s.id === q.id) || ({ id: q.id, text: q.text, category: q.category, weight: q.weight, positions: [pos], isSeed: true, section } as SeedItem),
+            positionKey: pos,
+          });
+        });
       }
       return items;
     }
-    // Non-position mode: use raw reference weights
     const seedItems: DisplayItem[] = allSeedItems.map(q => ({
       id: q.id, text: q.text, category: q.category, section: q.section,
-      weight: q.weight,       // raw reference weight
-      rawWeight: q.weight,
       isSeed: true, positions: q.positions, rawQuestion: q,
     }));
     const customItems: DisplayItem[] = libraryQuestions.map(q => ({
       id: q.id, text: q.text, category: q.category, section: getSectionByCategory(q.category),
-      weight: 0, rawWeight: 0,  // library questions have no weight — weights belong to templates
       isSeed: false, positions: [], rawQuestion: q,
     }));
     return [...seedItems, ...customItems];
@@ -217,7 +193,6 @@ export default function QuestionLibrary() {
   // Apply sort
   const sortedItems = useMemo(() => {
     const items = [...filteredItems];
-    if (sortMode === 'weight') items.sort((a, b) => b.weight - a.weight);
     if (sortMode === 'alpha') items.sort((a, b) => a.text.localeCompare(b.text, 'es'));
     if (sortMode === 'positions') items.sort((a, b) => b.positions.length - a.positions.length);
     return items;
@@ -348,10 +323,7 @@ export default function QuestionLibrary() {
     setExpandedGroups(autoExpand);
   }, [groupMode]);
 
-  /**
-   * CSV export — always uses rescaled weights per position (same as evaluation forms).
-   * This guarantees the CSV percentages match exactly what users see on screen.
-   */
+  /** CSV export */
   const exportCSV = () => {
     const rows: string[] = ['Posición,Sección,Categoría,Texto'];
     const allPositions = new Set<string>();
@@ -391,9 +363,7 @@ export default function QuestionLibrary() {
           <h1 className="font-display text-2xl font-bold">Biblioteca de Preguntas</h1>
           <p className="text-muted-foreground text-sm mt-1">
             {stats.total} preguntas &middot; {stats.seed} base &middot; {stats.custom} personalizadas
-            {groupMode === 'position' && (
-              <span className="ml-2 text-accent">· Pesos reescalados por posición (igual que en evaluaciones)</span>
-            )}
+
           </p>
         </div>
         <div className="flex gap-2">
@@ -407,12 +377,6 @@ export default function QuestionLibrary() {
       </div>
 
       {/* Info banner when in position mode */}
-      {groupMode === 'position' && (
-        <div className="flex items-start gap-2 px-4 py-2.5 rounded-lg bg-accent/5 border border-accent/20 text-xs text-muted-foreground">
-          <Info className="h-4 w-4 text-accent flex-shrink-0 mt-0.5" />
-          <p>Los pesos mostrados son <strong className="text-foreground">reescalados por sección</strong> para cada posición (suman 100%). Son los mismos porcentajes que los evaluadores ven en el formulario de evaluación. El CSV exporta estos mismos valores.</p>
-        </div>
-      )}
 
       {/* Stats strip */}
       <div className="grid grid-cols-3 gap-3">
@@ -463,7 +427,7 @@ export default function QuestionLibrary() {
           <button onClick={() => setGroupMode('category')} className={`px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors ${groupMode === 'category' ? 'bg-accent text-accent-foreground' : 'hover:bg-muted'}`} title="Agrupar por categoría">
             <BookOpen className="h-3.5 w-3.5" />
           </button>
-          <button onClick={() => setGroupMode('position')} className={`px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors ${groupMode === 'position' ? 'bg-accent text-accent-foreground' : 'hover:bg-muted'}`} title="Agrupar por puesto (pesos reescalados)">
+          <button onClick={() => setGroupMode('position')} className={`px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors ${groupMode === 'position' ? 'bg-accent text-accent-foreground' : 'hover:bg-muted'}`} title="Agrupar por puesto">
             <Hash className="h-3.5 w-3.5" />
           </button>
           <button onClick={() => setGroupMode('none')} className={`px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors ${groupMode === 'none' ? 'bg-accent text-accent-foreground' : 'hover:bg-muted'}`} title="Sin agrupar">
@@ -473,7 +437,6 @@ export default function QuestionLibrary() {
 
         <select value={sortMode} onChange={e => setSortMode(e.target.value as SortMode)}
           className="px-3 py-2 rounded-lg border border-input bg-background text-sm">
-          <option value="weight">Peso (mayor primero)</option>
           <option value="alpha">Alfabético</option>
           <option value="positions">Puestos que la usan</option>
         </select>
@@ -574,10 +537,7 @@ export default function QuestionLibrary() {
           const groupColor = groupMode === 'section' ? SECTION_COLORS[groupKey as EvalSection] : null;
           const label = getGroupLabel(groupKey);
 
-          // Show total weight for this group when in position mode
-          const groupTotalWeight = groupMode === 'position' && rescaledByPosition?.[groupKey]
-            ? rescaledByPosition[groupKey].totalWeight
-            : null;
+
 
           return (
             <div key={groupKey} className="bg-card rounded-xl border overflow-hidden">
@@ -587,9 +547,7 @@ export default function QuestionLibrary() {
                   {groupColor && <span className={`w-2.5 h-2.5 rounded-full ${groupColor.dot}`} />}
                   <span className="text-sm font-semibold">{label}</span>
                   <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">{items.length}</span>
-                  {groupTotalWeight !== null && (
-                    <span className="text-xs text-accent font-medium">Σ {groupTotalWeight}%</span>
-                  )}
+
                 </div>
                 {isExpanded ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
               </button>
@@ -616,9 +574,7 @@ export default function QuestionLibrary() {
                           </div>
                         </div>
                         <div className="flex items-center gap-2 flex-shrink-0">
-                          {groupMode === 'position' && (
-                            <span className="text-xs font-medium tabular-nums text-accent min-w-[2rem] text-right">{Math.round(item.weight)}%</span>
-                          )}
+
                           <span className={`inline-block w-1.5 h-1.5 rounded-full ${item.isSeed ? 'bg-foreground/30' : 'bg-accent'}`} title={item.isSeed ? 'Base' : 'Personalizada'} />
                           <button onClick={() => openEdit(item)} className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors" title="Editar">
                             <Pencil className="h-3 w-3" />
@@ -638,9 +594,7 @@ export default function QuestionLibrary() {
                             <div className="flex items-center gap-2 mt-2 flex-wrap">
                               <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${color.bg} ${color.text}`}>{SECTION_LABELS[item.section]}</span>
                               <span className="text-[10px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground">{item.category}</span>
-                              {groupMode === 'position' && (
-                                <span className="text-[10px] px-2 py-0.5 rounded-full bg-muted font-medium tabular-nums text-accent">{Math.round(item.weight)}%</span>
-                              )}
+
                               <span className={`text-[10px] px-2 py-0.5 rounded-full ${item.isSeed ? 'bg-foreground/5 text-foreground/50' : 'bg-accent/10 text-accent'}`}>
                                 {item.isSeed ? 'Base' : 'Personalizada'}
                               </span>
