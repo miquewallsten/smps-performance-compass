@@ -427,3 +427,4 @@ export async function cleanupOldCustomQuestions(): Promise<void> {
     if (err?.code !== 'ER_NO_SUCH_TABLE') console.error('  Error cleaning seed_question_overrides:', err);
   }
 }
+// redeploy trigger Thu May 28 14:07:30 CST 2026
