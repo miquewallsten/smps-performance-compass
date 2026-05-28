@@ -9,9 +9,18 @@ const router = Router();
 router.get('/', authMiddleware, async (req: Request, res: Response) => {
   try {
     const { userId, period } = req.query as Record<string, string>;
+    // Role-based access control: Admins and Socios see all objectives, others only their own
+    const isAdminOrSocio = req.user!.role === 'admin' || req.user!.role === 'super_user' || req.user!.position === 'socio' || req.user!.position === 'salary_partner';
     let sql = 'SELECT * FROM personal_objectives WHERE 1=1';
     const params: string[] = [];
-    if (userId) { sql += ' AND user_id = ?'; params.push(userId); }
+    if (!isAdminOrSocio) {
+      // Non-admin, non-socio: only see own objectives
+      sql += ' AND user_id = ?';
+      params.push(req.user!.id);
+    } else if (userId) {
+      sql += ' AND user_id = ?';
+      params.push(userId);
+    }
     if (period) { sql += ' AND period = ?'; params.push(period); }
 
     const objectives = await db.all(sql, params);
