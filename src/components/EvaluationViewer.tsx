@@ -152,7 +152,7 @@ export default function EvaluationViewer({ evaluation, onClose }: Props) {
                               {naPending && !canApproveNA && <span className="text-xs text-smps-warning">(pendiente)</span>}
                             </div>
                           ) : (
-                            <span className="font-medium text-xs">{response ? SCORE_LABELS[response.score] : '—'}</span>
+                            <span className="font-medium text-xs">{response ? getScoreLabels()[response.score] : '—'}</span>
                           )}
                         </div>
                       </div>
@@ -199,7 +199,7 @@ export default function EvaluationViewer({ evaluation, onClose }: Props) {
                   const sup = users.find(u => u.id === plan.supervisorId);
                   return (
                     <div key={plan.id} className="bg-muted/50 rounded-lg p-3 text-sm">
-                      <p className="text-xs font-medium text-accent mb-1">{sup?.name || 'Evaluador'} — {sup ? POSITION_LABELS[sup.position] : ''}</p>
+                      <p className="text-xs font-medium text-accent mb-1">{sup?.name || 'Evaluador'} — {sup ? getPositionLabel(sup.position) : ''}</p>
                       <p className="whitespace-pre-wrap text-xs">{plan.content}</p>
                       <p className="text-xs text-muted-foreground mt-1">Actualizado: {plan.updatedAt}</p>
                     </div>

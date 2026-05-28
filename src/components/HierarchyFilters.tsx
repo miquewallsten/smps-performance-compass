@@ -1,5 +1,5 @@
-import { POSITION_LABELS, Position } from '@/types';
-import { getLegalHierarchy, getAdminHierarchy, getPositionHierarchy } from '@/lib/evaluationConfig';
+import { Position } from '@/types';
+import { getLegalHierarchy, getAdminHierarchy, getPositionLabel, getPositionHierarchy } from '@/lib/evaluationConfig';
 
 interface Props {
   levelFilter: string;
