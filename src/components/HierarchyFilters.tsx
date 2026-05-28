@@ -35,8 +35,8 @@ export default function HierarchyFilters({ levelFilter, setLevelFilter, position
 
 export function filterByHierarchy<T extends { position: Position }>(items: T[], levelFilter: string, positionFilter: string): T[] {
   let result = items;
-  if (levelFilter === 'legal') result = result.filter(u => getLegalHierarchy.includes(u.position));
-  else if (levelFilter === 'administrativo') result = result.filter(u => getAdminHierarchy.includes(u.position));
+  if (levelFilter === 'legal') result = result.filter(u => getLegalHierarchy().includes(u.position));
+  else if (levelFilter === 'administrativo') result = result.filter(u => getAdminHierarchy().includes(u.position));
   if (positionFilter !== 'all') result = result.filter(u => u.position === positionFilter);
   return result;
 }

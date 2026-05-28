@@ -153,10 +153,10 @@ export default function Help() {
             <select value={selectedPos} onChange={e => setSelectedPos(e.target.value as Position)}
               className="w-full mt-1 px-3 py-2 rounded-lg border border-input bg-background text-sm">
               <optgroup label="Legal">
-                {getLegalHierarchy.map(p => <option key={p} value={p}>{getPositionLabel(p)}</option>)}
+                {getLegalHierarchy().map(p => <option key={p} value={p}>{getPositionLabel(p)}</option>)}
               </optgroup>
               <optgroup label="Administrativo">
-                {getAdminHierarchy.map(p => <option key={p} value={p}>{getPositionLabel(p)}</option>)}
+                {getAdminHierarchy().map(p => <option key={p} value={p}>{getPositionLabel(p)}</option>)}
               </optgroup>
             </select>
           </div>

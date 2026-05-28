@@ -71,14 +71,14 @@ export default function UserManagement() {
   const filtered = visibleUsers
     .filter(u => u.name.toLowerCase().includes(search.toLowerCase()) || u.email.toLowerCase().includes(search.toLowerCase()));
 
-  const legalUsers = filtered.filter(u => getLegalHierarchy.includes(u.position)).sort((a, b) => {
-    const posA = getLegalHierarchy.indexOf(a.position);
-    const posB = getLegalHierarchy.indexOf(b.position);
+  const legalUsers = filtered.filter(u => getLegalHierarchy().includes(u.position)).sort((a, b) => {
+    const posA = getLegalHierarchy().indexOf(a.position);
+    const posB = getLegalHierarchy().indexOf(b.position);
     return posA !== posB ? posA - posB : a.name.localeCompare(b.name, 'es');
   });
-  const adminUsers = filtered.filter(u => getAdminHierarchy.includes(u.position)).sort((a, b) => {
-    const posA = getAdminHierarchy.indexOf(a.position);
-    const posB = getAdminHierarchy.indexOf(b.position);
+  const adminUsers = filtered.filter(u => getAdminHierarchy().includes(u.position)).sort((a, b) => {
+    const posA = getAdminHierarchy().indexOf(a.position);
+    const posB = getAdminHierarchy().indexOf(b.position);
     return posA !== posB ? posA - posB : a.name.localeCompare(b.name, 'es');
   });
 

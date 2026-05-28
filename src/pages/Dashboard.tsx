@@ -33,8 +33,8 @@ export default function Dashboard() {
       base = base.filter(u => myTeamIds.includes(u.id) || u.id === currentUser.id);
     }
     if (selectedLevel !== 'all' && isAdminOrSocio) {
-      if (selectedLevel === 'legal') base = base.filter(u => getLegalHierarchy.includes(u.position));
-      else if (selectedLevel === 'administrativo') base = base.filter(u => getAdminHierarchy.includes(u.position));
+      if (selectedLevel === 'legal') base = base.filter(u => getLegalHierarchy().includes(u.position));
+      else if (selectedLevel === 'administrativo') base = base.filter(u => getAdminHierarchy().includes(u.position));
       else base = base.filter(u => u.position === selectedLevel);
     }
     return base;
@@ -56,12 +56,12 @@ export default function Dashboard() {
 
   const toggleCard = (card: string) => setExpandedCard(expandedCard === card ? null : card);
 
-  const legalUsers = relevantUsers.filter(u => getLegalHierarchy.includes(u.position)).sort((a, b) => {
-    const pi = getLegalHierarchy.indexOf(a.position) - getLegalHierarchy.indexOf(b.position);
+  const legalUsers = relevantUsers.filter(u => getLegalHierarchy().includes(u.position)).sort((a, b) => {
+    const pi = getLegalHierarchy().indexOf(a.position) - getLegalHierarchy().indexOf(b.position);
     return pi !== 0 ? pi : a.name.localeCompare(b.name, 'es');
   });
-  const adminUsersGroup = relevantUsers.filter(u => getAdminHierarchy.includes(u.position)).sort((a, b) => {
-    const pi = getAdminHierarchy.indexOf(a.position) - getAdminHierarchy.indexOf(b.position);
+  const adminUsersGroup = relevantUsers.filter(u => getAdminHierarchy().includes(u.position)).sort((a, b) => {
+    const pi = getAdminHierarchy().indexOf(a.position) - getAdminHierarchy().indexOf(b.position);
     return pi !== 0 ? pi : a.name.localeCompare(b.name, 'es');
   });
 
@@ -187,7 +187,7 @@ export default function Dashboard() {
       {expandedCard === 'progress' && (
         <div className="smps-surface-card smps-fade-in">
           <p className="smps-section-title">Progreso por Posición</p>
-          {getPositionHierarchy.map(pos => {
+          {getPositionHierarchy().map(pos => {
             const posUsers = relevantUsers.filter(u => u.position === pos);
             if (posUsers.length === 0) return null;
             const selfDone = posUsers.filter(u => periodEvals.some(e => e.type === 'self' && e.evaluatorId === u.id)).length;
