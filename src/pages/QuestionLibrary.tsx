@@ -353,7 +353,7 @@ export default function QuestionLibrary() {
    * This guarantees the CSV percentages match exactly what users see on screen.
    */
   const exportCSV = () => {
-    const rows: string[] = ['Posición,Sección,Categoría,Peso (%),Texto'];
+    const rows: string[] = ['Posición,Sección,Categoría,Texto'];
     const allPositions = new Set<string>();
     allSeedItems.forEach(item => item.positions.forEach(p => allPositions.add(p)));
 
@@ -367,13 +367,13 @@ export default function QuestionLibrary() {
       evalQuestions.forEach(q => {
         const section = getSectionForQuestion(q, pos as Position);
         const text = `"${q.text.replace(/"/g, '""')}"`;
-        rows.push(`${posLabel},${SECTION_LABELS[section]},${q.category},${Math.round(q.weight)},${text}`);
+        rows.push(`${posLabel},${SECTION_LABELS[section]},${q.category},${text}`);
       });
     }
     libraryQuestions.forEach(q => {
       const text = `"${q.text.replace(/"/g, '""')}"`;
       const section = getSectionByCategory(q.category);
-      rows.push(`(biblioteca),${SECTION_LABELS[section]},${q.category},,${text}`);
+      rows.push(`(biblioteca),${SECTION_LABELS[section]},${q.category},${text}`);
     });
     const blob = new Blob(['\uFEFF' + rows.join('\n')], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
