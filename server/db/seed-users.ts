@@ -28,9 +28,9 @@ const USERS: SeedUser[] = [
   { name: 'Lic. Ana Lucía Torres', email: 'atorres@smps.com', position: 'asociado_mid', practiceArea: 'corporativo', isAdmin: false, isManagingPartner: false, isActive: true, password: '1234' },
   { name: 'Lic. Emilio Castañeda', email: 'ecastaneda@smps.com', position: 'asociado_jr', practiceArea: 'corporativo', isAdmin: false, isManagingPartner: false, isActive: true, password: '1234' },
   { name: 'Lic. Diego Ramírez', email: 'dramirez@smps.com', position: 'pasante_carrera', practiceArea: 'corporativo', isAdmin: false, isManagingPartner: false, isActive: true, password: '1234' },
-  { name: 'Lic. Mariana Vega', email: 'mvega@smps.com', position: 'pasante_carrera', practiceArea: 'fiscal_litigio', isAdmin: false, isManagingPartner: false, isActive: true, password: '1234' },
-  { name: 'Laura Hernández', email: 'lhernandez@smps.com', position: 'pasante', isAdmin: false, isManagingPartner: false, isActive: true, password: '1234' },
-  { name: 'Miguel Ángel López', email: 'malopez@smps.com', position: 'pasante', isAdmin: false, isManagingPartner: false, isActive: true, password: '1234' },
+  { name: 'Lic. Mariana Vega', email: 'mvega@smps.com', position: 'pasante_carrera', practiceArea: 'litigio_fiscal', isAdmin: false, isManagingPartner: false, isActive: true, password: '1234' },
+  { name: 'Laura Hernández', email: 'lhernandez@smps.com', position: 'pasante_corporativo', isAdmin: false, isManagingPartner: false, isActive: true, password: '1234' },
+  { name: 'Miguel Ángel López', email: 'malopez@smps.com', position: 'pasante_corporativo', isAdmin: false, isManagingPartner: false, isActive: true, password: '1234' },
   // === ADMINISTRATIVO ===
   { name: 'Ing. Rafael Domínguez', email: 'rdominguez@smps.com', position: 'director', isAdmin: false, isManagingPartner: false, isActive: true, password: '1234' },
   { name: 'Lic. Verónica Campos', email: 'vcampos@smps.com', position: 'gerente', isAdmin: false, isManagingPartner: false, isActive: true, password: '1234' },
@@ -38,7 +38,7 @@ const USERS: SeedUser[] = [
   { name: 'Fernando Ruiz', email: 'fruiz@smps.com', position: 'analista', isAdmin: false, isManagingPartner: false, isActive: true, password: '1234' },
   { name: 'Gabriela Ortiz', email: 'gortiz@smps.com', position: 'asistente', isAdmin: false, isManagingPartner: false, isActive: true, password: '1234' },
   { name: 'Alejandra Núñez', email: 'anunez@smps.com', position: 'asistente', isAdmin: false, isManagingPartner: false, isActive: false, password: '1234' },
-  { name: 'José Luis Paredes', email: 'jparedes@smps.com', position: 'archivista', isAdmin: false, isManagingPartner: false, isActive: true, password: '1234' },
+  { name: 'José Luis Paredes', email: 'jparedes@smps.com', position: 'archivo_soporte', isAdmin: false, isManagingPartner: false, isActive: true, password: '1234' },
 ];
 
 interface SeedAssignment {
