@@ -9,8 +9,10 @@ import { v4 as uuidv4 } from 'uuid';
  */
 export async function seedEvaluationData(): Promise<void> {
   const count = await db.getScalar<number>('SELECT COUNT(*) as cnt FROM evaluation_categories');
+  // Always run cleanup first
+  await cleanupOldCustomQuestions();
   if (count > 0) {
-    console.log('  Evaluation data already seeded, skipping.');
+    console.log('  Evaluation data already seeded, skipping insert.');
     return;
   }
   console.log('  Seeding evaluation data...');
@@ -524,21 +526,27 @@ if (import.meta.url === `file://${process.argv[1]}`) {
 }
 
 // Cleanup: Delete old custom_eval_questions and template_questions with empty section
+// Also delete seed_question_overrides (replaced by template_questions)
 export async function cleanupOldCustomQuestions(): Promise<void> {
-  console.log('  Cleaning up old custom_eval_questions...');
+  console.log('  Cleaning up old evaluation data...');
   try {
     await db.run('DELETE FROM custom_eval_questions');
     console.log('  ✓ Deleted all custom_eval_questions');
-  } catch (err) {
-    console.error('  Error cleaning custom_eval_questions:', err);
+  } catch (err: any) {
+    if (err?.code !== 'ER_NO_SUCH_TABLE') console.error('  Error cleaning custom_eval_questions:', err);
   }
   
-  console.log('  Cleaning up template_questions with empty section...');
   try {
     await db.run("DELETE FROM template_questions WHERE section IS NULL OR section = ''");
-    const deleted = await db.getScalar<number>('SELECT COUNT(*) as cnt FROM template_questions WHERE section IS NULL OR section = ""');
-    console.log(`  ✓ Cleaned template_questions with empty section`);
-  } catch (err) {
+    console.log('  ✓ Cleaned template_questions with empty section');
+  } catch (err: any) {
     console.error('  Error cleaning template_questions:', err);
+  }
+  
+  try {
+    await db.run('DELETE FROM seed_question_overrides');
+    console.log('  ✓ Deleted all seed_question_overrides');
+  } catch (err: any) {
+    if (err?.code !== 'ER_NO_SUCH_TABLE') console.error('  Error cleaning seed_question_overrides:', err);
   }
 }
