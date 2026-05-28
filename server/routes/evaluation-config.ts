@@ -276,7 +276,7 @@ router.post('/library', authMiddleware, requireAdmin, async (req: Request, res: 
     if (!category || !text) {
       return res.status(400).json({ error: 'category and text are required' });
     }
-    const { v4: uuidv4 } = await import('uuid');
+    // uuidv4 already imported at top
     const id = uuidv4();
     // Generate a short question_id from category + timestamp
     const questionId = `lib-${category.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}`;
@@ -322,16 +322,13 @@ router.delete('/library/:id', authMiddleware, requireAdmin, async (req: Request,
   }
 });
 
-export default router;
-
 // ─── POST /api/evaluation-config/reseed ────────────────────────────────────
 // Force re-seed evaluation data (admin only)
 router.post('/reseed', authMiddleware, requireAdmin, async (_req: Request, res: Response) => {
   try {
-    const { seedEvaluationData } = await import('../db/seed-evaluation-data.js');
     // Delete all seed data first to force re-seed
     await db.run("DELETE FROM template_questions WHERE source = 'seed'");
-    await db.run("DELETE FROM section_weights");
+    await db.run('DELETE FROM section_weights');
     await db.run("DELETE FROM question_library WHERE created_by IS NULL");
     await db.run("DELETE FROM evaluation_categories WHERE id = 'Comunicación'");
     console.log('Force reseed: deleted all seed data');
@@ -343,3 +340,5 @@ router.post('/reseed', authMiddleware, requireAdmin, async (_req: Request, res: 
     return res.status(500).json({ error: 'Reseed failed: ' + (err instanceof Error ? err.message : String(err)) });
   }
 });
+
+export default router;

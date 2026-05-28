@@ -857,4 +857,13 @@ export async function migrate(): Promise<void> {
   }
 
 
+
+  // ─── Migration: Add Comunicación category ────────────────────────────────
+  try {
+    await run(`INSERT IGNORE INTO evaluation_categories (id, label, section, is_technical_subcategory, sort_order) VALUES ('Comunicación', 'Comunicación', 'blandas', 0, 24)`);
+    console.log('  ✓ Added Comunicación category');
+  } catch (e) {
+    console.log('  ⚠ Could not add Comunicación category:', (e as Error).message);
+  }
+
 }
