@@ -1,10 +1,12 @@
 import { useState, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useUsers, useEvaluations, useAssignments, useCreateEvaluation, useUpdateEvaluation, useCompleteFeedback, useApproveNA, useActionPlans, useCreateActionPlan, useCustomQuestions, useExportEvaluationsCSV } from '@/api/queries';
-import { QUESTIONS_BY_POSITION, getQuestionsForUser, calculateScore, getSectionForQuestion, SECTION_LABELS, SECTION_ORDER } from '@/data/questions';
-import { getSectionWeights } from '@/data/sectionWeights';
+import { useUsers, useEvaluations, useAssignments, useCreateEvaluation, useUpdateEvaluation, useCompleteFeedback, useApproveNA, useActionPlans, useCreateActionPlan, useExportEvaluationsCSV } from '@/api/queries';
+import { calculateScore, getSectionForQuestion, SECTION_LABELS, SECTION_ORDER } from '@/lib/evaluationConfig';
 
-import { User, EvalQuestion, CURRENT_PERIOD, SCORE_LABELS, POSITION_LABELS, PERIODS, ActionPlan, LEGAL_HIERARCHY, ADMIN_HIERARCHY } from '@/types';
+
+import { User, EvalQuestion, ActionPlan } from '@/types';
+import { CURRENT_PERIOD, SECTION_LABELS, SECTION_ORDER, getSectionForQuestion, calculateScore, getSectionWeights, getPositionLabel, getScoreLabels, getLegalHierarchy, getAdminHierarchy, PERIODS } from '@/lib/evaluationConfig';
+import { useFullTemplate, usePositionConfig, useTemplateQuestions } from '@/hooks/useEvaluationConfig';
 import { Download } from 'lucide-react';
 import { toast } from 'sonner';
 import { CheckCircle, AlertCircle, Eye, ArrowLeft, Ban, ShieldCheck, ShieldX, FileText, MessageSquare, MinusCircle } from 'lucide-react';
@@ -40,17 +42,15 @@ export default function Evaluations() {
   const approveNA = useApproveNA().mutate;
   const { data: actionPlans = [] } = useActionPlans();
   const addOrUpdateActionPlan = useCreateActionPlan().mutate;
-  const { data: customQuestionsRaw = [] } = useCustomQuestions();
-  // Group raw custom questions by position (API returns flat array)
+  const { data: allTemplateQuestions = [] } = useTemplateQuestions();
   const customQuestions = useMemo(() => {
-    if (!Array.isArray(customQuestionsRaw)) return customQuestionsRaw as unknown as Record<string, EvalQuestion[]>;
     const grouped: Record<string, EvalQuestion[]> = {};
-    for (const q of customQuestionsRaw) {
-      const pos = q.position || q.practiceArea;
-      if (pos) { if (!grouped[pos]) grouped[pos] = []; grouped[pos].push(q); }
+    for (const q of allTemplateQuestions) {
+      const pos = q.position;
+      if (pos) { if (!grouped[pos]) grouped[pos] = []; grouped[pos].push({ id: q.questionId || q.id, category: q.category, text: q.questionText || q.text, weight: q.weight, section: q.section, practiceArea: q.practiceArea }); }
     }
     return grouped;
-  }, [customQuestionsRaw]);
+  }, [allTemplateQuestions]);
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [selectedEmployee, setSelectedEmployee] = useState<string | null>(searchParams.get('evaluate'));
@@ -156,14 +156,31 @@ export default function Evaluations() {
         </div>
       );
     }
-    const questions = getQuestionsForUser(emp, customQuestions);
+    const empPos = emp.position;
+    const empQuestions = customQuestions[empPos] || [];
+    const sectionWeightsMap = getSectionWeights(empPos);
+    const questions = (() => {
+      const tecnicas = empQuestions.filter(q => q.section === 'tecnico');
+      const competencias = empQuestions.filter(q => q.section === 'competencias');
+      const blandas = empQuestions.filter(q => q.section === 'blandas');
+      const rescale = (qs: EvalQuestion[], target: number) => {
+        if (qs.length === 0 || target <= 0) return [];
+        const sum = qs.reduce((s, q) => s + (q.weight || 1), 0) || qs.length;
+        return qs.map(q => ({ ...q, weight: Math.round(((q.weight || 1) / sum) * target * 100) / 100 }));
+      };
+      return [
+        ...rescale(tecnicas, sectionWeightsMap.tecnico),
+        ...rescale(competencias, sectionWeightsMap.competencias),
+        ...rescale(blandas, sectionWeightsMap.blandas),
+      ];
+    })();
 
     const totalResponded = Object.keys(responses).length + Object.keys(naQuestions).length + Object.keys(noElementsQuestions).length;
     const allAnswered = totalResponded === questions.length;
     const wordCount = comments.trim().split(/\s+/).filter(Boolean).length;
     const commentsValid = comments.trim().length > 0;
     const canSubmit = allAnswered && commentsValid && wordCount <= 300;
-    const sectioned = questions.map(q => ({ q, section: getSectionForQuestion(q, emp.position) }));
+    const sectioned = questions.map(q => ({ q, section: getSectionForQuestion(q.category, emp.position) }));
     const sectionsPresent = SECTION_ORDER.filter(s => sectioned.some(x => x.section === s));
 
     const clearQuestion = (questionId: string) => {
@@ -220,7 +237,7 @@ export default function Evaluations() {
           <ArrowLeft className="h-4 w-4" /> Volver a la lista
         </button>
         <div className="mb-6">
-          <h1 className="font-display text-2xl font-bold">Evaluación de {emp.name} <span className="text-lg font-normal text-muted-foreground">— {POSITION_LABELS[emp.position]}</span></h1>
+          <h1 className="font-display text-2xl font-bold">Evaluación de {emp.name} <span className="text-lg font-normal text-muted-foreground">— {getPositionLabel(emp.position)}</span></h1>
           <p className="text-muted-foreground text-sm mt-1">Periodo {CURRENT_PERIOD}</p>
         </div>
 
@@ -270,7 +287,7 @@ export default function Evaluations() {
                                 {[1, 2, 3, 4, 5].map(score => (
                                   <button key={score} onClick={() => { clearQuestion(q.id); setResponses(prev => ({ ...prev, [q.id]: score })); }}
                                     className={`flex-1 min-w-[70px] py-2 px-2 rounded-lg text-xs font-medium border transition-all ${!isNA && !isNE && responses[q.id] === score ? 'bg-accent text-accent-foreground border-accent' : 'bg-muted/50 text-muted-foreground border-transparent hover:border-border'}`}>
-                                    {SCORE_LABELS[score]}
+                                    {getScoreLabels()[score]}
                                   </button>
                                 ))}
                               </div>
@@ -348,12 +365,12 @@ export default function Evaluations() {
   }
 
   const groupUsers = (userList: User[]) => {
-    const legal = userList.filter(u => LEGAL_HIERARCHY.includes(u.position)).sort((a, b) => {
-      const pi = LEGAL_HIERARCHY.indexOf(a.position) - LEGAL_HIERARCHY.indexOf(b.position);
+    const legal = userList.filter(u => getLegalHierarchy().includes(u.position)).sort((a, b) => {
+      const pi = getLegalHierarchy().indexOf(a.position) - getLegalHierarchy().indexOf(b.position);
       return pi !== 0 ? pi : a.name.localeCompare(b.name, 'es');
     });
-    const admin = userList.filter(u => ADMIN_HIERARCHY.includes(u.position)).sort((a, b) => {
-      const pi = ADMIN_HIERARCHY.indexOf(a.position) - ADMIN_HIERARCHY.indexOf(b.position);
+    const admin = userList.filter(u => getAdminHierarchy().includes(u.position)).sort((a, b) => {
+      const pi = getAdminHierarchy().indexOf(a.position) - getAdminHierarchy().indexOf(b.position);
       return pi !== 0 ? pi : a.name.localeCompare(b.name, 'es');
     });
     return { legal, admin };
@@ -376,7 +393,7 @@ export default function Evaluations() {
               <div key={emp.id} className="flex items-center justify-between py-3 px-4 rounded-lg bg-card border">
                 <div>
                   <p className="text-sm font-medium">{emp.name}</p>
-                  <p className="text-xs text-muted-foreground">{POSITION_LABELS[emp.position]}</p>
+                  <p className="text-xs text-muted-foreground">{getPositionLabel(emp.position)}</p>
                 </div>
                 <button onClick={() => setSelectedEmployee(emp.id)}
                   className="px-4 py-2 rounded-lg bg-accent text-accent-foreground text-xs font-medium hover:opacity-90 transition-opacity">
@@ -398,7 +415,7 @@ export default function Evaluations() {
                 <div key={emp.id} className="flex items-center justify-between py-3 px-4 rounded-lg bg-card border">
                   <div>
                     <p className="text-sm font-medium">{emp.name}</p>
-                    <p className="text-xs text-muted-foreground">{POSITION_LABELS[emp.position]}</p>
+                    <p className="text-xs text-muted-foreground">{getPositionLabel(emp.position)}</p>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-semibold">{Math.round(ev.totalScore)}%</span>
@@ -441,11 +458,28 @@ export default function Evaluations() {
             <div className="space-y-3">
               {evalsWithPendingNA.map(ev => {
                 const evaluated = users.find(u => u.id === ev.evaluatedId);
-                const questions = evaluated ? getQuestionsForUser(evaluated, customQuestions) : [];
+                const evalPos = evaluated?.position || '';
+                const evalQuestions = customQuestions[evalPos] || [];
+                const sectionWeightsMap2 = getSectionWeights(evalPos);
+                const questions = (() => {
+                  const tecnicas = evalQuestions.filter(q => q.section === 'tecnico');
+                  const competencias = evalQuestions.filter(q => q.section === 'competencias');
+                  const blandas = evalQuestions.filter(q => q.section === 'blandas');
+                  const rescale = (qs: EvalQuestion[], target: number) => {
+                    if (qs.length === 0 || target <= 0) return [];
+                    const sum = qs.reduce((s, q) => s + (q.weight || 1), 0) || qs.length;
+                    return qs.map(q => ({ ...q, weight: Math.round(((q.weight || 1) / sum) * target * 100) / 100 }));
+                  };
+                  return [
+                    ...rescale(tecnicas, sectionWeightsMap2.tecnico),
+                    ...rescale(competencias, sectionWeightsMap2.competencias),
+                    ...rescale(blandas, sectionWeightsMap2.blandas),
+                  ];
+                })();
                 const pendingNAResponses = (ev.responses || []).filter(r => r.notApplicable && !normalizeNA(ev.naApprovals)[r.questionId]);
                 return (
                   <div key={ev.id} className="smps-surface-card">
-                    <p className="text-sm font-medium mb-1">{evaluated?.name} <span className="text-xs text-muted-foreground">({evaluated ? POSITION_LABELS[evaluated.position] : ''})</span></p>
+                    <p className="text-sm font-medium mb-1">{evaluated?.name} <span className="text-xs text-muted-foreground">({evaluated ? getPositionLabel(evaluated.position) : ''})</span></p>
                     <p className="text-xs text-muted-foreground mb-3">Autoevaluación</p>
                     {pendingNAResponses.map(r => {
                       const q = questions.find(q => q.id === r.questionId);
@@ -510,7 +544,7 @@ export default function Evaluations() {
                   const evActionPlans = actionPlans.filter(p => p.employeeId === ev.evaluatedId && p.period === ev.period);
                   return (
                     <tr key={ev.id} className="border-b last:border-0 hover:bg-muted/30">
-                      <td className="py-3 px-4">{evaluated?.name} <span className="text-xs text-muted-foreground">({evaluated ? POSITION_LABELS[evaluated.position] : ''})</span></td>
+                      <td className="py-3 px-4">{evaluated?.name} <span className="text-xs text-muted-foreground">({evaluated ? getPositionLabel(evaluated.position) : ''})</span></td>
                       <td className="py-3 px-4 text-muted-foreground">{ev.type === 'self' ? 'Auto' : 'Evaluador'}</td>
                       <td className="py-3 px-4 text-muted-foreground">{evaluator?.name}</td>
                       <td className="py-3 px-4 text-center font-semibold">{Math.round(ev.totalScore)}%</td>

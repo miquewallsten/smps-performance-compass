@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUsers, useEvaluations, useAssignments, useObjectives } from '@/api/queries';
-import { CURRENT_PERIOD, PERIODS, POSITION_LABELS, POSITION_LEVELS, LEVEL_LABELS } from '@/types';
+import { CURRENT_PERIOD, PERIODS, getPositionLabel, getPositionLevel, LEVEL_LABELS } from '@/lib/evaluationConfig';
 import { User as UserIcon, Target, TrendingUp, Sparkles, Clock } from 'lucide-react';
 
 function TrafficLight({ value }: { value: number }) {
@@ -27,7 +27,7 @@ export default function MyProfile() {
   const [period, setPeriod] = useState(CURRENT_PERIOD);
 
   if (!currentUser) return null;
-  const level = POSITION_LEVELS[currentUser.position];
+  const level = getPositionLevel(currentUser.position);
   const obj = personalObjectives.find(o => o.userId === currentUser.id && o.period === period);
   const selfEval = evaluations.find(e => e.evaluatorId === currentUser.id && e.type === 'self' && e.period === period);
   const recvEvals = evaluations.filter(e => e.evaluatedId === currentUser.id && e.type === 'supervisor' && e.period === period);
@@ -71,7 +71,7 @@ export default function MyProfile() {
             <Clock className="h-3.5 w-3.5" /> Mi Historial
           </button>
           <p className="text-muted-foreground text-sm mt-1">
-            {currentUser.name} · {POSITION_LABELS[currentUser.position]} · {LEVEL_LABELS[level]}
+            {currentUser.name} · {getPositionLabel(currentUser.position)} · {LEVEL_LABELS[level]}
           </p>
         </div>
         <select value={period} onChange={e => setPeriod(e.target.value)}
@@ -92,7 +92,7 @@ export default function MyProfile() {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
           <div><span className="text-muted-foreground">Nombre:</span> <span className="font-medium">{currentUser.name}</span></div>
           <div><span className="text-muted-foreground">Email:</span> <span className="font-medium">{currentUser.email}</span></div>
-          <div><span className="text-muted-foreground">Posición:</span> <span className="font-medium">{POSITION_LABELS[currentUser.position]}</span></div>
+          <div><span className="text-muted-foreground">Posición:</span> <span className="font-medium">{getPositionLabel(currentUser.position)}</span></div>
           <div><span className="text-muted-foreground">Área:</span> <span className="font-medium">{currentUser.practiceArea ? currentUser.practiceArea.charAt(0).toUpperCase() + currentUser.practiceArea.slice(1).replace(/_/g, ' ') : LEVEL_LABELS[level]}</span></div>
         </div>
       </div>
@@ -152,7 +152,7 @@ export default function MyProfile() {
                 {teamSummary.map(t => (
                   <tr key={t.id} className="border-b last:border-0">
                     <td className="py-2 font-medium">{t.user!.name}</td>
-                    <td className="py-2 text-muted-foreground">{POSITION_LABELS[t.user!.position]}</td>
+                    <td className="py-2 text-muted-foreground">{getPositionLabel(t.user!.position)}</td>
                     <td className="py-2 text-right">{t.selfScore !== null ? `${t.selfScore}%` : '—'}</td>
                     <td className="py-2 text-right">{t.supScore !== null ? `${t.supScore}%` : '—'}</td>
                   </tr>

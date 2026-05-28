@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { MessageSquare, Plus, Eye, Users, Megaphone, CheckCircle2, Clock, Archive } from 'lucide-react';
-import { POSITION_LABELS, POSITION_LEVELS } from '@/types';
+import { getPositionLabel, getPositionLevel } from '@/lib/evaluationConfig';
 
 export default function Communications() {
   const { user: currentUser } = useAuth();
@@ -35,7 +35,7 @@ export default function Communications() {
   const canPublish = isAdmin || isSocio || isManagingPartner;
   const isSuperUser = !!currentUser.isSuperUser;
 
-  const myLevel = POSITION_LEVELS[currentUser.position];
+  const myLevel = getPositionLevel(currentUser.position);
 
   // Filter announcements based on audience visibility
   const visibleAnnouncements = announcements.filter(a => {
@@ -86,7 +86,7 @@ export default function Communications() {
     });
     const targetUsers = ann.audience === 'all'
       ? activeUsers
-      : activeUsers.filter(u => POSITION_LEVELS[u.position] === ann.audience);
+      : activeUsers.filter(u => getPositionLevel(u.position) === ann.audience);
     return { read: readByVisible.length, total: targetUsers.length };
   };
 
@@ -138,7 +138,7 @@ export default function Communications() {
               <CardTitle className="text-base">{ann.title}</CardTitle>
               <p className="text-xs text-muted-foreground mt-1">
                 Por: <span className="font-medium">{author?.name || 'Sistema'}</span>
-                {author && !author.isSuperUser && <span> · {POSITION_LABELS[author.position]}</span>}
+                {author && !author.isSuperUser && <span> · {getPositionLabel(author.position)}</span>}
                 <span> · {new Date(ann.createdAt).toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
               </p>
             </div>
@@ -164,7 +164,7 @@ export default function Communications() {
                             <div key={u.id} className="flex items-center gap-2 py-1.5 px-2 rounded bg-muted/50">
                               <CheckCircle2 className="h-3.5 w-3.5 text-green-500 flex-shrink-0" />
                               <span className="text-sm">{u.name}</span>
-                              <span className="text-xs text-muted-foreground ml-auto">{POSITION_LABELS[u.position]}</span>
+                              <span className="text-xs text-muted-foreground ml-auto">{getPositionLabel(u.position)}</span>
                             </div>
                           ))
                         )}

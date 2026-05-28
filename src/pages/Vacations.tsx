@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Palmtree, Calendar, Plus, Check, X, Clock, AlertCircle, Plane, Search, Download, Gift } from 'lucide-react';
-import { POSITION_LABELS, POSITION_LEVELS, CURRENT_PERIOD } from '@/types';
+import { CURRENT_PERIOD, getPositionLabel, getPositionLevel } from '@/lib/evaluationConfig';
 import type { Position, ExtraVacationDays as ExtraDaysType } from '@/types';
 
 export default function Vacations() {
@@ -196,7 +196,7 @@ export default function Vacations() {
   const downloadCSV = () => {
     const headers = ['Nombre', 'Posición', 'Días Periodo', 'Días Extra', 'Días Anteriores', 'Total Disponible', 'Ejercidos', 'Remanente'];
     const rows = employeeVacationList.map(u => [
-      u.name, POSITION_LABELS[u.position], u.allowed, u.extra, u.previousYears, u.total, u.used, u.available,
+      u.name, getPositionLabel(u.position), u.allowed, u.extra, u.previousYears, u.total, u.used, u.available,
     ]);
     const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
@@ -235,7 +235,7 @@ export default function Vacations() {
                         <SelectTrigger><SelectValue placeholder="Seleccionar empleado" /></SelectTrigger>
                         <SelectContent>
                           {activeUsers.map(u => (
-                            <SelectItem key={u.id} value={u.id}>{u.name} — {POSITION_LABELS[u.position]}</SelectItem>
+                            <SelectItem key={u.id} value={u.id}>{u.name} — {getPositionLabel(u.position)}</SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
@@ -270,11 +270,11 @@ export default function Vacations() {
                           {level === 'legal' ? 'Legal' : 'Administrativo'}
                         </h3>
                         <div className="space-y-2">
-                          {positionsToConfig.filter(p => POSITION_LEVELS[p] === level).map(pos => {
+                          {positionsToConfig.filter(p => getPositionLevel(p) === level).map(pos => {
                             const minDays = isPasante(pos) ? 0 : 12;
                             return (
                               <div key={pos} className="flex items-center justify-between gap-3">
-                                <span className="text-sm text-foreground">{POSITION_LABELS[pos]}{!isPasante(pos) && <span className="text-[10px] text-muted-foreground ml-1">(mín. 12)</span>}</span>
+                                <span className="text-sm text-foreground">{getPositionLabel(pos)}{!isPasante(pos) && <span className="text-[10px] text-muted-foreground ml-1">(mín. 12)</span>}</span>
                                 <Input type="number" min={minDays} max={365} className="w-20 text-center"
                                   value={vacationConfig[pos] || 0}
                                   onChange={e => updateVacationConfig([{ position: pos, days: Math.max(minDays, parseInt(e.target.value) || 0) }])} />
@@ -514,7 +514,7 @@ export default function Vacations() {
                     <div className="flex items-center justify-between">
                       <div>
                         <CardTitle className="text-sm">{user?.name}</CardTitle>
-                        <CardDescription>{user ? POSITION_LABELS[user.position] : ''}</CardDescription>
+                        <CardDescription>{user ? getPositionLabel(user.position) : ''}</CardDescription>
                       </div>
                       <Badge variant="outline" className={statusColors.pending}>{statusLabels.pending}</Badge>
                     </div>
@@ -567,7 +567,7 @@ export default function Vacations() {
                     return (
                       <TableRow key={r.id}>
                         <TableCell className="text-sm font-medium">{user?.name}</TableCell>
-                        <TableCell className="text-sm text-muted-foreground">{user ? POSITION_LABELS[user.position] : ''}</TableCell>
+                        <TableCell className="text-sm text-muted-foreground">{user ? getPositionLabel(user.position) : ''}</TableCell>
                         <TableCell className="text-sm">{new Date(r.startDate).toLocaleDateString('es-MX')}</TableCell>
                         <TableCell className="text-sm">{new Date(r.endDate).toLocaleDateString('es-MX')}</TableCell>
                         <TableCell className="text-sm font-medium">{r.days}</TableCell>
@@ -631,7 +631,7 @@ export default function Vacations() {
                   {employeeVacationList.map(u => (
                     <TableRow key={u.id}>
                       <TableCell className="text-sm font-medium">{u.name}</TableCell>
-                      <TableCell className="text-sm text-muted-foreground">{POSITION_LABELS[u.position]}</TableCell>
+                      <TableCell className="text-sm text-muted-foreground">{getPositionLabel(u.position)}</TableCell>
                       <TableCell className="text-center text-sm">{u.allowed}</TableCell>
                       <TableCell className="text-center text-sm">{u.extra}</TableCell>
                       <TableCell className="text-center text-sm">{u.previousYears}</TableCell>

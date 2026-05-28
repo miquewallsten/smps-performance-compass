@@ -2,9 +2,9 @@ import { useState, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUsers, useObjectives, useCreateObjectives, useAssignments, useSubmitObjectives, useReviewObjective } from '@/api/queries';
 import {
-  POSITION_LABELS, POSITION_LEVELS, CURRENT_PERIOD, PERIODS,
   AdminObjective, LegalObjective, PersonalObjectives as POType, User,
 } from '@/types';
+import { CURRENT_PERIOD, PERIODS, getPositionLabel, getPositionLevel } from '@/lib/evaluationConfig';
 import { Target, ChevronDown, ChevronRight, Save, Plus, Trash2, Upload, Download } from 'lucide-react';
 
 // Dynamic import for xlsx to avoid "require is not defined" in browser
@@ -75,8 +75,8 @@ export default function PersonalObjectivesPage() {
 
 
   const activeUsers = users.filter(u => u.isActive && !u.isSuperUser && !u.isDummy && u.position !== 'dummy' && (isAdminOrSocio || u.id === currentUser.id));
-  const adminUsers = activeUsers.filter(u => POSITION_LEVELS[u.position] === 'administrativo').sort((a, b) => a.name.localeCompare(b.name, 'es'));
-  const legalUsers = activeUsers.filter(u => POSITION_LEVELS[u.position] === 'legal').sort((a, b) => a.name.localeCompare(b.name, 'es'));
+  const adminUsers = activeUsers.filter(u => getPositionLevel(u.position) === 'administrativo').sort((a, b) => a.name.localeCompare(b.name, 'es'));
+  const legalUsers = activeUsers.filter(u => getPositionLevel(u.position) === 'legal').sort((a, b) => a.name.localeCompare(b.name, 'es'));
 
   const getObjectives = (userId: string): POType | undefined => {
     return personalObjectives.find(o => o.userId === userId && o.period === period);
@@ -84,7 +84,7 @@ export default function PersonalObjectivesPage() {
 
   const startEditing = (user: User) => {
     const existing = getObjectives(user.id);
-    const level = POSITION_LEVELS[user.position];
+    const level = getPositionLevel(user.position);
     if (level === 'administrativo') {
       setEditAdminObjs(existing?.adminObjectives?.length ? [...existing.adminObjectives] : [emptyAdminObj()]);
     } else {
@@ -164,7 +164,7 @@ export default function PersonalObjectivesPage() {
           const type = String(row.type || '').toLowerCase().trim();
           const user = userByEmail.get(email);
           if (!user || (type !== 'admin' && type !== 'legal')) { skipped++; continue; }
-          const level: string = POSITION_LEVELS[user.position];
+          const level: string = getPositionLevel(user.position);
           if (level !== type) { skipped++; continue; }
 
           if (type === 'admin') {
@@ -228,7 +228,7 @@ export default function PersonalObjectivesPage() {
             <Target className="h-5 w-5 text-accent flex-shrink-0" />
             <div className="text-left">
               <p className="text-sm font-semibold">{user.name}</p>
-              <p className="text-xs text-muted-foreground">{POSITION_LABELS[user.position]} · {objs.length} objetivo(s)</p>
+              <p className="text-xs text-muted-foreground">{getPositionLabel(user.position)} · {objs.length} objetivo(s)</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -381,7 +381,7 @@ export default function PersonalObjectivesPage() {
             <Target className="h-5 w-5 text-accent flex-shrink-0" />
             <div className="text-left">
               <p className="text-sm font-semibold">{user.name}</p>
-              <p className="text-xs text-muted-foreground">{POSITION_LABELS[user.position]}</p>
+              <p className="text-xs text-muted-foreground">{getPositionLabel(user.position)}</p>
             </div>
           </div>
           <div className="flex items-center gap-2">

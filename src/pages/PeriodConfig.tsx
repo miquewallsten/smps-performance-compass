@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePeriods, useCreatePeriod } from '@/api/queries';
-import { PERIODS, PeriodConfig } from '@/types';
+import { PeriodConfig } from '@/types';
+import { PERIODS } from '@/lib/evaluationConfig';
 import { Calendar, Save } from 'lucide-react';
 import { toast } from 'sonner';
 

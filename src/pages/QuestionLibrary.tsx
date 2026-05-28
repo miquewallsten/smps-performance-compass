@@ -1,8 +1,9 @@
 import { useState, useMemo, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useCustomQuestions, useLibraryQuestions, useCreateLibraryQuestion, useUpdateLibraryQuestion, useDeleteLibraryQuestion, useSeedOverrides, useUpdateSeedOverride } from '@/api/queries';
-import { QUESTIONS_BY_POSITION, getSectionByCategory, getSectionForQuestion, SECTION_LABELS, SECTION_ORDER, getQuestionsForUser } from '@/data/questions';
-import { POSITION_LABELS, QuestionCategory, EvalQuestion, LibraryQuestion, EvalSection, POSITION_LEVELS, Position, LEGAL_HIERARCHY, ADMIN_HIERARCHY } from '@/types';
+import { useTemplateQuestions, useLibraryQuestionsConfig, useCreateLibraryQuestionConfig, useUpdateLibraryQuestionConfig, useDeleteLibraryQuestionConfig } from '@/hooks/useEvaluationConfig';
+import { SECTION_LABELS, SECTION_ORDER, getSectionByCategory, getSectionForQuestion } from '@/lib/evaluationConfig';
+import { QuestionCategory, EvalQuestion, LibraryQuestion, EvalSection, Position } from '@/types';
+import { getPositionLabel, getLegalHierarchy, getAdminHierarchy, getPositionLevel } from '@/lib/evaluationConfig';
 import { BookOpen, Search, Plus, Pencil, Trash2, Save, X, Download, SlidersHorizontal, Layers, ChevronDown, ChevronRight, XCircle, LayoutList, LayoutGrid, Hash, Info } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -53,24 +54,21 @@ type DisplayItem = {
 
 export default function QuestionLibrary() {
   const { user: currentUser } = useAuth();
-  const { data: customQuestionsRaw = [] } = useCustomQuestions();
-  // Group raw custom questions by position, same as EvaluationTemplates does
+  const { data: templateQuestionsRaw = [] } = useTemplateQuestions();
   const customQuestions = useMemo(() => {
-    if (!Array.isArray(customQuestionsRaw)) return customQuestionsRaw as unknown as Record<string, EvalQuestion[]>;
+    if (!Array.isArray(templateQuestionsRaw)) return {} as Record<string, EvalQuestion[]>;
     const grouped: Record<string, EvalQuestion[]> = {};
-    for (const q of customQuestionsRaw) {
-      const pos = q.position || q.practiceArea;
-      if (pos) { if (!grouped[pos]) grouped[pos] = []; grouped[pos].push(q); }
+    for (const q of templateQuestionsRaw) {
+      const pos = q.position;
+      if (pos) { if (!grouped[pos]) grouped[pos] = []; grouped[pos].push({ id: q.questionId || q.id, category: q.category, text: q.questionText || q.text, weight: q.weight, section: q.section, practiceArea: q.practiceArea }); }
     }
     return grouped;
-  }, [customQuestionsRaw]);
-  const { data: libraryQuestions = [] } = useLibraryQuestions();
-  const addLibraryQuestion = useCreateLibraryQuestion().mutate;
-  const updateLibraryQuestion = useUpdateLibraryQuestion().mutate;
-  const deleteLibraryQuestion = useDeleteLibraryQuestion().mutate;
-  const { data: seedOverrides = [] } = useSeedOverrides();
-  const updateSeedQuestion = useUpdateSeedOverride().mutate;
-  const hideSeedQuestion = (id: string) => updateSeedQuestion({ id, hidden: true });
+  }, [templateQuestionsRaw]);
+  const { data: libraryQuestionsRaw = [] } = useLibraryQuestionsConfig();
+  const libraryQuestions = useMemo(() => libraryQuestionsRaw.map(q => ({ ...q, id: q.id, questionId: q.questionId || q.question_id, category: q.category, text: q.text, createdAt: q.createdAt || q.created_at, createdBy: q.createdBy || q.created_by })), [libraryQuestionsRaw]);
+  const addLibraryQuestion = useCreateLibraryQuestionConfig().mutate;
+  const updateLibraryQuestion = useUpdateLibraryQuestionConfig().mutate;
+  const deleteLibraryQuestion = useDeleteLibraryQuestionConfig().mutate;
 
   const [search, setSearch] = useState('');
   const [groupMode, setGroupMode] = useState<GroupMode>('position');
@@ -89,19 +87,15 @@ export default function QuestionLibrary() {
   const canEdit = !!(currentUser?.isAdmin || currentUser?.isSuperUser);
   const isSuperUser = !!currentUser?.isSuperUser;
 
-  // Build seed questions with overrides
+  // Build seed questions from DB template questions
   const seedByCategory = useMemo(() => {
     const seen = new Map<string, SeedItem>();
     const map: Record<string, SeedItem[]> = {};
-    Object.entries(QUESTIONS_BY_POSITION).forEach(([pos, questions]) => {
+    Object.entries(customQuestions).forEach(([pos, questions]) => {
       if (pos === 'dummy' && !isSuperUser) return;
-      const effective = customQuestions[pos] || questions;
-      effective.forEach(q => {
-        const ov = seedOverrides[q.id];
-        if (ov?.hidden) return;
-        const text = (ov?.text ?? q.text).trim();
-        const category = (ov?.category as QuestionCategory) ?? q.category;
-        const weight = ov?.weight ?? q.weight;
+      questions.forEach((q: EvalQuestion) => {
+        const text = q.text.trim();
+        const category = q.category;
         const key = `${category}::${text.toLowerCase()}`;
         const section = getSectionByCategory(category);
         if (seen.has(key)) {
@@ -109,14 +103,14 @@ export default function QuestionLibrary() {
           if (!found.positions.includes(pos)) found.positions.push(pos);
           return;
         }
-        const item: SeedItem = { ...q, text, category, weight, positions: [pos], isSeed: true, section };
+        const item: SeedItem = { ...q, text, category, positions: [pos], isSeed: true, section };
         seen.set(key, item);
         if (!map[category]) map[category] = [];
         map[category].push(item);
       });
     });
     return map;
-  }, [customQuestions, isSuperUser, seedOverrides]);
+  }, [customQuestions, isSuperUser]);
 
   if (!canEdit) {
     return <p className="text-center py-12 text-muted-foreground">Acceso restringido al administrador.</p>;
@@ -143,12 +137,9 @@ export default function QuestionLibrary() {
       const allPositions = new Set<string>();
       allSeedItems.forEach(item => item.positions.forEach(p => allPositions.add(p)));
       for (const pos of allPositions) {
-        const evalQuestions = getQuestionsForUser(
-          { position: pos as Position, practiceArea: POSITION_LEVELS[pos as Position] === 'legal' ? 'corporativo' : undefined },
-          customQuestions
-        );
+        const evalQuestions = customQuestions[pos as Position] || [];
         evalQuestions.forEach(q => {
-          const section = getSectionForQuestion(q, pos as Position);
+          const section = getSectionForQuestion(q.category, pos as Position);
           items.push({
             id: `${pos}::${q.id}`,
             text: q.text,
@@ -310,7 +301,7 @@ export default function QuestionLibrary() {
 
   const getGroupLabel = (key: string): string => {
     if (groupMode === 'section') return SECTION_LABELS[key as EvalSection] || key;
-    if (groupMode === 'position') return POSITION_LABELS[key as Position] || key;
+    if (groupMode === 'position') return getPositionLabel(key as Position) || key;
     return key;
   };
 
@@ -333,11 +324,9 @@ export default function QuestionLibrary() {
       const posLabel = POSITION_LABELS[pos as Position] || pos;
       // Use getQuestionsForUser() — the exact same function the evaluation UI uses.
       const evalQuestions = getQuestionsForUser(
-        { position: pos as Position, practiceArea: POSITION_LEVELS[pos as Position] === 'legal' ? 'corporativo' : undefined },
-        customQuestions
       );
       evalQuestions.forEach(q => {
-        const section = getSectionForQuestion(q, pos as Position);
+        const section = getSectionForQuestion(q.category, pos as Position);
         const text = `"${q.text.replace(/"/g, '""')}"`;
         rows.push(`${posLabel},${SECTION_LABELS[section]},${q.category},${text}`);
       });
@@ -487,15 +476,15 @@ export default function QuestionLibrary() {
             <select value={filters.find(f => f.type === 'position')?.value || ''} onChange={e => {
               const existing = filters.find(f => f.type === 'position');
               if (existing) removeFilter('position', existing.value);
-              if (e.target.value) addFilter('position', e.target.value, POSITION_LABELS[e.target.value as Position] || e.target.value);
+              if (e.target.value) addFilter('position', e.target.value, getPositionLabel(e.target.value as Position) || e.target.value);
             }}
               className="text-[10px] px-2 py-0.5 rounded border border-input bg-background">
               <option value="">Todos</option>
               <optgroup label="Legal">
-                {LEGAL_HIERARCHY.map(p => <option key={p} value={p}>{POSITION_LABELS[p]}</option>)}
+                {getLegalHierarchy().map(p => <option key={p} value={p}>{POSITION_LABELS[p]}</option>)}
               </optgroup>
               <optgroup label="Administrativo">
-                {ADMIN_HIERARCHY.map(p => <option key={p} value={p}>{POSITION_LABELS[p]}</option>)}
+                {getAdminHierarchy().map(p => <option key={p} value={p}>{POSITION_LABELS[p]}</option>)}
               </optgroup>
             </select>
           </div>
@@ -603,7 +592,7 @@ export default function QuestionLibrary() {
                               <div className="flex items-center gap-1 mt-1.5 flex-wrap">
                                 {item.positions.map(p => (
                                   <span key={p} className="text-[10px] bg-muted/50 text-muted-foreground px-1.5 py-0.5 rounded">
-                                    {POSITION_LABELS[p as Position] || p}
+                                    {getPositionLabel(p as Position) || p}
                                   </span>
                                 ))}
                               </div>

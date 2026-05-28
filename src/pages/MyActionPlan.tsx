@@ -1,9 +1,10 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUsers, useEvaluations, useAssignments, useActionPlans, useCreateActionPlan, useApproveActionPlan } from '@/api/queries';
-import { CURRENT_PERIOD, PERIODS, ActionPlan, POSITION_LABELS, POSITION_RANK, SmartActionItem, QuestionCategory } from '@/types';
+import { ActionPlan, SmartActionItem, QuestionCategory } from '@/types';
+import { CURRENT_PERIOD, PERIODS, getPositionLabel, getPositionRank, SECTION_LABELS, getSectionByCategory } from '@/lib/evaluationConfig';
 import { ALL_CATEGORIES } from '@/pages/QuestionLibrary';
-import { getSectionByCategory, SECTION_LABELS } from '@/data/questions';
+
 import { FileText, Save, ShieldCheck, ShieldX, Clock, Plus, Trash2, Target } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -55,7 +56,7 @@ export default function MyActionPlan() {
   const mySupervisors = users.filter(u => mySupervisorIds.includes(u.id));
   const seniorSupervisor = useMemo(() => {
     if (mySupervisors.length === 0) return null;
-    return [...mySupervisors].sort((a, b) => POSITION_RANK[a.position] - POSITION_RANK[b.position])[0];
+    return [...mySupervisors].sort((a, b) => getPositionRank(a.position) - getPositionRank(b.position))[0];
   }, [mySupervisors]);
 
   const myPlan = actionPlans.find(p => currentUser && p.employeeId === currentUser.id && p.period === period);
@@ -109,7 +110,7 @@ export default function MyActionPlan() {
     const supIds = assignments.filter(a => a.employeeId === plan.employeeId && a.period === plan.period).map(a => a.supervisorId);
     if (supIds.length === 0) return false;
     const sups = users.filter(u => supIds.includes(u.id));
-    const senior = [...sups].sort((a, b) => POSITION_RANK[a.position] - POSITION_RANK[b.position])[0];
+    const senior = [...sups].sort((a, b) => getPositionRank(a.position) - getPositionRank(b.position))[0];
     return senior?.id === currentUser.id;
   };
 
@@ -189,7 +190,7 @@ export default function MyActionPlan() {
           </div>
           {seniorSupervisor && (
             <p className="text-xs text-muted-foreground mb-3">
-              Será autorizado por: <span className="font-medium">{seniorSupervisor.name}</span> ({POSITION_LABELS[seniorSupervisor.position]})
+              Será autorizado por: <span className="font-medium">{seniorSupervisor.name}</span> ({getPositionLabel(seniorSupervisor.position)})
             </p>
           )}
           {myPlan?.approvalStatus === 'rejected' && myPlan.approvalComments && (
@@ -292,7 +293,7 @@ export default function MyActionPlan() {
                   <div className="flex items-center justify-between mb-2">
                     <div>
                       <p className="text-sm font-medium">{employee?.name}</p>
-                      <p className="text-xs text-muted-foreground">{employee && POSITION_LABELS[employee.position]} · Actualizado {plan.updatedAt}</p>
+                      <p className="text-xs text-muted-foreground">{employee && getPositionLabel(employee.position)} · Actualizado {plan.updatedAt}</p>
                     </div>
                     {statusBadge(plan.approvalStatus)}
                   </div>

@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { User, Evaluation, SupervisorAssignment, ActionPlan, EvalQuestion, Position, PersonalObjectives, Announcement, VacationRequest, ExtraVacationDays, ModuleConfig, ActivationHistoryEntry, PeriodConfig, LibraryQuestion, CustomPosition, AdminObjectiveStatus } from '@/types';
-import { MOCK_USERS, MOCK_ASSIGNMENTS, MOCK_EVALUATIONS } from '@/data/mockData';
+// Mock data removed - all data is now DB-driven
 
 export interface SystemStatus {
   status: 'active' | 'inactive';
@@ -97,15 +97,15 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   });
   const [users, setUsers] = useState<User[]>(() => {
     const saved = localStorage.getItem('smps_users');
-    return saved ? JSON.parse(saved) : MOCK_USERS;
+    return saved ? JSON.parse(saved) : [];
   });
   const [assignments, setAssignments] = useState<SupervisorAssignment[]>(() => {
     const saved = localStorage.getItem('smps_assignments');
-    return saved ? JSON.parse(saved) : MOCK_ASSIGNMENTS;
+    return saved ? JSON.parse(saved) : [];
   });
   const [evaluations, setEvaluations] = useState<Evaluation[]>(() => {
     const saved = localStorage.getItem('smps_evaluations');
-    return saved ? JSON.parse(saved) : MOCK_EVALUATIONS;
+    return saved ? JSON.parse(saved) : [];
   });
   const [actionPlans, setActionPlans] = useState<ActionPlan[]>(() => {
     const saved = localStorage.getItem('smps_action_plans');

@@ -18,87 +18,22 @@ export type Position =
   | 'archivista'
   | 'dummy';
 
-
 export type PositionLevel = 'legal' | 'administrativo';
 
-export const POSITION_LABELS: Record<Position, string> = {
-  socio: 'Socio',
-  salary_partner: 'Salary Partner',
-  counsel: 'Counsel',
-  asociado_sr: 'Asociado Sr',
-  asociado_mid: 'Asociado Mid',
-  asociado_jr: 'Asociado Jr',
-  pasante_carrera: 'Pasante con Carrera',
-  pasante_corporativo: 'Pasante',
-  pasante: 'Pasante',
-  director: 'Director',
-  gerente: 'Gerente',
-  coordinador: 'Coordinador',
-  analista: 'Analista',
-  asistente: 'Asistente',
-  archivo_soporte: 'Archivo y Soporte',
-  soporte: 'Soporte',
-  archivista: 'Archivista',
-  dummy: 'Dummy',
-};
+export { getPositionLabel as POSITION_LABELS_DEPRECATED } from '@/lib/evaluationConfig';  // Use getPositionLabel() instead
 
-export const POSITION_LEVELS: Record<Position, PositionLevel> = {
-  socio: 'legal',
-  salary_partner: 'legal',
-  counsel: 'legal',
-  asociado_sr: 'legal',
-  asociado_mid: 'legal',
-  asociado_jr: 'legal',
-  pasante_carrera: 'legal',
-  pasante_corporativo: 'legal',
-  pasante: 'legal',
-  director: 'administrativo',
-  gerente: 'administrativo',
-  coordinador: 'administrativo',
-  analista: 'administrativo',
-  asistente: 'administrativo',
-  archivo_soporte: 'administrativo',
-  soporte: 'administrativo',
-  archivista: 'administrativo',
-  dummy: 'administrativo',
-};
+export { getPositionLevel as POSITION_LEVELS_DEPRECATED } from '@/lib/evaluationConfig';  // Use getPositionLevel() instead
 
-export const LEVEL_LABELS: Record<PositionLevel, string> = {
-  legal: 'Legal',
-  administrativo: 'Administrativo',
-};
+export { LEVEL_LABELS } from '@/lib/evaluationConfig';
 
 // Position rank for "evaluador de mayor rango" calculations (lower index = higher rank)
-export const POSITION_RANK: Record<Position, number> = {
-  socio: 0,
-  salary_partner: 1,
-  counsel: 1,
-  director: 1,
-  asociado_sr: 2,
-  gerente: 2,
-  asociado_mid: 3,
-  coordinador: 3,
-  asociado_jr: 4,
-  analista: 4,
-  pasante_carrera: 5,
-  pasante_corporativo: 6,
-  asistente: 5,
-  pasante: 6,
-  soporte: 6,
-  archivista: 6,
-  archivo_soporte: 6,
-  dummy: 99,
-};
+export { getPositionRank as POSITION_RANK_DEPRECATED } from '@/lib/evaluationConfig';  // Use getPositionRank() instead
 
-export const LEGAL_HIERARCHY: Position[] = [
-  'socio', 'salary_partner', 'counsel', 'asociado_sr', 'asociado_mid', 'asociado_jr', 'pasante_carrera', 'pasante_corporativo', 'pasante',
-];
+export { getLegalHierarchy as LEGAL_HIERARCHY_DEPRECATED } from '@/lib/evaluationConfig';  // Use getLegalHierarchy() instead
 
-export const ADMIN_HIERARCHY: Position[] = [
-  'director', 'gerente', 'coordinador', 'analista', 'asistente', 'archivo_soporte', 'soporte', 'archivista',
-];
+export { getAdminHierarchy as ADMIN_HIERARCHY_DEPRECATED } from '@/lib/evaluationConfig';  // Use getAdminHierarchy() instead
 
-export const POSITION_HIERARCHY: Position[] = [...LEGAL_HIERARCHY, ...ADMIN_HIERARCHY];
+export { getPositionHierarchy as POSITION_HIERARCHY_DEPRECATED } from '@/lib/evaluationConfig';  // Use getPositionHierarchy() instead
 
 export type QuestionCategory =
   | 'Desempeño' | 'Liderazgo' | 'Cumplimiento' | 'Habilidades Blandas'
@@ -119,15 +54,7 @@ export type EvalSection = 'competencias' | 'tecnico' | 'blandas';
 export type PracticeArea = 'fiscal_consultoria' | 'fiscal_litigio' | 'corporativo' | 'backoffice'
   | 'consultoria_fiscal' | 'litigio_fiscal' | 'general';  // backward compat
 
-export const PRACTICE_AREA_LABELS: Record<PracticeArea, string> = {
-  fiscal_consultoria: 'Fiscal Consultoría',
-  fiscal_litigio: 'Fiscal Litigio',
-  corporativo: 'Corporativo',
-  backoffice: 'Backoffice',
-  consultoria_fiscal: 'Fiscal Consultoría',
-  litigio_fiscal: 'Fiscal Litigio',
-  general: 'General',
-};
+// PRACTICE_AREA_LABELS - use practice area labels from DB
 
 export interface EvalQuestion {
   id: string;
@@ -150,25 +77,14 @@ export interface LibraryQuestion {
  * Normalize a practice area to its canonical form.
  * Maps old keys to new keys so the rest of the code only needs to handle canonical keys.
  */
-export function normalizePracticeArea(area: PracticeArea): 'fiscal_consultoria' | 'fiscal_litigio' | 'corporativo' | 'backoffice' {
-  if (area === 'consultoria_fiscal') return 'fiscal_consultoria';
-  if (area === 'litigio_fiscal') return 'fiscal_litigio';
-  if (area === 'general') return 'corporativo';
-  return area;
-}
+export { normalizePracticeArea } from '@/lib/evaluationConfig';
 
 /**
  * Normalize a position to its canonical form.
  * Maps old position keys to their current equivalents so the rest of the code
  * only needs to handle canonical positions.
  */
-export function normalizePosition(pos: Position | string): Position {
-  if (pos === 'pasante_corporativo') return 'pasante';
-  if (pos === 'archivo_soporte') return 'soporte';
-  if (pos === 'abogado') return 'asociado_jr'; // legacy DB value
-  if (!POSITION_LABELS[pos as Position]) return 'asistente'; // fallback for unknown positions
-  return pos as Position;
-}
+export { normalizePosition } from '@/lib/evaluationConfig';
 
 /** Posición (CVE Puesto) dada de alta por el admin. */
 export interface CustomPosition {
@@ -225,7 +141,6 @@ export interface User {
   createdBy?: string;
   isManagingPartner?: boolean;
 }
-
 
 export interface SupervisorAssignment {
   id: string;
@@ -285,7 +200,6 @@ export interface ActionPlan {
   approvedAt?: string;
 }
 
-
 export interface PeriodConfig {
   period: string;
   selfStart: string;
@@ -298,16 +212,10 @@ export interface PeriodConfig {
   actionPlanEnd: string;
 }
 
-export const SCORE_LABELS: Record<number, string> = {
-  1: 'Deficiente',
-  2: 'Necesita Mejorar',
-  3: 'Satisfactorio',
-  4: 'Bueno',
-  5: 'Excelente',
-};
+export { getScoreLabels as SCORE_LABELS_DEPRECATED } from '@/lib/evaluationConfig';  // Use getScoreLabels() instead
 
-export const PERIODS = ['2025-H2', '2026-H1', '2026-H2'];
-export const CURRENT_PERIOD = '2026-H1';
+export { PERIODS } from '@/lib/evaluationConfig';
+export { CURRENT_PERIOD } from '@/lib/evaluationConfig';
 
 export type AdminObjectiveStatus = 'draft' | 'pending' | 'approved' | 'rejected';
 
@@ -324,7 +232,6 @@ export interface AdminObjective {
   reviewedBy?: string;                 // userId del evaluador
   reviewerComment?: string;
 }
-
 
 export interface LegalObjective {
   id: string;

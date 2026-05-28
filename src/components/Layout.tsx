@@ -10,7 +10,8 @@ import {
 import { useState, useEffect } from 'react';
 import { NavLink } from '@/components/NavLink';
 import PeriodEndAlert from '@/components/PeriodEndAlert';
-import { CURRENT_PERIOD, POSITION_LEVELS } from '@/types';
+import { CURRENT_PERIOD, getPositionLevel } from '@/lib/evaluationConfig';
+import { useEvalConfigInit } from '@/hooks/useEvalConfigInit';
 
 function Badge({ count }: { count: number }) {
   if (count === 0) return null;
@@ -18,6 +19,7 @@ function Badge({ count }: { count: number }) {
 }
 
 export default function Layout() {
+  useEvalConfigInit();
   const { user: currentUser, logout } = useAuth();
   const { data: assignments = [] } = useAssignments(CURRENT_PERIOD);
   const { data: systemStatus } = useSystemStatus();
@@ -61,7 +63,7 @@ export default function Layout() {
   const canViewAll = isAdmin || isSuperUser || isManagingPartner;
 
   const hasTeam = assignments.some(a => a.supervisorId === currentUser.id && a.period === CURRENT_PERIOD);
-  const myLevel = POSITION_LEVELS[currentUser.position];
+  const myLevel = getPositionLevel(currentUser.position);
 
   const pendingEvalCount = (() => {
     if (!modules.evaluations) return 0;

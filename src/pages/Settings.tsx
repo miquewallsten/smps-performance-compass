@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUsers, useEvaluations, useAssignments, useActionPlans } from "@/api/queries";
-import { POSITION_LABELS, SCORE_LABELS, PERIODS, CURRENT_PERIOD, Evaluation } from '@/types';
-import { QUESTIONS_BY_POSITION } from '@/data/questions';
+import { Evaluation } from '@/types';
+import { CURRENT_PERIOD, PERIODS, getPositionLabel, getScoreLabels, getSectionWeights, SECTION_ORDER } from '@/lib/evaluationConfig';
+import { useTemplateQuestions } from '@/hooks/useEvaluationConfig';
 import { Eye, FileText, ChevronDown, ChevronUp, Lock, Key } from 'lucide-react';
 
 export default function SettingsPage() {
@@ -59,7 +60,8 @@ export default function SettingsPage() {
   const renderEvalDetail = (ev: Evaluation) => {
     const evaluated = users.find(u => u.id === ev.evaluatedId);
     if (!evaluated) return null;
-    const questions = QUESTIONS_BY_POSITION[evaluated.position] || [];
+    // Note: customQuestions is now DB-driven via useTemplateQuestions
+    const questions = []; // Will be replaced with template data
     const categories = [...new Set(questions.map(q => q.category))];
 
     return (
@@ -130,7 +132,7 @@ export default function SettingsPage() {
           <div className="flex justify-between"><span className="text-muted-foreground">Email:</span><span>{currentUser.email}</span></div>
           <div className="flex justify-between">
             <span className="text-muted-foreground">Posición:</span>
-            <span>{POSITION_LABELS[currentUser.position as keyof typeof POSITION_LABELS] || currentUser.position}</span>
+            <span>{getPositionLabel(currentUser.position as keyof typeof POSITION_LABELS) || currentUser.position}</span>
           </div>
           {currentUser.isAdmin && <div className="flex justify-between"><span className="text-muted-foreground">Rol:</span><span className="font-medium text-accent">Administrador</span></div>}
           {currentUser.isSuperUser && <div className="flex justify-between"><span className="text-muted-foreground">Rol:</span><span className="font-medium text-yellow-500">Super Administrador</span></div>}
@@ -233,7 +235,7 @@ export default function SettingsPage() {
                   <div className="flex items-center justify-between mb-2">
                     <div>
                       <p className="text-sm font-medium">{evaluator?.name}</p>
-                      <p className="text-xs text-muted-foreground">{evaluator ? POSITION_LABELS[evaluator.position] : ''} · {ev.completedAt}</p>
+                      <p className="text-xs text-muted-foreground">{evaluator ? getPositionLabel(evaluator.position) : ''} · {ev.completedAt}</p>
                     </div>
                     <span className="text-xl font-bold font-display text-accent">{Math.round(ev.totalScore)}%</span>
                   </div>
@@ -268,7 +270,7 @@ export default function SettingsPage() {
                 <div key={plan.id} className="bg-muted/50 rounded-lg p-4 text-sm">
                   <div className="flex items-center justify-between mb-2">
                     <p className="font-medium text-accent">{supervisor?.name || 'Evaluador'}</p>
-                    <p className="text-xs text-muted-foreground">{supervisor ? POSITION_LABELS[supervisor.position] : ''}</p>
+                    <p className="text-xs text-muted-foreground">{supervisor ? getPositionLabel(supervisor.position) : ''}</p>
                   </div>
                   <p className="whitespace-pre-wrap">{plan.content}</p>
                   <p className="text-xs text-muted-foreground mt-3 border-t pt-2">

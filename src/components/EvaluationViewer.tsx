@@ -1,10 +1,10 @@
 import { useState, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useUsers, useAssignments, useUpdateEvaluation, useCompleteFeedback, useApproveNA, useActionPlans, useCustomQuestions } from '@/api/queries';
-import { QUESTIONS_BY_POSITION, getQuestionsForUser } from '@/data/questions';
-import { SCORE_LABELS, POSITION_LABELS, Evaluation, EvalQuestion } from '@/types';
+import { useUsers, useAssignments, useUpdateEvaluation, useCompleteFeedback, useApproveNA, useActionPlans } from '@/api/queries';
+import { Evaluation, EvalQuestion } from '@/types';
+import { calculateScore, getSectionWeights, getPositionLabel, getScoreLabels, SECTION_ORDER } from '@/lib/evaluationConfig';
+import { useTemplateQuestions } from '@/hooks/useEvaluationConfig';
 import { Ban, ShieldCheck, ShieldX, MinusCircle, FileText } from 'lucide-react';
-import { calculateScore } from '@/data/questions';
 
 interface Props {
   evaluation: Evaluation;
@@ -19,17 +19,15 @@ export default function EvaluationViewer({ evaluation, onClose }: Props) {
   const completeFeedback = useCompleteFeedback().mutate;
   const approveNA = useApproveNA().mutate;
   const { data: actionPlans = [] } = useActionPlans();
-  const { data: customQuestionsRaw = [] } = useCustomQuestions();
-  // Group raw custom questions by position (API returns flat array)
+  const { data: allTemplateQuestions = [] } = useTemplateQuestions();
   const customQuestions = useMemo(() => {
-    if (!Array.isArray(customQuestionsRaw)) return customQuestionsRaw as unknown as Record<string, EvalQuestion[]>;
     const grouped: Record<string, EvalQuestion[]> = {};
-    for (const q of customQuestionsRaw) {
-      const pos = q.position || q.practiceArea;
-      if (pos) { if (!grouped[pos]) grouped[pos] = []; grouped[pos].push(q); }
+    for (const q of allTemplateQuestions) {
+      const pos = q.position;
+      if (pos) { if (!grouped[pos]) grouped[pos] = []; grouped[pos].push({ id: q.questionId || q.id, category: q.category, text: q.questionText || q.text, weight: q.weight, section: q.section, practiceArea: q.practiceArea }); }
     }
     return grouped;
-  }, [customQuestionsRaw]);
+  }, [allTemplateQuestions]);
   const [supComments, setSupComments] = useState(evaluation.supervisorComments || '');
   const [saved, setSaved] = useState(false);
 
@@ -60,7 +58,24 @@ export default function EvaluationViewer({ evaluation, onClose }: Props) {
     approveNA({ id: evaluation.id, questionId, approved });
   };
 
-  const questions = getQuestionsForUser(evaluated, customQuestions || {});
+  const evalPos = evaluated.position;
+  const evalQuestions = customQuestions[evalPos] || [];
+  const sectionWeightsMap = getSectionWeights(evalPos);
+  const questions = (() => {
+    const tecnicas = evalQuestions.filter(q => q.section === 'tecnico');
+    const competencias = evalQuestions.filter(q => q.section === 'competencias');
+    const blandas = evalQuestions.filter(q => q.section === 'blandas');
+    const rescale = (qs: EvalQuestion[], target: number) => {
+      if (qs.length === 0 || target <= 0) return [];
+      const sum = qs.reduce((s, q) => s + (q.weight || 1), 0) || qs.length;
+      return qs.map(q => ({ ...q, weight: Math.round(((q.weight || 1) / sum) * target * 100) / 100 }));
+    };
+    return [
+      ...rescale(tecnicas, sectionWeightsMap.tecnico),
+      ...rescale(competencias, sectionWeightsMap.competencias),
+      ...rescale(blandas, sectionWeightsMap.blandas),
+    ];
+  })();
   const categories: string[] = [...new Set(questions.map(q => q.category as string))];
   const responses = evaluation.responses || [];
 
@@ -91,7 +106,7 @@ export default function EvaluationViewer({ evaluation, onClose }: Props) {
               {evaluation.type === 'self' ? 'Autoevaluación' : 'Evaluación de Evaluador'}
             </h3>
             <p className="text-xs text-muted-foreground">
-              {evaluated.name} ({POSITION_LABELS[evaluated.position]}) · {evaluation.period} · {evaluation.type === 'supervisor' ? `Por: ${evaluator?.name}` : ''}
+              {evaluated.name} ({getPositionLabel(evaluated.position)}) · {evaluation.period} · {evaluation.type === 'supervisor' ? `Por: ${evaluator?.name}` : ''}
             </p>
           </div>
           <div className="text-right">

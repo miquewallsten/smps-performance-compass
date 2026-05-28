@@ -1,6 +1,6 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { useUsers, useEvaluations, useAssignments, useSystemModules, useSystemStatus, usePeriods, useAnnouncements, useVacationRequests } from '@/api/queries';
-import { CURRENT_PERIOD } from '@/types';
+import { CURRENT_PERIOD } from '@/lib/evaluationConfig';
 import { AlertTriangle, X } from 'lucide-react';
 import { useState } from 'react';
 

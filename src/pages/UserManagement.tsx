@@ -2,7 +2,8 @@ import { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUsers, useEvaluations, useUpdateUser, useResetUserPassword, useCreateUser, useDeleteUser, useSystemStatus, useUpdateUserRole, usePositions, useWorkAreas, useLocations } from '@/api/queries';
-import { POSITION_LABELS, PERIODS, Position, LEGAL_HIERARCHY, ADMIN_HIERARCHY } from '@/types';
+import { POSITION_LABELS, Position } from '@/types';
+import { PERIODS, getLegalHierarchy, getAdminHierarchy } from '@/lib/evaluationConfig';
 import { Eye, Key, UserCheck, UserX, Search, Plus, Trash2, Star, Shield, Pencil, MapPin, Clock, Loader2 } from 'lucide-react';
 import EvaluationViewer from '@/components/EvaluationViewer';
 import { toast } from 'sonner';
@@ -69,14 +70,14 @@ export default function UserManagement() {
   const filtered = visibleUsers
     .filter(u => u.name.toLowerCase().includes(search.toLowerCase()) || u.email.toLowerCase().includes(search.toLowerCase()));
 
-  const legalUsers = filtered.filter(u => LEGAL_HIERARCHY.includes(u.position)).sort((a, b) => {
-    const posA = LEGAL_HIERARCHY.indexOf(a.position);
-    const posB = LEGAL_HIERARCHY.indexOf(b.position);
+  const legalUsers = filtered.filter(u => getLegalHierarchy.includes(u.position)).sort((a, b) => {
+    const posA = getLegalHierarchy.indexOf(a.position);
+    const posB = getLegalHierarchy.indexOf(b.position);
     return posA !== posB ? posA - posB : a.name.localeCompare(b.name, 'es');
   });
-  const adminUsers = filtered.filter(u => ADMIN_HIERARCHY.includes(u.position)).sort((a, b) => {
-    const posA = ADMIN_HIERARCHY.indexOf(a.position);
-    const posB = ADMIN_HIERARCHY.indexOf(b.position);
+  const adminUsers = filtered.filter(u => getAdminHierarchy.includes(u.position)).sort((a, b) => {
+    const posA = getAdminHierarchy.indexOf(a.position);
+    const posB = getAdminHierarchy.indexOf(b.position);
     return posA !== posB ? posA - posB : a.name.localeCompare(b.name, 'es');
   });
 
@@ -178,7 +179,7 @@ export default function UserManagement() {
   const renderUserRow = (user: any) => {
     const isEditingPosition = editPosition === user.id;
     const userEvals = evaluations.filter(e => e.evaluatedId === user.id);
-    const posLabel = resolvePositionLabel(user.customPositionId) || POSITION_LABELS[user.position] || user.position;
+    const posLabel = resolvePositionLabel(user.customPositionId) || getPositionLabel(user.position) || user.position;
     const locLabel = resolveLocationLabel(user.locationId);
 
     return (

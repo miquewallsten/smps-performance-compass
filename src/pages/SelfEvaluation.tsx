@@ -1,10 +1,9 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useEvaluations, useAssignments, useActionPlans, useCreateEvaluation, useCustomQuestions } from '@/api/queries';
-import { QUESTIONS_BY_POSITION, getQuestionsForUser, calculateScore, getSectionForQuestion, SECTION_LABELS, SECTION_ORDER } from '@/data/questions';
-import { getSectionWeights } from '@/data/sectionWeights';
-
-import { CURRENT_PERIOD, SCORE_LABELS, POSITION_LABELS, Evaluation, Position } from '@/types';
+import { useEvaluations, useAssignments, useActionPlans, useCreateEvaluation } from '@/api/queries';
+import { Evaluation, Position, EvalQuestion } from '@/types';
+import { CURRENT_PERIOD, SECTION_LABELS, SECTION_ORDER, getSectionForQuestion, calculateScore, getSectionWeights, getPositionLabel, getScoreLabels } from '@/lib/evaluationConfig';
+import { useFullTemplate } from '@/hooks/useEvaluationConfig';
 import { CheckCircle, AlertCircle, Ban, Clock, Users, MessageSquare, FileText, ClipboardCheck, ChevronDown, RotateCcw } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -26,17 +25,19 @@ export default function SelfEvaluation() {
   const { data: assignments = [] } = useAssignments();
   const { data: actionPlans = [] } = useActionPlans();
   const createEvaluationMut = useCreateEvaluation();
-  const { data: customQuestionsRaw = [] } = useCustomQuestions();
-  // Group raw custom questions by position (API returns flat array)
-  const customQuestions = useMemo(() => {
-    if (!Array.isArray(customQuestionsRaw)) return customQuestionsRaw as unknown as Record<string, EvalQuestion[]>;
-    const grouped: Record<string, EvalQuestion[]> = {};
-    for (const q of customQuestionsRaw) {
-      const pos = q.position || q.practiceArea;
-      if (pos) { if (!grouped[pos]) grouped[pos] = []; grouped[pos].push(q); }
-    }
-    return grouped;
-  }, [customQuestionsRaw]);
+  const { data: templateData } = useFullTemplate(currentUser?.position || 'socio', currentUser?.practiceArea || 'corporativo');
+  // Get questions from DB-driven template
+  const questions = useMemo(() => {
+    if (!templateData?.questions) return [] as EvalQuestion[];
+    return templateData.questions.map((q: any) => ({
+      id: q.question_id || q.id,
+      category: q.category,
+      text: q.question_text || q.text,
+      weight: q.weight,
+      section: q.section,
+      practiceArea: q.practice_area,
+    })) as EvalQuestion[];
+  }, [templateData]);
   const navigate = useNavigate();
 
   // Load draft from localStorage on mount
@@ -81,7 +82,7 @@ export default function SelfEvaluation() {
   if (!currentUser) return null;
 
   const existing = evaluations.find(e => e.type === 'self' && e.evaluatorId === currentUser.id && e.period === CURRENT_PERIOD);
-  const questions = getQuestionsForUser(currentUser as any, customQuestions);
+  // questions already computed above from templateData
 
   const selfDone = !!existing || submitted;
   const mySupAssignments = assignments.filter(a => a.employeeId === currentUser.id && a.period === CURRENT_PERIOD);
@@ -171,7 +172,7 @@ export default function SelfEvaluation() {
   };
 
   const sectionGroups = SECTION_ORDER.reduce((acc, section) => {
-    const sectionQs = questions.filter(q => getSectionForQuestion(q, currentUser.position as Position) === section);
+    const sectionQs = questions.filter(q => getSectionForQuestion(q.category, currentUser.position as Position) === section);
     if (sectionQs.length > 0) acc.push({ section, label: SECTION_LABELS[section] || section, questions: sectionQs });
     return acc;
   }, [] as { section: string; label: string; questions: typeof questions }[]);
@@ -267,7 +268,7 @@ export default function SelfEvaluation() {
                                 {[1, 2, 3, 4, 5].map(score => (
                                   <button key={score} onClick={() => handleScore(q.id, score)}
                                     className={`smps-score-btn flex-1 min-w-[60px] py-1.5 px-2 rounded-md text-xs font-medium border transition-all duration-150 ${!isNA && responses[q.id] === score ? 'bg-accent text-accent-foreground border-accent shadow-sm' : 'bg-muted/50 text-muted-foreground border-transparent hover:border-border'}`}>
-                                    {SCORE_LABELS[score]}
+                                    {getScoreLabels()[score]}
                                   </button>
                                 ))}
                               </div>

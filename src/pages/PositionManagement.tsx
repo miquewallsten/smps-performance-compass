@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useWorkAreas, useCreateWorkArea, useUpdateWorkArea, useDeleteWorkArea, usePositions, useCreatePosition, useUpdatePosition, useDeletePosition, useLocations, useCreateLocation, useUpdateLocation, useDeleteLocation } from '@/api/queries';
-import { POSITION_LABELS, Position, LEGAL_HIERARCHY, ADMIN_HIERARCHY, PositionLevel } from '@/types';
+import { POSITION_LABELS, Position, PositionLevel } from '@/types';
+import { getLegalHierarchy, getAdminHierarchy } from '@/lib/evaluationConfig';
 import { Briefcase, MapPin, Plus, Pencil, Trash2, ChevronDown, ChevronRight, X, Save, Building2 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -243,7 +244,7 @@ export default function PositionManagement() {
                                   </td>
                                   <td className="py-2 px-2">
                                     <select value={editPositionData.basePosition} onChange={e => setEditPositionData(p => ({ ...p, basePosition: e.target.value as Position }))} className="px-2 py-1 rounded border border-input bg-background text-sm">
-                                      {(area.level === 'legal' ? LEGAL_HIERARCHY : ADMIN_HIERARCHY).map(p => <option key={p} value={p}>{POSITION_LABELS[p]}</option>)}
+                                      {(area.level === 'legal' ? getLegalHierarchy : getAdminHierarchy).map(p => <option key={p} value={p}>{getPositionLabel(p)}</option>)}
                                     </select>
                                   </td>
                                   <td className="py-2 px-2 text-right">
@@ -257,7 +258,7 @@ export default function PositionManagement() {
                                 <tr key={pos.id} className="border-b hover:bg-muted/20">
                                   <td className="py-2 px-2 font-mono text-xs text-accent font-semibold">{pos.id}</td>
                                   <td className="py-2 px-2">{pos.label}</td>
-                                  <td className="py-2 px-2 text-muted-foreground">{POSITION_LABELS[pos.basePosition as Position] || pos.basePosition}</td>
+                                  <td className="py-2 px-2 text-muted-foreground">{getPositionLabel(pos.basePosition as Position) || pos.basePosition}</td>
                                   <td className="py-2 px-2 text-right">
                                     <div className="flex items-center justify-end gap-1">
                                       <button onClick={() => { setEditingPosition(pos.id); setEditPositionData({ id: pos.id, label: pos.label, workAreaId: pos.workAreaId, basePosition: pos.basePosition }); }} className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors" title="Editar puesto">
@@ -330,7 +331,7 @@ export default function PositionManagement() {
                   <div>
                     <label className="text-sm font-medium text-foreground">Posición Base</label>
                     <select value={newPosition.basePosition} onChange={e => setNewPosition(p => ({ ...p, basePosition: e.target.value as Position }))} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm">
-                      {(workAreas.find((a: any) => a.id === newPosition.workAreaId)?.level === 'legal' ? LEGAL_HIERARCHY : ADMIN_HIERARCHY).map(p => <option key={p} value={p}>{POSITION_LABELS[p]}</option>)}
+                      {(workAreas.find((a: any) => a.id === newPosition.workAreaId)?.level === 'legal' ? getLegalHierarchy : getAdminHierarchy).map(p => <option key={p} value={p}>{getPositionLabel(p)}</option>)}
                     </select>
                   </div>
                 </div>

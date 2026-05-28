@@ -1,4 +1,5 @@
-import { LEGAL_HIERARCHY, ADMIN_HIERARCHY, POSITION_LABELS, POSITION_HIERARCHY, Position } from '@/types';
+import { POSITION_LABELS, Position } from '@/types';
+import { getLegalHierarchy, getAdminHierarchy, getPositionHierarchy } from '@/lib/evaluationConfig';
 
 interface Props {
   levelFilter: string;
@@ -10,10 +11,10 @@ interface Props {
 
 export default function HierarchyFilters({ levelFilter, setLevelFilter, positionFilter, setPositionFilter, className = '' }: Props) {
   const positions = levelFilter === 'legal'
-    ? LEGAL_HIERARCHY
+    ? getLegalHierarchy
     : levelFilter === 'administrativo'
-      ? ADMIN_HIERARCHY
-      : POSITION_HIERARCHY;
+      ? getAdminHierarchy
+      : getPositionHierarchy;
 
   return (
     <div className={`flex gap-2 flex-wrap ${className}`}>
@@ -26,7 +27,7 @@ export default function HierarchyFilters({ levelFilter, setLevelFilter, position
       <select value={positionFilter} onChange={e => setPositionFilter(e.target.value)}
         className="px-3 py-1.5 rounded-lg border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-accent">
         <option value="all">Todas las posiciones</option>
-        {positions.map(p => <option key={p} value={p}>{POSITION_LABELS[p]}</option>)}
+        {positions.map(p => <option key={p} value={p}>{getPositionLabel(p)}</option>)}
       </select>
     </div>
   );
@@ -34,8 +35,8 @@ export default function HierarchyFilters({ levelFilter, setLevelFilter, position
 
 export function filterByHierarchy<T extends { position: Position }>(items: T[], levelFilter: string, positionFilter: string): T[] {
   let result = items;
-  if (levelFilter === 'legal') result = result.filter(u => LEGAL_HIERARCHY.includes(u.position));
-  else if (levelFilter === 'administrativo') result = result.filter(u => ADMIN_HIERARCHY.includes(u.position));
+  if (levelFilter === 'legal') result = result.filter(u => getLegalHierarchy.includes(u.position));
+  else if (levelFilter === 'administrativo') result = result.filter(u => getAdminHierarchy.includes(u.position));
   if (positionFilter !== 'all') result = result.filter(u => u.position === positionFilter);
   return result;
 }

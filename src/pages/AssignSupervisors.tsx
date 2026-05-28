@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUsers, useAssignments, useCreateAssignment, useDeleteAssignment, useEvaluations } from '@/api/queries';
-import { POSITION_LABELS, CURRENT_PERIOD, PERIODS, Position, LEGAL_HIERARCHY, ADMIN_HIERARCHY } from '@/types';
+import { POSITION_LABELS, Position } from '@/types';
+import { CURRENT_PERIOD, PERIODS, getLegalHierarchy, getAdminHierarchy } from '@/lib/evaluationConfig';
 import { Plus, X, AlertTriangle } from 'lucide-react';
 import HierarchyFilters, { filterByHierarchy } from '@/components/HierarchyFilters';
 
@@ -58,7 +59,7 @@ export default function AssignSupervisors() {
     return filterByHierarchy(eligible, evalLevelFilter, evalPosFilter);
   };
 
-  const renderHierarchyList = (hierarchy: typeof LEGAL_HIERARCHY, label: string) => {
+  const renderHierarchyList = (hierarchy: typeof getLegalHierarchy, label: string) => {
     const groupUsers = filteredEmployees.filter(u => hierarchy.includes(u.position)).sort((a, b) => {
       const pi = hierarchy.indexOf(a.position) - hierarchy.indexOf(b.position);
       return pi !== 0 ? pi : a.name.localeCompare(b.name, 'es');
@@ -73,7 +74,7 @@ export default function AssignSupervisors() {
           if (posUsers.length === 0) return null;
           return (
             <div key={pos} className="mb-2">
-              <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1 px-2">{POSITION_LABELS[pos]}</p>
+              <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1 px-2">{getPositionLabel(pos)}</p>
               {posUsers.map(u => {
                 const assignCount = periodAssignments.filter(a => a.employeeId === u.id).length;
                 return (
@@ -112,8 +113,8 @@ export default function AssignSupervisors() {
           <h3 className="smps-section-title font-display text-base font-semibold mb-3">Seleccionar Empleado</h3>
           <HierarchyFilters levelFilter={empLevelFilter} setLevelFilter={setEmpLevelFilter} positionFilter={empPosFilter} setPositionFilter={setEmpPosFilter} className="mb-3" />
           <div className="space-y-1 max-h-[60vh] overflow-y-auto">
-            {renderHierarchyList(LEGAL_HIERARCHY, 'LEGAL')}
-            {renderHierarchyList(ADMIN_HIERARCHY, 'ADMINISTRATIVO')}
+            {renderHierarchyList(getLegalHierarchy, 'LEGAL')}
+            {renderHierarchyList(getAdminHierarchy, 'ADMINISTRATIVO')}
 
             {unassignedUsers.length > 0 && empLevelFilter === 'all' && empPosFilter === 'all' && (
               <div className="mb-3 mt-4 border-t pt-3">
@@ -137,7 +138,7 @@ export default function AssignSupervisors() {
             <div className="space-y-6">
               <div className="smps-surface-elevated">
                 <h3 className="font-display text-lg font-semibold mb-1">{selectedEmp.name}</h3>
-                <p className="text-sm text-muted-foreground mb-4">{POSITION_LABELS[selectedEmp.position]}</p>
+                <p className="text-sm text-muted-foreground mb-4">{getPositionLabel(selectedEmp.position)}</p>
 
                 <h4 className="text-sm font-semibold mb-2">Personal asignado ({empAssignments.length})</h4>
                 {empAssignments.length === 0 ? (
@@ -151,7 +152,7 @@ export default function AssignSupervisors() {
                         <div key={a.id} className="flex items-center justify-between py-2 px-3 rounded-lg bg-muted/50">
                           <div>
                             <span className="text-sm font-medium">{sup.name}</span>
-                            <span className="text-xs text-muted-foreground ml-2">{POSITION_LABELS[sup.position]}</span>
+                            <span className="text-xs text-muted-foreground ml-2">{getPositionLabel(sup.position)}</span>
                           </div>
                           <button onClick={() => removeAssignment(a.id)} className="p-1 rounded hover:bg-accent/10 text-muted-foreground hover:text-accent transition-colors">
                             <X className="h-4 w-4" />
@@ -168,8 +169,8 @@ export default function AssignSupervisors() {
                   const eligible = getEligibleEvaluators(selectedEmp.id);
                   if (eligible.length === 0) return <p className="text-sm text-muted-foreground">No hay evaluadores disponibles con los filtros seleccionados.</p>;
                   return [
-                    { hierarchy: LEGAL_HIERARCHY, label: 'LEGAL' },
-                    { hierarchy: ADMIN_HIERARCHY, label: 'ADMINISTRATIVO' },
+                    { hierarchy: getLegalHierarchy, label: 'LEGAL' },
+                    { hierarchy: getAdminHierarchy, label: 'ADMINISTRATIVO' },
                   ].map(({ hierarchy, label }) => {
                     const groupEligible = eligible.filter(u => hierarchy.includes(u.position));
                     if (groupEligible.length === 0) return null;
@@ -181,7 +182,7 @@ export default function AssignSupervisors() {
                           if (posEligible.length === 0) return null;
                           return (
                             <div key={pos} className="mb-1">
-                              <p className="text-xs text-muted-foreground mb-1">{POSITION_LABELS[pos]}</p>
+                              <p className="text-xs text-muted-foreground mb-1">{getPositionLabel(pos)}</p>
                               <div className="flex flex-wrap gap-2">
                                 {posEligible.sort((a, b) => a.name.localeCompare(b.name, 'es')).map(u => (
                                   <button key={u.id} onClick={() => addEvaluator(u.id)}

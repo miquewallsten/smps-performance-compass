@@ -5,6 +5,7 @@ import dotenv from 'dotenv';
 import { pool } from './db/connection.js';
 import { migrate } from './db/migrate.js';
 import { seed } from './db/seed-users.js';
+import { seedEvaluationData } from './db/seed-evaluation-data.js';
 import authRoutes from './routes/auth.js';
 import userRoutes from './routes/users.js';
 import assignmentRoutes from './routes/assignments.js';
@@ -15,6 +16,7 @@ import objectiveRoutes from './routes/objectives.js';
 import announcementRoutes from './routes/announcements.js';
 import vacationRoutes from './routes/vacations.js';
 import questionRoutes from './routes/questions.js';
+import evaluationConfigRoutes from './routes/evaluation-config.js';
 import positionRoutes from './routes/positions.js';
 import workAreaRoutes from './routes/work-areas.js';
 import locationRoutes from './routes/locations.js';
@@ -47,6 +49,7 @@ app.use('/api/objectives', objectiveRoutes);
 app.use('/api/announcements', announcementRoutes);
 app.use('/api/vacations', vacationRoutes);
 app.use('/api/questions', questionRoutes);
+app.use('/api/evaluation-config', evaluationConfigRoutes);
 app.use('/api/positions', positionRoutes);
 app.use('/api/work-areas', workAreaRoutes);
 app.use('/api/locations', locationRoutes);
@@ -95,6 +98,8 @@ async function startServer() {
     await migrate();
     console.log('Seeding database...');
     await seed();
+    console.log('Seeding evaluation data...');
+    await seedEvaluationData();
     
     app.listen(PORT, () => {
       console.log(`Server running on port ${PORT} in ${process.env.NODE_ENV || 'development'} mode`);

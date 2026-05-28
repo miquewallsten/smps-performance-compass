@@ -3,9 +3,10 @@ import { useSearchParams } from 'react-router-dom';
 import { HelpCircle, ClipboardCheck, ClipboardList, FileText, Target, Map, BarChart3, Users, UserCheck, Megaphone, Settings, BookOpen, Calendar, Sparkles } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUsers, useEvaluations, useAssignments, useSystemModules, useSystemStatus, usePeriods, useAnnouncements, useVacationRequests } from '@/api/queries';
-import { CURRENT_PERIOD } from '@/types';
-import { POSITION_LABELS, POSITION_LEVELS, Position, LEGAL_HIERARCHY, ADMIN_HIERARCHY } from '@/types';
-import { COMPETENCIES_BY_POSITION } from '@/data/competencyDictionary';
+
+import { POSITION_LABELS, POSITION_LEVELS, Position } from '@/types';
+import { getLegalHierarchy, getAdminHierarchy } from '@/lib/evaluationConfig';
+import { useCompetencies } from '@/hooks/useEvaluationConfig';
 
 type Audience = 'all' | 'admin' | 'evaluator' | 'staff';
 type Module = 'communications' | 'vacations';
@@ -63,6 +64,7 @@ const sections: Section[] = [
 ];
 
 export default function Help() {
+  const { data: competenciesData = [] } = useCompetencies();
   const { user: currentUser } = useAuth();
   const { data: assignments = [] } = useAssignments(CURRENT_PERIOD);
   const { data: moduleConfig } = useSystemModules();
@@ -100,8 +102,15 @@ export default function Help() {
     return s.audiences.includes('all') || s.audiences.includes(audience);
   });
 
-  const levelLabel = currentUser ? (POSITION_LEVELS[currentUser.position] === 'legal' ? 'Legal' : 'Administrativo') : '';
-  const competencies = COMPETENCIES_BY_POSITION[selectedPos] || [];
+  const levelLabel = currentUser ? (getPositionLevel(currentUser.position) === 'legal' ? 'Legal' : 'Administrativo') : '';
+  // Group competencies by position level (DB-driven)
+  const competenciesByLevel = competenciesData.reduce((acc: Record<string, any[]>, c: any) => {
+    if (!acc[c.positionLevel]) acc[c.positionLevel] = [];
+    acc[c.positionLevel].push({ name: c.name, definition: c.definition });
+    return acc;
+  }, {});
+  const level = getPositionLevel(selectedPos);
+  const competencies = competenciesByLevel[level] || [];
 
   return (
     <div className="min-h-screen bg-background">
@@ -143,10 +152,10 @@ export default function Help() {
             <select value={selectedPos} onChange={e => setSelectedPos(e.target.value as Position)}
               className="w-full mt-1 px-3 py-2 rounded-lg border border-input bg-background text-sm">
               <optgroup label="Legal">
-                {LEGAL_HIERARCHY.map(p => <option key={p} value={p}>{POSITION_LABELS[p]}</option>)}
+                {getLegalHierarchy.map(p => <option key={p} value={p}>{getPositionLabel(p)}</option>)}
               </optgroup>
               <optgroup label="Administrativo">
-                {ADMIN_HIERARCHY.map(p => <option key={p} value={p}>{POSITION_LABELS[p]}</option>)}
+                {getAdminHierarchy.map(p => <option key={p} value={p}>{getPositionLabel(p)}</option>)}
               </optgroup>
             </select>
           </div>

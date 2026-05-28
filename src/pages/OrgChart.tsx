@@ -1,6 +1,7 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { useUsers, useEvaluations, useAssignments, useSystemModules, useSystemStatus, usePeriods, useAnnouncements, useVacationRequests } from '@/api/queries';
-import { POSITION_LABELS, CURRENT_PERIOD, LEGAL_HIERARCHY, ADMIN_HIERARCHY } from '@/types';
+import { POSITION_LABELS } from '@/types';
+import { CURRENT_PERIOD, getLegalHierarchy, getAdminHierarchy } from '@/lib/evaluationConfig';
 import { Users, ChevronDown, ChevronRight } from 'lucide-react';
 import { useState } from 'react';
 import HierarchyFilters, { filterByHierarchy } from '@/components/HierarchyFilters';
@@ -28,7 +29,7 @@ export default function OrgChart() {
     positionFilter
   );
 
-  const renderGroup = (hierarchy: typeof LEGAL_HIERARCHY, groupLabel: string) => {
+  const renderGroup = (hierarchy: typeof getLegalHierarchy, groupLabel: string) => {
     const groupSups = filteredSupervisors.filter(u => hierarchy.includes(u.position));
     if (groupSups.length === 0) return null;
     return (
@@ -40,7 +41,7 @@ export default function OrgChart() {
             if (posSups.length === 0) return null;
             return (
               <div key={pos}>
-                <h3 className="font-display text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-2">{POSITION_LABELS[pos]}</h3>
+                <h3 className="font-display text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-2">{getPositionLabel(pos)}</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {posSups.map(sup => {
                     const teamAssignments = periodAssignments.filter(a => a.supervisorId === sup.id);
@@ -65,8 +66,8 @@ export default function OrgChart() {
         </div>
         <HierarchyFilters levelFilter={levelFilter} setLevelFilter={setLevelFilter} positionFilter={positionFilter} setPositionFilter={setPositionFilter} />
       </div>
-      {renderGroup(LEGAL_HIERARCHY, 'LEGAL')}
-      {renderGroup(ADMIN_HIERARCHY, 'ADMINISTRATIVO')}
+      {renderGroup(getLegalHierarchy, 'LEGAL')}
+      {renderGroup(getAdminHierarchy, 'ADMINISTRATIVO')}
     </div>
   );
 }
@@ -83,7 +84,7 @@ function OrgCard({ supervisor, teamMembers }: { supervisor: any; teamMembers: an
           </div>
           <div className="text-left">
             <p className="text-sm font-semibold">{supervisor.name}</p>
-            <p className="text-xs text-muted-foreground">{POSITION_LABELS[supervisor.position]}</p>
+            <p className="text-xs text-muted-foreground">{getPositionLabel(supervisor.position)}</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -96,7 +97,7 @@ function OrgCard({ supervisor, teamMembers }: { supervisor: any; teamMembers: an
           {teamMembers.map(member => (
             <div key={member.id} className="flex items-center justify-between py-1.5 px-2 rounded bg-muted/30 text-sm">
               <span>{member.name}</span>
-              <span className="text-xs text-muted-foreground">{POSITION_LABELS[member.position]}</span>
+              <span className="text-xs text-muted-foreground">{getPositionLabel(member.position)}</span>
             </div>
           ))}
         </div>

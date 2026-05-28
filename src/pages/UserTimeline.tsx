@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserTimeline, useUsers, useCreateTimelineEvent, useDeleteTimelineEvent } from '@/api/queries';
-import { POSITION_LABELS } from '@/types';
+import { getPositionLabel } from '@/lib/evaluationConfig';
 import {
   ArrowRight, UserPlus, UserMinus, BarChart3, Shield, UserCheck,
   UserX, Calendar, CheckCircle, Key, MessageSquare, ChevronLeft,
@@ -124,7 +124,7 @@ export default function UserTimeline() {
     if (!emp || !id || events.length > 0) return;
     const evts: any[] = [];
     if (emp.createdAt) evts.push({ userId: id, event_type: 'hire', event_date: emp.createdAt.slice(0,10), meta: { position: emp.position } });
-    if (emp.position) evts.push({ userId: id, event_type: 'position_change', event_date: emp.createdAt?.slice(0,10) || new Date().toISOString().slice(0,10), meta: { changeType: 'lateral', newPosition: emp.position, label: POSITION_LABELS[emp.position] || emp.position } });
+    if (emp.position) evts.push({ userId: id, event_type: 'position_change', event_date: emp.createdAt?.slice(0,10) || new Date().toISOString().slice(0,10), meta: { changeType: 'lateral', newPosition: emp.position, label: getPositionLabel(emp.position) || emp.position } });
     evts.forEach(e => createMut.mutate(e));
   }, [emp?.id, events.length]);
 
@@ -157,7 +157,7 @@ export default function UserTimeline() {
             {emp ? `${emp.name} ${emp.lastName||''}`.trim() : 'Timeline'}
           </h1>
           <p className="text-xs text-muted-foreground mt-0.5">
-            {emp && POSITION_LABELS[emp.position]} · Time Machine
+            {emp && getPositionLabel(emp.position)} · Time Machine
           </p>
         </div>
         {canAdmin && (
@@ -294,13 +294,13 @@ export default function UserTimeline() {
                                       {ev.meta?.newPosition && (
                                         <p className="text-xs">
                                           <span className="text-muted-foreground">Nuevo puesto: </span>
-                                          <span className="font-medium">{POSITION_LABELS[ev.meta.newPosition]||ev.meta.newPosition}</span>
+                                          <span className="font-medium">{getPositionLabel(ev.meta.newPosition)||ev.meta.newPosition}</span>
                                         </p>
                                       )}
                                       {ev.meta?.oldPosition && (
                                         <p className="text-xs">
                                           <span className="text-muted-foreground">Puesto anterior: </span>
-                                          <span className="font-medium">{POSITION_LABELS[ev.meta.oldPosition]||ev.meta.oldPosition}</span>
+                                          <span className="font-medium">{getPositionLabel(ev.meta.oldPosition)||ev.meta.oldPosition}</span>
                                         </p>
                                       )}
                                       {ev.meta?.feedbackSession && <p className="text-xs text-muted-foreground">Sesión de Feedback</p>}

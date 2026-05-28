@@ -1,6 +1,7 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { useUsers, useEvaluations, useAssignments, useSystemModules, useSystemStatus, usePeriods, useAnnouncements, useVacationRequests } from '@/api/queries';
-import { POSITION_LABELS, CURRENT_PERIOD, Position, LEGAL_HIERARCHY, ADMIN_HIERARCHY, POSITION_HIERARCHY } from '@/types';
+import { Position } from '@/types';
+import { CURRENT_PERIOD, getPositionLabel, getLegalHierarchy, getAdminHierarchy, getPositionHierarchy } from '@/lib/evaluationConfig';
 import { Users, CheckCircle, Clock, TrendingUp, ChevronDown } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -32,8 +33,8 @@ export default function Dashboard() {
       base = base.filter(u => myTeamIds.includes(u.id) || u.id === currentUser.id);
     }
     if (selectedLevel !== 'all' && isAdminOrSocio) {
-      if (selectedLevel === 'legal') base = base.filter(u => LEGAL_HIERARCHY.includes(u.position));
-      else if (selectedLevel === 'administrativo') base = base.filter(u => ADMIN_HIERARCHY.includes(u.position));
+      if (selectedLevel === 'legal') base = base.filter(u => getLegalHierarchy.includes(u.position));
+      else if (selectedLevel === 'administrativo') base = base.filter(u => getAdminHierarchy.includes(u.position));
       else base = base.filter(u => u.position === selectedLevel);
     }
     return base;
@@ -55,12 +56,12 @@ export default function Dashboard() {
 
   const toggleCard = (card: string) => setExpandedCard(expandedCard === card ? null : card);
 
-  const legalUsers = relevantUsers.filter(u => LEGAL_HIERARCHY.includes(u.position)).sort((a, b) => {
-    const pi = LEGAL_HIERARCHY.indexOf(a.position) - LEGAL_HIERARCHY.indexOf(b.position);
+  const legalUsers = relevantUsers.filter(u => getLegalHierarchy.includes(u.position)).sort((a, b) => {
+    const pi = getLegalHierarchy.indexOf(a.position) - getLegalHierarchy.indexOf(b.position);
     return pi !== 0 ? pi : a.name.localeCompare(b.name, 'es');
   });
-  const adminUsersGroup = relevantUsers.filter(u => ADMIN_HIERARCHY.includes(u.position)).sort((a, b) => {
-    const pi = ADMIN_HIERARCHY.indexOf(a.position) - ADMIN_HIERARCHY.indexOf(b.position);
+  const adminUsersGroup = relevantUsers.filter(u => getAdminHierarchy.includes(u.position)).sort((a, b) => {
+    const pi = getAdminHierarchy.indexOf(a.position) - getAdminHierarchy.indexOf(b.position);
     return pi !== 0 ? pi : a.name.localeCompare(b.name, 'es');
   });
 
@@ -78,7 +79,7 @@ export default function Dashboard() {
           const posUsers = groupUsers.filter(u => u.position === pos);
           return (
             <div key={pos} className="mb-2">
-              <h5 className="text-[11px] font-semibold text-muted-foreground mb-1">{POSITION_LABELS[pos]} ({posUsers.length})</h5>
+              <h5 className="text-[11px] font-semibold text-muted-foreground mb-1">{getPositionLabel(pos)} ({posUsers.length})</h5>
               <div className="space-y-0.5">
                 {posUsers.map(u => {
                   const hasSelfEval = periodEvals.some(e => e.type === 'self' && e.evaluatorId === u.id);
@@ -186,7 +187,7 @@ export default function Dashboard() {
       {expandedCard === 'progress' && (
         <div className="smps-surface-card smps-fade-in">
           <p className="smps-section-title">Progreso por Posición</p>
-          {POSITION_HIERARCHY.map(pos => {
+          {getPositionHierarchy.map(pos => {
             const posUsers = relevantUsers.filter(u => u.position === pos);
             if (posUsers.length === 0) return null;
             const selfDone = posUsers.filter(u => periodEvals.some(e => e.type === 'self' && e.evaluatorId === u.id)).length;
@@ -194,7 +195,7 @@ export default function Dashboard() {
             return (
               <div key={pos} className="mb-3">
                 <div className="flex items-baseline justify-between mb-1">
-                  <span className="text-sm font-medium">{POSITION_LABELS[pos]}</span>
+                  <span className="text-sm font-medium">{getPositionLabel(pos)}</span>
                   <span className="text-xs text-muted-foreground">{selfDone}/{posUsers.length}</span>
                 </div>
                 <div className="smps-progress-bar"><div className="fill" style={{ width: `${selfPct}%` }} /></div>
@@ -239,7 +240,7 @@ export default function Dashboard() {
                 const emp = users.find(u => u.id === a.employeeId);
                 return (
                   <div key={a.id} className="flex items-center justify-between py-1.5 px-3 rounded-md bg-muted/40 hover:bg-muted/60 transition-colors">
-                    <p className="text-sm">{emp?.name} <span className="text-xs text-muted-foreground">— {emp ? POSITION_LABELS[emp.position] : ''}</span></p>
+                    <p className="text-sm">{emp?.name} <span className="text-xs text-muted-foreground">— {emp ? getPositionLabel(emp.position) : ''}</span></p>
                     <button onClick={() => navigate(`/evaluations?evaluate=${a.employeeId}`)}
                       className="px-3 py-1 rounded-md bg-accent text-accent-foreground text-xs font-medium hover:opacity-90 transition-all duration-150 active:scale-[0.98]">
                       Evaluar

@@ -91,14 +91,23 @@ router.get('/export/csv', authMiddleware, async (req: Request, res: Response) =>
       naMap.set(`${na.evaluation_id}::${na.question_id}`, na.approved === 1);
     }
 
-    // Position labels for CSV
-    const POSITION_LABELS_CSV: Record<string, string> = {
+    // Position labels for CSV - from DB
+    const posConfigRows = await db.all('SELECT position, label FROM position_config');
+    const POSITION_LABELS_CSV: Record<string, string> = {};
+    for (const row of posConfigRows) {
+      POSITION_LABELS_CSV[row.position] = row.label;
+    }
+    // Fallback labels
+    const FALLBACK: Record<string, string> = {
       socio: 'Socio', salary_partner: 'Salary Partner', counsel: 'Counsel',
       asociado_sr: 'Asociado Sr', asociado_mid: 'Asociado Mid',
       asociado_jr: 'Asociado Jr', pasante_carrera: 'Pasante con Carrera', pasante: 'Pasante',
       director: 'Director', gerente: 'Gerente', coordinador: 'Coordinador',
       analista: 'Analista', asistente: 'Asistente', soporte: 'Soporte', archivista: 'Archivista',
     };
+    for (const [k, v] of Object.entries(FALLBACK)) {
+      if (!POSITION_LABELS_CSV[k]) POSITION_LABELS_CSV[k] = v;
+    }
 
     // Build CSV — detailed rows with per-question weights and scores
     const rows: string[] = [];

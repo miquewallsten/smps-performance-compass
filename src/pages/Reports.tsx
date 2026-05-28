@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUsers, useEvaluations, useAssignments, useActionPlans } from '@/api/queries';
-import { POSITION_LABELS, CURRENT_PERIOD, POSITION_HIERARCHY, LEGAL_HIERARCHY, ADMIN_HIERARCHY, POSITION_LEVELS } from '@/types';
+import { POSITION_LABELS, POSITION_LEVELS } from '@/types';
+import { CURRENT_PERIOD, getPositionHierarchy, getLegalHierarchy, getAdminHierarchy } from '@/lib/evaluationConfig';
 import { canViewUserEvaluations } from '@/lib/visibility';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 
@@ -34,13 +35,13 @@ export default function Reports() {
   // Apply area filter
   const activeUsers = baseUsers.filter(u => {
     if (areaFilter === 'all') return true;
-    return POSITION_LEVELS[u.position] === areaFilter;
+    return getPositionLevel(u.position) === areaFilter;
   });
 
   // Hierarchy to use based on filter
-  const hierarchy = areaFilter === 'legal' ? LEGAL_HIERARCHY
-    : areaFilter === 'administrativo' ? ADMIN_HIERARCHY
-    : POSITION_HIERARCHY;
+  const hierarchy = areaFilter === 'legal' ? getLegalHierarchy
+    : areaFilter === 'administrativo' ? getAdminHierarchy
+    : getPositionHierarchy;
 
   // Stage completion data
   const selfEvalsDone = activeUsers.filter(u => evaluations.some(e => e.type === 'self' && e.evaluatorId === u.id && e.period === CURRENT_PERIOD)).length;
@@ -85,7 +86,7 @@ export default function Reports() {
   const selfByPosition = hierarchy.map(pos => {
     const posUsers = activeUsers.filter(u => u.position === pos);
     const done = posUsers.filter(u => evaluations.some(e => e.type === 'self' && e.evaluatorId === u.id && e.period === CURRENT_PERIOD)).length;
-    return { name: POSITION_LABELS[pos], total: posUsers.length, completado: done, pendiente: posUsers.length - done };
+    return { name: getPositionLabel(pos), total: posUsers.length, completado: done, pendiente: posUsers.length - done };
   }).filter(d => d.total > 0);
 
   // Supervisor-evaluations by level (those evaluations performed for users at that level)
@@ -98,14 +99,14 @@ export default function Reports() {
       totalExpected += userAssigns.length;
       done += evaluations.filter(e => e.type === 'supervisor' && e.evaluatedId === u.id && e.period === CURRENT_PERIOD).length;
     });
-    return { name: POSITION_LABELS[pos], total: totalExpected, completado: done, pendiente: Math.max(0, totalExpected - done) };
+    return { name: getPositionLabel(pos), total: totalExpected, completado: done, pendiente: Math.max(0, totalExpected - done) };
   }).filter(d => d.total > 0);
 
   const avgByPosition = hierarchy.map(pos => {
     const posUsers = activeUsers.filter(u => u.position === pos);
     const posEvals = evaluations.filter(e => e.period === CURRENT_PERIOD && posUsers.some(u => u.id === e.evaluatedId));
     const avg = posEvals.length > 0 ? Math.round(posEvals.reduce((s, e) => s + e.totalScore, 0) / posEvals.length) : 0;
-    return { name: POSITION_LABELS[pos], promedio: avg };
+    return { name: getPositionLabel(pos), promedio: avg };
   }).filter(d => d.promedio > 0);
 
   return (
