@@ -172,7 +172,7 @@ export default function QuestionLibrary() {
       isSeed: false, positions: [], rawQuestion: q,
     }));
     return [...seedItems, ...customItems];
-  }, [allSeedItems, libraryQuestions, groupMode, rescaledByPosition]);
+  }, [allSeedItems, libraryQuestions, groupMode, customQuestions]);
 
   // Apply filters and search
   const filteredItems = useMemo(() => {
