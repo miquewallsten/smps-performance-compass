@@ -619,9 +619,6 @@ export default function QuestionLibrary() {
                           {groupMode === 'position' && (
                             <span className="text-xs font-medium tabular-nums text-accent min-w-[2rem] text-right">{Math.round(item.weight)}%</span>
                           )}
-                              {Math.round(item.weight)}%
-                            </button>
-                          )}
                           <span className={`inline-block w-1.5 h-1.5 rounded-full ${item.isSeed ? 'bg-foreground/30' : 'bg-accent'}`} title={item.isSeed ? 'Base' : 'Personalizada'} />
                           <button onClick={() => openEdit(item)} className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors" title="Editar">
                             <Pencil className="h-3 w-3" />
