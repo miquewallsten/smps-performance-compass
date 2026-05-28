@@ -1,10 +1,10 @@
 #!/bin/bash
 # ci-deploy.sh — Run on Hostinger server after files are uploaded
-# Called by GitHub Actions via SSH after SCP upload is complete.
+# Sets correct PATH for Hostinger Node.js, installs deps, restarts Passenger
 
 set -e
 
-export PATH="/opt/alt/alt-nodejs22/root/usr/bin:$PATH"
+export PATH="/opt/alt/alt-nodejs22/root/usr/bin:/usr/local/bin:/usr/bin:/bin:$PATH"
 export LD_LIBRARY_PATH="/opt/alt/alt-nodejs22/root/usr/lib64:$LD_LIBRARY_PATH"
 export NODE_ENV=production
 
@@ -13,32 +13,16 @@ cd "$APP_DIR"
 
 echo "=== CI Deploy Starting ==="
 echo "Working directory: $(pwd)"
+echo "Node version: $(node --version)"
+echo "npm version: $(npm --version)"
 
-# Stop existing server gracefully
-echo "Stopping existing server..."
-pkill -f "node.*server" 2>/dev/null || true
-sleep 2
-
-# Install production dependencies
+# Install production dependencies (non-fatal if it fails)
 echo "Installing production dependencies..."
-npm install --omit=dev --ignore-scripts 2>&1 | tail -5
+npm install --omit=dev --ignore-scripts 2>&1 | tail -5 || echo "⚠️ npm install had warnings"
 
-# Start the server
-echo "Starting server..."
-nohup node server.cjs >> console.log 2>&1 &
+# Restart Passenger by touching restart.txt
+echo "Restarting Passenger..."
+mkdir -p tmp
+touch tmp/restart.txt
 
-# Wait and verify health
-echo "Waiting for server to be healthy..."
-for i in $(seq 1 15); do
-  sleep 3
-  if curl -s http://localhost:3000/api/health 2>/dev/null | grep -q '"ok"'; then
-    echo "✅ Server is healthy and running!"
-    exit 0
-  fi
-  echo "  Attempt $i/15: waiting..."
-done
-
-echo "❌ Server failed to start within 45 seconds"
-echo "Last 20 lines of log:"
-tail -20 console.log
-exit 1
+echo "✅ Deploy complete — Passenger will restart on next request"

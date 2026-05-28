@@ -87,7 +87,10 @@ jobs:
           SSH_CMD="ssh -i $SSH_KEY -p $SSH_PORT -o StrictHostKeyChecking=no -o ConnectTimeout=10 $SSH_HOST"
           SCP_CMD="scp -i $SSH_KEY -P $SSH_PORT -o StrictHostKeyChecking=no"
           
-          # 1. Pull latest source code (no build artifacts in git anymore)
+          # The Hostinger server needs this PATH for npm/node to work
+          HOSTINGER_PATH_ENV='export PATH="/opt/alt/alt-nodejs22/root/usr/bin:/usr/local/bin:/usr/bin:/bin:$PATH"'
+          
+          # 1. Pull latest source code
           $SSH_CMD "cd $REMOTE && git checkout -- . && git pull origin main" || true
           
           # 2. Clean old build assets on server before uploading new ones
@@ -103,8 +106,9 @@ jobs:
           $SCP_CMD dist/assets/* $SSH_HOST:$REMOTE/dist/assets/
           $SCP_CMD server.cjs $SSH_HOST:$REMOTE/server.cjs
           
-          # 4. Install prod deps and restart
-          $SSH_CMD "cd $REMOTE && npm install --omit=dev --ignore-scripts 2>&1 | tail -3 && mkdir -p tmp && touch tmp/restart.txt"
+          # 4. Install prod deps (with correct PATH) then restart Passenger
+          # Use semicolons so Passenger restart happens even if npm install fails
+          $SSH_CMD "cd $REMOTE && $HOSTINGER_PATH_ENV && npm install --omit=dev --ignore-scripts 2>&1 | tail -5; mkdir -p tmp; touch tmp/restart.txt; echo '✅ Passenger restart triggered'"
           
           echo "✅ Deploy complete!"
 
