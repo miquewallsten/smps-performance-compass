@@ -21,14 +21,12 @@ export function getSectionForQuestion(question: EvalQuestion, position: Position
   if (isSoft) return 'blandas';
 
   if (level === 'legal') {
-    // Legal: Criterio Técnico, sus sub-categorías, Desempeño y Cumplimiento → técnico
     if (cat === 'Criterio Técnico' || cat === 'Desempeño' || cat === 'Cumplimiento') return 'tecnico';
     if (isTechnicalSubcategory(cat)) return 'tecnico';
     return 'competencias';
   }
 
   // Administrativo: Desempeño y Cumplimiento → competencias (NO técnico)
-  // Las sub-categorías de Criterio Técnico no aplican a administrativos
   return 'competencias';
 }
 
@@ -83,184 +81,172 @@ export const ALL_CATEGORIES: QuestionCategory[] = [
   'Seguimiento de expedientes',
 ];
 
-// === LEGAL POSITIONS ===
+// === LEGAL POSITIONS (competencias + blandas only; técnico comes from technicalQuestions.ts) ===
 
 const socioQuestions: EvalQuestion[] = [
-  { id: 's1', category: 'Criterio Técnico', text: '¿Cómo califica la captación y retención de clientes?', weight: 10 },
-  { id: 's2', category: 'Criterio Técnico', text: '¿Cómo califica el cumplimiento de objetivos financieros del despacho?', weight: 9 },
-  { id: 's3', category: 'Criterio Técnico', text: '¿Cómo califica la gestión de relaciones con clientes clave?', weight: 8 },
-  { id: 's4', category: 'Liderazgo', text: '¿Cómo califica la visión estratégica y dirección del despacho?', weight: 8 },
-  { id: 's5', category: 'Liderazgo', text: '¿Cómo califica el desarrollo y mentoría del equipo?', weight: 8 },
-  { id: 's6', category: 'Liderazgo', text: '¿Cómo califica la toma de decisiones estratégicas?', weight: 7 },
-  { id: 's7', category: 'Habilidades Blandas', text: '¿Cómo califica la comunicación con el equipo y clientes?', weight: 7 },
-  { id: 's8', category: 'Criterio Técnico', text: '¿Cómo califica la representación institucional y reputación de la firma?', weight: 7 },
-  { id: 's9', category: 'Trabajo en Equipo', text: '¿Cómo califica la coordinación entre áreas y socios?', weight: 6 },
-  { id: 's10', category: 'Habilidades Blandas', text: '¿Cómo califica la resolución de conflictos internos?', weight: 6 },
-  { id: 's11', category: 'Actitud', text: '¿Cómo califica la ética profesional y ejemplo hacia el equipo?', weight: 6 },
-  { id: 's12', category: 'Disponibilidad', text: '¿Cómo califica la disponibilidad ante situaciones críticas?', weight: 6 },
-  { id: 's13', category: 'Habilidades Blandas', text: '¿Cómo califica la capacidad de innovación y adaptación?', weight: 6 },
-  { id: 's14', category: 'Criterio Técnico', text: '¿Cómo califica la supervisión de calidad en entregables del despacho?', weight: 6 },
+  { id: 's4', category: 'Liderazgo', text: '¿Cómo califica la visión estratégica y dirección del despacho?', weight: 5 },
+  { id: 's5', category: 'Liderazgo', text: '¿Cómo califica el desarrollo y mentoría del equipo?', weight: 5 },
+  { id: 's6', category: 'Liderazgo', text: '¿Cómo califica la toma de decisiones estratégicas?', weight: 5 },
+  { id: 's9', category: 'Trabajo en Equipo', text: '¿Cómo califica la coordinación entre áreas y socios?', weight: 5 },
+  { id: 's7', category: 'Habilidades Blandas', text: '¿Cómo califica la comunicación con el equipo y clientes?', weight: 4 },
+  { id: 's10', category: 'Habilidades Blandas', text: '¿Cómo califica la resolución de conflictos internos?', weight: 4 },
+  { id: 's11', category: 'Actitud', text: '¿Cómo califica la ética profesional y ejemplo hacia el equipo?', weight: 4 },
+  { id: 's12', category: 'Disponibilidad', text: '¿Cómo califica la disponibilidad ante situaciones críticas?', weight: 4 },
+  { id: 's13', category: 'Habilidades Blandas', text: '¿Cómo califica la capacidad de innovación y adaptación?', weight: 4 },
 ];
 
 const asociadoSrQuestions: EvalQuestion[] = [
-  { id: 'asr1', category: 'Criterio Técnico', text: '¿Cómo califica la calidad técnica-jurídica en dictámenes y opiniones?', weight: 10 },
-  { id: 'asr2', category: 'Criterio Técnico', text: '¿Cómo califica la entrega de trabajos en tiempo y forma?', weight: 9 },
-  { id: 'asr3', category: 'Criterio Técnico', text: '¿Cómo califica el desarrollo de estrategias legales?', weight: 8 },
-  { id: 'asr4', category: 'Criterio Técnico', text: '¿Cómo califica la atención y seguimiento a clientes?', weight: 8 },
-  { id: 'asr5', category: 'Liderazgo', text: '¿Cómo califica el liderazgo en casos complejos?', weight: 8 },
-  { id: 'asr6', category: 'Liderazgo', text: '¿Cómo califica la mentoría hacia abogados junior y pasantes?', weight: 7 },
-  { id: 'asr7', category: 'Criterio Técnico', text: '¿Cómo califica la gestión de tiempos y prioridades?', weight: 7 },
-  { id: 'asr8', category: 'Habilidades Blandas', text: '¿Cómo califica la comunicación clara y efectiva?', weight: 7 },
-  { id: 'asr9', category: 'Trabajo en Equipo', text: '¿Cómo califica la colaboración con otros departamentos?', weight: 6 },
-  { id: 'asr10', category: 'Desempeño', text: '¿Cómo califica el cumplimiento de metas y objetivos?', weight: 8 },
-  { id: 'asr11', category: 'Cumplimiento', text: '¿Cómo califica la adherencia a políticas y procedimientos?', weight: 6 },
-  { id: 'asr12', category: 'Habilidades Blandas', text: '¿Cómo califica la resolución de conflictos?', weight: 6 },
-  { id: 'asr13', category: 'Actitud', text: '¿Cómo califica la proactividad y compromiso?', weight: 6 },
+  { id: 'asr5', category: 'Liderazgo', text: '¿Cómo califica el liderazgo en casos complejos?', weight: 5 },
+  { id: 'asr6', category: 'Liderazgo', text: '¿Cómo califica la mentoría hacia abogados junior y pasantes?', weight: 10 },
+  { id: 'asr9', category: 'Trabajo en Equipo', text: '¿Cómo califica la colaboración con otros departamentos?', weight: 5 },
+  { id: 'asr8', category: 'Habilidades Blandas', text: '¿Cómo califica la comunicación clara y efectiva?', weight: 5 },
+  { id: 'asr12', category: 'Habilidades Blandas', text: '¿Cómo califica la resolución de conflictos?', weight: 5 },
+  { id: 'asr13', category: 'Actitud', text: '¿Cómo califica la proactividad y compromiso?', weight: 5 },
   { id: 'asr14', category: 'Disponibilidad', text: '¿Cómo califica la disponibilidad para situaciones urgentes?', weight: 5 },
 ];
 
 const asociadoMidQuestions: EvalQuestion[] = [
-  { id: 'amd1', category: 'Criterio Técnico', text: '¿Cómo califica la calidad de su trabajo jurídico?', weight: 10 },
-  { id: 'amd2', category: 'Criterio Técnico', text: '¿Cómo califica la capacidad de análisis y resolución de problemas?', weight: 9 },
-  { id: 'amd3', category: 'Criterio Técnico', text: '¿Cómo califica la redacción de documentos legales?', weight: 8 },
-  { id: 'amd4', category: 'Criterio Técnico', text: '¿Cómo califica la gestión de casos y asuntos asignados?', weight: 8 },
-  { id: 'amd5', category: 'Liderazgo', text: '¿Cómo califica la capacidad de guía a miembros junior del equipo?', weight: 7 },
-  { id: 'amd6', category: 'Trabajo en Equipo', text: '¿Cómo califica la colaboración efectiva con el equipo?', weight: 7 },
-  { id: 'amd7', category: 'Desempeño', text: '¿Cómo califica el cumplimiento de metas y entregas?', weight: 8 },
-  { id: 'amd8', category: 'Cumplimiento', text: '¿Cómo califica el seguimiento a políticas y procedimientos?', weight: 7 },
-  { id: 'amd9', category: 'Habilidades Blandas', text: '¿Cómo califica la comunicación con clientes y colegas?', weight: 7 },
-  { id: 'amd10', category: 'Actitud', text: '¿Cómo califica la actitud de servicio y compromiso?', weight: 6 },
-  { id: 'amd11', category: 'Disponibilidad', text: '¿Cómo califica la disponibilidad y respuesta oportuna?', weight: 6 },
-  { id: 'amd12', category: 'Habilidades Blandas', text: '¿Cómo califica la capacidad de adaptación al cambio?', weight: 6 },
+  { id: 'amd5', category: 'Liderazgo', text: '¿Cómo califica la capacidad de guía a miembros junior del equipo?', weight: 10 },
+  { id: 'amd6', category: 'Trabajo en Equipo', text: '¿Cómo califica la colaboración efectiva con el equipo?', weight: 10 },
+  { id: 'amd7h', category: 'Habilidades Blandas', text: '¿Cómo califica la comunicación con clientes y colegas?', weight: 5 },
+  { id: 'amd8h', category: 'Actitud', text: '¿Cómo califica la actitud de servicio y compromiso?', weight: 5 },
+  { id: 'amd9h', category: 'Disponibilidad', text: '¿Cómo califica la disponibilidad y respuesta oportuna?', weight: 5 },
+  { id: 'amd10h', category: 'Habilidades Blandas', text: '¿Cómo califica la capacidad de adaptación al cambio?', weight: 5 },
 ];
 
 const asociadoJrQuestions: EvalQuestion[] = [
-  { id: 'ajr1', category: 'Criterio Técnico', text: '¿Cómo califica la calidad del trabajo jurídico realizado?', weight: 10 },
-  { id: 'ajr2', category: 'Criterio Técnico', text: '¿Cómo califica la capacidad de investigación y análisis?', weight: 9 },
-  { id: 'ajr3', category: 'Criterio Técnico', text: '¿Cómo califica la redacción y presentación de documentos?', weight: 8 },
-  { id: 'ajr4', category: 'Desempeño', text: '¿Cómo califica el cumplimiento de tareas asignadas?', weight: 8 },
-  { id: 'ajr5', category: 'Desempeño', text: '¿Cómo califica la puntualidad en entregas?', weight: 7 },
-  { id: 'ajr6', category: 'Cumplimiento', text: '¿Cómo califica el seguimiento de instrucciones?', weight: 7 },
-  { id: 'ajr7', category: 'Trabajo en Equipo', text: '¿Cómo califica la colaboración con el equipo?', weight: 7 },
-  { id: 'ajr8', category: 'Habilidades Blandas', text: '¿Cómo califica la comunicación efectiva?', weight: 7 },
-  { id: 'ajr9', category: 'Actitud', text: '¿Cómo califica la disposición para aprender?', weight: 6 },
-  { id: 'ajr10', category: 'Disponibilidad', text: '¿Cómo califica la disponibilidad?', weight: 6 },
-  { id: 'ajr11', category: 'Habilidades Blandas', text: '¿Cómo califica la adaptabilidad?', weight: 6 },
-  { id: 'ajr12', category: 'Cumplimiento', text: '¿Cómo califica la confidencialidad?', weight: 7 },
+  { id: 'ajr5', category: 'Trabajo en Equipo', text: '¿Cómo califica la colaboración con el equipo?', weight: 15 },
+  { id: 'ajr6', category: 'Cumplimiento', text: '¿Cómo califica el seguimiento de instrucciones?', weight: 15 },
+  { id: 'ajr7', category: 'Liderazgo', text: '¿Cómo califica la capacidad de guía a miembros junior del equipo?', weight: 10 },
+  { id: 'ajr8h', category: 'Habilidades Blandas', text: '¿Cómo califica la comunicación efectiva?', weight: 5 },
+  { id: 'ajr9h', category: 'Actitud', text: '¿Cómo califica la disposición para aprender?', weight: 5 },
+  { id: 'ajr10h', category: 'Disponibilidad', text: '¿Cómo califica la disponibilidad?', weight: 5 },
+  { id: 'ajr11h', category: 'Habilidades Blandas', text: '¿Cómo califica la adaptabilidad?', weight: 5 },
 ];
 
 const pasanteCarreraQuestions: EvalQuestion[] = [
-  { id: 'pc1', category: 'Criterio Técnico', text: '¿Cómo califica la calidad del trabajo realizado?', weight: 10 },
-  { id: 'pc2', category: 'Criterio Técnico', text: '¿Cómo califica la capacidad de investigación?', weight: 9 },
-  { id: 'pc3', category: 'Desempeño', text: '¿Cómo califica el cumplimiento de tareas asignadas?', weight: 8 },
-  { id: 'pc4', category: 'Desempeño', text: '¿Cómo califica la puntualidad en entregas?', weight: 7 },
-  { id: 'pc5', category: 'Cumplimiento', text: '¿Cómo califica el seguimiento de instrucciones?', weight: 7 },
-  { id: 'pc6', category: 'Trabajo en Equipo', text: '¿Cómo califica la colaboración con el equipo?', weight: 7 },
-  { id: 'pc7', category: 'Habilidades Blandas', text: '¿Cómo califica la comunicación?', weight: 7 },
-  { id: 'pc8', category: 'Actitud', text: '¿Cómo califica la disposición para aprender?', weight: 6 },
-  { id: 'pc9', category: 'Disponibilidad', text: '¿Cómo califica la disponibilidad?', weight: 6 },
-  { id: 'pc10', category: 'Habilidades Blandas', text: '¿Cómo califica la adaptabilidad?', weight: 6 },
+  { id: 'pc5', category: 'Trabajo en Equipo', text: '¿Cómo califica la colaboración con el equipo?', weight: 10 },
+  { id: 'pc6', category: 'Cumplimiento', text: '¿Cómo califica el seguimiento de instrucciones?', weight: 10 },
+  { id: 'pc3', category: 'Desempeño', text: '¿Cómo califica el cumplimiento de tareas?', weight: 10 },
+  { id: 'pc4', category: 'Desempeño', text: '¿Cómo califica la puntualidad en entregas?', weight: 10 },
+  { id: 'pc7', category: 'Habilidades Blandas', text: '¿Cómo califica la comunicación?', weight: 5 },
+  { id: 'pc8', category: 'Actitud', text: '¿Cómo califica la disposición para aprender?', weight: 5 },
+  { id: 'pc9', category: 'Disponibilidad', text: '¿Cómo califica la disponibilidad?', weight: 5 },
+  { id: 'pc10', category: 'Habilidades Blandas', text: '¿Cómo califica la adaptabilidad?', weight: 5 },
 ];
 
 const pasanteCorporativoQuestions: EvalQuestion[] = [
-  { id: 'pco1', category: 'Criterio Técnico', text: '¿Cómo califica la calidad del trabajo realizado?', weight: 10 },
-  { id: 'pco2', category: 'Criterio Técnico', text: '¿Cómo califica la capacidad de investigación?', weight: 9 },
-  { id: 'pco3', category: 'Desempeño', text: '¿Cómo califica el cumplimiento de tareas asignadas?', weight: 8 },
-  { id: 'pco4', category: 'Desempeño', text: '¿Cómo califica la puntualidad en entregas?', weight: 7 },
-  { id: 'pco5', category: 'Cumplimiento', text: '¿Cómo califica el seguimiento de instrucciones?', weight: 7 },
-  { id: 'pco6', category: 'Trabajo en Equipo', text: '¿Cómo califica la colaboración con el equipo?', weight: 7 },
-  { id: 'pco7', category: 'Habilidades Blandas', text: '¿Cómo califica la comunicación?', weight: 7 },
-  { id: 'pco8', category: 'Actitud', text: '¿Cómo califica la disposición para aprender?', weight: 6 },
-  { id: 'pco9', category: 'Disponibilidad', text: '¿Cómo califica la disponibilidad?', weight: 6 },
-  { id: 'pco10', category: 'Habilidades Blandas', text: '¿Cómo califica la adaptabilidad?', weight: 6 },
+  { id: 'pco5', category: 'Trabajo en Equipo', text: '¿Cómo califica la colaboración con el equipo?', weight: 15 },
+  { id: 'pco6', category: 'Trabajo en Equipo', text: '¿Cómo califica la coordinación con otras áreas?', weight: 15 },
+  { id: 'pco7', category: 'Cumplimiento', text: '¿Cómo califica el seguimiento de instrucciones?', weight: 10 },
+  { id: 'pco8', category: 'Habilidades Blandas', text: '¿Cómo califica la comunicación?', weight: 5 },
+  { id: 'pco9', category: 'Actitud', text: '¿Cómo califica la disposición para aprender?', weight: 5 },
+  { id: 'pco10', category: 'Disponibilidad', text: '¿Cómo califica la disponibilidad?', weight: 5 },
+  { id: 'pco11', category: 'Habilidades Blandas', text: '¿Cómo califica la adaptabilidad?', weight: 5 },
 ];
 
-// === ADMINISTRATIVE POSITIONS ===
+// === ADMINISTRATIVE POSITIONS (all questions; no técnico section) ===
 
 const directorQuestions: EvalQuestion[] = [
-  { id: 'd1', category: 'Liderazgo', text: '¿Cómo califica la visión estratégica y dirección del área?', weight: 10 },
-  { id: 'd2', category: 'Liderazgo', text: '¿Cómo califica la gestión de recursos humanos y financieros?', weight: 9 },
-  { id: 'd3', category: 'Desempeño', text: '¿Cómo califica el cumplimiento de objetivos y metas?', weight: 9 },
-  { id: 'd4', category: 'Trabajo en Equipo', text: '¿Cómo califica la coordinación entre departamentos?', weight: 8 },
-  { id: 'd5', category: 'Desempeño', text: '¿Cómo califica la eficiencia operativa?', weight: 8 },
-  { id: 'd6', category: 'Cumplimiento', text: '¿Cómo califica el seguimiento de políticas y procedimientos?', weight: 7 },
-  { id: 'd7', category: 'Habilidades Blandas', text: '¿Cómo califica la comunicación con el equipo?', weight: 7 },
-  { id: 'd8', category: 'Actitud', text: '¿Cómo califica el compromiso con la firma?', weight: 7 },
-  { id: 'd9', category: 'Disponibilidad', text: '¿Cómo califica la disponibilidad?', weight: 6 },
-  { id: 'd10', category: 'Habilidades Blandas', text: '¿Cómo califica la resolución de conflictos?', weight: 6 },
+  { id: 'd1', category: 'Liderazgo', text: '¿Cómo califica la visión estratégica y dirección del área?', weight: 15 },
+  { id: 'd2', category: 'Liderazgo', text: '¿Cómo califica la gestión de recursos humanos y financieros?', weight: 14 },
+  { id: 'd3', category: 'Desempeño', text: '¿Cómo califica el cumplimiento de objetivos y metas?', weight: 14 },
+  { id: 'd4', category: 'Trabajo en Equipo', text: '¿Cómo califica la coordinación entre departamentos?', weight: 13 },
+  { id: 'd5', category: 'Desempeño', text: '¿Cómo califica la eficiencia operativa?', weight: 13 },
+  { id: 'd6', category: 'Cumplimiento', text: '¿Cómo califica el seguimiento de políticas y procedimientos?', weight: 11 },
+  { id: 'd7', category: 'Habilidades Blandas', text: '¿Cómo califica la comunicación con el equipo?', weight: 5 },
+  { id: 'd8', category: 'Actitud', text: '¿Cómo califica el compromiso con la firma?', weight: 5 },
+  { id: 'd9', category: 'Disponibilidad', text: '¿Cómo califica la disponibilidad?', weight: 5 },
+  { id: 'd10', category: 'Habilidades Blandas', text: '¿Cómo califica la resolución de conflictos?', weight: 5 },
 ];
 
 const gerenteQuestions: EvalQuestion[] = [
-  { id: 'g1', category: 'Liderazgo', text: '¿Cómo califica la gestión del equipo a su cargo?', weight: 10 },
-  { id: 'g2', category: 'Desempeño', text: '¿Cómo califica el cumplimiento de objetivos?', weight: 9 },
-  { id: 'g3', category: 'Desempeño', text: '¿Cómo califica la eficiencia operativa?', weight: 8 },
-  { id: 'g4', category: 'Trabajo en Equipo', text: '¿Cómo califica la coordinación con otras áreas?', weight: 8 },
-  { id: 'g5', category: 'Cumplimiento', text: '¿Cómo califica el seguimiento de políticas?', weight: 7 },
-  { id: 'g6', category: 'Habilidades Blandas', text: '¿Cómo califica la comunicación efectiva?', weight: 7 },
-  { id: 'g7', category: 'Actitud', text: '¿Cómo califica la proactividad?', weight: 7 },
-  { id: 'g8', category: 'Disponibilidad', text: '¿Cómo califica la disponibilidad?', weight: 6 },
-  { id: 'g9', category: 'Habilidades Blandas', text: '¿Cómo califica la resolución de problemas?', weight: 6 },
-  { id: 'g10', category: 'Cumplimiento', text: '¿Cómo califica la confidencialidad?', weight: 7 },
+  { id: 'g1', category: 'Liderazgo', text: '¿Cómo califica la gestión del equipo a su cargo?', weight: 15 },
+  { id: 'g2', category: 'Desempeño', text: '¿Cómo califica el cumplimiento de objetivos?', weight: 15 },
+  { id: 'g3', category: 'Desempeño', text: '¿Cómo califica la eficiencia operativa?', weight: 13 },
+  { id: 'g4', category: 'Trabajo en Equipo', text: '¿Cómo califica la coordinación con otras áreas?', weight: 13 },
+  { id: 'g5', category: 'Cumplimiento', text: '¿Cómo califica el seguimiento de políticas?', weight: 12 },
+  { id: 'g6', category: 'Cumplimiento', text: '¿Cómo califica la confidencialidad?', weight: 12 },
+  { id: 'g7', category: 'Habilidades Blandas', text: '¿Cómo califica la comunicación efectiva?', weight: 5 },
+  { id: 'g8', category: 'Actitud', text: '¿Cómo califica la proactividad?', weight: 5 },
+  { id: 'g9', category: 'Disponibilidad', text: '¿Cómo califica la disponibilidad?', weight: 5 },
+  { id: 'g10', category: 'Habilidades Blandas', text: '¿Cómo califica la resolución de problemas?', weight: 5 },
 ];
 
 const coordinadorQuestions: EvalQuestion[] = [
-  { id: 'co1', category: 'Desempeño', text: '¿Cómo califica el cumplimiento de objetivos?', weight: 10 },
-  { id: 'co2', category: 'Trabajo en Equipo', text: '¿Cómo califica la coordinación del equipo?', weight: 9 },
-  { id: 'co3', category: 'Desempeño', text: '¿Cómo califica la eficiencia en sus procesos?', weight: 8 },
-  { id: 'co4', category: 'Cumplimiento', text: '¿Cómo califica el seguimiento de instrucciones?', weight: 8 },
-  { id: 'co5', category: 'Habilidades Blandas', text: '¿Cómo califica la comunicación?', weight: 7 },
-  { id: 'co6', category: 'Actitud', text: '¿Cómo califica la actitud de servicio?', weight: 7 },
-  { id: 'co7', category: 'Disponibilidad', text: '¿Cómo califica la disponibilidad?', weight: 7 },
-  { id: 'co8', category: 'Trabajo en Equipo', text: '¿Cómo califica la colaboración?', weight: 7 },
-  { id: 'co9', category: 'Cumplimiento', text: '¿Cómo califica la confidencialidad?', weight: 6 },
-  { id: 'co10', category: 'Habilidades Blandas', text: '¿Cómo califica la adaptabilidad?', weight: 6 },
+  { id: 'co1', category: 'Desempeño', text: '¿Cómo califica el cumplimiento de objetivos?', weight: 17 },
+  { id: 'co2', category: 'Trabajo en Equipo', text: '¿Cómo califica la coordinación del equipo?', weight: 15 },
+  { id: 'co3', category: 'Desempeño', text: '¿Cómo califica la eficiencia en sus procesos?', weight: 13 },
+  { id: 'co4', category: 'Cumplimiento', text: '¿Cómo califica el seguimiento de instrucciones?', weight: 13 },
+  { id: 'co5', category: 'Trabajo en Equipo', text: '¿Cómo califica la colaboración?', weight: 12 },
+  { id: 'co6', category: 'Cumplimiento', text: '¿Cómo califica la confidencialidad?', weight: 10 },
+  { id: 'co7', category: 'Habilidades Blandas', text: '¿Cómo califica la comunicación?', weight: 5 },
+  { id: 'co8', category: 'Actitud', text: '¿Cómo califica la actitud de servicio?', weight: 5 },
+  { id: 'co9', category: 'Disponibilidad', text: '¿Cómo califica la disponibilidad?', weight: 5 },
+  { id: 'co10', category: 'Habilidades Blandas', text: '¿Cómo califica la adaptabilidad?', weight: 5 },
 ];
 
 const analistaQuestions: EvalQuestion[] = [
-  { id: 'an1', category: 'Desempeño', text: '¿Cómo califica la calidad de su trabajo?', weight: 10 },
-  { id: 'an2', category: 'Desempeño', text: '¿Cómo califica el cumplimiento de entregas?', weight: 9 },
-  { id: 'an3', category: 'Cumplimiento', text: '¿Cómo califica el seguimiento de procedimientos?', weight: 8 },
-  { id: 'an4', category: 'Trabajo en Equipo', text: '¿Cómo califica la colaboración?', weight: 8 },
-  { id: 'an5', category: 'Habilidades Blandas', text: '¿Cómo califica la comunicación?', weight: 7 },
-  { id: 'an6', category: 'Actitud', text: '¿Cómo califica la proactividad?', weight: 7 },
-  { id: 'an7', category: 'Disponibilidad', text: '¿Cómo califica la disponibilidad?', weight: 7 },
-  { id: 'an8', category: 'Cumplimiento', text: '¿Cómo califica la confidencialidad?', weight: 7 },
-  { id: 'an9', category: 'Habilidades Blandas', text: '¿Cómo califica la adaptabilidad?', weight: 6 },
-  { id: 'an10', category: 'Desempeño', text: '¿Cómo califica la gestión del tiempo?', weight: 6 },
+  { id: 'an1', category: 'Desempeño', text: '¿Cómo califica la calidad de su trabajo?', weight: 17 },
+  { id: 'an2', category: 'Desempeño', text: '¿Cómo califica el cumplimiento de entregas?', weight: 15 },
+  { id: 'an3', category: 'Cumplimiento', text: '¿Cómo califica el seguimiento de procedimientos?', weight: 13 },
+  { id: 'an4', category: 'Trabajo en Equipo', text: '¿Cómo califica la colaboración?', weight: 13 },
+  { id: 'an5', category: 'Cumplimiento', text: '¿Cómo califica la confidencialidad?', weight: 12 },
+  { id: 'an6', category: 'Desempeño', text: '¿Cómo califica la gestión del tiempo?', weight: 10 },
+  { id: 'an7', category: 'Habilidades Blandas', text: '¿Cómo califica la comunicación?', weight: 5 },
+  { id: 'an8', category: 'Actitud', text: '¿Cómo califica la proactividad?', weight: 5 },
+  { id: 'an9', category: 'Disponibilidad', text: '¿Cómo califica la disponibilidad?', weight: 5 },
+  { id: 'an10', category: 'Habilidades Blandas', text: '¿Cómo califica la adaptabilidad?', weight: 5 },
 ];
 
 const asistente_questions: EvalQuestion[] = [
   { id: 'as1', category: 'Desempeño', text: '¿Cómo califica la calidad de su trabajo?', weight: 10 },
-  { id: 'as2', category: 'Desempeño', text: '¿Cómo califica el cumplimiento de tareas?', weight: 9 },
+  { id: 'as2', category: 'Desempeño', text: '¿Cómo califica el cumplimiento de tareas?', weight: 10 },
   { id: 'as3', category: 'Cumplimiento', text: '¿Cómo califica el seguimiento de instrucciones?', weight: 8 },
   { id: 'as4', category: 'Trabajo en Equipo', text: '¿Cómo califica la colaboración con el equipo?', weight: 8 },
-  { id: 'as5', category: 'Actitud', text: '¿Cómo califica la actitud de servicio y disposición?', weight: 9 },
-  { id: 'as6', category: 'Disponibilidad', text: '¿Cómo califica la disponibilidad?', weight: 8 },
-  { id: 'as7', category: 'Habilidades Blandas', text: '¿Cómo califica la comunicación?', weight: 7 },
-  { id: 'as8', category: 'Cumplimiento', text: '¿Cómo califica la confidencialidad?', weight: 7 },
-  { id: 'as9', category: 'Habilidades Blandas', text: '¿Cómo califica la adaptabilidad?', weight: 7 },
-  { id: 'as10', category: 'Desempeño', text: '¿Cómo califica la puntualidad?', weight: 6 },
+  { id: 'as5', category: 'Cumplimiento', text: '¿Cómo califica la confidencialidad?', weight: 8 },
+  { id: 'as6', category: 'Desempeño', text: '¿Cómo califica la puntualidad?', weight: 6 },
+  { id: 'as7', category: 'Actitud', text: '¿Cómo califica la actitud de servicio y disposición?', weight: 15 },
+  { id: 'as8', category: 'Disponibilidad', text: '¿Cómo califica la disponibilidad?', weight: 13 },
+  { id: 'as9', category: 'Habilidades Blandas', text: '¿Cómo califica la comunicación?', weight: 11 },
+  { id: 'as10', category: 'Habilidades Blandas', text: '¿Cómo califica la adaptabilidad?', weight: 11 },
 ];
 
 const archivoSoporteQuestions: EvalQuestion[] = [
   { id: 'ar1', category: 'Desempeño', text: '¿Cómo califica la calidad de su trabajo?', weight: 10 },
-  { id: 'ar2', category: 'Desempeño', text: '¿Cómo califica el cumplimiento de tareas?', weight: 9 },
-  { id: 'ar3', category: 'Cumplimiento', text: '¿Cómo califica el seguimiento de instrucciones?', weight: 8 },
-  { id: 'ar4', category: 'Habilidades Blandas', text: '¿Cómo califica la comunicación con el equipo?', weight: 8 },
-  { id: 'ar5', category: 'Actitud', text: '¿Cómo califica la actitud de servicio y disposición?', weight: 9 },
-  { id: 'ar6', category: 'Disponibilidad', text: '¿Cómo califica la disponibilidad?', weight: 8 },
-  { id: 'ar7', category: 'Desempeño', text: '¿Cómo califica el manejo de sistemas de archivo?', weight: 8 },
-  { id: 'ar8', category: 'Trabajo en Equipo', text: '¿Cómo califica la coordinación con su equipo?', weight: 7 },
-  { id: 'ar9', category: 'Habilidades Blandas', text: '¿Cómo califica la adaptabilidad?', weight: 7 },
-  { id: 'ar10', category: 'Cumplimiento', text: '¿Cómo califica el seguimiento a instrucciones?', weight: 7 },
-  { id: 'ar11', category: 'Desempeño', text: '¿Cómo califica la confidencialidad?', weight: 7 },
-  { id: 'ar12', category: 'Actitud', text: '¿Cómo califica la iniciativa propia?', weight: 7 },
+  { id: 'ar2', category: 'Desempeño', text: '¿Cómo califica el cumplimiento de tareas?', weight: 8 },
+  { id: 'ar3', category: 'Cumplimiento', text: '¿Cómo califica el seguimiento de instrucciones?', weight: 7 },
+  { id: 'ar4', category: 'Desempeño', text: '¿Cómo califica el manejo de sistemas de archivo?', weight: 7 },
+  { id: 'ar5', category: 'Trabajo en Equipo', text: '¿Cómo califica la coordinación con su equipo?', weight: 6 },
+  { id: 'ar6', category: 'Cumplimiento', text: '¿Cómo califica el seguimiento a instrucciones?', weight: 6 },
+  { id: 'ar7', category: 'Desempeño', text: '¿Cómo califica la confidencialidad?', weight: 6 },
+  { id: 'ar8', category: 'Habilidades Blandas', text: '¿Cómo califica la comunicación con el equipo?', weight: 10 },
+  { id: 'ar9', category: 'Actitud', text: '¿Cómo califica la actitud de servicio y disposición?', weight: 12 },
+  { id: 'ar10', category: 'Disponibilidad', text: '¿Cómo califica la disponibilidad?', weight: 10 },
+  { id: 'ar11', category: 'Habilidades Blandas', text: '¿Cómo califica la adaptabilidad?', weight: 9 },
+  { id: 'ar12', category: 'Actitud', text: '¿Cómo califica la iniciativa propia?', weight: 9 },
+];
+
+// Soporte has one different question from Archivo y Soporte
+const soporteQuestions: EvalQuestion[] = [
+  { id: 'so1', category: 'Desempeño', text: '¿Cómo califica la calidad de su trabajo?', weight: 9 },
+  { id: 'so2', category: 'Desempeño', text: '¿Cómo califica el cumplimiento de tareas?', weight: 9 },
+  { id: 'so3', category: 'Cumplimiento', text: '¿Cómo califica el seguimiento de instrucciones?', weight: 7 },
+  { id: 'so4', category: 'Desempeño', text: '¿Cómo califica el manejo de sistemas de archivo?', weight: 7 },
+  { id: 'so5', category: 'Trabajo en Equipo', text: '¿Cómo califica la coordinación con su equipo?', weight: 6 },
+  { id: 'so6', category: 'Cumplimiento', text: '¿Cómo califica el seguimiento a instrucciones?', weight: 6 },
+  { id: 'so7', category: 'Desempeño', text: '¿Cómo califica la confidencialidad?', weight: 6 },
+  { id: 'so8', category: 'Habilidades Blandas', text: '¿Cómo califica la comunicación con el equipo?', weight: 10 },
+  { id: 'so9', category: 'Actitud', text: '¿Cómo califica la actitud de servicio y disposición?', weight: 12 },
+  { id: 'so10', category: 'Disponibilidad', text: '¿Cómo califica la disponibilidad?', weight: 10 },
+  { id: 'so11', category: 'Habilidades Blandas', text: '¿Cómo califica la adaptabilidad?', weight: 9 },
+  { id: 'so12', category: 'Actitud', text: '¿Cómo califica la iniciativa propia?', weight: 9 },
 ];
 
 export const QUESTIONS_BY_POSITION: Record<Position, EvalQuestion[]> = {
   socio: socioQuestions,
-  salary_partner: socioQuestions, // Same questions as Socio
-  counsel: socioQuestions, // Solo se usa la sección técnica (pesos competencias/blandas = 0)
+  salary_partner: socioQuestions,
+  counsel: socioQuestions,
 
   asociado_sr: asociadoSrQuestions,
   asociado_mid: asociadoMidQuestions,
@@ -274,7 +260,7 @@ export const QUESTIONS_BY_POSITION: Record<Position, EvalQuestion[]> = {
   analista: analistaQuestions,
   asistente: asistente_questions,
   archivo_soporte: archivoSoporteQuestions,
-  soporte: archivoSoporteQuestions,
+  soporte: soporteQuestions,
   archivista: archivoSoporteQuestions,
   dummy: socioQuestions,
 };
@@ -298,7 +284,7 @@ export function getQuestionsForPosition(
  */
 export function calculateScore(
   questions: EvalQuestion[],
-  responses: EvaluationResponse[],
+  responses: EvaluationResponses[],
   naApprovals?: Record<string, boolean>
 ): number {
   const activeQuestions = questions.filter(q => {
