@@ -76,7 +76,8 @@ export default function UserTimeline() {
   const nav = useNavigate();
   const { user: me } = useAuth();
   const { data: users = [] } = useUsers();
-  const { data: events = [], isLoading } = useUserTimeline(id!);
+  const { data: rawData, isLoading } = useUserTimeline(id!);
+  const events = Array.isArray(rawData) ? rawData : (rawData?.events ?? []);
   const createMut = useCreateTimelineEvent();
   const deleteMut = useDeleteTimelineEvent();
   const [showAdd, setShowAdd] = useState(false);
@@ -90,6 +91,7 @@ export default function UserTimeline() {
 
   // Filter
   const filtered = useMemo(() => {
+    if (!Array.isArray(events)) return [];
     if (filter === 'all') return events;
     return events.filter(e => e.event_type === filter);
   }, [events, filter]);
