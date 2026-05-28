@@ -616,20 +616,9 @@ export default function QuestionLibrary() {
                           </div>
                         </div>
                         <div className="flex items-center gap-2 flex-shrink-0">
-                          {editingWeight === item.id ? (
-                            <div className="flex items-center gap-1">
-                              <input type="number" min={1} max={100} value={weightInput}
-                                onChange={e => setWeightInput(e.target.value)}
-                                onKeyDown={e => { if (e.key === 'Enter') handleInlineWeightSave(item); if (e.key === 'Escape') setEditingWeight(null); }}
-                                onBlur={() => handleInlineWeightSave(item)}
-                                className="w-12 px-1.5 py-0.5 text-xs border rounded text-center focus:outline-none focus:ring-1 focus:ring-accent"
-                                autoFocus />
-                              <span className="text-[10px] text-muted-foreground">%</span>
-                            </div>
-                          ) : (
-                            <button onClick={() => { if (canEdit && groupMode !== 'position') { setEditingWeight(item.id); setWeightInput(String(item.rawWeight)); }}}
-                              className={`text-xs font-medium tabular-nums text-muted-foreground hover:text-foreground px-1.5 py-0.5 rounded hover:bg-muted transition-colors min-w-[2rem] text-right ${groupMode === 'position' ? 'text-accent' : ''}`}
-                              title={groupMode === 'position' ? 'Peso reescalado (calculado automáticamente)' : 'Click para editar peso'}>
+                          {groupMode === 'position' && (
+                            <span className="text-xs font-medium tabular-nums text-accent min-w-[2rem] text-right">{Math.round(item.weight)}%</span>
+                          )}
                               {Math.round(item.weight)}%
                             </button>
                           )}
