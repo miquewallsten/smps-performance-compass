@@ -232,9 +232,6 @@ export default function MyActionPlan() {
                         ))}
                       </optgroup>
                     </select>
-                    <input value={it.competencia} onChange={e => updateItem(it.id, { competencia: e.target.value })}
-                      placeholder="O escribe una competencia personalizada..."
-                      className="w-full mt-1 px-3 py-2 rounded-lg border border-input bg-background text-sm" />
                   </div>
                   <div>
                     <label className="text-xs text-muted-foreground">Fecha de revisión *</label>
