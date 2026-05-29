@@ -50,6 +50,9 @@ if (process.env.NODE_ENV === 'production') {
 
 app.use(express.json());
 
+// Trust proxy for rate limiting behind Passenger/nginx
+app.set("trust proxy", 1);
+
 // ─── RATE LIMITING ──────────────────────────────────────────────────────────
 // Apply rate limiting to sensitive auth endpoints
 app.use('/api/auth/login', loginLimiter);

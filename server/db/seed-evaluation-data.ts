@@ -186,7 +186,6 @@ export async function seedEvaluationData(): Promise<void> {
       { questionId: 'ql-049', category: 'Actitud', defaultSection: 'blandas', text: '¿Cómo califica la proactividad y compromiso?' },
       { questionId: 'ql-050', category: 'Disponibilidad', defaultSection: 'blandas', text: '¿Cómo califica la disponibilidad para situaciones urgentes?' },
       { questionId: 'ql-051', category: 'Desempeño', defaultSection: 'competencias', text: '¿Cómo califica el cumplimiento de objetivos y metas?' },
-      { questionId: 'ql-052', category: 'Trabajo en Equipo', defaultSection: 'competencias', text: '¿Cómo califica la coordinación del equipo a su cargo?' },
       { questionId: 'ql-053', category: 'Desempeño', defaultSection: 'competencias', text: '¿Cómo califica la eficiencia operativa?' },
       { questionId: 'ql-054', category: 'Actitud', defaultSection: 'blandas', text: '¿Cómo califica la actitud de servicio?' },
       { questionId: 'ql-055', category: 'Liderazgo', defaultSection: 'competencias', text: '¿Cómo califica la visión estratégica y dirección del despacho?' },
@@ -217,6 +216,9 @@ export async function seedEvaluationData(): Promise<void> {
       { questionId: 'ql-082', category: 'Due diligence', defaultSection: 'tecnico', text: '¿Sistematiza documentos y apoya en la identificación de hallazgos simples de relevancia legal?' },
       { questionId: 'ql-083', category: 'Constitución y modificaciones', defaultSection: 'tecnico', text: '¿Prepara formatos con supervisión, asegurando precisión y congruencia en la información?' },
       { questionId: 'ql-084', category: 'Atención a clientes', defaultSection: 'tecnico', text: '¿Participa como apoyo en la elaboración de respuestas básicas a clientes o autoridades?' },
+      { questionId: 'ql-085', category: 'Trabajo en Equipo', defaultSection: 'competencias', text: '¿Cómo califica la colaboración con otros departamentos?' },
+      { questionId: 'ql-086', category: 'Habilidades Blandas', defaultSection: 'blandas', text: '¿Cómo califica la comunicación clara y efectiva?' },
+      { questionId: 'ql-087', category: 'Liderazgo', defaultSection: 'competencias', text: '¿Cómo califica la mentoría hacia abogados junior y pasantes?' },
     ];
 
     // Build a quick lookup: questionId -> text
@@ -316,7 +318,7 @@ export async function seedEvaluationData(): Promise<void> {
       { libraryRef: 'ql-049', position: 'asociado_sr', practiceArea: 'corporativo', section: 'blandas', category: 'Actitud', weight: 5, sortOrder: 78 },
       { libraryRef: 'ql-050', position: 'asociado_sr', practiceArea: 'corporativo', section: 'blandas', category: 'Disponibilidad', weight: 5, sortOrder: 79 },
       { libraryRef: 'ql-051', position: 'coordinador', practiceArea: 'corporativo', section: 'competencias', category: 'Desempeño', weight: 17, sortOrder: 80 },
-      { libraryRef: 'ql-052', position: 'coordinador', practiceArea: 'corporativo', section: 'competencias', category: 'Trabajo en Equipo', weight: 15, sortOrder: 81 },
+      { libraryRef: 'ql-046', position: 'coordinador', practiceArea: 'corporativo', section: 'competencias', category: 'Trabajo en Equipo', weight: 15, sortOrder: 81 },
       { libraryRef: 'ql-053', position: 'coordinador', practiceArea: 'corporativo', section: 'competencias', category: 'Desempeño', weight: 13, sortOrder: 82 },
       { libraryRef: 'ql-012', position: 'coordinador', practiceArea: 'corporativo', section: 'competencias', category: 'Cumplimiento', weight: 13, sortOrder: 83 },
       { libraryRef: 'ql-004', position: 'coordinador', practiceArea: 'corporativo', section: 'competencias', category: 'Trabajo en Equipo', weight: 12, sortOrder: 84 },
