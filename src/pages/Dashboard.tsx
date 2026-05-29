@@ -6,7 +6,7 @@ import { ScoreRing } from '@/components/shared/ScoreRing';
 import { Users, CheckCircle, Clock, ChevronDown, ArrowRight, ClipboardList } from 'lucide-react';
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { BarChart, Bar, XAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
 type PhaseKey = 'self' | 'supervisor' | 'feedback' | 'action_plan';
 
