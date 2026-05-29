@@ -1,6 +1,8 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { useUsers, useEvaluations, useAssignments, usePeriods, useAnnouncements, useVacationRequests } from '@/api/queries';
-import { CURRENT_PERIOD, getPositionLabel, getLegalHierarchy, getAdminHierarchy, getPositionHierarchy } from '@/lib/evaluationConfig';
+import { getPositionLabel, getLegalHierarchy, getAdminHierarchy, getPositionHierarchy } from '@/lib/evaluationConfig';
+import { useCurrentPeriod } from '@/hooks/useCurrentPeriod';
+import { usePositionConfig } from '@/hooks/useEvaluationConfig';
 import { ScoreBadge } from '@/components/shared/ScoreBadge';
 import { ScoreRing } from '@/components/shared/ScoreRing';
 import { Users, CheckCircle, Clock, ChevronDown, ArrowRight, ClipboardList } from 'lucide-react';
@@ -46,9 +48,11 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 
 export default function Dashboard() {
   const { user: currentUser } = useAuth();
+  const currentPeriod = useCurrentPeriod();
+  const { data: posConfig = [] } = usePositionConfig();
   const { data: users = [] } = useUsers();
-  const { data: evaluations = [] } = useEvaluations({ period: CURRENT_PERIOD });
-  const { data: assignments = [] } = useAssignments(CURRENT_PERIOD);
+  const { data: evaluations = [] } = useEvaluations({ period: currentPeriod });
+  const { data: assignments = [] } = useAssignments(currentPeriod);
   const { data: periodConfigs = [] } = usePeriods();
   const { data: announcements = [] } = useAnnouncements();
   const { data: vacationRequests = [] } = useVacationRequests();
@@ -62,9 +66,9 @@ export default function Dashboard() {
   const isAdminOrMore = isAdmin || isSocio || !!currentUser.isManagingPartner;
   const isSuperUser = currentUser.isSuperUser;
 
-  const pAssign = (Array.isArray(assignments) ? assignments : []).filter(a => a.period === CURRENT_PERIOD);
-  const pEvals = (Array.isArray(evaluations) ? evaluations : []).filter(e => e.period === CURRENT_PERIOD);
-  const curCfg = (Array.isArray(periodConfigs) ? periodConfigs : []).find((c: any) => c.period === CURRENT_PERIOD);
+  const pAssign = (Array.isArray(assignments) ? assignments : []).filter(a => a.period === currentPeriod);
+  const pEvals = (Array.isArray(evaluations) ? evaluations : []).filter(e => e.period === currentPeriod);
+  const curCfg = (Array.isArray(periodConfigs) ? periodConfigs : []).find((c: any) => c.period === currentPeriod);
 
   const myTeamIds = isAdminOrMore ? null : pAssign.filter(a => a.supervisorId === currentUser.id).map(a => a.employeeId);
 
@@ -117,7 +121,7 @@ export default function Dashboard() {
       selfPct: Math.round((pu.filter(u => pEvals.some(e => e.type === 'self' && e.evaluatorId === u.id)).length / pu.length) * 100),
       supPct: Math.round((pu.filter(u => pEvals.some(e => e.type === 'supervisor' && e.evaluatedId === u.id)).length / pu.length) * 100),
     };
-  }).filter(Boolean), [visible, pEvals]);
+  }).filter(Boolean), [visible, pEvals, posConfig]);
 
   const legal = visible.filter(u => getLegalHierarchy().includes(u.position)).sort((a, b) => {
     const d = getLegalHierarchy().indexOf(a.position) - getLegalHierarchy().indexOf(b.position);
@@ -178,7 +182,7 @@ export default function Dashboard() {
       <div className="flex items-center justify-between flex-wrap gap-2">
         <div className="flex items-center gap-2.5 min-w-0">
           <h1 className="font-display text-lg font-bold tracking-tight">Panel de Control</h1>
-          <span className="text-xs text-muted-foreground">{CURRENT_PERIOD}</span>
+          <span className="text-xs text-muted-foreground">{currentPeriod}</span>
           {currentPhase && <span className="text-xs px-1.5 py-0.5 rounded bg-accent/10 text-accent font-medium">{currentPhase.short}</span>}
           {daysLeft !== null && daysLeft > 0 && daysLeft <= 90 && (
             <span className="text-[11px] text-muted-foreground flex items-center gap-1">
