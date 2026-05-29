@@ -30,6 +30,44 @@ const upload = multer({
   },
 });
 
+/** Timeout for LLM API calls (ms) */
+const LLM_TIMEOUT_MS = 120_000; // 2 minutes
+
+/** Map LLM API HTTP errors to user-friendly Spanish messages */
+function llmErrorMessage(status: number, body: string): string {
+  // Try to extract a specific error from the response body
+  let detail = '';
+  try {
+    const parsed = JSON.parse(body);
+    if (parsed?.error?.message) detail = parsed.error.message;
+    else if (typeof parsed?.error === 'string') detail = parsed.error;
+    else if (parsed?.message) detail = parsed.message;
+  } catch { /* not JSON, use raw */ }
+
+  switch (status) {
+    case 401:
+      return 'La API key no es válida o está ausente. Verifica la configuración del Copiloto (API Key).';
+    case 403:
+      return 'Acceso denegado al servicio de IA. Verifica tus credenciales y permisos en la configuración.';
+    case 404:
+      return detail
+        ? `Modelo no encontrado: ${detail}. Verifica que el nombre del modelo sea correcto en la configuración.`
+        : 'El modelo configurado no fue encontrado. Verifica el nombre del modelo en la configuración del Copiloto.';
+    case 429:
+      return 'El servicio de IA está temporalmente saturado. Por favor espera un momento e intenta de nuevo.';
+    case 500:
+    case 502:
+    case 503:
+      return detail
+        ? `El servicio de IA no está disponible (${detail}). Intenta de nuevo más tarde.`
+        : 'El servicio de IA no está disponible en este momento. Intenta de nuevo más tarde.';
+    default:
+      return detail
+        ? `Error del servicio de IA (${status}): ${detail}`
+        : `Error del servicio de IA (código ${status}). Intenta de nuevo.`;
+  }
+}
+
 router.use(authMiddleware, requireSuperUser);
 
 // Check if copilot module is enabled
@@ -102,11 +140,13 @@ router.patch('/config', async (req: Request, res: Response) => {
 
 router.put('/config', async (req: Request, res: Response) => {
   try {
-    const { model, api_provider, api_base_url, api_key, can_manage_users, can_manage_evaluations, can_manage_vacations, can_manage_announcements, can_manage_periods, can_manage_system, can_view_reports, max_tokens, temperature } = req.body;
-    const current = await db.get('SELECT api_key FROM copilot_config WHERE id=1') as any;
-    const apiKey = (api_key && !api_key.includes('••••')) ? api_key : current?.api_key;
-    await db.run('UPDATE copilot_config SET model=?,api_provider=?,api_base_url=?,api_key=?,can_manage_users=?,can_manage_evaluations=?,can_manage_vacations=?,can_manage_announcements=?,can_manage_periods=?,can_manage_system=?,can_view_reports=?,max_tokens=?,temperature=? WHERE id=1',
-      [model || 'qwen3.5:397b', api_provider || 'ollama', api_base_url || null, apiKey, can_manage_users ? 1 : 0, can_manage_evaluations ? 1 : 0, can_manage_vacations ? 1 : 0, can_manage_announcements ? 1 : 0, can_manage_periods ? 1 : 0, can_manage_system ? 1 : 0, can_view_reports ? 1 : 0, max_tokens || 4096, temperature ?? 0.3]);
+    const { model, api_provider, api_base_url, api_key, can_manage_users, can_manage_evaluations, can_manage_vacations, can_manage_announcements, can_manage_periods, can_manage_system, can_view_reports, max_tokens, temperature } = req.body as Record<string, unknown>;
+    const current = await db.get('SELECT api_key FROM copilot_config WHERE id=1') as Record<string, unknown> | undefined;
+    const resolvedApiKey = api_key && typeof api_key === 'string' && !api_key.includes('••••') ? api_key : (current?.api_key as string | undefined);
+    await db.run(
+      'UPDATE copilot_config SET model=?,api_provider=?,api_base_url=?,api_key=?,can_manage_users=?,can_manage_evaluations=?,can_manage_vacations=?,can_manage_announcements=?,can_manage_periods=?,can_manage_system=?,can_view_reports=?,max_tokens=?,temperature=? WHERE id=1',
+      [model || 'qwen3.5:397b', api_provider || 'ollama', api_base_url || null, resolvedApiKey, can_manage_users ? 1 : 0, can_manage_evaluations ? 1 : 0, can_manage_vacations ? 1 : 0, can_manage_announcements ? 1 : 0, can_manage_periods ? 1 : 0, can_manage_system ? 1 : 0, can_view_reports ? 1 : 0, max_tokens || 4096, temperature ?? 0.3]
+    );
     const cfg = await db.get('SELECT * FROM copilot_config WHERE id=1') as Record<string, unknown>;
     if (cfg?.api_key && typeof cfg.api_key === 'string' && cfg.api_key.length > 8) {
       return res.json({ ...cfg, api_key: (cfg.api_key as string).slice(0, 4) + '••••' + (cfg.api_key as string).slice(-4) });
@@ -115,10 +155,20 @@ router.put('/config', async (req: Request, res: Response) => {
   } catch (e) { console.error('Config update error:', e); return res.status(500).json({ error: 'Internal server error' }); }
 });
 
-// ─── CONVERSATIONS ────────────────────────────────────────────────────────────
-router.get('/conversations', async (req: Request, res: Response) => {
+// ─── CONVERSATIONS ──────────────────────────────────────────────────────────
+router.post('/conversations', async (req: Request, res: Response) => {
   try {
-    const convs = await db.all('SELECT * FROM copilot_conversations WHERE user_id=? ORDER BY updated_at DESC', [req.user!.id]);
+    const { title } = req.body as { title?: string };
+    const id = uuidv4();
+    await db.run('INSERT INTO copilot_conversations (id,user_id,title,created_at,updated_at) VALUES(?,?,?,?,?)', [id, req.user!.id, title || 'New conversation', new Date().toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, ''), new Date().toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, '')]);
+    const conv = await db.get('SELECT * FROM copilot_conversations WHERE id=?', [id]);
+    res.json(conv);
+  } catch (e) { console.error('Create conversation error:', e); res.status(500).json({ error: 'Internal server error' }); }
+});
+
+router.get('/conversations', async (_req: Request, res: Response) => {
+  try {
+    const convs = await db.all('SELECT * FROM copilot_conversations WHERE user_id=? ORDER BY updated_at DESC', [(_req as any).user.id]);
     res.json(convs);
   } catch (e) { console.error('List conversations error:', e); res.status(500).json({ error: 'Internal server error' }); }
 });
@@ -197,7 +247,7 @@ router.post('/chat', upload.single('file'), async (req: Request, res: Response) 
     let toolCallsData: string | null = null;
     let toolResultsData: string | null = null;
 
-    const callLLM = async (msgs: Record<string, unknown>[]): Promise<globalThis.Response> => {
+    const callLLM = async (msgs: Record<string, unknown>[]): Promise<{ ok: boolean; status: number; data?: Record<string, unknown>; errorBody?: string }> => {
       const model = cfg.model || process.env.OLLAMA_MODEL || 'qwen3.5:397b';
       const body = JSON.stringify({
         model, messages: msgs,
@@ -206,28 +256,83 @@ router.post('/chat', upload.single('file'), async (req: Request, res: Response) 
         tools: fns.length > 0 ? fns : undefined,
         tool_choice: fns.length > 0 ? 'auto' : undefined,
       });
-      let resp = await fetch(endpoint, { method: 'POST', headers, body });
-      for (let retry = 0; retry < 3 && resp.status === 429; retry++) {
-        const errBody = await resp.clone().text();
-        const waitMatch = errBody.match(/try again in (\d+\.?\d*)s/i);
-        const waitSec = waitMatch ? Math.ceil(parseFloat(waitMatch[1])) + 2 : (5 * (retry + 1));
-        console.log(`Rate limited, waiting ${waitSec}s (retry ${retry + 1})...`);
-        await new Promise(r => setTimeout(r, waitSec * 1000));
-        resp = await fetch(endpoint, { method: 'POST', headers, body });
+
+      let lastError: Error | null = null;
+
+      for (let attempt = 0; attempt < 3; attempt++) {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), LLM_TIMEOUT_MS);
+
+        try {
+          let resp = await fetch(endpoint, { method: 'POST', headers, body, signal: controller.signal });
+
+          // Retry on 429 (rate limited)
+          for (let retry = 0; retry < 3 && resp.status === 429; retry++) {
+            const errBody = await resp.clone().text();
+            const waitMatch = errBody.match(/try again in (\d+\.?\d*)s/i);
+            const waitSec = waitMatch ? Math.ceil(parseFloat(waitMatch[1])) + 2 : (5 * (retry + 1));
+            console.log(`Rate limited, waiting ${waitSec}s (retry ${retry + 1})...`);
+            await new Promise(r => setTimeout(r, waitSec * 1000));
+            clearTimeout(timeoutId);
+            const retryController = new AbortController();
+            const retryTimeoutId = setTimeout(() => retryController.abort(), LLM_TIMEOUT_MS);
+            try {
+              resp = await fetch(endpoint, { method: 'POST', headers, body, signal: retryController.signal });
+            } finally {
+              clearTimeout(retryTimeoutId);
+            }
+          }
+
+          clearTimeout(timeoutId);
+
+          if (!resp.ok) {
+            const errText = await resp.text();
+            console.error('LLM error:', resp.status, errText.slice(0, 500));
+            return { ok: false, status: resp.status, errorBody: errText };
+          }
+
+          const data = await resp.json() as Record<string, unknown>;
+          return { ok: true, status: resp.status, data };
+        } catch (fetchErr: any) {
+          clearTimeout(timeoutId);
+          lastError = fetchErr;
+
+          // If aborted (timeout), don't retry
+          if (fetchErr?.name === 'AbortError') {
+            console.error('LLM request timed out after', LLM_TIMEOUT_MS / 1000, 'seconds');
+            return { ok: false, status: 408, errorBody: `Request timed out after ${LLM_TIMEOUT_MS / 1000} seconds. The IA service may be overloaded.` };
+          }
+
+          // Network error — retry up to 2 more times
+          if (attempt < 2) {
+            console.warn(`LLM network error (attempt ${attempt + 1}/3):`, fetchErr?.message || fetchErr);
+            await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
+            continue;
+          }
+        }
       }
-      return resp;
+
+      // All retries exhausted
+      console.error('LLM network error after 3 attempts:', lastError?.message || lastError);
+      return {
+        ok: false,
+        status: 0,
+        errorBody: `No se pudo conectar con el servicio de IA: ${lastError?.message || 'Error de red'}. Verifica la URL del endpoint en la configuración.`,
+      };
     };
 
     for (let round = 0; round < maxRounds; round++) {
-      const resp = await callLLM(messages);
+      const result = await callLLM(messages);
 
-      if (!resp.ok) {
-        const err = await resp.text();
-        console.error('LLM error:', resp.status, err);
-        if (resp.status === 429) return res.status(429).json({ error: 'El servicio de IA está temporalmente saturado. Por favor espera un momento e intenta de nuevo.' });
-        return res.status(502).json({ error: 'Error del servicio de IA. Intenta de nuevo.' });
+      if (!result.ok) {
+        const errMsg = result.status === 0
+          ? result.errorBody!
+          : llmErrorMessage(result.status, result.errorBody || '');
+        const statusCode = result.status === 0 ? 502 : result.status === 408 ? 504 : result.status;
+        return res.status(statusCode).json({ error: errMsg });
       }
-      const data = await resp.json() as Record<string, unknown>;
+
+      const data = result.data!;
       const msg = (data.choices as Record<string, unknown>[])?.[0]?.message as Record<string, unknown>;
       if (!msg) return res.status(502).json({ error: 'No response from AI' });
 
@@ -249,10 +354,9 @@ router.post('/chat', upload.single('file'), async (req: Request, res: Response) 
 
       if (round === maxRounds - 1) {
         messages.push({ role: 'user', content: 'Por favor, dame tu conclusión basada en los resultados obtenidos. No llames más funciones.' });
-        const finalResp = await callLLM(messages);
-        if (finalResp.ok) {
-          const finalData = await finalResp.json() as Record<string, unknown>;
-          const finalMsg = (finalData.choices as Record<string, unknown>[])?.[0]?.message as Record<string, unknown>;
+        const finalResult = await callLLM(messages);
+        if (finalResult.ok && finalResult.data) {
+          const finalMsg = (finalResult.data.choices as Record<string, unknown>[])?.[0]?.message as Record<string, unknown>;
           if (finalMsg?.content) finalResponse = finalMsg.content as string;
         }
         if (!finalResponse) finalResponse = 'He completado las acciones solicitadas. ¿Necesitas algo más?';

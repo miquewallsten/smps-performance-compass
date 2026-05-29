@@ -3,6 +3,7 @@ import { useAssignments, useEvaluations, useAnnouncements, useVacationRequests, 
 import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 import {
   Clock,
+  ClipboardList,
   LayoutDashboard, ClipboardCheck, Users, BarChart3, Settings, LogOut,
   UserCheck, ChevronLeft, ChevronRight, Menu, Shield, FileText, Target, Bot,
   Megaphone, Palmtree, ChevronDown, HelpCircle, BookOpen, Calendar, User as UserIcon, Briefcase, TrendingUp
@@ -104,28 +105,30 @@ export default function Layout() {
 
   const evalItems = [
     { to: '/dashboard', icon: LayoutDashboard, label: 'Panel', show: true },
-    { to: '/self-evaluation', icon: ClipboardCheck, label: 'Mi Eval.', show: showEvalModule, badge: !showEvalModule ? 0 : (evaluations.some(e => e.evaluatedId === currentUser.id && e.type === 'self' && e.period === CURRENT_PERIOD) ? 0 : 1) },
-    { to: '/evaluations', icon: Users, label: 'Evaluaciones', show: hasTeam && showEvalModule, badge: pendingEvalCount },
+    { to: '/my-profile', icon: UserIcon, label: 'Mis Eval.', show: showEvalModule },
+    { to: '/self-evaluation', icon: ClipboardCheck, label: 'Autoeval.', show: showEvalModule, badge: !showEvalModule ? 0 : (evaluations.some(e => e.evaluatedId === currentUser.id && e.type === 'self' && e.period === CURRENT_PERIOD) ? 0 : 1) },
+    { to: '/evaluations', icon: Users, label: 'Evaluar', show: (hasTeam || isAdminOrSuper || isManagingPartner) && showEvalModule, badge: pendingEvalCount },
+    { to: '/my-action-plan', icon: FileText, label: 'Plan Acción', show: showEvalModule && showCycles },
     { to: '/reports', icon: BarChart3, label: 'Reportes', show: canViewAll && showEvalModule },
-    { to: '/score-analysis', icon: TrendingUp, label: 'Análisis', show: canViewAll && showEvalModule },
+    { to: '/score-analysis', icon: TrendingUp, label: 'Calificaciones', show: canViewAll && showEvalModule },
   ];
 
   const userGroupItems = [
-    { to: '/users', icon: UserIcon, label: 'Usuarios', show: isAdminOrSuper },
-    { to: '/positions', icon: Briefcase, label: 'Puestos', show: isSuperUser },
-    { to: '/assign', icon: UserCheck, label: 'Asignar', show: canViewAll && showEvalModule },
-    { to: '/orgchart', icon: Menu, label: 'Mapa', show: canViewAll && showEvalModule },
-    { to: '/vacations', icon: Palmtree, label: 'Vacaciones', show: modules.vacations, badge: pendingVacationCount },
+    { to: '/users', icon: Users, label: 'Usuarios', show: isAdminOrSuper },
+    { to: '/positions', icon: Briefcase, label: 'Áreas y Puestos', show: isAdminOrSuper },
   ];
 
   const otherItems = [
-    { to: '/my-action-plan', icon: FileText, label: 'Plan Acción', show: showEvalModule && showCycles },
-    { to: '/personal-objectives', icon: Target, label: 'Objetivos', show: showEvalModule && showCycles },
+    { to: '/orgchart', icon: BarChart3, label: 'Organigrama', show: canViewAll },
+    { to: '/assign', icon: UserCheck, label: 'Asignar', show: isAdminOrSuper },
+    { to: '/evaluation-templates', icon: BookOpen, label: 'Plantillas', show: isAdminOrSuper },
+    { to: '/question-library', icon: BookOpen, label: 'Preguntas', show: isAdminOrSuper },
+    { to: '/personal-objectives', icon: Target, label: 'Objetivos', show: showEvalModule && (isAdminOrSuper || isManagingPartner || isSocio || hasTeam) },
     { to: '/communications', icon: Megaphone, label: 'Comunicación', show: modules.communications, badge: unreadAnnouncementCount },
-    { to: '/copilot', icon: Bot, label: 'Copilot', show: modules.copilot && isSuperUser },
-    { to: '/question-library', icon: BookOpen, label: 'Preguntas', show: isSuperUser },
+    { to: '/vacations', icon: Palmtree, label: 'Vacaciones', show: modules.vacations, badge: pendingVacationCount },
     { to: '/period-config', icon: Calendar, label: 'Periodos', show: isAdminOrSuper },
     { to: '/access', icon: Shield, label: 'Acceso Sistema', show: isSuperUser },
+    { to: '/copilot', icon: Bot, label: 'Copilot', show: modules.copilot && isSuperUser },
     { to: '/settings', icon: Settings, label: 'Perfil', show: true },
   ];
 

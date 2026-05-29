@@ -295,7 +295,21 @@ export default function CopilotChat() {
       setLocalMessages(prev => [...prev, assistantMsg]);
       setAttachedFile(null);
     } catch (err: any) {
-      toast.error(err.message || 'Error al enviar mensaje');
+      // Show the server error as an assistant message in the chat for better UX
+      const errorMessage = err?.message || 'Error al enviar mensaje';
+      // Check if it's a common AI service error that deserves inline display
+      const isAiError = /(?:servicio de IA|modelo no encontrado|API key|acceso denegado|saturado|no se pudo conectar|timed out|Error del servicio)/i.test(errorMessage);
+      if (isAiError) {
+        const errorAssistantMsg: Message = {
+          id: crypto.randomUUID(),
+          role: 'assistant',
+          content: `⚠️ ${errorMessage}${errorMessage.includes('configuración') || errorMessage.includes('Configuración') ? '' : ' Verifica la configuración del Copiloto en el ícono de ajustes.'}`,
+          createdAt: new Date().toISOString(),
+        };
+        setLocalMessages(prev => [...prev, errorAssistantMsg]);
+      } else {
+        toast.error(errorMessage);
+      }
     } finally {
       setIsStreaming(false);
     }
