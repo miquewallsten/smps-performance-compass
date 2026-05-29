@@ -1,15 +1,17 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { useUsers, useEvaluations, useAssignments, useSystemModules, useSystemStatus, usePeriods, useAnnouncements, useVacationRequests } from '@/api/queries';
 import { getPositionLabel } from '@/lib/evaluationConfig';
-import { CURRENT_PERIOD, getLegalHierarchy, getAdminHierarchy } from '@/lib/evaluationConfig';
+import { getLegalHierarchy, getAdminHierarchy } from '@/lib/evaluationConfig';
+import { useCurrentPeriod } from '@/hooks/useCurrentPeriod';
 import { Users, ChevronDown, ChevronRight } from 'lucide-react';
 import { useState } from 'react';
 import HierarchyFilters, { filterByHierarchy } from '@/components/HierarchyFilters';
 
 export default function OrgChart() {
+  const currentPeriod = useCurrentPeriod();
   const { user: currentUser } = useAuth();
   const { data: users = [] } = useUsers();
-  const { data: assignments = [] } = useAssignments(CURRENT_PERIOD);
+  const { data: assignments = [] } = useAssignments(currentPeriod);
   const [levelFilter, setLevelFilter] = useState('all');
   const [positionFilter, setPositionFilter] = useState('all');
 
@@ -19,7 +21,7 @@ export default function OrgChart() {
   const isManagingPartner = !!currentUser.isManagingPartner;
   if (!isAdmin && !isSocio && !currentUser.isSuperUser && !isManagingPartner) return <p className="text-center py-12 text-muted-foreground">Acceso restringido.</p>;
 
-  const periodAssignments = (Array.isArray(assignments) ? assignments : []).filter(a => a.period === CURRENT_PERIOD);
+  const periodAssignments = (Array.isArray(assignments) ? assignments : []).filter(a => a.period === currentPeriod);
   const activeUsers = (Array.isArray(users) ? users : []).filter(u => u.isActive && !u.isSuperUser).sort((a, b) => a.name.localeCompare(b.name, 'es'));
   const supervisors = [...new Set(periodAssignments.map(a => a.supervisorId))];
 
@@ -62,7 +64,7 @@ export default function OrgChart() {
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
           <h1 className="font-display text-2xl font-bold">Mapa de Evaluaciones</h1>
-          <p className="text-muted-foreground text-sm mt-1">Periodo: {CURRENT_PERIOD} · Vista descendente por asignación</p>
+          <p className="text-muted-foreground text-sm mt-1">Periodo: {currentPeriod} · Vista descendente por asignación</p>
         </div>
         <HierarchyFilters levelFilter={levelFilter} setLevelFilter={setLevelFilter} positionFilter={positionFilter} setPositionFilter={setPositionFilter} />
       </div>
