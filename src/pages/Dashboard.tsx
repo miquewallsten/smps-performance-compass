@@ -1,12 +1,12 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { useUsers, useEvaluations, useAssignments, usePeriods, useAnnouncements, useVacationRequests } from '@/api/queries';
 import { CURRENT_PERIOD, getPositionLabel, getLegalHierarchy, getAdminHierarchy, getPositionHierarchy } from '@/lib/evaluationConfig';
-import { ScoreBadge, scoreColorText } from '@/components/shared/ScoreBadge';
+import { ScoreBadge } from '@/components/shared/ScoreBadge';
 import { ScoreRing } from '@/components/shared/ScoreRing';
-import { Users, CheckCircle, Clock, TrendingUp, ChevronDown, ArrowRight, ClipboardList, AlertTriangle } from 'lucide-react';
+import { Users, CheckCircle, Clock, ChevronDown, ArrowRight, ClipboardList } from 'lucide-react';
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import { BarChart, Bar, XAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
 type PhaseKey = 'self' | 'supervisor' | 'feedback' | 'action_plan';
 
@@ -32,20 +32,6 @@ function daysUntil(dateStr: string): number | null {
   return Math.ceil((end.getTime() - Date.now()) / 86400000);
 }
 
-function ProgressBar({ value, max, label, color = 'accent' }: { value: number; max: number; label: string; color?: string }) {
-  const pct = max > 0 ? Math.round((value / max) * 100) : 0;
-  const fill = color === 'success' ? 'hsl(var(--smps-success))' : color === 'warning' ? 'hsl(var(--smps-warning))' : 'hsl(var(--accent))';
-  return (
-    <div className="flex items-center gap-3">
-      <span className="text-sm font-medium min-w-[130px] truncate">{label}</span>
-      <div className="flex-1 h-2 rounded-full bg-muted overflow-hidden">
-        <div className="h-full rounded-full transition-[width] duration-700 ease-out" style={{ width: `${pct}%`, backgroundColor: fill }} />
-      </div>
-      <span className="text-sm tabular-nums text-muted-foreground min-w-[44px] text-right">{value}/{max}</span>
-    </div>
-  );
-}
-
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (!active || !payload?.length) return null;
   return (
@@ -68,7 +54,6 @@ export default function Dashboard() {
   const { data: vacationRequests = [] } = useVacationRequests();
   const navigate = useNavigate();
   const [expanded, setExpanded] = useState<string | null>(null);
-  const [levelFilter, setLevelFilter] = useState('all');
 
   if (!currentUser) return null;
 
@@ -86,11 +71,6 @@ export default function Dashboard() {
   const visible = (() => {
     let base = (Array.isArray(users) ? users : []).filter(u => u.isActive && !u.isSuperUser);
     if (myTeamIds) base = base.filter(u => myTeamIds.includes(u.id) || u.id === currentUser.id);
-    if (levelFilter !== 'all' && isAdminOrMore) {
-      if (levelFilter === 'legal') base = base.filter(u => getLegalHierarchy().includes(u.position));
-      else if (levelFilter === 'administrativo') base = base.filter(u => getAdminHierarchy().includes(u.position));
-      else base = base.filter(u => u.position === levelFilter);
-    }
     return base;
   })();
 
@@ -102,13 +82,9 @@ export default function Dashboard() {
   const selfEvalCount = selfEvals.length;
   const supEvalDone = (() => {
     const withAssign = visible.filter(u => pAssign.some(a => a.employeeId === u.id));
-    const withSup = withAssign.filter(u => pEvals.some(e => e.type === 'supervisor' && e.evaluatedId === u.id));
-    return withSup.length;
+    return withAssign.filter(u => pEvals.some(e => e.type === 'supervisor' && e.evaluatedId === u.id)).length;
   })();
-  const supTotal = (() => {
-    const withAssign = visible.filter(u => pAssign.some(a => a.employeeId === u.id));
-    return withAssign.length;
-  })();
+  const supTotal = visible.filter(u => pAssign.some(a => a.employeeId === u.id)).length;
 
   const mySelfEval = pEvals.find(e => e.type === 'self' && e.evaluatorId === currentUser.id);
   const myAssigns = pAssign.filter(a => a.supervisorId === currentUser.id);
@@ -156,23 +132,24 @@ export default function Dashboard() {
     if (groupUsers.length === 0) return null;
     const positions = [...new Set(groupUsers.map(u => u.position))];
     return (
-      <div className="mb-4 last:mb-0">
-        <p className="text-[11px] font-bold text-accent uppercase tracking-widest mb-2">{label}</p>
+      <div className="mb-3 last:mb-0">
+        <p className="text-[10px] font-bold text-accent uppercase tracking-widest mb-1">{label}</p>
         {positions.map(pos => {
           const pu = groupUsers.filter(u => u.position === pos);
           return (
-            <div key={pos} className="mb-2 last:mb-0">
-              <p className="text-[11px] font-semibold text-muted-foreground mb-1">{getPositionLabel(pos)} ({pu.length})</p>
-              <div className="space-y-0.5">
+            <div key={pos} className="mb-1.5 last:mb-0">
+              <p className="text-[10px] font-semibold text-muted-foreground">{getPositionLabel(pos)} ({pu.length})</p>
+              <div className="space-y-px">
                 {pu.map(u => {
-                  const hasSelf = pEvals.some(e => e.type === 'self' && e.evaluatorId === u.id);
                   const selfScore = pEvals.find(e => e.type === 'self' && e.evaluatorId === u.id);
+                  const hasSup = pEvals.some(e => e.type === 'supervisor' && e.evaluatedId === u.id);
                   return (
                     <button key={u.id} onClick={() => navigate(`/profile/${u.id}`)}
-                      className="w-full flex items-center justify-between py-1.5 px-3 rounded-md hover:bg-muted/40 transition-[background-color] duration-150 text-left">
-                      <span className="text-sm truncate">{u.name}</span>
-                      <div className="flex items-center gap-2">
-                        {selfScore ? <ScoreBadge value={Math.round(selfScore.totalScore)} size="sm" /> : hasSelf ? <CheckCircle className="h-3 w-3 text-smps-success" /> : null}
+                      className="w-full flex items-center justify-between py-0.5 px-1.5 rounded hover:bg-muted/40 transition-[background-color] duration-150 text-left">
+                      <span className="text-xs truncate">{u.name}</span>
+                      <div className="flex items-center gap-1.5">
+                        {selfScore ? <ScoreBadge value={Math.round(selfScore.totalScore)} size="sm" /> : null}
+                        {hasSup && !selfScore ? <CheckCircle className="h-2.5 w-2.5 text-smps-success" /> : null}
                       </div>
                     </button>
                   );
@@ -185,134 +162,119 @@ export default function Dashboard() {
     );
   };
 
+  // Urgent actions
   const urgentItems: { label: string; action: () => void; variant: 'accent' | 'warning' | 'default' }[] = [];
-  if (!selfDone) urgentItems.push({ label: 'Completar autoevaluación', action: () => navigate('/self-evaluation'), variant: 'accent' });
-  myPending.forEach(a => {
+  if (!selfDone) urgentItems.push({ label: 'Autoevaluación', action: () => navigate('/self-evaluation'), variant: 'accent' });
+  myPending.slice(0, 3).forEach(a => {
     const emp = (users as any[]).find(u => u.id === a.employeeId);
-    if (emp) urgentItems.push({ label: `Evaluar a ${emp.name}`, action: () => navigate(`/evaluations?evaluate=${a.employeeId}`), variant: 'warning' });
+    if (emp) urgentItems.push({ label: emp.name.split(' ')[0], action: () => navigate(`/evaluations?evaluate=${a.employeeId}`), variant: 'warning' });
   });
-  if (unread > 0) urgentItems.push({ label: `${unread} comunicado${unread > 1 ? 's' : ''} sin leer`, action: () => navigate('/communications'), variant: 'default' });
-  if (pendVac > 0 && (isAdmin || isSuperUser || !!currentUser.isManagingPartner)) urgentItems.push({ label: `${pendVac} solicitud${pendVac > 1 ? 'es' : ''} de vacaciones`, action: () => navigate('/vacations'), variant: 'default' });
+  if (unread > 0) urgentItems.push({ label: `${unread} aviso${unread > 1 ? 's' : ''}`, action: () => navigate('/communications'), variant: 'default' });
+  if (pendVac > 0 && (isAdmin || isSuperUser || !!currentUser.isManagingPartner)) urgentItems.push({ label: `${pendVac} vac.`, action: () => navigate('/vacations'), variant: 'default' });
 
   return (
-    <div className="space-y-4">
-      {/* Context header */}
-      <div className="rounded-xl border bg-card smps-fade-up">
-        <div className="p-4 pb-3">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-            <div>
-              <h1 className="font-display text-xl font-bold tracking-tight">Panel de Control</h1>
-              <p className="text-sm text-muted-foreground mt-0.5">
-                {CURRENT_PERIOD}{currentPhase ? <> · Fase: <span className="text-foreground font-medium">{currentPhase.label}</span></> : null}
-              </p>
-            </div>
-            <div className="flex items-center gap-2 flex-wrap">
-              {isAdminOrMore && (
-                <div className="flex gap-0.5 bg-muted rounded-md p-0.5">
-                  {(['all', 'legal', 'administrativo'] as const).map(v => (
-                    <button key={v} onClick={() => setLevelFilter(v)}
-                      className={`px-3 py-1 rounded-md text-xs font-medium transition-[background-color,color,box-shadow] duration-150 ${levelFilter === v ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}>
-                      {v === 'all' ? 'Todos' : v === 'legal' ? 'Legal' : 'Admin.'}
-                    </button>
-                  ))}
-                </div>
-              )}
-              {daysLeft !== null && daysLeft > 0 && daysLeft <= 90 && (
-                <span className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full bg-smps-warning/10 text-smps-warning font-medium">
-                  <Clock className="h-3 w-3" />
-                  {daysLeft} d\u00eda{daysLeft !== 1 ? 's' : ''} restante{daysLeft !== 1 ? 's' : ''}
-                </span>
-              )}
-            </div>
-          </div>
+    <div className="space-y-3 smps-fade-up">
+      {/* ─── Status line (thin, no card) ────────────────────────────────── */}
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <h1 className="font-display text-lg font-bold tracking-tight">Panel de Control</h1>
+          <span className="text-xs text-muted-foreground">{CURRENT_PERIOD}</span>
+          {currentPhase && <span className="text-xs px-1.5 py-0.5 rounded bg-accent/10 text-accent font-medium">{currentPhase.short}</span>}
+          {daysLeft !== null && daysLeft > 0 && daysLeft <= 90 && (
+            <span className="text-[11px] text-muted-foreground flex items-center gap-1">
+              <Clock className="h-3 w-3" />{daysLeft}d
+            </span>
+          )}
         </div>
-
-        {/* Phase stepper */}
-        <div className="px-4 pb-4">
-          <div className="flex items-stretch gap-0.5">
-            {PHASES.map((p, i) => {
-              const st = phaseStatus(p.key, selfDone, allSupDone, feedbackDone, planDone);
-              const nextSt = i < PHASES.length - 1 ? phaseStatus(PHASES[i + 1].key, selfDone, allSupDone, feedbackDone, planDone) : null;
-              return (
-                <div key={p.key} className="flex items-center flex-1 min-w-0">
-                  <div className={`flex items-center justify-center gap-1.5 px-2 py-2 rounded-md text-xs font-medium min-w-0 transition-[background-color,color] duration-200 w-full ${
-                    st === 'done' ? 'bg-smps-success/10 text-smps-success'
-                    : st === 'current' ? 'bg-accent/10 text-accent'
-                    : 'bg-muted/40 text-muted-foreground'
-                  }`}>
-                    {st === 'done' ? <CheckCircle className="h-3.5 w-3.5 shrink-0" />
-                    : st === 'current' ? <span className="h-2 w-2 rounded-full bg-accent shrink-0 animate-pulse" />
-                    : <span className="h-2 w-2 rounded-full bg-muted-foreground/25 shrink-0" />}
-                    <span className="hidden sm:inline truncate">{p.label}</span>
-                    <span className="sm:hidden truncate">{p.short}</span>
-                  </div>
-                  {i < PHASES.length - 1 && (
-                    <div className={`w-5 h-px mx-0.5 shrink-0 transition-[background-color] duration-300 ${
-                      st === 'done' && nextSt !== 'upcoming' ? 'bg-smps-success/40' : 'bg-border'
-                    }`} />
-                  )}
+        {/* Phase dots */}
+        <div className="flex items-center gap-1">
+          {PHASES.map((p, i) => {
+            const st = phaseStatus(p.key, selfDone, allSupDone, feedbackDone, planDone);
+            return (
+              <div key={p.key} className="flex items-center">
+                <div className={`flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium ${
+                  st === 'done' ? 'text-smps-success' : st === 'current' ? 'text-accent' : 'text-muted-foreground/40'
+                }`}>
+                  {st === 'done' ? <CheckCircle className="h-3 w-3" />
+                  : st === 'current' ? <span className="h-1.5 w-1.5 rounded-full bg-accent animate-pulse" />
+                  : <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/25" />}
+                  <span className="hidden lg:inline">{p.short}</span>
                 </div>
-              );
-            })}
-          </div>
+                {i < PHASES.length - 1 && <span className="text-muted-foreground/20 mx-0.5">·</span>}
+              </div>
+            );
+          })}
         </div>
       </div>
 
-      {/* Urgent action lane */}
-      {urgentItems.length > 0 && (
-        <div className="flex gap-2 overflow-x-auto pb-0.5 -mx-4 px-4 md:-mx-5 md:px-5 smps-fade-up smps-delay-1">
-          {urgentItems.map((item, i) => (
-            <button key={i} onClick={item.action}
-              className={`shrink-0 inline-flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-medium transition-[background-color,transform] duration-150 active:scale-[0.97] ${
-                item.variant === 'accent' ? 'bg-accent text-accent-foreground hover:opacity-90'
-                : item.variant === 'warning' ? 'bg-smps-warning/10 text-smps-warning hover:bg-smps-warning/15 border border-smps-warning/20'
-                : 'bg-muted text-foreground hover:bg-muted/80'
-              }`}>
-              {item.variant === 'accent' && <ClipboardList className="h-3.5 w-3.5" />}
-              {item.variant === 'warning' && <AlertTriangle className="h-3.5 w-3.5" />}
-              {item.label}
-              <ArrowRight className="h-3 w-3 opacity-50" />
-            </button>
-          ))}
-        </div>
-      )}
+      {/* ─── Main grid ─────────────────────────────────────────────────── */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-3">
 
-      {/* Main grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
-        {/* Cycle progress */}
-        <div className="lg:col-span-3 rounded-xl border bg-card p-5 smps-fade-up smps-delay-2">
-          <p className="smps-section-title mb-4">Progreso del Ciclo</p>
-          {isAdminOrMore && (
-            <p className="text-xs text-muted-foreground -mt-3 mb-4">
-              {totalEmployees} colaborador{totalEmployees !== 1 ? 'es' : ''}{levelFilter !== 'all' ? ` · ${levelFilter === 'legal' ? 'Legal' : 'Administrativo'}` : ''}
-            </p>
-          )}
-          <div className="space-y-3">
-            <ProgressBar label="Evaluaciones completadas" value={evaluatedCount} max={totalEmployees} color="success" />
-            <ProgressBar label="Autoevaluaciones" value={selfEvalCount} max={totalEmployees} />
-            <ProgressBar label="Evaluadores" value={supEvalDone} max={supTotal} />
-            {avgScore !== null && (
-              <div className="flex items-center justify-between pt-1">
-                <span className="text-sm font-medium">Promedio general</span>
-                <ScoreBadge value={avgScore} size="lg" />
+        {/* ─── Left column: Progress ────────────────────────────────────── */}
+        <div className="lg:col-span-8 space-y-3">
+
+          {/* Progress metrics */}
+          <div className="rounded-lg border bg-card p-3">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {/* Completion */}
+              <div>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-1">Completadas</p>
+                <div className="flex items-baseline gap-1.5">
+                  <span className="text-xl font-display font-bold tabular-nums">{evaluatedCount}</span>
+                  <span className="text-xs text-muted-foreground">/ {totalEmployees}</span>
+                </div>
+                <div className="h-1 rounded-full bg-muted overflow-hidden mt-1.5">
+                  <div className="h-full rounded-full bg-smps-success transition-[width] duration-700 ease-out" style={{ width: `${totalEmployees > 0 ? (evaluatedCount / totalEmployees) * 100 : 0}%` }} />
+                </div>
               </div>
-            )}
+              {/* Self-evals */}
+              <div>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-1">Autoevaluaciones</p>
+                <div className="flex items-baseline gap-1.5">
+                  <span className="text-xl font-display font-bold tabular-nums">{selfEvalCount}</span>
+                  <span className="text-xs text-muted-foreground">/ {totalEmployees}</span>
+                </div>
+                <div className="h-1 rounded-full bg-muted overflow-hidden mt-1.5">
+                  <div className="h-full rounded-full bg-accent transition-[width] duration-700 ease-out" style={{ width: `${totalEmployees > 0 ? (selfEvalCount / totalEmployees) * 100 : 0}%` }} />
+                </div>
+              </div>
+              {/* Evaluators */}
+              <div>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-1">Evaluadores</p>
+                <div className="flex items-baseline gap-1.5">
+                  <span className="text-xl font-display font-bold tabular-nums">{supEvalDone}</span>
+                  <span className="text-xs text-muted-foreground">/ {supTotal}</span>
+                </div>
+                <div className="h-1 rounded-full bg-muted overflow-hidden mt-1.5">
+                  <div className="h-full rounded-full bg-accent transition-[width] duration-700 ease-out" style={{ width: `${supTotal > 0 ? (supEvalDone / supTotal) * 100 : 0}%` }} />
+                </div>
+              </div>
+              {/* Avg score */}
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-1">Promedio</p>
+                  {avgScore !== null ? <ScoreBadge value={avgScore} size="lg" /> : <span className="text-xs text-muted-foreground">--</span>}
+                </div>
+                {avgScore !== null && <ScoreRing value={avgScore} size={40} />}
+              </div>
+            </div>
           </div>
 
+          {/* Position chart */}
           {posData.length > 0 && (
-            <div className="mt-5 pt-4 border-t">
-              <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide mb-2">Avance por Posici\u00f3n</p>
-              <ResponsiveContainer width="100%" height={Math.max(120, posData.length * 28)}>
-                <BarChart data={posData} layout="vertical" margin={{ left: 80, right: 16, top: 4, bottom: 4 }}>
-                  <XAxis type="number" domain={[0, 100]} tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} tickFormatter={(v: number) => `${v}%`} />
-                  <YAxis type="category" dataKey="name" width={76} tick={{ fontSize: 11, fill: 'hsl(var(--foreground))' }} />
+            <div className="rounded-lg border bg-card p-3">
+              <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-2">Avance por Posici\u00f3n</p>
+              <ResponsiveContainer width="100%" height={Math.max(100, posData.length * 24)}>
+                <BarChart data={posData} layout="vertical" margin={{ left: 72, right: 8, top: 0, bottom: 0 }}>
+                  <XAxis type="number" domain={[0, 100]} tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))' }} tickFormatter={(v: number) => `${v}%`} axisLine={false} tickLine={false} />
+                  <YAxis type="category" dataKey="name" width={68} tick={{ fontSize: 10, fill: 'hsl(var(--foreground))' }} axisLine={false} tickLine={false} />
                   <Tooltip content={<CustomTooltip />} />
-                  <Bar dataKey="selfPct" name="Autoevaluaci\u00f3n" radius={[0, 3, 3, 0]} barSize={8}>
+                  <Bar dataKey="selfPct" name="Autoeval." radius={[0, 2, 2, 0]} barSize={6}>
                     {posData.map((entry: any, idx: number) => (
                       <Cell key={idx} fill={entry.selfPct >= 80 ? 'hsl(var(--smps-success))' : entry.selfPct >= 50 ? 'hsl(var(--smps-gold))' : 'hsl(var(--accent))'} fillOpacity={0.85} />
                     ))}
                   </Bar>
-                  <Bar dataKey="supPct" name="Evaluadores" radius={[0, 3, 3, 0]} barSize={8}>
+                  <Bar dataKey="supPct" name="Evaluadores" radius={[0, 2, 2, 0]} barSize={6}>
                     {posData.map((entry: any, idx: number) => (
                       <Cell key={idx} fill={entry.supPct >= 80 ? 'hsl(var(--smps-success))' : entry.supPct >= 50 ? 'hsl(var(--smps-gold))' : 'hsl(var(--smps-warning))'} fillOpacity={0.85} />
                     ))}
@@ -323,51 +285,55 @@ export default function Dashboard() {
           )}
         </div>
 
-        {/* My Actions sidebar */}
-        <div className="lg:col-span-2 space-y-4 smps-fade-up smps-delay-3">
-          {avgScore !== null && (
-            <div className="rounded-xl border bg-card p-4 flex items-center gap-4">
-              <ScoreRing value={avgScore} size={56} label="Promedio" />
-              <div className="min-w-0">
-                <p className="text-sm font-medium">Promedio del equipo</p>
-                <p className="text-xs text-muted-foreground mt-0.5">{totalEmployees} evaluados · {CURRENT_PERIOD}</p>
+        {/* ─── Right column: Actions + Team ──────────────────────────────── */}
+        <div className="lg:col-span-4 space-y-3">
+
+          {/* Urgent actions */}
+          {urgentItems.length > 0 && (
+            <div className="rounded-lg border bg-card p-3">
+              <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-2">Pendiente</p>
+              <div className="space-y-1">
+                {urgentItems.map((item, i) => (
+                  <button key={i} onClick={item.action}
+                    className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-xs font-medium transition-[background-color,transform] duration-150 active:scale-[0.98] text-left ${
+                      item.variant === 'accent' ? 'bg-accent text-accent-foreground hover:opacity-90'
+                      : item.variant === 'warning' ? 'bg-smps-warning/10 text-smps-warning hover:bg-smps-warning/15'
+                      : 'hover:bg-muted/60'
+                    }`}>
+                    <ClipboardList className="h-3 w-3 shrink-0 opacity-70" />
+                    <span className="truncate">{item.label}</span>
+                    <ArrowRight className="h-3 w-3 ml-auto opacity-40 shrink-0" />
+                  </button>
+                ))}
               </div>
             </div>
           )}
 
-          {myPending.length > 0 && (
-            <div className="rounded-xl border bg-card p-4">
-              <p className="smps-section-title mb-3">Evaluaciones Pendientes</p>
-              <div className="space-y-1.5 max-h-48 overflow-y-auto">
-                {myPending.map(a => {
-                  const emp = (users as any[]).find(u => u.id === a.employeeId);
-                  return (
-                    <div key={a.id} className="flex items-center justify-between py-1.5 px-2 rounded-md hover:bg-muted/40 transition-[background-color] duration-150">
-                      <span className="text-sm truncate">{emp?.name}</span>
-                      <button onClick={() => navigate(`/evaluations?evaluate=${a.employeeId}`)}
-                        className="px-2.5 py-1 rounded-md bg-accent text-accent-foreground text-xs font-medium hover:opacity-90 transition-[opacity,transform] duration-150 active:scale-[0.98] ml-2 shrink-0">
-                        Evaluar
-                      </button>
-                    </div>
-                  );
-                })}
-              </div>
+          {/* Team overview */}
+          <div className="rounded-lg border bg-card p-3">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-[10px] text-muted-foreground uppercase tracking-widest">Equipo</p>
+              <span className="text-[10px] text-muted-foreground tabular-nums">{totalEmployees}</span>
             </div>
-          )}
+            <div className="max-h-64 overflow-y-auto">
+              {renderGroup(legal, 'Legal')}
+              {renderGroup(admin, 'Administrativo')}
+            </div>
+          </div>
 
+          {/* Admin alerts (compact) */}
           {(unread > 0 || pendVac > 0) && (isAdmin || isSuperUser || !!currentUser.isManagingPartner) && (
-            <div className="rounded-xl border bg-card p-4 space-y-1.5">
-              <p className="smps-section-title mb-2">Requiere Atenci\u00f3n</p>
+            <div className="rounded-lg border bg-card p-3 space-y-1">
               {unread > 0 && (
-                <button onClick={() => navigate('/communications')} className="w-full flex items-center justify-between py-1.5 px-2 rounded-md hover:bg-muted/40 transition-[background-color] duration-150 text-left">
-                  <span className="text-sm">{unread} comunicado{unread > 1 ? 's' : ''} sin leer</span>
-                  <ArrowRight className="h-3.5 w-3.5 text-muted-foreground" />
+                <button onClick={() => navigate('/communications')} className="w-full flex items-center justify-between py-1 px-1.5 rounded hover:bg-muted/40 transition-[background-color] duration-150 text-left">
+                  <span className="text-xs">{unread} comunicado{unread > 1 ? 's' : ''} sin leer</span>
+                  <ArrowRight className="h-3 w-3 text-muted-foreground" />
                 </button>
               )}
               {pendVac > 0 && (
-                <button onClick={() => navigate('/vacations')} className="w-full flex items-center justify-between py-1.5 px-2 rounded-md hover:bg-muted/40 transition-[background-color] duration-150 text-left">
-                  <span className="text-sm">{pendVac} solicitud{pendVac > 1 ? 'es' : ''} de vacaciones</span>
-                  <ArrowRight className="h-3.5 w-3.5 text-muted-foreground" />
+                <button onClick={() => navigate('/vacations')} className="w-full flex items-center justify-between py-1 px-1.5 rounded hover:bg-muted/40 transition-[background-color] duration-150 text-left">
+                  <span className="text-xs">{pendVac} solicitud{pendVac > 1 ? 'es' : ''} de vacaciones</span>
+                  <ArrowRight className="h-3 w-3 text-muted-foreground" />
                 </button>
               )}
             </div>
@@ -375,43 +341,39 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Expandable sections */}
+      {/* ─── Expandable detail (optional, below fold) ──────────────────── */}
       <div className="space-y-2">
-        <div className="rounded-xl border bg-card overflow-hidden smps-fade-up smps-delay-4">
-          <button onClick={() => setExpanded(expanded === 'employees' ? null : 'employees')}
-            className="w-full flex items-center justify-between p-4 hover:bg-muted/30 transition-[background-color] duration-150">
-            <div className="flex items-center gap-3"><Users className="h-4 w-4 text-accent" /><span className="text-sm font-medium">Colaboradores por Nivel</span><span className="text-xs text-muted-foreground">({totalEmployees})</span></div>
-            <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${expanded === 'employees' ? 'rotate-180' : ''}`} />
-          </button>
-          {expanded === 'employees' && (
-            <div className="px-4 pb-4 border-t smps-fade-in">
-              {renderGroup(legal, 'Legal')}
-              {renderGroup(admin, 'Administrativo')}
-            </div>
-          )}
-        </div>
-
-        <div className="rounded-xl border bg-card overflow-hidden smps-fade-up smps-delay-5">
+        <div className="rounded-lg border bg-card overflow-hidden">
           <button onClick={() => setExpanded(expanded === 'progress' ? null : 'progress')}
-            className="w-full flex items-center justify-between p-4 hover:bg-muted/30 transition-[background-color] duration-150">
-            <div className="flex items-center gap-3"><TrendingUp className="h-4 w-4 text-accent" /><span className="text-sm font-medium">Progreso Detallado por Posici\u00f3n</span></div>
-            <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${expanded === 'progress' ? 'rotate-180' : ''}`} />
+            className="w-full flex items-center justify-between p-3 hover:bg-muted/30 transition-[background-color] duration-150">
+            <div className="flex items-center gap-2"><Users className="h-3.5 w-3.5 text-accent" /><span className="text-xs font-medium">Progreso Detallado por Posici\u00f3n</span></div>
+            <ChevronDown className={`h-3.5 w-3.5 text-muted-foreground transition-transform duration-200 ${expanded === 'progress' ? 'rotate-180' : ''}`} />
           </button>
           {expanded === 'progress' && (
-            <div className="px-4 pb-4 border-t smps-fade-in space-y-3">
+            <div className="px-3 pb-3 border-t smps-fade-in space-y-2">
               {getPositionHierarchy().map(pos => {
                 const pu = visible.filter(u => u.position === pos);
                 if (pu.length === 0) return null;
                 const sDone = pu.filter(u => pEvals.some(e => e.type === 'self' && e.evaluatorId === u.id)).length;
                 const supD = pu.filter(u => pEvals.some(e => e.type === 'supervisor' && e.evaluatedId === u.id)).length;
+                const selfPct = pu.length > 0 ? Math.round((sDone / pu.length) * 100) : 0;
+                const supPct = pu.length > 0 ? Math.round((supD / pu.length) * 100) : 0;
                 return (
                   <div key={pos}>
-                    <div className="flex items-baseline justify-between mb-1.5">
-                      <span className="text-sm font-medium">{getPositionLabel(pos)}</span>
-                      <span className="text-xs text-muted-foreground tabular-nums">{sDone}/{pu.length} autoeval.</span>
+                    <div className="flex items-baseline justify-between mb-1">
+                      <span className="text-xs font-medium">{getPositionLabel(pos)}</span>
+                      <span className="text-[10px] text-muted-foreground tabular-nums">{sDone}/{pu.length}</span>
                     </div>
-                    <ProgressBar label="Autoevaluaciones" value={sDone} max={pu.length} color="accent" />
-                    <ProgressBar label="Evaluadores" value={supD} max={pu.length} color="success" />
+                    <div className="flex gap-1.5">
+                      <div className="flex-1">
+                        <div className="flex justify-between text-[9px] text-muted-foreground mb-0.5"><span>Autoeval.</span><span>{selfPct}%</span></div>
+                        <div className="h-1 rounded-full bg-muted overflow-hidden"><div className="h-full rounded-full bg-accent transition-[width] duration-700 ease-out" style={{ width: `${selfPct}%` }} /></div>
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex justify-between text-[9px] text-muted-foreground mb-0.5"><span>Evaluadores</span><span>{supPct}%</span></div>
+                        <div className="h-1 rounded-full bg-muted overflow-hidden"><div className="h-full rounded-full bg-smps-success transition-[width] duration-700 ease-out" style={{ width: `${supPct}%` }} /></div>
+                      </div>
+                    </div>
                   </div>
                 );
               })}
