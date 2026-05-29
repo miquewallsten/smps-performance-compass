@@ -193,37 +193,6 @@ export function useAddExtraVacationDays() {
   return useMutation({ mutationFn: (data: any) => api.post('/api/vacations/extra-days', data), onSuccess: () => qc.invalidateQueries({ queryKey: ['vacationRequests'] }) });
 }
 
-// ── Questions ──
-export function useLibraryQuestions() {
-  return useQuery({ queryKey: ['libraryQuestions'], queryFn: () => api.get<any[]>('/api/questions/library') });
-}
-export function useCreateLibraryQuestion() {
-  const qc = useQueryClient();
-  return useMutation({ mutationFn: (data: any) => api.post('/api/questions/library', data), onSuccess: () => qc.invalidateQueries({ queryKey: ['libraryQuestions'] }) });
-}
-export function useUpdateLibraryQuestion() {
-  const qc = useQueryClient();
-  return useMutation({ mutationFn: ({ id, ...data }: any) => api.patch(`/api/questions/library/${id}`, data), onSuccess: () => qc.invalidateQueries({ queryKey: ['libraryQuestions'] }) });
-}
-export function useDeleteLibraryQuestion() {
-  const qc = useQueryClient();
-  return useMutation({ mutationFn: (id: string) => api.delete(`/api/questions/library/${id}`), onSuccess: () => qc.invalidateQueries({ queryKey: ['libraryQuestions'] }) });
-}
-export function useCustomQuestions(position?: string) {
-  return useQuery({ queryKey: ['customQuestions', position], queryFn: () => api.get<any[]>(`/api/questions/custom${position ? `?position=${position}` : ''}`) });
-}
-export function useSetCustomQuestions() {
-  const qc = useQueryClient();
-  return useMutation({ mutationFn: (data: any) => api.post('/api/questions/custom', data), onSuccess: () => qc.invalidateQueries({ queryKey: ['customQuestions'] }) });
-}
-export function useSeedOverrides() {
-  return useQuery({ queryKey: ['seedOverrides'], queryFn: () => api.get<any[]>('/api/questions/overrides') });
-}
-export function useUpdateSeedOverride() {
-  const qc = useQueryClient();
-  return useMutation({ mutationFn: ({ id, ...data }: any) => api.patch(`/api/questions/overrides/${id}`, data), onSuccess: () => qc.invalidateQueries({ queryKey: ['seedOverrides'] }) });
-}
-
 // ── Positions ──
 export function usePositions(workAreaId?: string) {
   return useQuery({ queryKey: ['positions', workAreaId], queryFn: () => api.get<any[]>(workAreaId ? `/api/positions?work_area_id=${workAreaId}` : '/api/positions') });

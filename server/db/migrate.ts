@@ -945,9 +945,8 @@ export async function migrate(): Promise<void> {
     console.log('  ⚠ Could not link template_questions to question_library:', (e as Error).message);
   }
 
-  // ─── Migration: Merge library_questions into question_library ──────────
-  // SKIPPED: library_questions data has been superseded by question_library seed data
-  // The old library_questions table is kept for reference only
+  // ─── Migration: library_questions table removed ──────────
+  // The old library_questions table has been dropped (superseded by question_library)
 
   // Also link template_questions for custom source questions
   try {
