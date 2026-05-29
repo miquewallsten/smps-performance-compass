@@ -4,7 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useUsers, useEvaluations, useUpdateUser, useResetUserPassword, useCreateUser, useDeleteUser, useSystemStatus, useUpdateUserRole, usePositions, useWorkAreas, useLocations } from '@/api/queries';
 import { Position } from '@/types';
 import { getPositionLabel } from '@/lib/evaluationConfig';
-import { PERIODS, getLegalHierarchy, getAdminHierarchy } from '@/lib/evaluationConfig';
+import { getLegalHierarchy, getAdminHierarchy } from '@/lib/evaluationConfig';
 import { Eye, Key, UserCheck, UserX, Search, Plus, Trash2, Star, Shield, Pencil, MapPin, Clock, Loader2 } from 'lucide-react';
 import EvaluationViewer from '@/components/EvaluationViewer';
 import { toast } from 'sonner';
