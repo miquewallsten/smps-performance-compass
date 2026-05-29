@@ -1,62 +1,63 @@
-import { ScoreBadge } from '@/components/shared/ScoreBadge';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUsers, useEvaluations, useAssignments, usePeriods, useAnnouncements, useVacationRequests } from '@/api/queries';
 import { CURRENT_PERIOD, getPositionLabel, getLegalHierarchy, getAdminHierarchy, getPositionHierarchy } from '@/lib/evaluationConfig';
-import { Users, CheckCircle, Clock, TrendingUp, ChevronDown, ChevronRight, ClipboardCheck, ArrowRight } from 'lucide-react';
+import { ScoreBadge, scoreColorText } from '@/components/shared/ScoreBadge';
+import { ScoreRing } from '@/components/shared/ScoreRing';
+import { Users, CheckCircle, Clock, TrendingUp, ChevronDown, ArrowRight, ClipboardList, AlertTriangle } from 'lucide-react';
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
-// ─── Phase progress types ─────────────────────────────────────────────────
 type PhaseKey = 'self' | 'supervisor' | 'feedback' | 'action_plan';
 
-const PHASES: { key: PhaseKey; label: string; shortLabel: string }[] = [
-  { key: 'self', label: 'Autoevaluación', shortLabel: 'Autoeval.' },
-  { key: 'supervisor', label: 'Evaluadores', shortLabel: 'Evaluadores' },
-  { key: 'feedback', label: 'Sesión de Feedback', shortLabel: 'Feedback' },
-  { key: 'action_plan', label: 'Plan de Acción', shortLabel: 'Plan Acción' },
+const PHASES: { key: PhaseKey; label: string; short: string }[] = [
+  { key: 'self', label: 'Autoevaluación', short: 'Autoeval.' },
+  { key: 'supervisor', label: 'Evaluadores', short: 'Evaluad.' },
+  { key: 'feedback', label: 'Feedback', short: 'Feedback' },
+  { key: 'action_plan', label: 'Plan de Acción', short: 'Plan Acc.' },
 ];
 
-function getPhaseStatus(phase: PhaseKey, selfDone: boolean, allSupDone: boolean, feedbackDone: boolean, planDone: boolean): 'done' | 'current' | 'upcoming' {
+function phaseStatus(phase: PhaseKey, selfDone: boolean, supDone: boolean, fbDone: boolean, planDone: boolean): 'done' | 'current' | 'upcoming' {
   switch (phase) {
     case 'self': return selfDone ? 'done' : 'current';
-    case 'supervisor': return allSupDone ? 'done' : selfDone ? 'current' : 'upcoming';
-    case 'feedback': return feedbackDone ? 'done' : allSupDone ? 'current' : 'upcoming';
-    case 'action_plan': return planDone ? 'done' : feedbackDone ? 'current' : 'upcoming';
+    case 'supervisor': return supDone ? 'done' : selfDone ? 'current' : 'upcoming';
+    case 'feedback': return fbDone ? 'done' : supDone ? 'current' : 'upcoming';
+    case 'action_plan': return planDone ? 'done' : fbDone ? 'current' : 'upcoming';
   }
 }
 
-function getDaysUntil(dateStr: string): number | null {
+function daysUntil(dateStr: string): number | null {
   if (!dateStr) return null;
   const end = new Date(dateStr + 'T23:59:59');
-  const now = new Date();
-  return Math.ceil((end.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+  return Math.ceil((end.getTime() - Date.now()) / 86400000);
 }
 
-function formatDate(dateStr: string): string {
-  if (!dateStr) return '';
-  return new Date(dateStr + 'T12:00:00').toLocaleDateString('es-MX', { day: 'numeric', month: 'short' });
-}
-
-// ─── Progress Bar component ──────────────────────────────────────────────
 function ProgressBar({ value, max, label, color = 'accent' }: { value: number; max: number; label: string; color?: string }) {
   const pct = max > 0 ? Math.round((value / max) * 100) : 0;
-  const barColor = color === 'success' ? 'hsl(var(--smps-success))' : color === 'warning' ? 'hsl(var(--smps-warning))' : 'hsl(var(--accent))';
+  const fill = color === 'success' ? 'hsl(var(--smps-success))' : color === 'warning' ? 'hsl(var(--smps-warning))' : 'hsl(var(--accent))';
   return (
     <div className="flex items-center gap-3">
-      <span className="text-sm font-medium min-w-[140px] truncate">{label}</span>
+      <span className="text-sm font-medium min-w-[130px] truncate">{label}</span>
       <div className="flex-1 h-2 rounded-full bg-muted overflow-hidden">
-        <div
-          className="h-full rounded-full transition-[width] duration-700 ease-out"
-          style={{ width: `${pct}%`, backgroundColor: barColor }}
-        />
+        <div className="h-full rounded-full transition-[width] duration-700 ease-out" style={{ width: `${pct}%`, backgroundColor: fill }} />
       </div>
-      <span className="text-sm tabular-nums text-muted-foreground min-w-[48px] text-right">{value}/{max}</span>
+      <span className="text-sm tabular-nums text-muted-foreground min-w-[44px] text-right">{value}/{max}</span>
     </div>
   );
 }
 
-// ─── Main Dashboard ───────────────────────────────────────────────────────
+const CustomTooltip = ({ active, payload, label }: any) => {
+  if (!active || !payload?.length) return null;
+  return (
+    <div className="rounded-lg border bg-card px-3 py-2 shadow-lg text-xs">
+      <p className="font-display font-semibold mb-1">{label}</p>
+      {payload.map((p: any, i: number) => (
+        <p key={i} className="text-muted-foreground">{p.name}: <span className="text-foreground font-medium">{p.value}%</span></p>
+      ))}
+    </div>
+  );
+};
+
 export default function Dashboard() {
   const { user: currentUser } = useAuth();
   const { data: users = [] } = useUsers();
@@ -66,148 +67,114 @@ export default function Dashboard() {
   const { data: announcements = [] } = useAnnouncements();
   const { data: vacationRequests = [] } = useVacationRequests();
   const navigate = useNavigate();
-  const [expandedSection, setExpandedSection] = useState<string | null>(null);
-  const [selectedLevel, setSelectedLevel] = useState<string>('all');
+  const [expanded, setExpanded] = useState<string | null>(null);
+  const [levelFilter, setLevelFilter] = useState('all');
 
   if (!currentUser) return null;
 
   const isAdmin = currentUser.isAdmin;
   const isSocio = currentUser.position === 'socio';
-  const isAdminOrSocio = isAdmin || isSocio || !!currentUser.isManagingPartner;
+  const isAdminOrMore = isAdmin || isSocio || !!currentUser.isManagingPartner;
   const isSuperUser = currentUser.isSuperUser;
 
-  // ─── Data derivation ───────────────────────────────────────────────────
-  const periodAssignments = (Array.isArray(assignments) ? assignments : []).filter(a => a.period === CURRENT_PERIOD);
-  const periodEvals = (Array.isArray(evaluations) ? evaluations : []).filter(e => e.period === CURRENT_PERIOD);
-  const currentConfig = (Array.isArray(periodConfigs) ? periodConfigs : []).find((c: any) => c.period === CURRENT_PERIOD);
+  const pAssign = (Array.isArray(assignments) ? assignments : []).filter(a => a.period === CURRENT_PERIOD);
+  const pEvals = (Array.isArray(evaluations) ? evaluations : []).filter(e => e.period === CURRENT_PERIOD);
+  const curCfg = (Array.isArray(periodConfigs) ? periodConfigs : []).find((c: any) => c.period === CURRENT_PERIOD);
 
-  const myTeamIds = isAdminOrSocio
-    ? null
-    : periodAssignments.filter(a => a.supervisorId === currentUser.id).map(a => a.employeeId);
+  const myTeamIds = isAdminOrMore ? null : pAssign.filter(a => a.supervisorId === currentUser.id).map(a => a.employeeId);
 
-  const getRelevantUsers = () => {
+  const visible = (() => {
     let base = (Array.isArray(users) ? users : []).filter(u => u.isActive && !u.isSuperUser);
-    if (myTeamIds) {
-      base = base.filter(u => myTeamIds.includes(u.id) || u.id === currentUser.id);
-    }
-    if (selectedLevel !== 'all' && isAdminOrSocio) {
-      if (selectedLevel === 'legal') base = base.filter(u => getLegalHierarchy().includes(u.position));
-      else if (selectedLevel === 'administrativo') base = base.filter(u => getAdminHierarchy().includes(u.position));
-      else base = base.filter(u => u.position === selectedLevel);
+    if (myTeamIds) base = base.filter(u => myTeamIds.includes(u.id) || u.id === currentUser.id);
+    if (levelFilter !== 'all' && isAdminOrMore) {
+      if (levelFilter === 'legal') base = base.filter(u => getLegalHierarchy().includes(u.position));
+      else if (levelFilter === 'administrativo') base = base.filter(u => getAdminHierarchy().includes(u.position));
+      else base = base.filter(u => u.position === levelFilter);
     }
     return base;
-  };
-
-  const relevantUsers = getRelevantUsers();
-  const relevantEvals = periodEvals.filter(e => relevantUsers.some(u => u.id === e.evaluatedId));
-  const selfEvals = relevantEvals.filter(e => e.type === 'self');
-  const supervisorEvals = relevantEvals.filter(e => e.type === 'supervisor');
-
-  const totalEmployees = relevantUsers.length;
-  const evaluatedCount = new Set(supervisorEvals.map(e => e.evaluatedId)).size;
-  const selfEvalCount = selfEvals.length;
-  const completionPct = totalEmployees > 0 ? Math.round((evaluatedCount / totalEmployees) * 100) : 0;
-  const selfPct = totalEmployees > 0 ? Math.round((selfEvalCount / totalEmployees) * 100) : 0;
-  const supPct = totalEmployees > 0 ? Math.round(
-    (() => {
-      const withAssignments = relevantUsers.filter(u => periodAssignments.some(a => a.employeeId === u.id));
-      const withSupEval = withAssignments.filter(u => periodEvals.some(e => e.type === 'supervisor' && e.evaluatedId === u.id));
-      return withAssignments.length > 0 ? (withSupEval.length / withAssignments.length) * 100 : 0;
-    })()
-  ) : 0;
-
-  const mySelfEval = periodEvals.find(e => e.type === 'self' && e.evaluatorId === currentUser.id);
-  const myAssignments = periodAssignments.filter(a => a.supervisorId === currentUser.id);
-  const myCompletedEvals = periodEvals.filter(e => e.type === 'supervisor' && e.evaluatorId === currentUser.id);
-  const myPendingEvals = myAssignments.filter(a => !myCompletedEvals.find(e => e.evaluatedId === a.employeeId));
-
-  // My progress for phase indicator
-  const mySupAssignments = periodAssignments.filter(a => a.employeeId === currentUser.id);
-  const mySupervisorEvals = periodEvals.filter(e => e.type === 'supervisor' && e.evaluatedId === currentUser.id);
-  const myAllSupDone = mySupAssignments.length > 0 && mySupervisorEvals.length >= mySupAssignments.length;
-  const myFeedbackDone = mySupervisorEvals.some(e => e.feedbackCompleted);
-  const selfDone = !!mySelfEval;
-
-  // Urgent items
-  const unreadAnnouncements = (Array.isArray(announcements) ? announcements : []).filter(a => {
-    if (a.archived) return false;
-    if (a.readBy && a.readBy.includes(currentUser.id)) return false;
-    return true;
-  }).length;
-
-  const pendingVacationCount = (() => {
-    const myEvaluados = periodAssignments.filter(a => a.supervisorId === currentUser.id).map(a => a.employeeId);
-    return (Array.isArray(vacationRequests) ? vacationRequests : []).filter(r => {
-      if (r.status !== 'pending') return false;
-      if (isAdmin || isSuperUser || !!currentUser.isManagingPartner) return true;
-      return myEvaluados.includes(r.userId);
-    }).length;
   })();
 
-  // Phase computation
-  const planDone = false; // action plan completion checked elsewhere
-  const currentPhase = PHASES.find(p => getPhaseStatus(p.key, selfDone, myAllSupDone, myFeedbackDone, planDone) === 'current');
-  const currentPhaseIndex = currentPhase ? PHASES.indexOf(currentPhase) : PHASES.length;
+  const vEvals = pEvals.filter(e => visible.some(u => u.id === e.evaluatedId));
+  const selfEvals = vEvals.filter(e => e.type === 'self');
+  const supEvals = vEvals.filter(e => e.type === 'supervisor');
+  const totalEmployees = visible.length;
+  const evaluatedCount = new Set(supEvals.map(e => e.evaluatedId)).size;
+  const selfEvalCount = selfEvals.length;
+  const supEvalDone = (() => {
+    const withAssign = visible.filter(u => pAssign.some(a => a.employeeId === u.id));
+    const withSup = withAssign.filter(u => pEvals.some(e => e.type === 'supervisor' && e.evaluatedId === u.id));
+    return withSup.length;
+  })();
+  const supTotal = (() => {
+    const withAssign = visible.filter(u => pAssign.some(a => a.employeeId === u.id));
+    return withAssign.length;
+  })();
 
-  // Days until period end
-  const daysUntilEnd = currentConfig ? getDaysUntil(currentConfig.actionPlanEnd || currentConfig.feedbackEnd || currentConfig.supervisorEnd || currentConfig.selfEnd) : null;
+  const mySelfEval = pEvals.find(e => e.type === 'self' && e.evaluatorId === currentUser.id);
+  const myAssigns = pAssign.filter(a => a.supervisorId === currentUser.id);
+  const myCompleted = pEvals.filter(e => e.type === 'supervisor' && e.evaluatorId === currentUser.id);
+  const myPending = myAssigns.filter(a => !myCompleted.find(e => e.evaluatedId === a.employeeId));
 
-  // Average score
-  const avgScore = relevantEvals.length > 0
-    ? Math.round(relevantEvals.reduce((s, e) => s + e.totalScore, 0) / relevantEvals.length)
-    : null;
+  const selfDone = !!mySelfEval;
+  const mySupAssigns = pAssign.filter(a => a.employeeId === currentUser.id);
+  const mySupEvals = pEvals.filter(e => e.type === 'supervisor' && e.evaluatedId === currentUser.id);
+  const allSupDone = mySupAssigns.length > 0 && mySupEvals.length >= mySupAssigns.length;
+  const feedbackDone = mySupEvals.some(e => e.feedbackCompleted);
+  const planDone = false;
+  const currentPhase = PHASES.find(p => phaseStatus(p.key, selfDone, allSupDone, feedbackDone, planDone) === 'current');
 
-  // Chart data for team progress
-  const positionProgressData = useMemo(() => {
-    return getPositionHierarchy()
-      .map(pos => {
-        const posUsers = relevantUsers.filter(u => u.position === pos);
-        if (posUsers.length === 0) return null;
-        const selfDone = posUsers.filter(u => periodEvals.some(e => e.type === 'self' && e.evaluatorId === u.id)).length;
-        const supDone = posUsers.filter(u => periodEvals.some(e => e.type === 'supervisor' && e.evaluatedId === u.id)).length;
-        return {
-          name: getPositionLabel(pos),
-          selfPct: posUsers.length > 0 ? Math.round((selfDone / posUsers.length) * 100) : 0,
-          supPct: posUsers.length > 0 ? Math.round((supDone / posUsers.length) * 100) : 0,
-          total: posUsers.length,
-        };
-      })
-      .filter(Boolean);
-  }, [relevantUsers, periodEvals]);
+  const daysLeft = curCfg ? daysUntil(curCfg.actionPlanEnd || curCfg.feedbackEnd || curCfg.supervisorEnd || curCfg.selfEnd) : null;
 
-  // Legal / admin user groups
-  const legalUsers = relevantUsers.filter(u => getLegalHierarchy().includes(u.position)).sort((a, b) => {
-    const pi = getLegalHierarchy().indexOf(a.position) - getLegalHierarchy().indexOf(b.position);
-    return pi !== 0 ? pi : a.name.localeCompare(b.name, 'es');
+  const unread = (Array.isArray(announcements) ? announcements : []).filter(a => !a.archived && !(a.readBy || []).includes(currentUser.id)).length;
+  const pendVac = (() => {
+    const myEv = pAssign.filter(a => a.supervisorId === currentUser.id).map(a => a.employeeId);
+    return (Array.isArray(vacationRequests) ? vacationRequests : []).filter(r => r.status === 'pending' && (isAdmin || isSuperUser || !!currentUser.isManagingPartner || myEv.includes(r.userId))).length;
+  })();
+
+  const avgScore = vEvals.length > 0 ? Math.round(vEvals.reduce((s, e) => s + e.totalScore, 0) / vEvals.length) : null;
+
+  const posData = useMemo(() => getPositionHierarchy().map(pos => {
+    const pu = visible.filter(u => u.position === pos);
+    if (pu.length === 0) return null;
+    return {
+      name: getPositionLabel(pos),
+      selfPct: Math.round((pu.filter(u => pEvals.some(e => e.type === 'self' && e.evaluatorId === u.id)).length / pu.length) * 100),
+      supPct: Math.round((pu.filter(u => pEvals.some(e => e.type === 'supervisor' && e.evaluatedId === u.id)).length / pu.length) * 100),
+    };
+  }).filter(Boolean), [visible, pEvals]);
+
+  const legal = visible.filter(u => getLegalHierarchy().includes(u.position)).sort((a, b) => {
+    const d = getLegalHierarchy().indexOf(a.position) - getLegalHierarchy().indexOf(b.position);
+    return d !== 0 ? d : a.name.localeCompare(b.name, 'es');
   });
-  const adminUsersGroup = relevantUsers.filter(u => getAdminHierarchy().includes(u.position)).sort((a, b) => {
-    const pi = getAdminHierarchy().indexOf(a.position) - getAdminHierarchy().indexOf(b.position);
-    return pi !== 0 ? pi : a.name.localeCompare(b.name, 'es');
+  const admin = visible.filter(u => getAdminHierarchy().includes(u.position)).sort((a, b) => {
+    const d = getAdminHierarchy().indexOf(a.position) - getAdminHierarchy().indexOf(b.position);
+    return d !== 0 ? d : a.name.localeCompare(b.name, 'es');
   });
 
-  const renderUserGroup = (groupUsers: typeof relevantUsers, groupLabel: string) => {
+  const renderGroup = (groupUsers: typeof visible, label: string) => {
     if (groupUsers.length === 0) return null;
     const positions = [...new Set(groupUsers.map(u => u.position))];
     return (
-      <div className="mb-4">
-        <p className="text-xs font-bold text-accent uppercase tracking-widest mb-2">{groupLabel}</p>
+      <div className="mb-4 last:mb-0">
+        <p className="text-[11px] font-bold text-accent uppercase tracking-widest mb-2">{label}</p>
         {positions.map(pos => {
-          const posUsers = groupUsers.filter(u => u.position === pos);
+          const pu = groupUsers.filter(u => u.position === pos);
           return (
-            <div key={pos} className="mb-2">
-              <p className="text-[11px] font-semibold text-muted-foreground mb-1">{getPositionLabel(pos)} ({posUsers.length})</p>
+            <div key={pos} className="mb-2 last:mb-0">
+              <p className="text-[11px] font-semibold text-muted-foreground mb-1">{getPositionLabel(pos)} ({pu.length})</p>
               <div className="space-y-0.5">
-                {posUsers.map(u => {
-                  const hasSelfEval = periodEvals.some(e => e.type === 'self' && e.evaluatorId === u.id);
-                  const completedSup = periodEvals.filter(e => e.type === 'supervisor' && e.evaluatedId === u.id);
+                {pu.map(u => {
+                  const hasSelf = pEvals.some(e => e.type === 'self' && e.evaluatorId === u.id);
+                  const selfScore = pEvals.find(e => e.type === 'self' && e.evaluatorId === u.id);
                   return (
-                    <div key={u.id} className="flex items-center justify-between py-1.5 px-3 rounded-md hover:bg-muted/30 transition-[background-color] duration-150">
-                      <span className="text-sm">{u.name}</span>
+                    <button key={u.id} onClick={() => navigate(`/profile/${u.id}`)}
+                      className="w-full flex items-center justify-between py-1.5 px-3 rounded-md hover:bg-muted/40 transition-[background-color] duration-150 text-left">
+                      <span className="text-sm truncate">{u.name}</span>
                       <div className="flex items-center gap-2">
-                        {hasSelfEval && <CheckCircle className="h-3.5 w-3.5 text-smps-success" />}
-                        {completedSup.length > 0 && <span className="text-[10px] text-muted-foreground">{completedSup.length} eval.</span>}
+                        {selfScore ? <ScoreBadge value={Math.round(selfScore.totalScore)} size="sm" /> : hasSelf ? <CheckCircle className="h-3 w-3 text-smps-success" /> : null}
                       </div>
-                    </div>
+                    </button>
                   );
                 })}
               </div>
@@ -218,249 +185,188 @@ export default function Dashboard() {
     );
   };
 
-  // ─── Urgent items list ─────────────────────────────────────────────────
   const urgentItems: { label: string; action: () => void; variant: 'accent' | 'warning' | 'default' }[] = [];
-  if (!selfDone) {
-    urgentItems.push({ label: 'Completar autoevaluación', action: () => navigate('/self-evaluation'), variant: 'accent' });
-  }
-  myPendingEvals.forEach(a => {
-    const emp = users.find(u => u.id === a.employeeId);
+  if (!selfDone) urgentItems.push({ label: 'Completar autoevaluación', action: () => navigate('/self-evaluation'), variant: 'accent' });
+  myPending.forEach(a => {
+    const emp = (users as any[]).find(u => u.id === a.employeeId);
     if (emp) urgentItems.push({ label: `Evaluar a ${emp.name}`, action: () => navigate(`/evaluations?evaluate=${a.employeeId}`), variant: 'warning' });
   });
-  if (unreadAnnouncements > 0) {
-    urgentItems.push({ label: `${unreadAnnouncements} comunicado${unreadAnnouncements > 1 ? 's' : ''} sin leer`, action: () => navigate('/communications'), variant: 'default' });
-  }
-  if (pendingVacationCount > 0 && (isAdmin || isSuperUser || !!currentUser.isManagingPartner)) {
-    urgentItems.push({ label: `${pendingVacationCount} solicitud${pendingVacationCount > 1 ? 'es' : ''} de vacaciones`, action: () => navigate('/vacations'), variant: 'default' });
-  }
+  if (unread > 0) urgentItems.push({ label: `${unread} comunicado${unread > 1 ? 's' : ''} sin leer`, action: () => navigate('/communications'), variant: 'default' });
+  if (pendVac > 0 && (isAdmin || isSuperUser || !!currentUser.isManagingPartner)) urgentItems.push({ label: `${pendVac} solicitud${pendVac > 1 ? 'es' : ''} de vacaciones`, action: () => navigate('/vacations'), variant: 'default' });
 
   return (
-    <div className="space-y-5">
-      {/* ─── Context Bar ─────────────────────────────────────────────────── */}
-      <div className="rounded-xl border bg-card p-4">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <div>
-            <h1 className="font-display text-xl font-bold">Panel de Control</h1>
-            <p className="text-sm text-muted-foreground mt-0.5">
-              {CURRENT_PERIOD}
-              {currentPhase && (
-                <> &middot; Fase actual: <span className="text-foreground font-medium">{currentPhase.label}</span></>
+    <div className="space-y-4">
+      {/* Context header */}
+      <div className="rounded-xl border bg-card smps-fade-up">
+        <div className="p-4 pb-3">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+            <div>
+              <h1 className="font-display text-xl font-bold tracking-tight">Panel de Control</h1>
+              <p className="text-sm text-muted-foreground mt-0.5">
+                {CURRENT_PERIOD}{currentPhase ? <> · Fase: <span className="text-foreground font-medium">{currentPhase.label}</span></> : null}
+              </p>
+            </div>
+            <div className="flex items-center gap-2 flex-wrap">
+              {isAdminOrMore && (
+                <div className="flex gap-0.5 bg-muted rounded-md p-0.5">
+                  {(['all', 'legal', 'administrativo'] as const).map(v => (
+                    <button key={v} onClick={() => setLevelFilter(v)}
+                      className={`px-3 py-1 rounded-md text-xs font-medium transition-[background-color,color,box-shadow] duration-150 ${levelFilter === v ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}>
+                      {v === 'all' ? 'Todos' : v === 'legal' ? 'Legal' : 'Admin.'}
+                    </button>
+                  ))}
+                </div>
               )}
-            </p>
-          </div>
-          <div className="flex items-center gap-2 flex-wrap">
-            {isAdminOrSocio && (
-              <div className="flex gap-1 bg-muted rounded-md p-0.5">
-                {(['all', 'legal', 'administrativo'] as const).map(v => (
-                  <button
-                    key={v}
-                    onClick={() => setSelectedLevel(v)}
-                    className={`px-3 py-1 rounded-md text-xs font-medium transition-[background-color,color] duration-150 ${
-                      selectedLevel === v ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
-                    }`}
-                  >
-                    {v === 'all' ? 'Todos' : v === 'legal' ? 'Legal' : 'Administrativo'}
-                  </button>
-                ))}
-              </div>
-            )}
-            {daysUntilEnd !== null && daysUntilEnd > 0 && daysUntilEnd <= 90 && (
-              <span className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full bg-smps-warning/10 text-smps-warning font-medium">
-                <Clock className="h-3 w-3" />
-                {daysUntilEnd} día{daysUntilEnd !== 1 ? 's' : ''} restante{daysUntilEnd !== 1 ? 's' : ''}
-              </span>
-            )}
+              {daysLeft !== null && daysLeft > 0 && daysLeft <= 90 && (
+                <span className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full bg-smps-warning/10 text-smps-warning font-medium">
+                  <Clock className="h-3 w-3" />
+                  {daysLeft} d\u00eda{daysLeft !== 1 ? 's' : ''} restante{daysLeft !== 1 ? 's' : ''}
+                </span>
+              )}
+            </div>
           </div>
         </div>
 
-        {/* Phase Progress */}
-        <div className="mt-4 flex items-center gap-1">
-          {PHASES.map((phase, i) => {
-            const status = getPhaseStatus(phase.key, selfDone, myAllSupDone, myFeedbackDone, planDone);
-            return (
-              <div key={phase.key} className="flex items-center flex-1 min-w-0">
-                <div className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium min-w-0 transition-[background-color,color] duration-200 ${
-                  status === 'done'
-                    ? 'bg-smps-success/10 text-smps-success'
-                    : status === 'current'
-                    ? 'bg-accent/10 text-accent'
-                    : 'bg-muted/50 text-muted-foreground'
-                }`}>
-                  {status === 'done' ? (
-                    <CheckCircle className="h-3.5 w-3.5 flex-shrink-0" />
-                  ) : status === 'current' ? (
-                    <span className="h-1.5 w-1.5 rounded-full bg-accent flex-shrink-0 animate-pulse" />
-                  ) : (
-                    <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/30 flex-shrink-0" />
+        {/* Phase stepper */}
+        <div className="px-4 pb-4">
+          <div className="flex items-stretch gap-0.5">
+            {PHASES.map((p, i) => {
+              const st = phaseStatus(p.key, selfDone, allSupDone, feedbackDone, planDone);
+              const nextSt = i < PHASES.length - 1 ? phaseStatus(PHASES[i + 1].key, selfDone, allSupDone, feedbackDone, planDone) : null;
+              return (
+                <div key={p.key} className="flex items-center flex-1 min-w-0">
+                  <div className={`flex items-center justify-center gap-1.5 px-2 py-2 rounded-md text-xs font-medium min-w-0 transition-[background-color,color] duration-200 w-full ${
+                    st === 'done' ? 'bg-smps-success/10 text-smps-success'
+                    : st === 'current' ? 'bg-accent/10 text-accent'
+                    : 'bg-muted/40 text-muted-foreground'
+                  }`}>
+                    {st === 'done' ? <CheckCircle className="h-3.5 w-3.5 shrink-0" />
+                    : st === 'current' ? <span className="h-2 w-2 rounded-full bg-accent shrink-0 animate-pulse" />
+                    : <span className="h-2 w-2 rounded-full bg-muted-foreground/25 shrink-0" />}
+                    <span className="hidden sm:inline truncate">{p.label}</span>
+                    <span className="sm:hidden truncate">{p.short}</span>
+                  </div>
+                  {i < PHASES.length - 1 && (
+                    <div className={`w-5 h-px mx-0.5 shrink-0 transition-[background-color] duration-300 ${
+                      st === 'done' && nextSt !== 'upcoming' ? 'bg-smps-success/40' : 'bg-border'
+                    }`} />
                   )}
-                  <span className="hidden sm:inline truncate">{phase.label}</span>
-                  <span className="sm:hidden truncate">{phase.shortLabel}</span>
                 </div>
-                {i < PHASES.length - 1 && (
-                  <ChevronRight className="h-3 w-3 text-muted-foreground/40 mx-0.5 flex-shrink-0" />
-                )}
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
       </div>
 
-      {/* ─── Urgent Lane ─────────────────────────────────────────────────── */}
+      {/* Urgent action lane */}
       {urgentItems.length > 0 && (
-        <div className="flex gap-2 overflow-x-auto pb-1 -mx-4 px-4 md:-mx-5 md:px-5 scrollbar-thin">
+        <div className="flex gap-2 overflow-x-auto pb-0.5 -mx-4 px-4 md:-mx-5 md:px-5 smps-fade-up smps-delay-1">
           {urgentItems.map((item, i) => (
-            <button
-              key={i}
-              onClick={item.action}
-              className={`flex-shrink-0 inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-[background-color,transform] duration-150 active:scale-[0.98] ${
-                item.variant === 'accent'
-                  ? 'bg-accent text-accent-foreground hover:opacity-90'
-                  : item.variant === 'warning'
-                  ? 'bg-smps-warning/10 text-smps-warning hover:bg-smps-warning/20'
-                  : 'bg-muted text-foreground hover:bg-muted/80'
-              }`}
-            >
+            <button key={i} onClick={item.action}
+              className={`shrink-0 inline-flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-medium transition-[background-color,transform] duration-150 active:scale-[0.97] ${
+                item.variant === 'accent' ? 'bg-accent text-accent-foreground hover:opacity-90'
+                : item.variant === 'warning' ? 'bg-smps-warning/10 text-smps-warning hover:bg-smps-warning/15 border border-smps-warning/20'
+                : 'bg-muted text-foreground hover:bg-muted/80'
+              }`}>
+              {item.variant === 'accent' && <ClipboardList className="h-3.5 w-3.5" />}
+              {item.variant === 'warning' && <AlertTriangle className="h-3.5 w-3.5" />}
               {item.label}
-              <ArrowRight className="h-3.5 w-3.5 opacity-60" />
+              <ArrowRight className="h-3 w-3 opacity-50" />
             </button>
           ))}
         </div>
       )}
 
-      {/* ─── Stat Cluster + My Actions ───────────────────────────────────── */}
+      {/* Main grid */}
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
-        {/* Cycle Progress */}
-        <div className="lg:col-span-3 rounded-xl border bg-card p-5">
+        {/* Cycle progress */}
+        <div className="lg:col-span-3 rounded-xl border bg-card p-5 smps-fade-up smps-delay-2">
           <p className="smps-section-title mb-4">Progreso del Ciclo</p>
-          {isAdminOrSocio && (
+          {isAdminOrMore && (
             <p className="text-xs text-muted-foreground -mt-3 mb-4">
-              {totalEmployees} colaborador{totalEmployees !== 1 ? 'es' : ''}{selectedLevel !== 'all' ? ` · ${selectedLevel === 'legal' ? 'Legal' : 'Administrativo'}` : ''}
+              {totalEmployees} colaborador{totalEmployees !== 1 ? 'es' : ''}{levelFilter !== 'all' ? ` · ${levelFilter === 'legal' ? 'Legal' : 'Administrativo'}` : ''}
             </p>
           )}
           <div className="space-y-3">
             <ProgressBar label="Evaluaciones completadas" value={evaluatedCount} max={totalEmployees} color="success" />
-            <ProgressBar label="Autoevaluaciones" value={selfEvalCount} max={totalEmployees} color="accent" />
-            <ProgressBar label="Evaluadores" value={(() => {
-              const withAssign = relevantUsers.filter(u => periodAssignments.some(a => a.employeeId === u.id));
-              const withSup = withAssign.filter(u => periodEvals.some(e => e.type === 'supervisor' && e.evaluatedId === u.id));
-              return withSup.length;
-            })()} max={(() => {
-              const withAssign = relevantUsers.filter(u => periodAssignments.some(a => a.employeeId === u.id));
-              return withAssign.length;
-            })()} />
+            <ProgressBar label="Autoevaluaciones" value={selfEvalCount} max={totalEmployees} />
+            <ProgressBar label="Evaluadores" value={supEvalDone} max={supTotal} />
             {avgScore !== null && (
               <div className="flex items-center justify-between pt-1">
                 <span className="text-sm font-medium">Promedio general</span>
-                <ScoreBadge value={avgScore} size="md" />
+                <ScoreBadge value={avgScore} size="lg" />
               </div>
             )}
           </div>
 
-          {/* Team Progress Chart */}
-          {positionProgressData.length > 0 && (
+          {posData.length > 0 && (
             <div className="mt-5 pt-4 border-t">
-              <div className="flex items-center justify-between mb-2">
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Avance por Posición</p>
-              </div>
-              <ResponsiveContainer width="100%" height={Math.max(120, positionProgressData.length * 28)}>
-                <BarChart data={positionProgressData} layout="vertical" margin={{ left: 80, right: 16, top: 4, bottom: 4 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
-                  <XAxis type="number" domain={[0, 100]} tick={{ fontSize: 10 }} tickFormatter={(v: number) => `${v}%`} />
-                  <YAxis type="category" dataKey="name" tick={{ fontSize: 11 }} width={76} />
-                  <Tooltip
-                    formatter={(value: number, name: string) => [`${value}%`, name === 'selfPct' ? 'Autoeval.' : 'Evaluadores']}
-                    contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid hsl(var(--border))' }}
-                  />
-                  <Bar dataKey="selfPct" fill="hsl(var(--accent))" name="Autoeval." radius={[0, 3, 3, 0]} barSize={10} />
-                  <Bar dataKey="supPct" fill="hsl(var(--smps-navy-light))" name="Evaluadores" radius={[0, 3, 3, 0]} barSize={10} />
+              <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide mb-2">Avance por Posici\u00f3n</p>
+              <ResponsiveContainer width="100%" height={Math.max(120, posData.length * 28)}>
+                <BarChart data={posData} layout="vertical" margin={{ left: 80, right: 16, top: 4, bottom: 4 }}>
+                  <XAxis type="number" domain={[0, 100]} tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} tickFormatter={(v: number) => `${v}%`} />
+                  <YAxis type="category" dataKey="name" width={76} tick={{ fontSize: 11, fill: 'hsl(var(--foreground))' }} />
+                  <Tooltip content={<CustomTooltip />} />
+                  <Bar dataKey="selfPct" name="Autoevaluaci\u00f3n" radius={[0, 3, 3, 0]} barSize={8}>
+                    {posData.map((entry: any, idx: number) => (
+                      <Cell key={idx} fill={entry.selfPct >= 80 ? 'hsl(var(--smps-success))' : entry.selfPct >= 50 ? 'hsl(var(--smps-gold))' : 'hsl(var(--accent))'} fillOpacity={0.85} />
+                    ))}
+                  </Bar>
+                  <Bar dataKey="supPct" name="Evaluadores" radius={[0, 3, 3, 0]} barSize={8}>
+                    {posData.map((entry: any, idx: number) => (
+                      <Cell key={idx} fill={entry.supPct >= 80 ? 'hsl(var(--smps-success))' : entry.supPct >= 50 ? 'hsl(var(--smps-gold))' : 'hsl(var(--smps-warning))'} fillOpacity={0.85} />
+                    ))}
+                  </Bar>
                 </BarChart>
               </ResponsiveContainer>
             </div>
           )}
         </div>
 
-        {/* My Actions */}
-        <div className="lg:col-span-2 rounded-xl border bg-card p-5 flex flex-col gap-4">
-          <p className="smps-section-title">Mis Acciones</p>
-
-          {/* Self Evaluation */}
-          <div className={`rounded-lg border p-3 transition-[border-color] duration-200 ${!selfDone ? 'border-accent/30' : 'border-transparent'}`}>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <div className={`h-8 w-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                  selfDone ? 'bg-smps-success/10' : 'bg-accent/10'
-                }`}>
-                  <ClipboardCheck className={`h-4 w-4 ${selfDone ? 'text-smps-success' : 'text-accent'}`} />
-                </div>
-                <div>
-                  <p className="text-sm font-medium">Autoevaluación</p>
-                  <p className="text-[11px] text-muted-foreground">
-                    {selfDone ? `Completada · ${Math.round(mySelfEval!.totalScore)}%` : 'Pendiente'}
-                  </p>
-                </div>
+        {/* My Actions sidebar */}
+        <div className="lg:col-span-2 space-y-4 smps-fade-up smps-delay-3">
+          {avgScore !== null && (
+            <div className="rounded-xl border bg-card p-4 flex items-center gap-4">
+              <ScoreRing value={avgScore} size={56} label="Promedio" />
+              <div className="min-w-0">
+                <p className="text-sm font-medium">Promedio del equipo</p>
+                <p className="text-xs text-muted-foreground mt-0.5">{totalEmployees} evaluados · {CURRENT_PERIOD}</p>
               </div>
-              {!selfDone && (
-                <button
-                  onClick={() => navigate('/self-evaluation')}
-                  className="px-3 py-1.5 rounded-md bg-accent text-accent-foreground text-xs font-medium hover:opacity-90 transition-[opacity,transform] duration-150 active:scale-[0.98]"
-                >
-                  Iniciar
-                </button>
-              )}
             </div>
-          </div>
+          )}
 
-          {/* Pending Evaluations */}
-          <div className={`rounded-lg border p-3 transition-[border-color] duration-200 ${
-            myPendingEvals.length > 0 ? 'border-smps-warning/30' : 'border-transparent'
-          }`}>
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-sm font-medium">Evaluaciones Pendientes</p>
-              {myPendingEvals.length > 0 && (
-                <span className="inline-flex items-center justify-center h-5 min-w-[20px] rounded-full bg-smps-warning/15 text-smps-warning text-[10px] font-bold px-1.5">
-                  {myPendingEvals.length}
-                </span>
-              )}
-            </div>
-            {myPendingEvals.length === 0 ? (
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <CheckCircle className="h-4 w-4 text-smps-success" />
-                <p className="text-sm">Sin evaluaciones pendientes</p>
-              </div>
-            ) : (
-              <div className="space-y-1.5 max-h-[160px] overflow-y-auto">
-                {myPendingEvals.map(a => {
-                  const emp = users.find(u => u.id === a.employeeId);
+          {myPending.length > 0 && (
+            <div className="rounded-xl border bg-card p-4">
+              <p className="smps-section-title mb-3">Evaluaciones Pendientes</p>
+              <div className="space-y-1.5 max-h-48 overflow-y-auto">
+                {myPending.map(a => {
+                  const emp = (users as any[]).find(u => u.id === a.employeeId);
                   return (
-                    <div key={a.id} className="flex items-center justify-between py-1 px-2 rounded-md hover:bg-muted/40 transition-[background-color] duration-150">
-                      <p className="text-sm truncate">{emp?.name}</p>
-                      <button
-                        onClick={() => navigate(`/evaluations?evaluate=${a.employeeId}`)}
-                        className="px-2.5 py-1 rounded-md bg-accent text-accent-foreground text-xs font-medium hover:opacity-90 transition-[opacity,transform] duration-150 active:scale-[0.98] ml-2 flex-shrink-0"
-                      >
+                    <div key={a.id} className="flex items-center justify-between py-1.5 px-2 rounded-md hover:bg-muted/40 transition-[background-color] duration-150">
+                      <span className="text-sm truncate">{emp?.name}</span>
+                      <button onClick={() => navigate(`/evaluations?evaluate=${a.employeeId}`)}
+                        className="px-2.5 py-1 rounded-md bg-accent text-accent-foreground text-xs font-medium hover:opacity-90 transition-[opacity,transform] duration-150 active:scale-[0.98] ml-2 shrink-0">
                         Evaluar
                       </button>
                     </div>
                   );
                 })}
               </div>
-            )}
-          </div>
+            </div>
+          )}
 
-          {/* Unread announcements & vacations (for admins) */}
-          {(unreadAnnouncements > 0 || pendingVacationCount > 0) && (isAdmin || isSuperUser || !!currentUser.isManagingPartner) && (
-            <div className="space-y-1.5 pt-2 border-t">
-              {unreadAnnouncements > 0 && (
-                <button onClick={() => navigate('/communications')}
-                  className="w-full flex items-center justify-between py-1.5 px-2 rounded-md hover:bg-muted/40 transition-[background-color] duration-150 text-left">
-                  <span className="text-sm">{unreadAnnouncements} comunicado{unreadAnnouncements > 1 ? 's' : ''} sin leer</span>
+          {(unread > 0 || pendVac > 0) && (isAdmin || isSuperUser || !!currentUser.isManagingPartner) && (
+            <div className="rounded-xl border bg-card p-4 space-y-1.5">
+              <p className="smps-section-title mb-2">Requiere Atenci\u00f3n</p>
+              {unread > 0 && (
+                <button onClick={() => navigate('/communications')} className="w-full flex items-center justify-between py-1.5 px-2 rounded-md hover:bg-muted/40 transition-[background-color] duration-150 text-left">
+                  <span className="text-sm">{unread} comunicado{unread > 1 ? 's' : ''} sin leer</span>
                   <ArrowRight className="h-3.5 w-3.5 text-muted-foreground" />
                 </button>
               )}
-              {pendingVacationCount > 0 && (
-                <button onClick={() => navigate('/vacations')}
-                  className="w-full flex items-center justify-between py-1.5 px-2 rounded-md hover:bg-muted/40 transition-[background-color] duration-150 text-left">
-                  <span className="text-sm">{pendingVacationCount} solicitud{pendingVacationCount > 1 ? 'es' : ''} de vacaciones</span>
+              {pendVac > 0 && (
+                <button onClick={() => navigate('/vacations')} className="w-full flex items-center justify-between py-1.5 px-2 rounded-md hover:bg-muted/40 transition-[background-color] duration-150 text-left">
+                  <span className="text-sm">{pendVac} solicitud{pendVac > 1 ? 'es' : ''} de vacaciones</span>
                   <ArrowRight className="h-3.5 w-3.5 text-muted-foreground" />
                 </button>
               )}
@@ -469,58 +375,43 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* ─── Expandable Sections ─────────────────────────────────────────── */}
+      {/* Expandable sections */}
       <div className="space-y-2">
-        {/* Collaborators List */}
-        <div className="rounded-xl border bg-card overflow-hidden">
-          <button
-            onClick={() => setExpandedSection(expandedSection === 'employees' ? null : 'employees')}
-            className="w-full flex items-center justify-between p-4 hover:bg-muted/30 transition-[background-color] duration-150"
-          >
-            <div className="flex items-center gap-3">
-              <Users className="h-4 w-4 text-accent" />
-              <span className="text-sm font-medium">Colaboradores por Nivel</span>
-              <span className="text-xs text-muted-foreground">({totalEmployees})</span>
-            </div>
-            <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${expandedSection === 'employees' ? 'rotate-180' : ''}`} />
+        <div className="rounded-xl border bg-card overflow-hidden smps-fade-up smps-delay-4">
+          <button onClick={() => setExpanded(expanded === 'employees' ? null : 'employees')}
+            className="w-full flex items-center justify-between p-4 hover:bg-muted/30 transition-[background-color] duration-150">
+            <div className="flex items-center gap-3"><Users className="h-4 w-4 text-accent" /><span className="text-sm font-medium">Colaboradores por Nivel</span><span className="text-xs text-muted-foreground">({totalEmployees})</span></div>
+            <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${expanded === 'employees' ? 'rotate-180' : ''}`} />
           </button>
-          {expandedSection === 'employees' && (
+          {expanded === 'employees' && (
             <div className="px-4 pb-4 border-t smps-fade-in">
-              {renderUserGroup(legalUsers, 'Legal')}
-              {renderUserGroup(adminUsersGroup, 'Administrativo')}
+              {renderGroup(legal, 'Legal')}
+              {renderGroup(admin, 'Administrativo')}
             </div>
           )}
         </div>
 
-        {/* Progress by Position (detailed) */}
-        <div className="rounded-xl border bg-card overflow-hidden">
-          <button
-            onClick={() => setExpandedSection(expandedSection === 'progress' ? null : 'progress')}
-            className="w-full flex items-center justify-between p-4 hover:bg-muted/30 transition-[background-color] duration-150"
-          >
-            <div className="flex items-center gap-3">
-              <TrendingUp className="h-4 w-4 text-accent" />
-              <span className="text-sm font-medium">Progreso Detallado por Posición</span>
-            </div>
-            <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${expandedSection === 'progress' ? 'rotate-180' : ''}`} />
+        <div className="rounded-xl border bg-card overflow-hidden smps-fade-up smps-delay-5">
+          <button onClick={() => setExpanded(expanded === 'progress' ? null : 'progress')}
+            className="w-full flex items-center justify-between p-4 hover:bg-muted/30 transition-[background-color] duration-150">
+            <div className="flex items-center gap-3"><TrendingUp className="h-4 w-4 text-accent" /><span className="text-sm font-medium">Progreso Detallado por Posici\u00f3n</span></div>
+            <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${expanded === 'progress' ? 'rotate-180' : ''}`} />
           </button>
-          {expandedSection === 'progress' && (
+          {expanded === 'progress' && (
             <div className="px-4 pb-4 border-t smps-fade-in space-y-3">
               {getPositionHierarchy().map(pos => {
-                const posUsers = relevantUsers.filter(u => u.position === pos);
-                if (posUsers.length === 0) return null;
-                const selfDone = posUsers.filter(u => periodEvals.some(e => e.type === 'self' && e.evaluatorId === u.id)).length;
-                const supDone = posUsers.filter(u => periodEvals.some(e => e.type === 'supervisor' && e.evaluatedId === u.id)).length;
-                const selfPct = Math.round((selfDone / posUsers.length) * 100);
-                const supPct = Math.round((supDone / posUsers.length) * 100);
+                const pu = visible.filter(u => u.position === pos);
+                if (pu.length === 0) return null;
+                const sDone = pu.filter(u => pEvals.some(e => e.type === 'self' && e.evaluatorId === u.id)).length;
+                const supD = pu.filter(u => pEvals.some(e => e.type === 'supervisor' && e.evaluatedId === u.id)).length;
                 return (
                   <div key={pos}>
                     <div className="flex items-baseline justify-between mb-1.5">
                       <span className="text-sm font-medium">{getPositionLabel(pos)}</span>
-                      <span className="text-xs text-muted-foreground tabular-nums">{selfDone}/{posUsers.length} autoeval.</span>
+                      <span className="text-xs text-muted-foreground tabular-nums">{sDone}/{pu.length} autoeval.</span>
                     </div>
-                    <ProgressBar label="Autoevaluaciones" value={selfDone} max={posUsers.length} color="accent" />
-                    <ProgressBar label="Evaluadores" value={supDone} max={posUsers.length} color="success" />
+                    <ProgressBar label="Autoevaluaciones" value={sDone} max={pu.length} color="accent" />
+                    <ProgressBar label="Evaluadores" value={supD} max={pu.length} color="success" />
                   </div>
                 );
               })}
