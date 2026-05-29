@@ -1,3 +1,4 @@
+import { ScoreBadge } from '@/components/shared/ScoreBadge';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUsers, useEvaluations, useAssignments, usePeriods, useAnnouncements, useVacationRequests } from '@/api/queries';
 import { CURRENT_PERIOD, getPositionLabel, getLegalHierarchy, getAdminHierarchy, getPositionHierarchy } from '@/lib/evaluationConfig';
@@ -350,7 +351,7 @@ export default function Dashboard() {
             {avgScore !== null && (
               <div className="flex items-center justify-between pt-1">
                 <span className="text-sm font-medium">Promedio general</span>
-                <span className="font-display text-lg font-bold tabular-nums">{avgScore}%</span>
+                <ScoreBadge value={avgScore} size="md" />
               </div>
             )}
           </div>

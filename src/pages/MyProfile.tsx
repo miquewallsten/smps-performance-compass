@@ -1,3 +1,4 @@
+import { ScoreBadge } from '@/components/shared/ScoreBadge';
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -105,11 +106,11 @@ export default function MyProfile() {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="bg-muted/30 rounded-lg p-4">
             <p className="text-xs text-muted-foreground">Mi Autoevaluación</p>
-            <p className="text-2xl font-bold font-display mt-1">{selfEval ? `${Math.round(selfEval.totalScore)}%` : '—'}</p>
+            <ScoreBadge value={selfEval ? Math.round(selfEval.totalScore) : null} size="lg" />
           </div>
           <div className="bg-muted/30 rounded-lg p-4">
             <p className="text-xs text-muted-foreground">Promedio Evaluaciones Recibidas ({recvEvals.length})</p>
-            <p className="text-2xl font-bold font-display mt-1">{avgRecv !== null ? `${avgRecv}%` : '—'}</p>
+            <ScoreBadge value={avgRecv} size="lg" />
           </div>
         </div>
 
@@ -123,7 +124,7 @@ export default function MyProfile() {
                 return (
                   <div key={e.id} className="flex justify-between text-sm bg-muted/20 rounded px-3 py-2">
                     <span>{ev?.name || 'Evaluador'}</span>
-                    <span className="font-semibold">{Math.round(e.totalScore)}%</span>
+                    <ScoreBadge value={Math.round(e.totalScore)} size="sm" />
                   </div>
                 );
               })}
@@ -153,8 +154,8 @@ export default function MyProfile() {
                   <tr key={t.id} className="border-b last:border-0">
                     <td className="py-2 font-medium">{t.user!.name}</td>
                     <td className="py-2 text-muted-foreground">{getPositionLabel(t.user!.position)}</td>
-                    <td className="py-2 text-right">{t.selfScore !== null ? `${t.selfScore}%` : '—'}</td>
-                    <td className="py-2 text-right">{t.supScore !== null ? `${t.supScore}%` : '—'}</td>
+                    <td className="py-2 text-right"><ScoreBadge value={t.selfScore} size="sm" /></td>
+                    <td className="py-2 text-right"><ScoreBadge value={t.supScore} size="sm" /></td>
                   </tr>
                 ))}
               </tbody>

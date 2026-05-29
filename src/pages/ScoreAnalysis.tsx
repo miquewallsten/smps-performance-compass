@@ -1,3 +1,4 @@
+import { ScoreBadge, scoreColorText, scoreBgClass } from '@/components/shared/ScoreBadge';
 import { useState, useMemo, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUsers, useEvaluations } from '@/api/queries';
@@ -177,23 +178,9 @@ export default function ScoreAnalysis() {
     });
   };
 
-  const scoreColor = (score: number | null) => {
-    if (score === null) return 'text-muted-foreground';
-    if (score >= 90) return 'text-[hsl(145,60%,40%)]';
-    if (score >= 80) return 'text-foreground';
-    if (score >= 70) return 'text-[hsl(35,90%,55%)]';
-    return 'text-[hsl(0,84%,60%)]';
-  };
+  const scoreColor = scoreColorText;
+  const scoreBg = scoreBgClass;
 
-  const scoreBg = (score: number | null) => {
-    if (score === null) return 'bg-muted/30';
-    if (score >= 90) return 'bg-[hsl(145,60%,40%)]/10';
-    if (score >= 80) return 'bg-muted/50';
-    if (score >= 70) return 'bg-[hsl(35,90%,55%)]/10';
-    return 'bg-[hsl(0,84%,60%)]/10';
-  };
-
-  // Aggregate stats
   const totalEvals = periodEvals.filter(e => filteredUsers.some(u => u.id === e.evaluatedId)).length;
   const selfEvalsCount = periodEvals.filter(e => e.type === 'self' && filteredUsers.some(u => u.id === e.evaluatedId)).length;
   const supEvalsCount = periodEvals.filter(e => e.type === 'supervisor' && filteredUsers.some(u => u.id === e.evaluatedId)).length;
@@ -341,19 +328,13 @@ export default function ScoreAnalysis() {
                             <td className="py-2 px-4 font-medium whitespace-nowrap">{ind.name}</td>
                             <td className="py-2 px-4 text-muted-foreground text-xs whitespace-nowrap">{ind.position}</td>
                             <td className="py-2 px-4 text-center">
-                              <span className={`inline-block min-w-[40px] py-0.5 px-2 rounded text-xs font-semibold ${scoreBg(ind.selfScore)} ${scoreColor(ind.selfScore)}`}>
-                                {ind.selfScore !== null ? `${ind.selfScore}%` : '—'}
-                              </span>
+                              <ScoreBadge value={ind.selfScore} size="sm" />
                             </td>
                             <td className="py-2 px-4 text-center">
-                              <span className={`inline-block min-w-[40px] py-0.5 px-2 rounded text-xs font-semibold ${scoreBg(ind.supervisorScore)} ${scoreColor(ind.supervisorScore)}`}>
-                                {ind.supervisorScore !== null ? `${ind.supervisorScore}%` : '—'}
-                              </span>
+                              <ScoreBadge value={ind.supervisorScore} size="sm" />
                             </td>
                             <td className="py-2 px-4 text-center">
-                              <span className={`inline-block min-w-[40px] py-0.5 px-2 rounded text-xs font-bold ${scoreBg(ind.totalScore)} ${scoreColor(ind.totalScore)}`}>
-                                {ind.totalScore !== null ? `${ind.totalScore}%` : '—'}
-                              </span>
+                              <ScoreBadge value={ind.totalScore} size="sm" className="font-bold" />
                             </td>
                           </tr>
                         ))}

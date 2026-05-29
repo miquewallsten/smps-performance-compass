@@ -1,3 +1,4 @@
+import { ScoreBadge } from '@/components/shared/ScoreBadge';
 import { useState, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUsers, useEvaluations, useAssignments, useCreateEvaluation, useUpdateEvaluation, useCompleteFeedback, useApproveNA, useActionPlans, useCreateActionPlan, useExportEvaluationsCSV } from '@/api/queries';
@@ -426,7 +427,7 @@ export default function Evaluations() {
                     <p className="text-xs text-muted-foreground">{getPositionLabel(emp.position)}</p>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-semibold">{Math.round(ev.totalScore)}%</span>
+                    <ScoreBadge value={Math.round(ev.totalScore)} size="sm" />
                     <button onClick={() => setViewingEval(ev.id)} className="p-1.5 rounded-lg hover:bg-muted transition-colors" title="Ver evaluación">
                       <Eye className="h-4 w-4 text-muted-foreground" />
                     </button>
@@ -555,7 +556,7 @@ export default function Evaluations() {
                       <td className="py-3 px-4">{evaluated?.name} <span className="text-xs text-muted-foreground">({evaluated ? getPositionLabel(evaluated.position) : ''})</span></td>
                       <td className="py-3 px-4 text-muted-foreground">{ev.type === 'self' ? 'Auto' : 'Evaluador'}</td>
                       <td className="py-3 px-4 text-muted-foreground">{evaluator?.name}</td>
-                      <td className="py-3 px-4 text-center font-semibold">{Math.round(ev.totalScore)}%</td>
+                      <td className="py-3 px-4 text-center"><ScoreBadge value={Math.round(ev.totalScore)} size="sm" /></td>
                       {canViewAllDetails && (
                         <td className="py-3 px-4 text-xs text-muted-foreground max-w-[200px]">
                           {ev.comments && <p className="truncate" title={ev.comments}>📝 {ev.comments.substring(0, 60)}...</p>}
