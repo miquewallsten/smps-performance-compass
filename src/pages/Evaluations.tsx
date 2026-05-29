@@ -1,11 +1,12 @@
 import { ScoreBadge } from '@/components/shared/ScoreBadge';
 import { useState, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useUsers, useEvaluations, useAssignments, useCreateEvaluation, useUpdateEvaluation, useCompleteFeedback, useApproveNA, useActionPlans, useCreateActionPlan, useExportEvaluationsCSV } from '@/api/queries';
+import { useUsers, useEvaluations, useAssignments, useCreateEvaluation, useUpdateEvaluation, useCompleteFeedback, useApproveNA, useActionPlans, useCreateActionPlan, useExportEvaluationsCSV , usePeriods } from '@/api/queries';
 import { calculateScore, getSectionForQuestion, SECTION_LABELS, SECTION_ORDER } from '@/lib/evaluationConfig';
 
 import { User, EvalQuestion, ActionPlan } from '@/types';
-import { CURRENT_PERIOD, getSectionWeights, getPositionLabel, getScoreLabels, getLegalHierarchy, getAdminHierarchy, PERIODS } from '@/lib/evaluationConfig';
+import { getSectionWeights, getPositionLabel, getScoreLabels, getLegalHierarchy, getAdminHierarchy } from '@/lib/evaluationConfig';
+import { useCurrentPeriod } from '@/hooks/useCurrentPeriod';
 import { useFullTemplate, usePositionConfig, useTemplateQuestions } from '@/hooks/useEvaluationConfig';
 import { Download } from 'lucide-react';
 import { toast } from 'sonner';
@@ -62,7 +63,10 @@ export default function Evaluations() {
   const [submitted, setSubmitted] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [viewingEval, setViewingEval] = useState<string | null>(null);
-  const [viewPeriod, setViewPeriod] = useState(CURRENT_PERIOD);
+  const currentPeriod = useCurrentPeriod();
+  const { data: periodsData = [] } = usePeriods();
+  const periods = periodsData.map((p: any) => p.period).sort();
+  const [viewPeriod, setViewPeriod] = useState(currentPeriod);
   const [actionPlanEmployee, setActionPlanEmployee] = useState<string | null>(null);
   const [actionPlanContent, setActionPlanContent] = useState('');
 
@@ -87,8 +91,8 @@ export default function Evaluations() {
   const canViewAllDetails = isAdmin || isSocio || isSuperUser || !!currentUser.isManagingPartner;
   const isSupervisor = (employeeId: string) => assignments.some(a => a.supervisorId === currentUser.id && a.employeeId === employeeId);
 
-  const myAssignments = assignments.filter(a => a.supervisorId === currentUser.id && a.period === CURRENT_PERIOD);
-  const myCompletedEvals = evaluations.filter(e => e.type === 'supervisor' && e.evaluatorId === currentUser.id && e.period === CURRENT_PERIOD);
+  const myAssignments = assignments.filter(a => a.supervisorId === currentUser.id && a.period === currentPeriod);
+  const myCompletedEvals = evaluations.filter(e => e.type === 'supervisor' && e.evaluatorId === currentUser.id && e.period === currentPeriod);
 
   const sortByName = (a: User, b: User) => a.name.localeCompare(b.name, 'es');
 
@@ -131,13 +135,13 @@ export default function Evaluations() {
 
   const handleSaveActionPlan = () => {
     if (!actionPlanEmployee || !actionPlanContent.trim()) return;
-    const existing = actionPlans.find(p => p.employeeId === actionPlanEmployee && p.period === CURRENT_PERIOD && p.supervisorId === currentUser.id);
+    const existing = actionPlans.find(p => p.employeeId === actionPlanEmployee && p.period === currentPeriod && p.supervisorId === currentUser.id);
     const now = new Date().toISOString().split('T')[0];
     addOrUpdateActionPlan({
       id: existing?.id || `ap-${Date.now()}`,
       employeeId: actionPlanEmployee,
       supervisorId: currentUser.id,
-      period: CURRENT_PERIOD,
+      period: currentPeriod,
       content: actionPlanContent,
       createdAt: existing?.createdAt || now,
       updatedAt: now,
@@ -214,7 +218,7 @@ export default function Evaluations() {
           id: `eval-${Date.now()}`,
           evaluatorId: currentUser.id,
           evaluatedId: selectedEmployee,
-          period: CURRENT_PERIOD,
+          period: currentPeriod,
           type: 'supervisor',
           responses: evalResponses,
           comments,
@@ -247,7 +251,7 @@ export default function Evaluations() {
         </button>
         <div className="mb-6">
           <h1 className="font-display text-2xl font-bold">Evaluación de {emp.name} <span className="text-lg font-normal text-muted-foreground">— {getPositionLabel(emp.position)}</span></h1>
-          <p className="text-muted-foreground text-sm mt-1">Periodo {CURRENT_PERIOD}</p>
+          <p className="text-muted-foreground text-sm mt-1">Periodo {currentPeriod}</p>
         </div>
 
         <div className="smps-surface-card mb-6">
@@ -390,7 +394,7 @@ export default function Evaluations() {
       <div className="flex items-center justify-between flex-wrap gap-4 mb-6">
         <div>
           <h1 className="font-display text-2xl font-bold">Evaluar Equipo</h1>
-          <p className="text-muted-foreground text-sm">Periodo: {CURRENT_PERIOD}</p>
+          <p className="text-muted-foreground text-sm">Periodo: {currentPeriod}</p>
         </div>
       </div>
 
@@ -419,7 +423,7 @@ export default function Evaluations() {
           <h3 className="smps-section-title font-display text-base font-semibold mb-3 text-smps-success">Completadas ({completedEmployees.length})</h3>
           <div className="space-y-2">
             {completedEmployees.map(({ user: emp, eval: ev }) => {
-              const hasActionPlan = actionPlans.some(p => p.employeeId === emp.id && p.period === CURRENT_PERIOD && p.supervisorId === currentUser.id);
+              const hasActionPlan = actionPlans.some(p => p.employeeId === emp.id && p.period === currentPeriod && p.supervisorId === currentUser.id);
               return (
                 <div key={emp.id} className="flex items-center justify-between py-3 px-4 rounded-lg bg-card border">
                   <div>
@@ -440,7 +444,7 @@ export default function Evaluations() {
                         <MessageSquare className="h-4 w-4 text-smps-success" />
                       </span>
                     )}
-                    <button onClick={() => { setActionPlanEmployee(emp.id); const existing = actionPlans.find(p => p.employeeId === emp.id && p.period === CURRENT_PERIOD && p.supervisorId === currentUser.id); setActionPlanContent(existing?.content || ''); }}
+                    <button onClick={() => { setActionPlanEmployee(emp.id); const existing = actionPlans.find(p => p.employeeId === emp.id && p.period === currentPeriod && p.supervisorId === currentUser.id); setActionPlanContent(existing?.content || ''); }}
                       className="p-1.5 rounded-lg hover:bg-muted transition-colors" title="Plan de acción">
                       <FileText className={`h-4 w-4 ${hasActionPlan ? 'text-smps-success' : 'text-accent'}`} />
                     </button>
@@ -455,7 +459,7 @@ export default function Evaluations() {
       {/* NA Approval Section */}
       {(() => {
         const evalsWithPendingNA = evaluations.filter(ev => {
-          if (ev.period !== CURRENT_PERIOD) return false;
+          if (ev.period !== currentPeriod) return false;
           if (ev.type !== 'self') return false;
           if (!isSupervisor(ev.evaluatedId) && !isAdminOrSocio) return false;
           return (ev.responses || []).some(r => r.notApplicable && !normalizeNA(ev.naApprovals)[r.questionId]);
@@ -530,7 +534,7 @@ export default function Evaluations() {
               <HierarchyFilters levelFilter={histLevelFilter} setLevelFilter={setHistLevelFilter} positionFilter={histPosFilter} setPositionFilter={setHistPosFilter} />
               <select value={viewPeriod} onChange={e => setViewPeriod(e.target.value)}
                 className="px-3 py-1.5 rounded-lg border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-accent">
-                {PERIODS.map(p => <option key={p} value={p}>{p}</option>)}
+                {periods.map(p => <option key={p} value={p}>{p}</option>)}
               </select>
             </div>
           </div>
