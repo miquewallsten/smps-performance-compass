@@ -144,7 +144,7 @@ export default function Layout() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
+    <div className="h-screen flex flex-col bg-background overflow-hidden">
       {/* Header */}
       <header className="h-14 bg-primary text-primary-foreground flex items-center justify-between px-4 flex-shrink-0 z-40 border-b border-primary/10">
         <div className="flex items-center gap-3">
@@ -238,7 +238,7 @@ export default function Layout() {
 
         {/* Main content with page transitions */}
         {location.pathname === '/copilot' ? (
-          <div className="flex-1 min-h-0 h-full">
+          <div className="flex-1 min-h-0">
             <Outlet />
           </div>
         ) : location.pathname.includes('/timeline') ? (

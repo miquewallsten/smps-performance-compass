@@ -403,7 +403,7 @@ export default function CopilotChat() {
       )}
 
       {/* Chat area */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 min-h-0">
         {/* Header */}
         <div className="h-12 border-b flex items-center justify-between px-3 flex-shrink-0">
           <div className="flex items-center gap-2">
@@ -542,14 +542,15 @@ export default function CopilotChat() {
             >
               <Paperclip className="h-5 w-5" />
             </Button>
-            <Input
-              ref={inputRef}
+            <textarea
+              ref={inputRef as any}
               value={messageInput}
-              onChange={(e) => setMessageInput(e.target.value)}
-              onKeyDown={handleKeyDown}
+              onChange={(e) => { setMessageInput(e.target.value); e.target.style.height = 'auto'; e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px'; }}
+              onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleKeyDown(e); } }}
               placeholder="Escribe tu mensaje..."
               disabled={isStreaming}
-              className="flex-1 rounded-xl"
+              rows={1}
+              className="flex-1 rounded-xl border border-input bg-background px-3 py-2 text-sm resize-none overflow-y-auto focus:outline-none focus:ring-2 focus:ring-accent/40 max-h-[120px]"
             />
             <Button
               onClick={handleSend}
