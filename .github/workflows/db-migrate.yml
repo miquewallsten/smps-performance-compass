@@ -1,0 +1,65 @@
+name: DB Migration & Reseed
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Type "RESEED" to confirm database reseed (deletes old data and recreates)'
+        required: true
+        type: string
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    if: github.event.inputs.confirm == 'RESEED'
+    steps:
+      - name: Deploy via SSH and run migration
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.HOSTINGER_SSH_KEY }}" > ~/.ssh/deploy_key
+          sed -i 's/\r$//' ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -p ${{ secrets.HOSTINGER_PORT }} ${{ secrets.HOSTINGER_HOST }} >> ~/.ssh/known_hosts 2>/dev/null
+          
+          SSH_KEY="~/.ssh/deploy_key"
+          SSH_HOST="${{ secrets.HOSTINGER_USER }}@${{ secrets.HOSTINGER_HOST }}"
+          SSH_PORT="${{ secrets.HOSTINGER_PORT }}"
+          REMOTE="${{ secrets.HOSTINGER_PATH }}"
+          SSH_CMD="ssh -i $SSH_KEY -p $SSH_PORT -o StrictHostKeyChecking=no -o ConnectTimeout=10 $SSH_HOST"
+          
+          HOSTINGER_PATH_ENV='export PATH="/opt/alt/alt-nodejs22/root/usr/bin:/usr/local/bin:/usr/bin:/bin:$PATH"'
+          
+          echo "🔄 Running database migration and reseed on Hostinger..."
+          
+          # Step 1: Delete old seed data so the server re-seeds on startup
+          $SSH_CMD "cd $REMOTE && $HOSTINGER_PATH_ENV && node -e \"
+          const mysql = require('mysql2/promise');
+          (async () => {
+            const pool = mysql.createPool({ host: process.env.MYSQL_HOST || '127.0.0.1', port: parseInt(process.env.MYSQL_PORT || '3306'), user: process.env.MYSQL_USER || 'root', password: process.env.MYSQL_PASSWORD || '', database: process.env.MYSQL_DATABASE || 'smps_dev' });
+            
+            console.log('Deleting old seed data...');
+            await pool.execute('DELETE FROM template_questions WHERE source = \"seed\"');
+            console.log('✓ Deleted seed template_questions');
+            await pool.execute('DELETE FROM section_weights');
+            console.log('✓ Deleted section_weights');
+            await pool.execute('DELETE FROM question_library WHERE created_by IS NULL');
+            console.log('✓ Deleted seed question_library entries');
+            await pool.execute('DELETE FROM custom_eval_questions');
+            console.log('✓ Deleted custom_eval_questions');
+            
+            const [rows] = await pool.execute('SELECT COUNT(*) as cnt FROM template_questions WHERE source = \"seed\"');
+            console.log('Remaining seed questions: ' + rows[0].cnt);
+            
+            await pool.end();
+            console.log('✅ Database cleared for reseed');
+          })().catch(e => { console.error(e); process.exit(1); });
+          \""
+          
+          # Step 2: Restart Passenger so the server runs migration + seed
+          $SSH_CMD "cd $REMOTE && mkdir -p tmp && touch tmp/restart.txt && echo '✅ Passenger restart triggered'"
+          
+          # Step 3: Wait and verify
+          echo "⏳ Waiting for server to restart and reseed..."
+          sleep 15
+          
+          echo "✅ Database migration and reseed complete!"
