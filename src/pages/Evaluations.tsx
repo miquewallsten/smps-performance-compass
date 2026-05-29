@@ -250,7 +250,7 @@ export default function Evaluations() {
           <p className="text-muted-foreground text-sm mt-1">Periodo {CURRENT_PERIOD}</p>
         </div>
 
-        <div className="smps-surface-card mb-6 sticky top-14 z-40">
+        <div className="smps-surface-card mb-6">
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm font-medium">Progreso: {totalResponded}/{questions.length}</span>
             <span className="text-sm text-muted-foreground">{Math.round((totalResponded / questions.length) * 100)}%</span>

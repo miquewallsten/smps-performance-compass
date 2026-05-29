@@ -146,7 +146,7 @@ export default function Layout() {
   return (
     <div className="min-h-screen flex flex-col bg-background">
       {/* Header */}
-      <header className="h-14 bg-primary text-primary-foreground flex items-center justify-between px-4 sticky top-0 z-40 border-b border-primary/10">
+      <header className="h-14 bg-primary text-primary-foreground flex items-center justify-between px-4 flex-shrink-0 z-40 border-b border-primary/10">
         <div className="flex items-center gap-3">
           <button onClick={() => setCollapsed(!collapsed)} className="hidden md:flex items-center justify-center h-8 w-8 rounded-md text-primary-foreground/60 hover:text-primary-foreground hover:bg-primary-foreground/10 transition-[background-color,color,transform] duration-150 active:scale-95" title={collapsed ? 'Expandir menú' : 'Colapsar menú'}>
             <Menu className="h-4 w-4" />
@@ -163,9 +163,9 @@ export default function Layout() {
         </div>
       </header>
 
-      <div className="flex flex-1 pt-14 min-h-0 overflow-hidden">
+      <div className="flex flex-1 min-h-0 overflow-hidden">
         {/* Sidebar */}
-        <aside className={`${collapsed ? 'w-14' : 'w-52'} bg-sidebar border-r border-sidebar-border transition-[width] duration-200 flex-shrink-0 hidden md:flex flex-col sticky top-14 self-stretch`}>
+        <aside className={`${collapsed ? 'w-14' : 'w-52'} bg-sidebar border-r border-sidebar-border transition-[width] duration-200 flex-shrink-0 hidden md:flex flex-col`}>
           <nav className="flex-1 py-3 px-2 space-y-0.5 overflow-y-auto">
             {showEvalModule && (
               <>
@@ -238,7 +238,7 @@ export default function Layout() {
 
         {/* Main content with page transitions */}
         {location.pathname === '/copilot' ? (
-          <div className="flex-1 min-h-0">
+          <div className="flex-1 min-h-0 h-full">
             <Outlet />
           </div>
         ) : location.pathname.includes('/timeline') ? (

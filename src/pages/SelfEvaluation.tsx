@@ -216,7 +216,7 @@ export default function SelfEvaluation() {
 
       <div className="max-w-3xl mx-auto space-y-4" ref={topRef}>
         {/* ─── Sticky Phase Stepper ───────────────────────────────────────── */}
-        <div className="sticky top-14 z-30 -mx-4 md:-mx-5 px-4 md:px-5 py-2 bg-background border-b border-border/50">
+        <div className="border-b border-border/50 px-4 md:px-5 py-2 bg-background">
           <PhaseStepper
             selfDone={false}
             allSupDone={false}
