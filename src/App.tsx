@@ -25,6 +25,7 @@ import MyProfile from "./pages/MyProfile";
 import UserTimeline from "./pages/UserTimeline";
 import CopilotChat from "./pages/CopilotChat";
 import PositionManagement from "./pages/PositionManagement";
+import ScoreAnalysis from "./pages/ScoreAnalysis";
 import NotFound from "./pages/NotFound";
 import SetupPage from "./pages/Setup";
 import Login from "./pages/Login";
@@ -90,6 +91,7 @@ function AppRoutes() {
         <Route path="self-evaluation" element={<SelfEvaluation />} />
         <Route path="evaluations" element={<Evaluations />} />
         <Route path="reports" element={<Reports />} />
+        <Route path="score-analysis" element={<ScoreAnalysis />} />
         <Route path="users" element={<UserManagement />} />
         <Route path="positions" element={<PositionManagement />} />
         <Route path="assign" element={<AssignSupervisors />} />

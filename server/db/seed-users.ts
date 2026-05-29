@@ -149,7 +149,7 @@ export async function seed() {
     }
 
     // ─── 6. Seed library questions if empty ──────────────────────────────
-    const hasLibraryQuestions = await tx.get(conn, 'SELECT id FROM library_questions LIMIT 1');
+    const hasLibraryQuestions = await tx.get(conn, 'SELECT id FROM question_library LIMIT 1');
     if (!hasLibraryQuestions) {
       const saUser3 = await tx.get(conn, 'SELECT id FROM users WHERE email = ?', [SUPERADMIN_EMAIL]) as { id: string } | undefined;
       const libraryQuestions = [
@@ -178,8 +178,8 @@ export async function seed() {
       ];
       for (const q of libraryQuestions) {
         await tx.run(conn,
-          `INSERT INTO library_questions (id, question_id, category, text, default_weight, created_at, created_by) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-          [uuidv4(), q.qid, q.cat, q.text, q.weight, now(), saUser3?.id || null]);
+          `INSERT INTO question_library (id, question_id, category, default_section, text, default_weight, created_at, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+          [uuidv4(), q.qid, q.cat, null, q.text, q.weight, now(), saUser3?.id || null]);
       }
       console.log('  ✓ Library questions seeded');
     }

@@ -4,6 +4,7 @@ import { db } from '../db/connection.js';
 import { hashPassword, hashSecurityAnswer } from '../auth/security.js';
 import { authMiddleware } from '../middleware/auth.js';
 import { requireAdmin, requireSelfOrAdmin } from '../middleware/rbac.js';
+import { validate, CreateUserSchema } from '../middleware/validate.js';
 
 const router = Router();
 
@@ -110,7 +111,7 @@ router.get('/:id', authMiddleware, async (req: Request, res: Response) => {
 });
 
 // ─── POST /api/users ─────────────────────────────────────────────────────
-router.post('/', authMiddleware, requireAdmin, async (req: Request, res: Response) => {
+router.post('/', authMiddleware, requireAdmin, validate(CreateUserSchema), async (req: Request, res: Response) => {
   try {
     const { name, email, position, password, practiceArea, customPositionId, locationId, isAdmin, isManagingPartner } = req.body as {
       name?: string;

@@ -5,7 +5,7 @@ import {
   Clock,
   LayoutDashboard, ClipboardCheck, Users, BarChart3, Settings, LogOut,
   UserCheck, ClipboardList, ChevronLeft, ChevronRight, Menu, Map, Shield, FileText, Target, Bot,
-  Megaphone, Palmtree, ChevronDown, HelpCircle, BookOpen, Calendar, User as UserIcon, Briefcase
+  Megaphone, Palmtree, ChevronDown, HelpCircle, BookOpen, Calendar, User as UserIcon, Briefcase, TrendingUp
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { NavLink } from '@/components/NavLink';
@@ -47,7 +47,7 @@ export default function Layout() {
           <Shield className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
           <h1 className="font-display text-xl font-bold mb-2">Sistema Inactivo</h1>
           <p className="text-sm text-muted-foreground mb-4">El acceso al sistema se encuentra temporalmente suspendido. Contacte al administrador para más información.</p>
-          <button onClick={() => { logout(); navigate('/login'); }} className="px-5 py-2 rounded-md bg-accent text-accent-foreground text-sm font-medium hover:opacity-90 transition-all duration-150 active:scale-[0.98]">
+          <button onClick={() => { logout(); navigate('/login'); }} className="px-5 py-2 rounded-md bg-accent text-accent-foreground text-sm font-medium hover:opacity-90 transition-[opacity,transform] duration-150 active:scale-[0.98]">
             Cerrar Sesión
           </button>
         </div>
@@ -119,6 +119,7 @@ export default function Layout() {
 
   const otherItems = [
     { to: '/reports', icon: BarChart3, label: 'Reportes', show: isAdminOrSuper || isManagingPartner },
+    { to: '/score-analysis', icon: TrendingUp, label: 'Calificaciones', show: isAdminOrSuper || isManagingPartner },
     { to: '/orgchart', icon: Map, label: 'Organigrama', show: isAdminOrSuper || isManagingPartner || isSocio },
     { to: '/assign', icon: UserCheck, label: 'Asignar', show: isAdminOrSuper },
     { to: '/evaluation-templates', icon: BookOpen, label: 'Plantillas', show: isAdminOrSuper },
@@ -135,7 +136,7 @@ export default function Layout() {
   const renderNavItem = (item: { to: string; icon: React.ElementType; label: string; badge?: number }) => {
     const isActive = location.pathname === item.to;
     return (
-      <NavLink to={item.to} className={`flex items-center gap-3 px-3 py-1.5 rounded-md text-sm transition-all duration-150 ${isActive ? 'bg-sidebar-accent text-sidebar-primary font-medium' : 'text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent/50'}`}>
+      <NavLink to={item.to} className={`flex items-center gap-3 px-3 py-1.5 rounded-md text-sm transition-[background-color,color] duration-150 ${isActive ? 'bg-sidebar-accent text-sidebar-primary font-medium' : 'text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent/50'}`}>
         <item.icon className="h-4 w-4 flex-shrink-0" />
         {!collapsed && <span className="truncate">{item.label}</span>}
         {!collapsed && item.badge && item.badge > 0 && <Badge count={item.badge} />}
@@ -170,7 +171,7 @@ export default function Layout() {
       </header>
 
       <div className="flex flex-1 pt-14 min-h-0 overflow-hidden">
-        <aside className={`${collapsed ? 'w-14' : 'w-52'} bg-sidebar border-r border-sidebar-border transition-all duration-200 flex-shrink-0 hidden md:flex flex-col sticky top-14 self-stretch`}>
+        <aside className={`${collapsed ? 'w-14' : 'w-52'} bg-sidebar border-r border-sidebar-border transition-[width] duration-200 flex-shrink-0 hidden md:flex flex-col sticky top-14 self-stretch`}>
           <nav className="flex-1 py-3 px-2 space-y-0.5 overflow-y-auto">
             {showEvalModule && (
               <>
@@ -243,16 +244,16 @@ export default function Layout() {
 
         {location.pathname === '/copilot' ? (
           <div
-            className="flex-1 min-h-0 smps-fade-in transition-all duration-200"
+            className="flex-1 min-h-0 smps-fade-in"
           >
             <Outlet />
           </div>
         ) : location.pathname.includes('/timeline') ? (
-          <main className={`flex-1 min-h-0 overflow-hidden pb-16 md:pb-0 transition-all duration-200`}>
+          <main className={`flex-1 min-h-0 overflow-hidden pb-16 md:pb-0`}>
             <Outlet />
           </main>
         ) : (
-          <main className={`flex-1 min-h-0 overflow-auto pb-16 md:pb-0 transition-all duration-200`}>
+          <main className={`flex-1 min-h-0 overflow-auto pb-16 md:pb-0`}>
             <div className="p-4 md:p-5 max-w-6xl mx-auto smps-fade-in">
               <PeriodEndAlert />
               <Outlet />

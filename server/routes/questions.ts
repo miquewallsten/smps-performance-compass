@@ -1,16 +1,17 @@
 import { Router, Request, Response } from 'express';
 import { v4 as uuidv4 } from 'uuid';
-import { db, tx } from '../db/connection.js';
+import { db } from '../db/connection.js';
 import { authMiddleware } from '../middleware/auth.js';
 import { requireAdmin } from '../middleware/rbac.js';
 
 const router = Router();
 
-// ─── Library Questions ──────────────────────────────────────────────────────
+// ─── Library Questions (now uses question_library table) ──────────────────────
 
 router.get('/library', authMiddleware, async (_req: Request, res: Response) => {
   try {
-    const questions = await db.all('SELECT * FROM library_questions');
+    // Query question_library (the canonical table) and include default_section and default_weight
+    const questions = await db.all('SELECT id, question_id, category, default_section, default_weight, text, created_at, updated_at, created_by FROM question_library ORDER BY category, created_at');
     return res.json(questions);
   } catch (err) {
     console.error('List library questions error:', err);
@@ -20,21 +21,22 @@ router.get('/library', authMiddleware, async (_req: Request, res: Response) => {
 
 router.post('/library', authMiddleware, requireAdmin, async (req: Request, res: Response) => {
   try {
-    // Accept both `questionId` (explicit) and `id` (from frontend EvalQuestion shape)
+    const { category, text, defaultSection, defaultWeight } = req.body;
     const questionId = req.body.questionId || req.body.id;
-    const { category, text, defaultWeight } = req.body;
-    const weight = defaultWeight || 0;
-    if (!questionId || !category || !text) {
-      return res.status(400).json({ error: 'questionId, category, and text are required' });
+    if (!category || !text) {
+      return res.status(400).json({ error: 'category and text are required' });
     }
     const id = uuidv4();
-    const now = new Date().toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, '');
-    await db.run('INSERT INTO library_questions (id, question_id, category, text, default_weight, created_at, created_by) VALUES (?, ?, ?, ?, ?, ?, ?)',
-      [id, questionId, category, text, weight, now, req.user!.id]);
-    const question = await db.get('SELECT * FROM library_questions WHERE id = ?', [id]);
+    const qid = questionId || `lib-${category.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}`;
+    const weight = defaultWeight || 0;
+    await db.run(
+      'INSERT INTO question_library (id, question_id, category, default_section, default_weight, text, created_at, created_by) VALUES (?, ?, ?, ?, ?, ?, NOW(), ?)',
+      [id, qid, category, defaultSection || null, weight, text, req.user!.id]
+    );
+    const question = await db.get('SELECT * FROM question_library WHERE id = ?', [id]);
     return res.status(201).json(question);
   } catch (err: any) {
-    if (err.code === 'ER_DUP_ENTRY') {
+    if (err?.code === 'ER_DUP_ENTRY') {
       return res.status(409).json({ error: 'Question ID already exists' });
     }
     console.error('Create library question error:', err);
@@ -44,20 +46,32 @@ router.post('/library', authMiddleware, requireAdmin, async (req: Request, res: 
 
 router.patch('/library/:id', authMiddleware, requireAdmin, async (req: Request, res: Response) => {
   try {
-    const question = await db.get('SELECT * FROM library_questions WHERE id = ?', [req.params.id]);
-    if (!question) return res.status(404).json({ error: 'Question not found' });
-
-    const { category, text, defaultWeight } = req.body;
+    const { category, text, defaultSection, defaultWeight } = req.body;
     const updates: string[] = [];
     const params: any[] = [];
     if (category !== undefined) { updates.push('category = ?'); params.push(category); }
     if (text !== undefined) { updates.push('text = ?'); params.push(text); }
+    if (defaultSection !== undefined) { updates.push('default_section = ?'); params.push(defaultSection); }
     if (defaultWeight !== undefined) { updates.push('default_weight = ?'); params.push(defaultWeight); }
 
-    if (updates.length > 0) {
-      await db.run(`UPDATE library_questions SET ${updates.join(', ')} WHERE id = ?`, [...params, req.params.id]);
+    if (updates.length === 0) return res.status(400).json({ error: 'No fields to update' });
+    await db.run(`UPDATE question_library SET ${updates.join(', ')} WHERE id = ?`, [...params, req.params.id]);
+    
+    // Sync changes to template_questions that reference this library question
+    if (text !== undefined || category !== undefined) {
+      const libQ = await db.get('SELECT * FROM question_library WHERE id = ?', [req.params.id]);
+      if (libQ) {
+        const syncUpdates: string[] = [];
+        const syncParams: any[] = [];
+        if (text !== undefined) { syncUpdates.push('question_text = ?'); syncParams.push(libQ.text); }
+        if (category !== undefined) { syncUpdates.push('category = ?'); syncParams.push(libQ.category); }
+        if (syncUpdates.length > 0) {
+          await db.run(`UPDATE template_questions SET ${syncUpdates.join(', ')} WHERE library_question_id = ?`, [...syncParams, req.params.id]);
+        }
+      }
     }
-    const updated = await db.get('SELECT * FROM library_questions WHERE id = ?', [req.params.id]);
+    
+    const updated = await db.get('SELECT * FROM question_library WHERE id = ?', [req.params.id]);
     return res.json(updated);
   } catch (err) {
     console.error('Update library question error:', err);
@@ -67,7 +81,12 @@ router.patch('/library/:id', authMiddleware, requireAdmin, async (req: Request, 
 
 router.delete('/library/:id', authMiddleware, requireAdmin, async (req: Request, res: Response) => {
   try {
-    await db.run('DELETE FROM library_questions WHERE id = ?', [req.params.id]);
+    // Check if this question is used in any template
+    const usageCount = await db.getScalar<number>('SELECT COUNT(*) as cnt FROM template_questions WHERE library_question_id = ?', [req.params.id]);
+    if (usageCount && usageCount > 0) {
+      return res.status(409).json({ error: `Cannot delete: this question is used in ${usageCount} template(s). Remove it from templates first.` });
+    }
+    await db.run('DELETE FROM question_library WHERE id = ?', [req.params.id]);
     return res.json({ message: 'Question deleted' });
   } catch (err) {
     console.error('Delete library question error:', err);
@@ -97,16 +116,12 @@ router.post('/custom', authMiddleware, requireAdmin, async (req: Request, res: R
     if (!position) return res.status(400).json({ error: 'position is required' });
     if (!Array.isArray(questions)) return res.status(400).json({ error: 'questions array is required' });
 
-    // Delete existing custom questions for this position, then insert new ones
     await db.transaction(async (conn) => {
-      await tx.run(conn, 'DELETE FROM custom_eval_questions WHERE position = ?', [position]);
+      await db.tx.run(conn, 'DELETE FROM custom_eval_questions WHERE position = ?', [position]);
       for (const q of questions) {
-        // Frontend sends `id` for new questions; loaded questions may have `questionId` (after camelCase conversion)
         const questionId = q.questionId || q.id;
-        if (!questionId) {
-          throw new Error('Each question must have an id or questionId');
-        }
-        await tx.run(conn,
+        if (!questionId) throw new Error('Each question must have an id or questionId');
+        await db.tx.run(conn,
           'INSERT INTO custom_eval_questions (id, position, question_id, category, text, weight, section, practice_area) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
           [uuidv4(), position, questionId, q.category, q.text, q.weight, q.section || null, q.practiceArea || null]);
       }

@@ -20,15 +20,15 @@ export default function Dashboard() {
   const isSocio = currentUser.position === 'socio';
   const isAdminOrSocio = isAdmin || isSocio || !!currentUser.isManagingPartner;
 
-  const periodAssignments = assignments.filter(a => a.period === CURRENT_PERIOD);
-  const periodEvals = evaluations.filter(e => e.period === CURRENT_PERIOD);
+  const periodAssignments = (Array.isArray(assignments) ? assignments : []).filter(a => a.period === CURRENT_PERIOD);
+  const periodEvals = (Array.isArray(evaluations) ? evaluations : []).filter(e => e.period === CURRENT_PERIOD);
 
   const myTeamIds = isAdminOrSocio
     ? null
     : periodAssignments.filter(a => a.supervisorId === currentUser.id).map(a => a.employeeId);
 
   const getRelevantUsers = () => {
-    let base = users.filter(u => u.isActive && !u.isSuperUser);
+    let base = (Array.isArray(users) ? users : []).filter(u => u.isActive && !u.isSuperUser);
     if (myTeamIds) {
       base = base.filter(u => myTeamIds.includes(u.id) || u.id === currentUser.id);
     }
@@ -118,7 +118,7 @@ export default function Dashboard() {
               { value: 'administrativo', label: 'Administrativo' },
             ] as const).map(opt => (
               <button key={opt.value} onClick={() => setSelectedLevel(opt.value)}
-                className={`px-3 py-1 rounded text-xs font-medium transition-all duration-150 ${
+                className={`px-3 py-1 rounded text-xs font-medium transition-[background-color,color,transform] duration-150 ${
                   selectedLevel === opt.value ? 'bg-accent text-accent-foreground' : 'text-muted-foreground hover:text-foreground'
                 }`}>
                 {opt.label}
@@ -220,7 +220,7 @@ export default function Dashboard() {
             <div>
               <p className="text-sm text-muted-foreground mb-3">No has completado tu autoevaluación para este periodo.</p>
               <button onClick={() => navigate('/self-evaluation')}
-                className="px-4 py-2 rounded-md bg-accent text-accent-foreground text-sm font-medium hover:opacity-90 transition-all duration-150 active:scale-[0.98]">
+                className="px-4 py-2 rounded-md bg-accent text-accent-foreground text-sm font-medium hover:opacity-90 transition-[opacity,transform] duration-150 active:scale-[0.98]">
                 Iniciar Autoevaluación
               </button>
             </div>
@@ -242,7 +242,7 @@ export default function Dashboard() {
                   <div key={a.id} className="flex items-center justify-between py-1.5 px-3 rounded-md bg-muted/40 hover:bg-muted/60 transition-colors">
                     <p className="text-sm">{emp?.name} <span className="text-xs text-muted-foreground">— {emp ? getPositionLabel(emp.position) : ''}</span></p>
                     <button onClick={() => navigate(`/evaluations?evaluate=${a.employeeId}`)}
-                      className="px-3 py-1 rounded-md bg-accent text-accent-foreground text-xs font-medium hover:opacity-90 transition-all duration-150 active:scale-[0.98]">
+                      className="px-3 py-1 rounded-md bg-accent text-accent-foreground text-xs font-medium hover:opacity-90 transition-[opacity,transform] duration-150 active:scale-[0.98]">
                       Evaluar
                     </button>
                   </div>

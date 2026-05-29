@@ -74,7 +74,7 @@ export default function Login() {
                   <input type="email" value={forgotEmail} onChange={(e) => setForgotEmail(e.target.value)} required
                     className="w-full px-3 py-2 rounded-md border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-accent/40 transition-shadow duration-150" />
                 </div>
-                <button type="submit" className="w-full py-2 rounded-md bg-accent text-accent-foreground font-semibold hover:opacity-90 transition-all duration-150 active:scale-[0.98]">Continuar</button>
+                <button type="submit" className="w-full py-2 rounded-md bg-accent text-accent-foreground font-semibold hover:opacity-90 transition-[opacity,transform] duration-150 active:scale-[0.98]">Continuar</button>
                 <button type="button" onClick={() => { setShowForgot(false); setForgotStep('email'); setForgotError(''); }} className="w-full py-2 text-sm text-muted-foreground hover:text-foreground transition-colors">Volver al inicio de sesión</button>
               </form>
             )}
@@ -90,7 +90,7 @@ export default function Login() {
                   <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required minLength={6}
                     className="w-full px-3 py-2 rounded-md border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-accent/40 transition-shadow duration-150" />
                 </div>
-                <button type="submit" className="w-full py-2 rounded-md bg-accent text-accent-foreground font-semibold hover:opacity-90 transition-all duration-150 active:scale-[0.98]">Restablecer contraseña</button>
+                <button type="submit" className="w-full py-2 rounded-md bg-accent text-accent-foreground font-semibold hover:opacity-90 transition-[opacity,transform] duration-150 active:scale-[0.98]">Restablecer contraseña</button>
                 <button type="button" onClick={() => { setForgotStep('email'); setForgotError(''); }} className="w-full py-2 text-sm text-muted-foreground hover:text-foreground transition-colors">Volver</button>
               </form>
             )}
@@ -125,7 +125,7 @@ export default function Login() {
             </div>
             {error && <div className="text-sm text-destructive bg-destructive/10 rounded-md px-3 py-2">{error}</div>}
             <button type="submit" disabled={loading}
-              className="w-full py-2.5 rounded-md bg-accent text-accent-foreground font-semibold hover:opacity-90 disabled:opacity-40 transition-all duration-150 active:scale-[0.98]">
+              className="w-full py-2.5 rounded-md bg-accent text-accent-foreground font-semibold hover:opacity-90 disabled:opacity-40 transition-[opacity,transform] duration-150 active:scale-[0.98]">
               {loading ? 'Iniciando...' : 'Iniciar Sesión'}
             </button>
           </form>

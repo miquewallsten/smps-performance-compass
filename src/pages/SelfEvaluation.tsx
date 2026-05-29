@@ -30,12 +30,12 @@ export default function SelfEvaluation() {
   const questions = useMemo(() => {
     if (!templateData?.questions) return [] as EvalQuestion[];
     return templateData.questions.map((q: any) => ({
-      id: q.question_id || q.id,
+      id: q.questionId || q.id,
       category: q.category,
-      text: q.question_text || q.text,
+      text: q.questionText || q.text,
       weight: q.weight,
       section: q.section,
-      practiceArea: q.practice_area,
+      practiceArea: q.practiceArea,
     })) as EvalQuestion[];
   }, [templateData]);
   const navigate = useNavigate();
@@ -228,7 +228,7 @@ export default function SelfEvaluation() {
           const isOpen = openSections.has(section);
           const categories = [...new Set(sectionQs.map(q => q.category))];
           return (
-            <div key={section} className={`rounded-lg border transition-all duration-200 ${isOpen ? 'bg-card' : 'bg-card hover:bg-card/80'}`}>
+            <div key={section} className={`rounded-lg border transition-[background-color,border-color] duration-200 ${isOpen ? 'bg-card' : 'bg-card hover:bg-card/80'}`}>
               <button
                 onClick={() => toggleSection(section)}
                 className="w-full flex items-center justify-between px-4 py-3 text-left"
@@ -262,12 +262,12 @@ export default function SelfEvaluation() {
                               </div>
                               <div className="flex gap-1.5 flex-wrap">
                                 <button onClick={() => handleNA(q.id)}
-                                  className={`smps-score-btn min-w-[72px] py-1.5 px-2 rounded-md text-xs font-medium border transition-all duration-150 flex items-center justify-center gap-1 ${isNA ? 'bg-foreground/10 text-foreground border-foreground/20' : 'bg-muted/50 text-muted-foreground border-transparent hover:border-border'}`}>
+                                  className={`smps-score-btn min-w-[72px] py-1.5 px-2 rounded-md text-xs font-medium border transition-[background-color,border-color,transform] duration-150 flex items-center justify-center gap-1 ${isNA ? 'bg-foreground/10 text-foreground border-foreground/20' : 'bg-muted/50 text-muted-foreground border-transparent hover:border-border'}`}>
                                   <Ban className="h-3 w-3" /> No Aplica
                                 </button>
                                 {[1, 2, 3, 4, 5].map(score => (
                                   <button key={score} onClick={() => handleScore(q.id, score)}
-                                    className={`smps-score-btn flex-1 min-w-[60px] py-1.5 px-2 rounded-md text-xs font-medium border transition-all duration-150 ${!isNA && responses[q.id] === score ? 'bg-accent text-accent-foreground border-accent shadow-sm' : 'bg-muted/50 text-muted-foreground border-transparent hover:border-border'}`}>
+                                    className={`smps-score-btn flex-1 min-w-[60px] py-1.5 px-2 rounded-md text-xs font-medium border transition-[background-color,border-color,transform] duration-150 ${!isNA && responses[q.id] === score ? 'bg-accent text-accent-foreground border-accent shadow-sm' : 'bg-muted/50 text-muted-foreground border-transparent hover:border-border'}`}>
                                     {getScoreLabels()[score]}
                                   </button>
                                 ))}
@@ -305,7 +305,7 @@ export default function SelfEvaluation() {
       <div className="flex items-center justify-between flex-wrap gap-2">
         {!allAnswered && <div className="flex items-center gap-2 text-smps-warning text-sm"><AlertCircle className="h-4 w-4" /><span>Responda todas las preguntas</span></div>}
         {allAnswered && !commentsValid && <div className="flex items-center gap-2 text-smps-warning text-sm"><AlertCircle className="h-4 w-4" /><span>Agregue comentarios</span></div>}
-        <button onClick={() => setShowConfirm(true)} disabled={!canSubmit} className="ml-auto px-5 py-2 rounded-md bg-accent text-accent-foreground text-sm font-semibold disabled:opacity-40 hover:opacity-90 transition-all duration-150 active:scale-[0.98]">
+        <button onClick={() => setShowConfirm(true)} disabled={!canSubmit} className="ml-auto px-5 py-2 rounded-md bg-accent text-accent-foreground text-sm font-semibold disabled:opacity-40 hover:opacity-90 transition-[opacity,transform] duration-150 active:scale-[0.98]">
           Guardar Autoevaluación
         </button>
       </div>
@@ -317,7 +317,7 @@ export default function SelfEvaluation() {
             <p className="text-sm text-muted-foreground mb-4">Una vez enviada la autoevaluación, <strong>no será posible modificarla</strong>. ¿Desea continuar?</p>
             <div className="flex gap-3">
               <button onClick={() => setShowConfirm(false)} className="flex-1 py-2 rounded-md border text-sm font-medium hover:bg-muted transition-colors duration-150">Cancelar</button>
-              <button onClick={handleSubmit} className="flex-1 py-2 rounded-md bg-accent text-accent-foreground text-sm font-medium hover:opacity-90 transition-all duration-150 active:scale-[0.98]">Confirmar</button>
+              <button onClick={handleSubmit} className="flex-1 py-2 rounded-md bg-accent text-accent-foreground text-sm font-medium hover:opacity-90 transition-[opacity,transform] duration-150 active:scale-[0.98]">Confirmar</button>
             </div>
           </div>
         </div>

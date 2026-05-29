@@ -53,7 +53,7 @@ export default function Vacations() {
     .filter(a => a.supervisorId === currentUser.id && a.period === CURRENT_PERIOD)
     .map(a => a.employeeId);
 
-  const activeUsers = users.filter(u => u.isActive && !u.isSuperUser);
+  const activeUsers = (Array.isArray(users) ? users : []).filter(u => u.isActive && !u.isSuperUser);
 
   // Calculate vacation days for a user (cumulative with previous years extra days)
   // Vacation config is now from API as array {position, days}
@@ -82,7 +82,7 @@ export default function Vacations() {
     const carryoverExpired = new Date() > carryoverDeadline;
     if (carryoverExpired) previousExtra = 0;
 
-    const userRequests = vacationRequests.filter(r => r.userId === userId);
+    const userRequests = (Array.isArray(vacationRequests) ? vacationRequests : []).filter(r => r.userId === userId);
     const used = userRequests.filter(r => r.status === 'approved').reduce((s, r) => s + r.days, 0);
     const pending = userRequests.filter(r => r.status === 'pending').reduce((s, r) => s + r.days, 0);
 
@@ -113,7 +113,7 @@ export default function Vacations() {
     .filter(matchesFilter)
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
-  const pendingApprovals = vacationRequests.filter(r => {
+  const pendingApprovals = (Array.isArray(vacationRequests) ? vacationRequests : []).filter(r => {
     if (r.status !== 'pending') return false;
     if (isAdmin) return true;
     return myEvaluados.includes(r.userId);
@@ -121,7 +121,7 @@ export default function Vacations() {
 
   const allRequests = isAdmin
     ? vacationRequests
-    : vacationRequests.filter(r => r.userId === currentUser.id || myEvaluados.includes(r.userId));
+    : (Array.isArray(vacationRequests) ? vacationRequests : []).filter(r => r.userId === currentUser.id || myEvaluados.includes(r.userId));
 
   const filteredAllRequests = allRequests
     .filter(matchesFilter)

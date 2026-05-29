@@ -38,7 +38,7 @@ export default function Communications() {
   const myLevel = getPositionLevel(currentUser.position);
 
   // Filter announcements based on audience visibility
-  const visibleAnnouncements = announcements.filter(a => {
+  const visibleAnnouncements = (Array.isArray(announcements) ? announcements : []).filter(a => {
     // Admins, socios, superusers see ALL announcements including audience-specific
     if (canPublish) return true;
     // Regular users only see 'all' or their own area
@@ -76,7 +76,7 @@ export default function Communications() {
   };
 
   const getAuthor = (id: string) => users.find(u => u.id === id);
-  const activeUsers = users.filter(u => u.isActive && !u.isSuperUser && !u.isDummy);
+  const activeUsers = (Array.isArray(users) ? users : []).filter(u => u.isActive && !u.isSuperUser && !u.isDummy);
 
   const getReadCount = (ann: typeof announcements[0]) => {
     // Exclude superuser from read counts

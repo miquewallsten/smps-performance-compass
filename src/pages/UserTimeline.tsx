@@ -93,14 +93,14 @@ export default function UserTimeline() {
   const filtered = useMemo(() => {
     if (!Array.isArray(events)) return [];
     if (filter === 'all') return events;
-    return events.filter(e => e.event_type === filter);
+    return events.filter(e => e.eventType === filter);
   }, [events, filter]);
 
   // Group by month
   const months = useMemo(() => {
     const m: Record<string, typeof filtered> = {};
-    filtered.forEach(e => { const k = getMonthKey(e.event_date || e.created_at || ""); if (!m[k]) m[k] = []; m[k].push(e); });
-    Object.values(m).forEach(arr => arr.sort((a,b) => String(b.event_date||b.created_at||"").localeCompare(String(a.event_date||a.created_at||""))));
+    filtered.forEach(e => { const k = getMonthKey(e.eventDate || e.createdAt || ""); if (!m[k]) m[k] = []; m[k].push(e); });
+    Object.values(m).forEach(arr => arr.sort((a,b) => String(b.eventDate||b.createdAt||"").localeCompare(String(a.eventDate||a.createdAt||""))));
     return m;
   }, [filtered]);
 
@@ -251,7 +251,7 @@ export default function UserTimeline() {
                         {/* Events */}
                         <div className="flex flex-col gap-2">
                           {evts.map((ev, i) => {
-                            const cfg = EVT[ev.event_type] || EVT.note;
+                            const cfg = EVT[ev.eventType] || EVT.note;
                             const Icon = cfg.icon;
                             const isExp = expanded === ev.id;
                             return (
@@ -281,8 +281,8 @@ export default function UserTimeline() {
                                         )}
                                       </div>
                                       <div className="flex items-center gap-1.5 mt-0.5">
-                                        <span className="text-[10px] text-muted-foreground">{fmtDay(ev.event_date||ev.created_at||"")} {fmtMon(ev.event_date||ev.created_at||"")}</span>
-                                        {fmtTime(ev.created_at) && <span className="text-[10px] text-muted-foreground/60">{fmtTime(ev.created_at)}</span>}
+                                        <span className="text-[10px] text-muted-foreground">{fmtDay(ev.eventDate||ev.createdAt||"")} {fmtMon(ev.eventDate||ev.createdAt||"")}</span>
+                                        {fmtTime(ev.createdAt) && <span className="text-[10px] text-muted-foreground/60">{fmtTime(ev.createdAt)}</span>}
                                       </div>
                                     </div>
                                   </div>
@@ -290,7 +290,7 @@ export default function UserTimeline() {
                                   {/* Expanded details */}
                                   {isExp && (
                                     <div className="tm-expand mt-2 pt-2 border-t border-border/50">
-                                      <p className="text-[11px] text-muted-foreground mb-1.5">{fmtFull(ev.event_date||ev.created_at||"")}</p>
+                                      <p className="text-[11px] text-muted-foreground mb-1.5">{fmtFull(ev.eventDate||ev.createdAt||"")}</p>
                                       {ev.meta?.newPosition && (
                                         <p className="text-xs">
                                           <span className="text-muted-foreground">Nuevo puesto: </span>
@@ -313,14 +313,14 @@ export default function UserTimeline() {
                                           </span>
                                         </div>
                                       )}
-                                      {ev.event_type === 'role_change' && ev.meta?.changes && (
+                                      {ev.eventType === 'role_change' && ev.meta?.changes && (
                                         <div className="flex flex-wrap gap-1 mt-1">
                                           {(ev.meta.changes as string[]).map((c:string,i:number) => (
                                             <span key={i} className="tm-role-tag">{c}</span>
                                           ))}
                                         </div>
                                       )}
-                                      {(ev.event_type==='supervisor_assigned'||ev.event_type==='supervisor_removed') && ev.meta?.supervisorName && (
+                                      {(ev.eventType==='supervisor_assigned'||ev.eventType==='supervisor_removed') && ev.meta?.supervisorName && (
                                         <p className="text-xs mt-1">
                                           <span className="font-medium">{ev.meta.supervisorName}</span>
                                           {ev.meta.period && <span className="text-muted-foreground text-[11px] ml-1">{ev.meta.period}</span>}

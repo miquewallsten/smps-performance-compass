@@ -19,8 +19,8 @@ export default function OrgChart() {
   const isManagingPartner = !!currentUser.isManagingPartner;
   if (!isAdmin && !isSocio && !currentUser.isSuperUser && !isManagingPartner) return <p className="text-center py-12 text-muted-foreground">Acceso restringido.</p>;
 
-  const periodAssignments = assignments.filter(a => a.period === CURRENT_PERIOD);
-  const activeUsers = users.filter(u => u.isActive && !u.isSuperUser).sort((a, b) => a.name.localeCompare(b.name, 'es'));
+  const periodAssignments = (Array.isArray(assignments) ? assignments : []).filter(a => a.period === CURRENT_PERIOD);
+  const activeUsers = (Array.isArray(users) ? users : []).filter(u => u.isActive && !u.isSuperUser).sort((a, b) => a.name.localeCompare(b.name, 'es'));
   const supervisors = [...new Set(periodAssignments.map(a => a.supervisorId))];
 
   const filteredSupervisors = filterByHierarchy(
@@ -29,7 +29,7 @@ export default function OrgChart() {
     positionFilter
   );
 
-  const renderGroup = (hierarchy: typeof getLegalHierarchy, groupLabel: string) => {
+  const renderGroup = (hierarchy: string[], groupLabel: string) => {
     const groupSups = filteredSupervisors.filter(u => hierarchy.includes(u.position));
     if (groupSups.length === 0) return null;
     return (
@@ -66,8 +66,8 @@ export default function OrgChart() {
         </div>
         <HierarchyFilters levelFilter={levelFilter} setLevelFilter={setLevelFilter} positionFilter={positionFilter} setPositionFilter={setPositionFilter} />
       </div>
-      {renderGroup(getLegalHierarchy, 'LEGAL')}
-      {renderGroup(getAdminHierarchy, 'ADMINISTRATIVO')}
+      {renderGroup(getLegalHierarchy(), 'LEGAL')}
+      {renderGroup(getAdminHierarchy(), 'ADMINISTRATIVO')}
     </div>
   );
 }

@@ -60,7 +60,7 @@ export default function UserManagement() {
 
   // Max user limit check
   const maxUsers = systemStatus?.maxUsers || 50;
-  const activeNonDummyCount = users.filter(u => u.isActive && !u.isSuperUser).length;
+  const activeNonDummyCount = (Array.isArray(users) ? users : []).filter(u => u.isActive && !u.isSuperUser).length;
   const maxReached = activeNonDummyCount >= maxUsers;
 
   const getVisibleUsers = () => {

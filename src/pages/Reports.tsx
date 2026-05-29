@@ -22,10 +22,10 @@ export default function Reports() {
   const isSocio = currentUser.position === 'socio';
   const isAdminOrSocio = isAdmin || isSocio || !!currentUser.isManagingPartner;
 
-  const periodAssignments = assignments.filter(a => a.period === CURRENT_PERIOD);
+  const periodAssignments = (Array.isArray(assignments) ? assignments : []).filter(a => a.period === CURRENT_PERIOD);
 
   const relevantUserIds = isAdminOrSocio
-    ? users.filter(u => u.isActive).map(u => u.id)
+    ? (Array.isArray(users) ? users : []).filter(u => u.isActive).map(u => u.id)
     : periodAssignments.filter(a => a.supervisorId === currentUser.id).map(a => a.employeeId);
 
   const baseUsers = users
@@ -39,9 +39,11 @@ export default function Reports() {
   });
 
   // Hierarchy to use based on filter
-  const hierarchy = areaFilter === 'legal' ? getLegalHierarchy
-    : areaFilter === 'administrativo' ? getAdminHierarchy
-    : getPositionHierarchy;
+  let hierarchy = areaFilter === 'legal' ? getLegalHierarchy()
+    : areaFilter === 'administrativo' ? getAdminHierarchy()
+    : getPositionHierarchy();
+  // Ensure hierarchy is always an array (defensive)
+  if (!Array.isArray(hierarchy)) hierarchy = [];
 
   // Stage completion data
   const selfEvalsDone = activeUsers.filter(u => evaluations.some(e => e.type === 'self' && e.evaluatorId === u.id && e.period === CURRENT_PERIOD)).length;
@@ -104,7 +106,7 @@ export default function Reports() {
 
   const avgByPosition = hierarchy.map(pos => {
     const posUsers = activeUsers.filter(u => u.position === pos);
-    const posEvals = evaluations.filter(e => e.period === CURRENT_PERIOD && posUsers.some(u => u.id === e.evaluatedId));
+    const posEvals = (Array.isArray(evaluations) ? evaluations : []).filter(e => e.period === CURRENT_PERIOD && posUsers.some(u => u.id === e.evaluatedId));
     const avg = posEvals.length > 0 ? Math.round(posEvals.reduce((s, e) => s + e.totalScore, 0) / posEvals.length) : 0;
     return { name: getPositionLabel(pos), promedio: avg };
   }).filter(d => d.promedio > 0);

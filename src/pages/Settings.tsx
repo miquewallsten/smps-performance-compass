@@ -178,7 +178,7 @@ export default function SettingsPage() {
             </div>
             <div className="flex gap-3 pt-1">
               <button type="submit" disabled={passwordLoading}
-                className="px-6 py-2.5 rounded-md bg-accent text-accent-foreground font-semibold hover:opacity-90 transition-all duration-150 active:scale-[0.98] disabled:opacity-50 text-sm">
+                className="px-6 py-2.5 rounded-md bg-accent text-accent-foreground font-semibold hover:opacity-90 transition-[opacity,transform] duration-150 active:scale-[0.98] disabled:opacity-50 text-sm">
                 {passwordLoading ? 'Guardando...' : 'Guardar Contraseña'}
               </button>
               <button type="button" onClick={() => { setShowPasswordForm(false); setPasswordError(''); setCurrentPassword(''); setNewPassword(''); setConfirmNewPassword(''); }}

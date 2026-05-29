@@ -71,16 +71,16 @@ export default function EvaluationTemplates() {
   const templatesByPosition = useMemo(() => {
     const grouped: Record<string, EvalQuestion[]> = {};
     for (const q of allQuestions) {
-      if (!q.is_active && q.is_active !== undefined) continue;
+      if (!q.isActive && q.isActive !== undefined) continue;
       const pos = q.position;
       if (!grouped[pos]) grouped[pos] = [];
       grouped[pos].push({
-        id: q.question_id || q.id,
+        id: q.questionId || q.id,
         category: q.category,
-        text: q.question_text || q.text || '',
+        text: q.questionText || q.text || '',
         weight: q.weight || 1,
         section: q.section,
-        practiceArea: q.practice_area,
+        practiceArea: q.practiceArea,
       });
     }
     // Rescale each position's questions using section weights

@@ -58,11 +58,11 @@ export function getLibraryQuestions() {
   return api.get<any[]>('/api/evaluation-config/library');
 }
 
-export function createLibraryQuestion(data: { category: string; text: string }) {
+export function createLibraryQuestion(data: { category: string; text: string; defaultSection?: string; defaultWeight?: number }) {
   return api.post<any>('/api/evaluation-config/library', data);
 }
 
-export function updateLibraryQuestion(id: string, data: { category?: string; text?: string }) {
+export function updateLibraryQuestion(id: string, data: { category?: string; text?: string; defaultSection?: string; defaultWeight?: number }) {
   return api.patch<any>(`/api/evaluation-config/library/${id}`, data);
 }
 

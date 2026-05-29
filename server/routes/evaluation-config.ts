@@ -3,6 +3,7 @@ import { Router, Request, Response } from 'express';
 import { db } from '../db/connection.js';
 import { authMiddleware } from '../middleware/auth.js';
 import { requireAdmin } from '../middleware/rbac.js';
+import { seedEvaluationData } from '../db/seed-evaluation-data.js';
 
 const router = Router();
 
@@ -18,7 +19,6 @@ router.get('/categories', authMiddleware, async (_req: Request, res: Response) =
 });
 
 // ─── POST /api/evaluation-config/categories ───────────────────────────────────
-// Add a new category (admin only)
 router.post('/categories', authMiddleware, requireAdmin, async (req: Request, res: Response) => {
   try {
     const { id, label, section, is_technical_subcategory, sort_order } = req.body;
@@ -57,7 +57,6 @@ router.get('/section-weights/:position', authMiddleware, async (req: Request, re
   try {
     const row = await db.get('SELECT * FROM section_weights WHERE position = ?', [req.params.position]);
     if (!row) {
-      // Default: admin positions have no técnico
       return res.json({ position: req.params.position, tecnico: 0, competencias: 80, blandas: 20 });
     }
     return res.json(row);
@@ -103,7 +102,7 @@ router.get('/competencies', authMiddleware, async (_req: Request, res: Response)
   }
 });
 
-// ─── GET /api/evaluation-config/competencies/:positionLevel ────────────────
+// ─── GET /api/evaluation-config/competencies/:positionLevel ───────────────
 router.get('/competencies/:positionLevel', authMiddleware, async (req: Request, res: Response) => {
   try {
     const competencies = await db.all('SELECT * FROM competency_definitions WHERE position_level = ? ORDER BY sort_order', [req.params.positionLevel]);
@@ -118,14 +117,14 @@ router.get('/competencies/:positionLevel', authMiddleware, async (req: Request, 
 router.get('/template-questions', authMiddleware, async (req: Request, res: Response) => {
   try {
     const { position, practiceArea, section, category, is_active } = req.query as Record<string, string>;
-    let sql = 'SELECT * FROM template_questions WHERE 1=1';
+    let sql = 'SELECT tq.*, ql.question_id as library_question_id_ref, ql.category as library_category, ql.text as library_text, ql.default_section, ql.default_weight FROM template_questions tq LEFT JOIN question_library ql ON tq.library_question_id = ql.id WHERE 1=1';
     const params: any[] = [];
-    if (position) { sql += ' AND position = ?'; params.push(position); }
-    if (practiceArea) { sql += ' AND practice_area = ?'; params.push(practiceArea); }
-    if (section) { sql += ' AND section = ?'; params.push(section); }
-    if (category) { sql += ' AND category = ?'; params.push(category); }
-    if (is_active !== undefined) { sql += ' AND is_active = ?'; params.push(is_active === 'true' ? 1 : 0); }
-    sql += ' ORDER BY section, sort_order';
+    if (position) { sql += ' AND tq.position = ?'; params.push(position); }
+    if (practiceArea) { sql += ' AND tq.practice_area = ?'; params.push(practiceArea); }
+    if (section) { sql += ' AND tq.section = ?'; params.push(section); }
+    if (category) { sql += ' AND tq.category = ?'; params.push(category); }
+    if (is_active !== undefined) { sql += ' AND tq.is_active = ?'; params.push(is_active === 'true' ? 1 : 0); }
+    sql += ' ORDER BY tq.section, tq.sort_order';
     const questions = await db.all(sql, params);
     return res.json(questions);
   } catch (err) {
@@ -135,7 +134,6 @@ router.get('/template-questions', authMiddleware, async (req: Request, res: Resp
 });
 
 // ─── PUT /api/evaluation-config/template-questions/:position ───────────────
-// Replace ALL template questions for a position (full template save)
 router.put('/template-questions/:position', authMiddleware, requireAdmin, async (req: Request, res: Response) => {
   try {
     const { position } = req.params;
@@ -152,12 +150,20 @@ router.put('/template-questions/:position', authMiddleware, requireAdmin, async 
       for (const q of questions) {
         const id = q.id || uuidv4();
         const questionId = q.questionId || q.question_id || id;
+        // Look up library_question_id if libraryQuestionId is provided
+        let libraryQuestionId = q.libraryQuestionId || q.library_question_id || null;
+        if (!libraryQuestionId && q.questionId && q.questionId.startsWith('ql-')) {
+          // If the questionId is a library reference (ql-XXX), look up the library question
+          const libQ = await db.tx.get(conn, 'SELECT id FROM question_library WHERE question_id = ?', [q.questionId]);
+          if (libQ) libraryQuestionId = libQ.id;
+        }
+        
         await db.tx.run(conn,
-          `INSERT INTO template_questions (id, question_id, position, practice_area, section, category, question_text, weight, sort_order, is_active, source)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 'seed')`,
+          `INSERT INTO template_questions (id, question_id, position, practice_area, section, category, question_text, weight, sort_order, is_active, source, library_question_id)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)`,
           [id, questionId, position, q.practiceArea || q.practice_area || 'corporativo',
            q.section || 'competencias', q.category, q.text || q.questionText || q.question_text,
-           q.weight || 1, q.sortOrder || q.sort_order || 0]);
+           q.weight || 1, q.sortOrder || q.sort_order || 0, 'seed', libraryQuestionId]);
       }
     });
 
@@ -192,7 +198,6 @@ router.patch('/template-questions/:id', authMiddleware, requireAdmin, async (req
 });
 
 // ─── GET /api/evaluation-config/full-template/:position ────────────────────
-// Assembles the complete evaluation template for a position, rescaling weights
 router.get('/full-template/:position', authMiddleware, async (req: Request, res: Response) => {
   try {
     const { position } = req.params;
@@ -206,9 +211,11 @@ router.get('/full-template/:position', authMiddleware, async (req: Request, res:
     // 2. Get position config
     const posConfig = await db.get('SELECT * FROM position_config WHERE position = ?', [position]);
 
-    // 3. Get all active template questions for this position
+    // 3. Get all active template questions for this position, JOINed with question_library
     const questions = await db.all(
-      'SELECT * FROM template_questions WHERE position = ? AND is_active = 1 ORDER BY section, sort_order',
+      `SELECT tq.*, ql.question_id as library_question_id_ref, ql.category as library_category, ql.text as library_text, ql.default_section, ql.default_weight
+       FROM template_questions tq LEFT JOIN question_library ql ON tq.library_question_id = ql.id
+       WHERE tq.position = ? AND tq.is_active = 1 ORDER BY tq.section, tq.sort_order`,
       [position]
     );
 
@@ -296,17 +303,15 @@ router.get('/library', authMiddleware, async (_req: Request, res: Response) => {
 
 router.post('/library', authMiddleware, requireAdmin, async (req: Request, res: Response) => {
   try {
-    const { category, text } = req.body;
+    const { category, text, defaultSection, defaultWeight } = req.body;
     if (!category || !text) {
       return res.status(400).json({ error: 'category and text are required' });
     }
-    // uuidv4 already imported at top
     const id = uuidv4();
-    // Generate a short question_id from category + timestamp
     const questionId = `lib-${category.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}`;
     await db.run(
-      'INSERT INTO question_library (id, question_id, category, text, created_by) VALUES (?, ?, ?, ?, ?)',
-      [id, questionId, category, text, req.user!.id]
+      'INSERT INTO question_library (id, question_id, category, default_section, default_weight, text, created_by) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      [id, questionId, category, defaultSection || null, defaultWeight || 5, text, req.user!.id]
     );
     const question = await db.get('SELECT * FROM question_library WHERE id = ?', [id]);
     return res.status(201).json(question);
@@ -321,13 +326,30 @@ router.post('/library', authMiddleware, requireAdmin, async (req: Request, res: 
 
 router.patch('/library/:id', authMiddleware, requireAdmin, async (req: Request, res: Response) => {
   try {
-    const { category, text } = req.body;
+    const { category, text, defaultSection, defaultWeight } = req.body;
     const updates: string[] = [];
     const params: any[] = [];
     if (category !== undefined) { updates.push('category = ?'); params.push(category); }
     if (text !== undefined) { updates.push('text = ?'); params.push(text); }
+    if (defaultSection !== undefined) { updates.push('default_section = ?'); params.push(defaultSection); }
+    if (defaultWeight !== undefined) { updates.push('default_weight = ?'); params.push(defaultWeight); }
     if (updates.length === 0) return res.status(400).json({ error: 'No fields to update' });
     await db.run(`UPDATE question_library SET ${updates.join(', ')} WHERE id = ?`, [...params, req.params.id]);
+    
+    // Also update template_questions that reference this library question (sync text and category)
+    if (text !== undefined || category !== undefined) {
+      const libQ = await db.get('SELECT * FROM question_library WHERE id = ?', [req.params.id]);
+      if (libQ) {
+        const syncUpdates: string[] = [];
+        const syncParams: any[] = [];
+        if (text !== undefined) { syncUpdates.push('question_text = ?'); syncParams.push(libQ.text); }
+        if (category !== undefined) { syncUpdates.push('category = ?'); syncParams.push(libQ.category); }
+        if (syncUpdates.length > 0) {
+          await db.run(`UPDATE template_questions SET ${syncUpdates.join(', ')} WHERE library_question_id = ?`, [...syncParams, req.params.id]);
+        }
+      }
+    }
+    
     const updated = await db.get('SELECT * FROM question_library WHERE id = ?', [req.params.id]);
     return res.json(updated);
   } catch (err) {
@@ -338,6 +360,11 @@ router.patch('/library/:id', authMiddleware, requireAdmin, async (req: Request, 
 
 router.delete('/library/:id', authMiddleware, requireAdmin, async (req: Request, res: Response) => {
   try {
+    // Check if this question is used in any template
+    const usageCount = await db.getScalar<number>('SELECT COUNT(*) as cnt FROM template_questions WHERE library_question_id = ?', [req.params.id]);
+    if (usageCount && usageCount > 0) {
+      return res.status(409).json({ error: `Cannot delete: this question is used in ${usageCount} template(s). Remove it from templates first.` });
+    }
     await db.run('DELETE FROM question_library WHERE id = ?', [req.params.id]);
     return res.json({ message: 'Question deleted' });
   } catch (err) {
@@ -347,7 +374,6 @@ router.delete('/library/:id', authMiddleware, requireAdmin, async (req: Request,
 });
 
 // ─── POST /api/evaluation-config/reseed ────────────────────────────────────
-// Force re-seed evaluation data (admin only)
 router.post('/reseed', authMiddleware, requireAdmin, async (_req: Request, res: Response) => {
   try {
     // Delete all seed data first to force re-seed

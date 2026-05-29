@@ -28,9 +28,13 @@ export interface EvalQuestion {
 
 export interface LibraryQuestion {
   id: string;
+  questionId: string;
   category: QuestionCategory;
+  defaultSection?: EvalSection;
+  defaultWeight?: number;
   text: string;
   createdAt: string;
+  updatedAt?: string;
   createdBy?: string;
 }
 

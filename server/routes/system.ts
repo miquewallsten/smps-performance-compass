@@ -4,6 +4,7 @@ import { db, tx } from '../db/connection.js';
 import { signToken, getRole } from '../auth/jwt.js';
 import { hashPassword, hashSecurityAnswer } from '../auth/security.js';
 import { authMiddleware } from '../middleware/auth.js';
+import { validate, SystemInitSchema } from '../middleware/validate.js';
 import { requireSuperUser } from '../middleware/rbac.js';
 import { WORK_AREAS, POSITION_CATALOG } from '../data/positionCatalog.js';
 
@@ -46,7 +47,7 @@ router.get('/initialized', async (_req: Request, res: Response) => {
 });
 
 // ─── POST /api/system/init ───────────────────────────────────────────────────
-router.post('/init', async (req: Request, res: Response) => {
+router.post('/init', validate(SystemInitSchema), async (req: Request, res: Response) => {
   try {
     // Check if already initialized
     const existing = await db.get('SELECT id FROM system_status LIMIT 1');

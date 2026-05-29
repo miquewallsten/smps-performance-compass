@@ -62,7 +62,23 @@ export default function QuestionLibrary() {
     return grouped;
   }, [templateQuestionsRaw]);
   const { data: libraryQuestionsRaw = [] } = useLibraryQuestionsConfig();
-  const libraryQuestions = useMemo(() => libraryQuestionsRaw.map(q => ({ ...q, id: q.id, questionId: q.questionId || q.question_id, category: q.category, text: q.text, createdAt: q.createdAt || q.created_at, createdBy: q.createdBy || q.created_by })), [libraryQuestionsRaw]);
+  const libraryQuestions = useMemo(() => libraryQuestionsRaw.map(q => ({ ...q, id: q.id, questionId: q.questionId || q.id, category: q.category, text: q.text, createdAt: q.createdAt || q.id, createdBy: q.createdBy || 'system' })), [libraryQuestionsRaw]);
+
+  // Build position map: question text -> list of positions that use it
+  const questionPositionMap = useMemo(() => {
+    const map = new Map<string, string[]>();
+    for (const q of templateQuestionsRaw as any[]) {
+      const text = (q.questionText || q.text || '').trim();
+      if (!text) continue;
+      const pos = q.position;
+      if (!pos) continue;
+      if (!map.has(text)) map.set(text, []);
+      const positions = map.get(text)!;
+      if (!positions.includes(pos)) positions.push(pos);
+    }
+    return map;
+  }, [templateQuestionsRaw]);
+
   const addLibraryQuestion = useCreateLibraryQuestionConfig().mutate;
   const updateLibraryQuestion = useUpdateLibraryQuestionConfig().mutate;
   const deleteLibraryQuestion = useDeleteLibraryQuestionConfig().mutate;
@@ -84,7 +100,110 @@ export default function QuestionLibrary() {
   const canEdit = !!(currentUser?.isAdmin || currentUser?.isSuperUser);
   const isSuperUser = !!currentUser?.isSuperUser;
 
-  // Build seed questions from DB template questions
+  // Build seed items from template questions (for CSV export and backward compat)
+  const allSeedItems = useMemo(() => {
+    const items: SeedItem[] = [];
+    const seen = new Set<string>();
+    Object.entries(customQuestions).forEach(([pos, questions]) => {
+      questions.forEach((q: EvalQuestion) => {
+        const text = q.text.trim();
+        const key = `${q.category}::${text.toLowerCase()}`;
+        const section = getSectionByCategory(q.category);
+        if (seen.has(key)) {
+          const found = items.find(i => `${i.category}::${i.text.toLowerCase()}` === key);
+          if (found && !found.positions.includes(pos)) found.positions.push(pos);
+          return;
+        }
+        seen.add(key);
+        items.push({ ...q, text, positions: [pos], isSeed: true, section });
+      });
+    });
+    return items;
+  }, [customQuestions]);
+
+  // Build a unified, deduplicated list of all questions
+  // Each unique question text appears ONCE, with position info from template_questions
+  const allItems: DisplayItem[] = useMemo(() => {
+    const seen = new Map<string, DisplayItem>();
+    
+    // First pass: add library questions (authoritative source)
+    for (const q of libraryQuestions) {
+      const text = q.text.trim();
+      const key = text.toLowerCase();
+      const positions = questionPositionMap.get(text) || [];
+      const section = (q as any).defaultSection as EvalSection || getSectionByCategory(q.category);
+      if (!seen.has(key)) {
+        seen.set(key, {
+          id: q.id,
+          text,
+          category: q.category as QuestionCategory,
+          section,
+          isSeed: positions.length > 0,
+          positions,
+          rawQuestion: q,
+        });
+      } else {
+        // Merge positions
+        const existing = seen.get(key)!;
+        for (const p of positions) {
+          if (!existing.positions.includes(p)) existing.positions.push(p);
+        }
+      }
+    }
+    
+    // Second pass: add seed-only questions (in template but not in library)
+    for (const q of allSeedItems) {
+      const text = q.text.trim();
+      const key = text.toLowerCase();
+      if (!seen.has(key)) {
+        seen.set(key, {
+          id: q.id,
+          text,
+          category: q.category as QuestionCategory,
+          section: q.section,
+          isSeed: true,
+          positions: q.positions,
+          rawQuestion: q,
+        });
+      } else {
+        // Merge positions from template data
+        const existing = seen.get(key)!;
+        for (const p of q.positions) {
+          if (!existing.positions.includes(p)) existing.positions.push(p);
+        }
+      }
+    }
+    
+    // In position mode, expand items per position
+    if (groupMode === 'position') {
+      const items: DisplayItem[] = [];
+      const allPositions = new Set<string>();
+      seen.forEach(item => item.positions.forEach(p => allPositions.add(p)));
+      for (const pos of allPositions) {
+        const evalQuestions = customQuestions[pos as Position] || [];
+        evalQuestions.forEach(q => {
+          const section = getSectionForQuestion(q.category, pos as Position);
+          const qText = (q.text || '').trim();
+          const libMatch = libraryQuestions.find(l => l.text.trim().toLowerCase() === qText.toLowerCase());
+          items.push({
+            id: `${pos}::${q.id}`,
+            text: q.text,
+            category: q.category as QuestionCategory,
+            section,
+            isSeed: true,
+            positions: [pos],
+            rawQuestion: libMatch ? { ...libMatch, positions: [pos] } as any : ({ id: q.id, text: q.text, category: q.category, weight: q.weight, positions: [pos], isSeed: true, section } as SeedItem),
+            positionKey: pos,
+          });
+        });
+      }
+      return items;
+    }
+    
+    return Array.from(seen.values());
+  }, [libraryQuestions, allSeedItems, customQuestions, questionPositionMap, groupMode]);
+
+  // Build seed items from template questions for backward compat
   const seedByCategory = useMemo(() => {
     const seen = new Map<string, SeedItem>();
     const map: Record<string, SeedItem[]> = {};
@@ -109,59 +228,6 @@ export default function QuestionLibrary() {
     return map;
   }, [customQuestions, isSuperUser]);
 
-  if (!canEdit) {
-    return <p className="text-center py-12 text-muted-foreground">Acceso restringido al administrador.</p>;
-  }
-
-  // All unique seed items
-  const allSeedItems = useMemo(() => {
-    const items: SeedItem[] = [];
-    const seen = new Set<string>();
-    for (const list of Object.values(seedByCategory)) {
-      for (const q of list) {
-        if (!seen.has(q.id)) { seen.add(q.id); items.push(q); }
-      }
-    }
-    return items;
-  }, [seedByCategory]);
-
-
-  // Combined items for rendering
-  const allItems: DisplayItem[] = useMemo(() => {
-    if (groupMode === 'position') {
-      // In position mode, build items per position from DB template questions
-      const items: DisplayItem[] = [];
-      const allPositions = new Set<string>();
-      allSeedItems.forEach(item => item.positions.forEach(p => allPositions.add(p)));
-      for (const pos of allPositions) {
-        const evalQuestions = customQuestions[pos as Position] || [];
-        evalQuestions.forEach(q => {
-          const section = getSectionForQuestion(q.category, pos as Position);
-          items.push({
-            id: `${pos}::${q.id}`,
-            text: q.text,
-            category: q.category as QuestionCategory,
-            section,
-            isSeed: true,
-            positions: [pos],
-            rawQuestion: allSeedItems.find(s => s.id === q.id) || ({ id: q.id, text: q.text, category: q.category, weight: q.weight, positions: [pos], isSeed: true, section } as SeedItem),
-            positionKey: pos,
-          });
-        });
-      }
-      return items;
-    }
-    const seedItems: DisplayItem[] = allSeedItems.map(q => ({
-      id: q.id, text: q.text, category: q.category, section: q.section,
-      isSeed: true, positions: q.positions, rawQuestion: q,
-    }));
-    const customItems: DisplayItem[] = libraryQuestions.map(q => ({
-      id: q.id, text: q.text, category: q.category, section: getSectionByCategory(q.category),
-      isSeed: false, positions: [], rawQuestion: q,
-    }));
-    return [...seedItems, ...customItems];
-  }, [allSeedItems, libraryQuestions, groupMode, customQuestions]);
-
   // Apply filters and search
   const filteredItems = useMemo(() => {
     let items = allItems;
@@ -173,7 +239,7 @@ export default function QuestionLibrary() {
       if (f.type === 'section') items = items.filter(i => i.section === f.value);
       if (f.type === 'category') items = items.filter(i => i.category === f.value);
       if (f.type === 'position') items = items.filter(i => i.positions.includes(f.value) || i.positionKey === f.value);
-      if (f.type === 'type') items = items.filter(i => (f.value === 'seed') === i.isSeed);
+      if (f.type === 'type') items = items.filter(i => (f.value === 'seed') === (i.positions.length > 0));
     }
     return items;
   }, [allItems, search, filters]);
@@ -218,13 +284,15 @@ export default function QuestionLibrary() {
   const stats = useMemo(() => {
     const bySection: Record<EvalSection, number> = { competencias: 0, tecnico: 0, blandas: 0 };
     allItems.forEach(i => bySection[i.section]++);
+    const usedInTemplates = allItems.filter(i => i.positions.length > 0).length;
+    const notInTemplates = allItems.filter(i => i.positions.length === 0).length;
     return {
       total: allItems.length,
-      seed: allSeedItems.length,
-      custom: libraryQuestions.length,
+      usedInTemplates,
+      notInTemplates,
       bySection,
     };
-  }, [allItems, allSeedItems, libraryQuestions]);
+  }, [allItems]);
 
   const toggleGroup = (key: string) => {
     setExpandedGroups(prev => {
@@ -347,7 +415,7 @@ export default function QuestionLibrary() {
         <div>
           <h1 className="font-display text-2xl font-bold">Biblioteca de Preguntas</h1>
           <p className="text-muted-foreground text-sm mt-1">
-            {stats.total} preguntas &middot; {stats.seed} base &middot; {stats.custom} personalizadas
+            {stats.total} preguntas &middot; {stats.usedInTemplates} en plantillas{stats.notInTemplates > 0 ? ` · ${stats.notInTemplates} sin asignar` : ''}
 
           </p>
         </div>
@@ -383,7 +451,7 @@ export default function QuestionLibrary() {
                 <span className={`text-lg font-bold ${c.text}`}>{count}</span>
               </div>
               <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-                <div className={`h-full ${c.dot} rounded-full transition-all`} style={{ width: `${pct}%` }} />
+                <div className={`h-full ${c.dot} rounded-full transition-[width]`} style={{ width: `${pct}%` }} />
               </div>
               <p className="text-[10px] text-muted-foreground mt-1">{pct}% del total</p>
             </div>
@@ -455,8 +523,8 @@ export default function QuestionLibrary() {
           {/* Row 1: Type + Section */}
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-[10px] font-semibold text-muted-foreground uppercase">Tipo</span>
-            <button onClick={() => addFilter('type', 'seed', 'Base')} className={`text-[10px] px-2 py-0.5 rounded border ${filters.some(f => f.type === 'type' && f.value === 'seed') ? 'bg-accent text-accent-foreground border-accent' : 'border-input bg-background hover:bg-muted'}`}>Base</button>
-            <button onClick={() => addFilter('type', 'custom', 'Personalizada')} className={`text-[10px] px-2 py-0.5 rounded border ${filters.some(f => f.type === 'type' && f.value === 'custom') ? 'bg-accent text-accent-foreground border-accent' : 'border-input bg-background hover:bg-muted'}`}>Personalizada</button>
+            <button onClick={() => addFilter('type', 'seed', 'En plantilla')} className={`text-[10px] px-2 py-0.5 rounded border ${filters.some(f => f.type === 'type' && f.value === 'seed') ? 'bg-accent text-accent-foreground border-accent' : 'border-input bg-background hover:bg-muted'}`}>En plantilla</button>
+            <button onClick={() => addFilter('type', 'custom', 'Sin plantilla')} className={`text-[10px] px-2 py-0.5 rounded border ${filters.some(f => f.type === 'type' && f.value === 'custom') ? 'bg-accent text-accent-foreground border-accent' : 'border-input bg-background hover:bg-muted'}`}>Sin plantilla</button>
             <span className="text-muted-foreground/30 mx-1">|</span>
             <span className="text-[10px] font-semibold text-muted-foreground uppercase">Sección</span>
             {SECTION_ORDER.map(sec => (
@@ -551,7 +619,7 @@ export default function QuestionLibrary() {
                           <p className="text-sm leading-snug truncate">{item.text}</p>
                           <div className="flex items-center gap-2 mt-0.5">
                             <span className="text-[10px] text-muted-foreground">{item.category}</span>
-                            {item.isSeed && item.positions.length > 0 && groupMode !== 'position' && (
+                            {item.positions.length > 0 && groupMode !== 'position' && (
                               <span className="text-[10px] text-muted-foreground">
                                 {item.positions.length} puesto{item.positions.length !== 1 ? 's' : ''}
                               </span>
@@ -560,7 +628,7 @@ export default function QuestionLibrary() {
                         </div>
                         <div className="flex items-center gap-2 flex-shrink-0">
 
-                          <span className={`inline-block w-1.5 h-1.5 rounded-full ${item.isSeed ? 'bg-foreground/30' : 'bg-accent'}`} title={item.isSeed ? 'Base' : 'Personalizada'} />
+                          <span className={`inline-block w-1.5 h-1.5 rounded-full ${item.positions.length > 0 ? 'bg-blue-400' : 'bg-amber-400'}`} title={item.positions.length > 0 ? `En ${item.positions.length} plantilla(s)` : 'Sin plantilla'} />
                           <button onClick={() => openEdit(item)} className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors" title="Editar">
                             <Pencil className="h-3 w-3" />
                           </button>
@@ -580,11 +648,11 @@ export default function QuestionLibrary() {
                               <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${color.bg} ${color.text}`}>{SECTION_LABELS[item.section]}</span>
                               <span className="text-[10px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground">{item.category}</span>
 
-                              <span className={`text-[10px] px-2 py-0.5 rounded-full ${item.isSeed ? 'bg-foreground/5 text-foreground/50' : 'bg-accent/10 text-accent'}`}>
-                                {item.isSeed ? 'Base' : 'Personalizada'}
+                              <span className={`text-[10px] px-2 py-0.5 rounded-full ${item.positions.length > 0 ? 'bg-foreground/5 text-foreground/50' : 'bg-accent/10 text-accent'}`}>
+                                {item.positions.length > 0 ? `En ${item.positions.length} plantilla${item.positions.length !== 1 ? 's' : ''}` : 'Sin plantilla'}
                               </span>
                             </div>
-                            {item.isSeed && item.positions.length > 0 && groupMode !== 'position' && (
+                            {item.positions.length > 0 && groupMode !== 'position' && (
                               <div className="flex items-center gap-1 mt-1.5 flex-wrap">
                                 {item.positions.map(p => (
                                   <span key={p} className="text-[10px] bg-muted/50 text-muted-foreground px-1.5 py-0.5 rounded">

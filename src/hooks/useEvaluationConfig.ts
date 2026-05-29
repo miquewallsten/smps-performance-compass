@@ -78,7 +78,7 @@ export function useLibraryQuestionsConfig() {
 export function useCreateLibraryQuestionConfig() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (data: { category: string; text: string }) => createLibraryQuestion(data),
+    mutationFn: (data: { category: string; text: string; defaultSection?: string; defaultWeight?: number }) => createLibraryQuestion(data),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['libraryQuestionsConfig'] }),
   });
 }
@@ -86,7 +86,7 @@ export function useCreateLibraryQuestionConfig() {
 export function useUpdateLibraryQuestionConfig() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, ...data }: any) => updateLibraryQuestion(id, data),
+    mutationFn: ({ id, ...data }: { id: string; category?: string; text?: string; defaultSection?: string; defaultWeight?: number }) => updateLibraryQuestion(id, data),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['libraryQuestionsConfig'] }),
   });
 }

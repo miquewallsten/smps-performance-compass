@@ -33,9 +33,9 @@ export default function AssignSupervisors() {
   const isAdmin = currentUser.isAdmin;
   if (!isAdmin && !currentUser.isSuperUser) return <p className="text-center py-12 text-muted-foreground">Acceso restringido al administrador.</p>;
 
-  const activeUsers = users.filter(u => u.isActive && !u.isSuperUser && !u.isDummy);
-  const periodAssignments = assignments.filter(a => a.period === selectedPeriod);
-  const periodEvals = evaluations.filter(e => e.period === selectedPeriod);
+  const activeUsers = (Array.isArray(users) ? users : []).filter(u => u.isActive && !u.isSuperUser && !u.isDummy);
+  const periodAssignments = (Array.isArray(assignments) ? assignments : []).filter(a => a.period === selectedPeriod);
+  const periodEvals = (Array.isArray(evaluations) ? evaluations : []).filter(e => e.period === selectedPeriod);
 
   const unassignedUsers = activeUsers.filter(u => !periodAssignments.some(a => a.employeeId === u.id));
 
@@ -60,7 +60,7 @@ export default function AssignSupervisors() {
     return filterByHierarchy(eligible, evalLevelFilter, evalPosFilter);
   };
 
-  const renderHierarchyList = (hierarchy: typeof getLegalHierarchy, label: string) => {
+  const renderHierarchyList = (hierarchy: string[], label: string) => {
     const groupUsers = filteredEmployees.filter(u => hierarchy.includes(u.position)).sort((a, b) => {
       const pi = hierarchy.indexOf(a.position) - hierarchy.indexOf(b.position);
       return pi !== 0 ? pi : a.name.localeCompare(b.name, 'es');
@@ -114,8 +114,8 @@ export default function AssignSupervisors() {
           <h3 className="smps-section-title font-display text-base font-semibold mb-3">Seleccionar Empleado</h3>
           <HierarchyFilters levelFilter={empLevelFilter} setLevelFilter={setEmpLevelFilter} positionFilter={empPosFilter} setPositionFilter={setEmpPosFilter} className="mb-3" />
           <div className="space-y-1 max-h-[60vh] overflow-y-auto">
-            {renderHierarchyList(getLegalHierarchy, 'LEGAL')}
-            {renderHierarchyList(getAdminHierarchy, 'ADMINISTRATIVO')}
+            {renderHierarchyList(getLegalHierarchy(), 'LEGAL')}
+            {renderHierarchyList(getAdminHierarchy(), 'ADMINISTRATIVO')}
 
             {unassignedUsers.length > 0 && empLevelFilter === 'all' && empPosFilter === 'all' && (
               <div className="mb-3 mt-4 border-t pt-3">
@@ -170,8 +170,8 @@ export default function AssignSupervisors() {
                   const eligible = getEligibleEvaluators(selectedEmp.id);
                   if (eligible.length === 0) return <p className="text-sm text-muted-foreground">No hay evaluadores disponibles con los filtros seleccionados.</p>;
                   return [
-                    { hierarchy: getLegalHierarchy, label: 'LEGAL' },
-                    { hierarchy: getAdminHierarchy, label: 'ADMINISTRATIVO' },
+                    { hierarchy: getLegalHierarchy(), label: 'LEGAL' },
+                    { hierarchy: getAdminHierarchy(), label: 'ADMINISTRATIVO' },
                   ].map(({ hierarchy, label }) => {
                     const groupEligible = eligible.filter(u => hierarchy.includes(u.position));
                     if (groupEligible.length === 0) return null;

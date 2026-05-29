@@ -436,7 +436,7 @@ export async function migrate(): Promise<void> {
       position VARCHAR(50) PRIMARY KEY,
       label VARCHAR(100) NOT NULL,
       level ENUM('legal','administrativo') NOT NULL,
-      rank INT NOT NULL DEFAULT 99,
+      position_rank INT NOT NULL DEFAULT 99,
       sort_order INT NOT NULL DEFAULT 0,
       is_active TINYINT(1) NOT NULL DEFAULT 1,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -452,6 +452,8 @@ export async function migrate(): Promise<void> {
       id VARCHAR(36) PRIMARY KEY,
       question_id VARCHAR(50) NOT NULL UNIQUE,
       category VARCHAR(50) NOT NULL,
+      default_section ENUM('competencias','tecnico','blandas') DEFAULT NULL,
+      default_weight INT NOT NULL DEFAULT 5,
       text TEXT NOT NULL,
       created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -482,7 +484,7 @@ export async function migrate(): Promise<void> {
 
     // evaluation_na_approvals: add approved column and unique key
     `ALTER TABLE evaluation_na_approvals ADD COLUMN approved TINYINT(1) NOT NULL DEFAULT 0 AFTER question_id`,
-    `ALTER TABLE evaluation_na_approvals ADD UNIQUE INDEX IF NOT EXISTS ena_eval_question_unique (evaluation_id, question_id)`,
+    `ALTER TABLE evaluation_na_approvals ADD UNIQUE INDEX ena_eval_question_unique (evaluation_id, question_id)`,
 
     // action_plans: add missing columns
     `ALTER TABLE action_plans ADD COLUMN content TEXT NOT NULL AFTER period`,
@@ -748,7 +750,7 @@ export async function migrate(): Promise<void> {
 
   // Migration: Add unique constraint to announcement_reads for (announcement_id, user_id)
   try {
-    await db.run('ALTER TABLE announcement_reads ADD UNIQUE INDEX ar_announcement_user_unique (announcement_id, user_id)');
+    await run('ALTER TABLE announcement_reads ADD UNIQUE INDEX ar_announcement_user_unique (announcement_id, user_id)');
     console.log('✅ Added unique constraint to announcement_reads');
   } catch (err: any) {
     if (err.code === 'ER_DUP_KEYNAME' || err.message?.includes('Duplicate key name')) {
@@ -858,12 +860,106 @@ export async function migrate(): Promise<void> {
 
 
 
-  // ─── Migration: Add Comunicación category ────────────────────────────────
-  try {
-    await run(`INSERT IGNORE INTO evaluation_categories (id, label, section, is_technical_subcategory, sort_order) VALUES ('Comunicación', 'Comunicación', 'blandas', 0, 24)`);
-    console.log('  ✓ Added Comunicación category');
-  } catch (e) {
-    console.log('  ⚠ Could not add Comunicación category:', (e as Error).message);
+  // ─── Migration: Ensure all evaluation categories exist ────────────────────
+  const categories = [
+    { id: 'Desempeño', label: 'Desempeño', section: 'competencias', is_tech: 0, sort: 1 },
+    { id: 'Liderazgo', label: 'Liderazgo', section: 'competencias', is_tech: 0, sort: 2 },
+    { id: 'Cumplimiento', label: 'Cumplimiento', section: 'competencias', is_tech: 0, sort: 3 },
+    { id: 'Trabajo en Equipo', label: 'Trabajo en Equipo', section: 'competencias', is_tech: 0, sort: 4 },
+    { id: 'Actitud', label: 'Actitud', section: 'blandas', is_tech: 0, sort: 5 },
+    { id: 'Disponibilidad', label: 'Disponibilidad', section: 'blandas', is_tech: 0, sort: 6 },
+    { id: 'Habilidades Blandas', label: 'Habilidades Blandas', section: 'blandas', is_tech: 0, sort: 7 },
+    { id: 'Desarrollo', label: 'Desarrollo', section: 'blandas', is_tech: 0, sort: 8 },
+    { id: 'Criterio Técnico', label: 'Criterio Técnico', section: 'tecnico', is_tech: 0, sort: 9 },
+    { id: 'Atención a clientes', label: 'Atención a clientes', section: 'tecnico', is_tech: 1, sort: 10 },
+    { id: 'Conocimiento normativo', label: 'Conocimiento normativo', section: 'tecnico', is_tech: 1, sort: 11 },
+    { id: 'Constitución y modificaciones', label: 'Constitución y modificaciones', section: 'tecnico', is_tech: 1, sort: 12 },
+    { id: 'Due diligence', label: 'Due diligence', section: 'tecnico', is_tech: 1, sort: 13 },
+    { id: 'Redacción legal', label: 'Redacción legal', section: 'tecnico', is_tech: 1, sort: 14 },
+    { id: 'Comunicación', label: 'Comunicación', section: 'blandas', is_tech: 0, sort: 24 },
+  ];
+  for (const cat of categories) {
+    try {
+      await run('INSERT IGNORE INTO evaluation_categories (id, label, section, is_technical_subcategory, sort_order) VALUES (?, ?, ?, ?, ?)',
+        [cat.id, cat.label, cat.section, cat.is_tech, cat.sort]);
+    } catch (e) { /* ignore */ }
   }
+  console.log('  ✓ Evaluation categories ensured');
+
+
+  // ─── Migration: Normalize question architecture ─────────────────────────
+  // Add library_question_id to template_questions (FK to question_library)
+  try {
+    const libColCheck = await getScalar<number>(
+      `SELECT COUNT(*) AS cnt FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'template_questions' AND COLUMN_NAME = 'library_question_id'`
+    );
+    if (libColCheck === 0) {
+      await run('ALTER TABLE template_questions ADD COLUMN library_question_id VARCHAR(36) AFTER question_id');
+      console.log('  ✓ Added library_question_id column to template_questions');
+      // Add index
+      try {
+        await run('ALTER TABLE template_questions ADD INDEX idx_tq_library (library_question_id)');
+        console.log('  ✓ Added index on template_questions.library_question_id');
+      } catch (e2: any) {
+        if (!/already exists|Duplicate/i.test(e2?.message)) console.log('  ⚠ Could not add index:', e2?.message);
+      }
+    }
+  } catch (e) {
+    console.log('  ⚠ Could not add library_question_id column:', (e as Error).message);
+  }
+
+  // Add default_section and default_weight to question_library
+  try {
+    const dsColCheck = await getScalar<number>(
+      `SELECT COUNT(*) AS cnt FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'question_library' AND COLUMN_NAME = 'default_section'`
+    );
+    if (dsColCheck === 0) {
+      await run("ALTER TABLE question_library ADD COLUMN default_section ENUM('competencias','tecnico','blandas') AFTER category");
+      console.log('  ✓ Added default_section column to question_library');
+    }
+  } catch (e) {
+    console.log('  ⚠ Could not add default_section column:', (e as Error).message);
+  }
+  try {
+    const dwColCheck = await getScalar<number>(
+      `SELECT COUNT(*) AS cnt FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'question_library' AND COLUMN_NAME = 'default_weight'`
+    );
+    if (dwColCheck === 0) {
+      await run('ALTER TABLE question_library ADD COLUMN default_weight INT NOT NULL DEFAULT 5 AFTER default_section');
+      console.log('  ✓ Added default_weight column to question_library');
+    }
+  } catch (e) {
+    console.log('  ⚠ Could not add default_weight column:', (e as Error).message);
+  }
+
+  // ─── Migration: Link existing template_questions to question_library ────
+  try {
+    // Link by matching question_text to text in question_library
+    const linkResult = await run(
+      `UPDATE template_questions tq INNER JOIN question_library ql ON TRIM(tq.question_text) = TRIM(ql.text) SET tq.library_question_id = ql.id WHERE tq.library_question_id IS NULL AND tq.source = 'seed'`
+    );
+    if (linkResult.affectedRows > 0) {
+      console.log(`  ✓ Linked ${linkResult.affectedRows} template_questions to question_library entries`);
+    }
+  } catch (e) {
+    console.log('  ⚠ Could not link template_questions to question_library:', (e as Error).message);
+  }
+
+  // ─── Migration: Merge library_questions into question_library ──────────
+  // SKIPPED: library_questions data has been superseded by question_library seed data
+  // The old library_questions table is kept for reference only
+
+  // Also link template_questions for custom source questions
+  try {
+    const linkCustomResult = await run(
+      `UPDATE template_questions tq INNER JOIN question_library ql ON TRIM(tq.question_text) = TRIM(ql.text) SET tq.library_question_id = ql.id WHERE tq.library_question_id IS NULL AND tq.source = 'custom'`
+    );
+    if (linkCustomResult.affectedRows > 0) {
+      console.log(`  ✓ Linked ${linkCustomResult.affectedRows} custom template_questions to question_library entries`);
+    }
+  } catch (e) {
+    console.log('  ⚠ Could not link custom template_questions:', (e as Error).message);
+  }
+
 
 }

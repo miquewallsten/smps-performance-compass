@@ -5,6 +5,7 @@ import { signToken, hashToken, getTokenExpiry, getRole } from '../auth/jwt.js';
 import { hashPassword, verifyPassword, hashSecurityAnswer, verifySecurityAnswer } from '../auth/security.js';
 import { authMiddleware } from '../middleware/auth.js';
 import { requireAuthenticated } from '../middleware/rbac.js';
+import { validate, LoginSchema, ChangePasswordSchema, ResetPasswordSchema, SecurityQuestionSchema } from '../middleware/validate.js';
 
 const router = Router();
 
@@ -22,7 +23,7 @@ function sanitizeUser(user: Record<string, unknown>) {
 }
 
 // ─── POST /api/auth/login ──────────────────────────────────────────────────
-router.post('/login', async (req: Request, res: Response) => {
+router.post('/login', validate(LoginSchema), async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body as { email?: string; password?: string };
 
@@ -111,7 +112,7 @@ router.get('/me', authMiddleware, requireAuthenticated, async (req: Request, res
 });
 
 // ─── POST /api/auth/change-password ─────────────────────────────────────────
-router.post('/change-password', authMiddleware, requireAuthenticated, async (req: Request, res: Response) => {
+router.post('/change-password', validate(ChangePasswordSchema), authMiddleware, requireAuthenticated, async (req: Request, res: Response) => {
   try {
     const { currentPassword, newPassword, securityQuestion, securityAnswer } = req.body as {
       currentPassword?: string;
@@ -164,7 +165,7 @@ router.post('/change-password', authMiddleware, requireAuthenticated, async (req
 });
 
 // ─── POST /api/auth/security-question ───────────────────────────────────────
-router.post('/security-question', async (req: Request, res: Response) => {
+router.post('/security-question', validate(SecurityQuestionSchema), async (req: Request, res: Response) => {
   try {
     const { email } = req.body as { email?: string };
 
@@ -187,7 +188,7 @@ router.post('/security-question', async (req: Request, res: Response) => {
 });
 
 // ─── POST /api/auth/reset-password ──────────────────────────────────────────
-router.post('/reset-password', async (req: Request, res: Response) => {
+router.post('/reset-password', validate(ResetPasswordSchema), async (req: Request, res: Response) => {
   try {
     const { email, securityAnswer, newPassword } = req.body as {
       email?: string;

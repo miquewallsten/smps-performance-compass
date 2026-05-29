@@ -1,7 +1,21 @@
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-in-production';
+// JWT_SECRET must be set in production. The server will refuse to start without it.
+// In development, we allow a fallback for convenience but log a warning.
+const JWT_SECRET = (() => {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    if (process.env.NODE_ENV === 'production') {
+      // This should never be reached — server/index.ts checks first — but defense in depth
+      throw new Error('JWT_SECRET is not set. Refusing to run in production without it.');
+    }
+    console.warn('⚠️  WARNING: JWT_SECRET not set — using dev-only fallback. Never use this in production.');
+    return 'dev-secret-NEVER-USE-IN-PRODUCTION';
+  }
+  return secret;
+})();
+
 const JWT_EXPIRES_IN = '24h';
 
 export interface JwtPayload {

@@ -21,19 +21,44 @@ import positionRoutes from './routes/positions.js';
 import workAreaRoutes from './routes/work-areas.js';
 import locationRoutes from './routes/locations.js';
 import periodRoutes from './routes/periods.js';
-import copilotRoutes from './routes/copilot.js';
+import copilotRoutes from './copilot/index.js';
 import deployRoutes from './routes/deploy.js';
 import timelineRoutes from './routes/timeline.js';
+import { loginLimiter, resetPasswordLimiter, apiLimiter } from './middleware/rate-limit.js';
 
 dotenv.config();
+
+// ─── SECURITY: Fail fast if JWT_SECRET is missing in production ──────────
+if (process.env.NODE_ENV === 'production' && !process.env.JWT_SECRET) {
+  console.error('FATAL: JWT_SECRET environment variable is not set. Refusing to start in production without it.');
+  process.exit(1);
+}
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.use(cors());
+// CORS: In production, only allow requests from the SMPS domain.
+// In development, allow localhost for convenience.
+if (process.env.NODE_ENV === 'production') {
+  app.use(cors({
+    origin: ['https://smps.bowdot.online', 'http://smps.bowdot.online'],
+    credentials: true,
+  }));
+} else {
+  app.use(cors());
+}
+
 app.use(express.json());
 
-// Health check
+// ─── RATE LIMITING ──────────────────────────────────────────────────────────
+// Apply rate limiting to sensitive auth endpoints
+app.use('/api/auth/login', loginLimiter);
+app.use('/api/auth/reset-password', resetPasswordLimiter);
+app.use('/api/auth/security-question', resetPasswordLimiter);
+// General API rate limit for all other endpoints
+app.use('/api/', apiLimiter);
+
+// Health check (no rate limit)
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
@@ -114,4 +139,3 @@ async function startServer() {
 startServer();
 
 export default app;
-// rebuild trigger Thu May 28 14:40:45 CST 2026

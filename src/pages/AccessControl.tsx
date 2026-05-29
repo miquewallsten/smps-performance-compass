@@ -400,7 +400,7 @@ export default function AccessControl() {
                   {entry.action === 'activated' ? 'Activado' : 'Desactivado'}
                 </Badge>
                 <span>{new Date(entry.date).toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
-                <span className="text-xs ml-auto">{getUser(entry.by_user_id)?.name || 'Sistema'}</span>
+                <span className="text-xs ml-auto">{getUser(entry.byUserId)?.name || 'Sistema'}</span>
               </div>
             ))}
           </div>

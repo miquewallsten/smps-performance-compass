@@ -11,10 +11,10 @@ interface Props {
 
 export default function HierarchyFilters({ levelFilter, setLevelFilter, positionFilter, setPositionFilter, className = '' }: Props) {
   const positions = levelFilter === 'legal'
-    ? getLegalHierarchy
+    ? getLegalHierarchy()
     : levelFilter === 'administrativo'
-      ? getAdminHierarchy
-      : getPositionHierarchy;
+      ? getAdminHierarchy()
+      : getPositionHierarchy();
 
   return (
     <div className={`flex gap-2 flex-wrap ${className}`}>
