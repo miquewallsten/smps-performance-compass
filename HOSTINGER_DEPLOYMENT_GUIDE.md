@@ -2,12 +2,12 @@
 
 ## Architecture Overview
 
-- **Frontend**: React + Vite → builds to `dist/` (committed to git)
-- **Backend**: Express.js bundled into `server.cjs` (committed to git)
+- **Frontend**: React + Vite → builds to `dist/`
+- **Backend**: Express.js bundled into `server.cjs`
 - **Database**: MySQL (Hostinger)
 - **Entry Point**: `server.js` → dynamically imports `server.cjs`
-- **CI**: GitHub Actions (build + test + commit artifacts + notify server)
-- **CD**: PHP Webhook on server triggers `git pull` + restart
+- **CI/CD**: GitHub Actions (build + test + deploy via SSH)
+- **Runtime**: Phusion Passenger (Node.js)
 
 ---
 
@@ -16,27 +16,14 @@
 ```
 You push code to GitHub (main branch)
         ↓
-GitHub Actions runs CI (build + test)
+GitHub Actions: build + test
         ↓
-GitHub Actions commits built artifacts (dist/, server.cjs)
+GitHub Actions: SSH into Hostinger
         ↓
-GitHub Actions triggers webhook on server
-        ↓
-Server: git pull → npm install --omit=dev → Passenger restart
+Server: git pull → upload artifacts → npm install → Passenger restart
         ↓
 ✅ Live at smps.bowdot.online!
 ```
-
----
-
-## Key Components
-
-| Component | Purpose |
-|-----------|---------|
-| `.github/workflows/deploy.yml` | CI: build, test, commit artifacts, notify webhook |
-| `deploy-webhook.php` | Server endpoint that triggers git pull + restart |
-| `build-and-restart.sh` | Server-side: verify build, install deps, restart Passenger |
-| `.htaccess` | Passenger config + environment variables |
 
 ---
 
@@ -47,7 +34,7 @@ Just push to `main`:
 ```bash
 git push origin main
 ```
-GitHub Actions builds, commits artifacts, and triggers the webhook automatically.
+GitHub Actions builds, uploads artifacts, and restarts the server automatically.
 
 ### Manual (if needed)
 SSH into the server and run:
@@ -55,22 +42,27 @@ SSH into the server and run:
 ssh -p 65002 u906489923@82.29.157.108
 cd ~/domains/bowdot.online/smps-app
 git pull
-bash build-and-restart.sh
+npm install --omit=dev --ignore-scripts
+mkdir -p tmp && touch tmp/restart.txt
 ```
 
-### Manual webhook trigger
-```bash
-curl -X POST https://smps.bowdot.online/deploy-webhook.php \
-  -H "Content-Type: application/json" \
-  -H "X-Hub-Signature-256: sha256=$(echo -n '{"ref":"refs/heads/main","head_commit":{"id":"manual","message":"manual deploy"}}' | openssl dgst -sha256 -hmac 'smps-deploy-webhook-2025' | awk '{print $NF}')" \
-  -d '{"ref":"refs/heads/main","head_commit":{"id":"manual","message":"manual deploy"}}'
-```
+---
+
+## Key Files
+
+| File | Purpose |
+|------|---------|
+| `.github/workflows/deploy.yml` | CI/CD: build, test, deploy via SSH |
+| `.github/workflows/db-migrate.yml` | Database reseed (manual trigger) |
+| `start.sh` | Server-side: start Node.js app |
+| `.htaccess` | Passenger config |
+| `server.js` | Entry point for Passenger |
 
 ---
 
 ## Environment Variables
 
-Set in **hPanel → Advanced → Node.js → Environment Variables** OR in `.env.production` on the server:
+Set in **hPanel → Advanced → Node.js → Environment Variables**:
 
 | Variable | Value |
 |----------|-------|
@@ -79,21 +71,21 @@ Set in **hPanel → Advanced → Node.js → Environment Variables** OR in `.env
 | `MYSQL_USER` | `u906489923_u906489923_smp` |
 | `MYSQL_PASSWORD` | *(your MySQL password)* |
 | `MYSQL_DATABASE` | `u906489923_u906489923_smp` |
-| `JWT_SECRET` | `791794abc...` |
+| `JWT_SECRET` | *(your JWT secret)* |
 | `PORT` | `3000` |
 | `NODE_ENV` | `production` |
-| `OLLAMA_API_KEY` | *(your key)* |
-| `OLLAMA_BASE_URL` | `https://ollama.com/v1` |
-| `OLLAMA_MODEL` | `qwen3.5:397b` |
 
 ---
 
-## GitHub Secrets (for CI only)
+## GitHub Secrets
 
 | Secret | Purpose |
 |--------|---------|
-| Webhook secret | `smps-deploy-webhook-2025` |
-| Others | Stored for reference; not used for SSH deployment |
+| `HOSTINGER_SSH_KEY` | SSH private key for deployment |
+| `HOSTINGER_HOST` | `82.29.157.108` |
+| `HOSTINGER_PORT` | `65002` |
+| `HOSTINGER_USER` | `u906489923` |
+| `HOSTINGER_PATH` | `~/domains/bowdot.online/smps-app` |
 
 ---
 
@@ -104,6 +96,5 @@ Set in **hPanel → Advanced → Node.js → Environment Variables** OR in `.env
 | **Live URL** | https://smps.bowdot.online |
 | **Health check** | https://smps.bowdot.online/api/health |
 | **SuperAdmin** | lab@bowdot.com / 3791 |
-| **CI pipeline** | GitHub Actions (build + test) |
-| **Deployment** | Webhook → git pull → restart |
-| **Webhook URL** | https://smps.bowdot.online/deploy-webhook.php |
+| **CI/CD** | GitHub Actions → SSH deploy |
+| **App runner** | Phusion Passenger (Node.js) |
