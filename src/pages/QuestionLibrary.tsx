@@ -281,18 +281,46 @@ export default function QuestionLibrary() {
   }, [sortedItems, groupMode]);
 
   // Stats
+  // Unique question count (always deduplicated, regardless of groupMode)
+  const uniqueCount = useMemo(() => {
+    const seen = new Map<string, DisplayItem>();
+    for (const q of libraryQuestions) {
+      const text = q.text.trim();
+      const key = text.toLowerCase();
+      const positions = questionPositionMap.get(text) || [];
+      const section = (q as any).defaultSection as EvalSection || getSectionByCategory(q.category);
+      if (!seen.has(key)) {
+        seen.set(key, { id: q.id, text, category: q.category as QuestionCategory, section, isSeed: positions.length > 0, positions, rawQuestion: q });
+      } else {
+        const existing = seen.get(key)!;
+        for (const p of positions) { if (!existing.positions.includes(p)) existing.positions.push(p); }
+      }
+    }
+    for (const q of allSeedItems) {
+      const text = q.text.trim();
+      const key = text.toLowerCase();
+      if (!seen.has(key)) {
+        seen.set(key, { id: q.id, text, category: q.category as QuestionCategory, section: q.section, isSeed: true, positions: q.positions, rawQuestion: q });
+      } else {
+        const existing = seen.get(key)!;
+        for (const p of q.positions) { if (!existing.positions.includes(p)) existing.positions.push(p); }
+      }
+    }
+    return seen.size;
+  }, [libraryQuestions, allSeedItems, questionPositionMap]);
+
   const stats = useMemo(() => {
     const bySection: Record<EvalSection, number> = { competencias: 0, tecnico: 0, blandas: 0 };
     allItems.forEach(i => bySection[i.section]++);
-    const usedInTemplates = allItems.filter(i => i.positions.length > 0).length;
-    const notInTemplates = allItems.filter(i => i.positions.length === 0).length;
+    const usedInTemplates = uniqueItems.filter(i => i.positions.length > 0).length;
+    const notInTemplates = uniqueItems.filter(i => i.positions.length === 0).length;
     return {
-      total: allItems.length,
+      total: uniqueCount,
       usedInTemplates,
       notInTemplates,
       bySection,
     };
-  }, [allItems]);
+  }, [allItems, uniqueCount]);
 
   const toggleGroup = (key: string) => {
     setExpandedGroups(prev => {
@@ -580,7 +608,7 @@ export default function QuestionLibrary() {
 
       {/* Results count */}
       <p className="text-xs text-muted-foreground">
-        {filteredItems.length === allItems.length ? `${allItems.length} preguntas` : `${filteredItems.length} de ${allItems.length} preguntas`}
+        {filteredItems.length === uniqueCount ? `${uniqueCount} preguntas` : `${filteredItems.length} de ${uniqueCount} preguntas`}
       </p>
 
       {/* Grouped question lists */}
@@ -624,6 +652,14 @@ export default function QuestionLibrary() {
                                 {item.positions.length} puesto{item.positions.length !== 1 ? 's' : ''}
                               </span>
                             )}
+                            {item.positions.length > 0 && groupMode !== 'position' && (
+                              <div className="flex items-center gap-1 mt-0.5 flex-wrap">
+                                {item.positions.slice(0, 5).map(p => (
+                                  <span key={p} className="text-[9px] bg-muted/50 text-muted-foreground px-1 py-0.5 rounded">{getPositionLabel(p as Position) || p}</span>
+                                ))}
+                                {item.positions.length > 5 && <span className="text-[9px] text-muted-foreground">+{item.positions.length - 5}</span>}
+                              </div>
+                            )}
                           </div>
                         </div>
                         <div className="flex items-center gap-2 flex-shrink-0">
@@ -652,10 +688,10 @@ export default function QuestionLibrary() {
                                 {item.positions.length > 0 ? `En ${item.positions.length} plantilla${item.positions.length !== 1 ? 's' : ''}` : 'Sin plantilla'}
                               </span>
                             </div>
-                            {item.positions.length > 0 && groupMode !== 'position' && (
+                            {item.positions.length > 0 && (
                               <div className="flex items-center gap-1 mt-1.5 flex-wrap">
                                 {item.positions.map(p => (
-                                  <span key={p} className="text-[10px] bg-muted/50 text-muted-foreground px-1.5 py-0.5 rounded">
+                                  <span key={p} className="text-[10px] bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded border border-blue-200">
                                     {getPositionLabel(p as Position) || p}
                                   </span>
                                 ))}
