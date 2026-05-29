@@ -11,8 +11,9 @@ import {
 import { useState, useEffect, useRef } from 'react';
 import { NavLink } from '@/components/NavLink';
 import PeriodEndAlert from '@/components/PeriodEndAlert';
-import { CURRENT_PERIOD, getPositionLevel } from '@/lib/evaluationConfig';
+import { getPositionLevel } from '@/lib/evaluationConfig';
 import { useEvalConfigInit } from '@/hooks/useEvalConfigInit';
+import { useCurrentPeriod } from '@/hooks/useCurrentPeriod';
 
 function Badge({ count }: { count: number }) {
   if (count === 0) return null;
@@ -21,10 +22,11 @@ function Badge({ count }: { count: number }) {
 
 export default function Layout() {
   useEvalConfigInit();
+  const currentPeriod = useCurrentPeriod();
   const { user: currentUser, logout } = useAuth();
-  const { data: assignments = [] } = useAssignments(CURRENT_PERIOD);
+  const { data: assignments = [] } = useAssignments(currentPeriod);
   const { data: systemStatus } = useSystemStatus();
-  const { data: evaluations = [] } = useEvaluations({ period: CURRENT_PERIOD });
+  const { data: evaluations = [] } = useEvaluations({ period: currentPeriod });
   const { data: announcements = [] } = useAnnouncements();
   const { data: vacationRequests = [] } = useVacationRequests();
   const { data: moduleConfig } = useSystemModules();
@@ -63,16 +65,16 @@ export default function Layout() {
   const isAdminOrSuper = isAdmin || isSuperUser;
   const canViewAll = isAdmin || isSuperUser || isManagingPartner;
 
-  const hasTeam = assignments.some(a => a.supervisorId === currentUser.id && a.period === CURRENT_PERIOD);
+  const hasTeam = assignments.some(a => a.supervisorId === currentUser.id && a.period === currentPeriod);
   const myLevel = getPositionLevel(currentUser.position);
 
   const pendingEvalCount = (() => {
     if (!modules.evaluations) return 0;
-    const myEvaluados = assignments.filter(a => a.supervisorId === currentUser.id && a.period === CURRENT_PERIOD).map(a => a.employeeId);
-    const selfDone = evaluations.some(e => e.evaluatedId === currentUser.id && e.type === 'self' && e.period === CURRENT_PERIOD);
+    const myEvaluados = assignments.filter(a => a.supervisorId === currentUser.id && a.period === currentPeriod).map(a => a.employeeId);
+    const selfDone = evaluations.some(e => e.evaluatedId === currentUser.id && e.type === 'self' && e.period === currentPeriod);
     let count = selfDone ? 0 : 1;
     myEvaluados.forEach(eid => {
-      const hasSupervisorEval = evaluations.some(e => e.evaluatedId === eid && e.type === 'supervisor' && e.period === CURRENT_PERIOD);
+      const hasSupervisorEval = evaluations.some(e => e.evaluatedId === eid && e.type === 'supervisor' && e.period === currentPeriod);
       if (!hasSupervisorEval) count++;
     });
     return count;
@@ -92,7 +94,7 @@ export default function Layout() {
 
   const pendingVacationCount = (() => {
     if (!modules.vacations) return 0;
-    const myEvaluados = assignments.filter(a => a.supervisorId === currentUser.id && a.period === CURRENT_PERIOD).map(a => a.employeeId);
+    const myEvaluados = assignments.filter(a => a.supervisorId === currentUser.id && a.period === currentPeriod).map(a => a.employeeId);
     return vacationRequests.filter(r => {
       if (r.status !== 'pending') return false;
       if (isAdmin || isSuperUser || isManagingPartner) return true;
@@ -106,7 +108,7 @@ export default function Layout() {
   const evalItems = [
     { to: '/dashboard', icon: LayoutDashboard, label: 'Panel', show: true },
     { to: '/my-profile', icon: UserIcon, label: 'Mis Eval.', show: showEvalModule },
-    { to: '/self-evaluation', icon: ClipboardCheck, label: 'Autoeval.', show: showEvalModule, badge: !showEvalModule ? 0 : (evaluations.some(e => e.evaluatedId === currentUser.id && e.type === 'self' && e.period === CURRENT_PERIOD) ? 0 : 1) },
+    { to: '/self-evaluation', icon: ClipboardCheck, label: 'Autoeval.', show: showEvalModule, badge: !showEvalModule ? 0 : (evaluations.some(e => e.evaluatedId === currentUser.id && e.type === 'self' && e.period === currentPeriod) ? 0 : 1) },
     { to: '/evaluations', icon: Users, label: 'Evaluar', show: (hasTeam || isAdminOrSuper || isManagingPartner) && showEvalModule, badge: pendingEvalCount },
     { to: '/my-action-plan', icon: FileText, label: 'Plan Acción', show: showEvalModule && showCycles },
     { to: '/reports', icon: BarChart3, label: 'Reportes', show: canViewAll && showEvalModule },
@@ -156,7 +158,7 @@ export default function Layout() {
         <div className="flex items-center gap-2">
           <span className="text-sm text-primary-foreground/70 hidden sm:block">{currentUser.name}</span>
           <span className="text-xs text-primary-foreground/40 hidden sm:block">&middot;</span>
-          <span className="text-xs text-primary-foreground/50 hidden sm:block">{CURRENT_PERIOD}</span>
+          <span className="text-xs text-primary-foreground/50 hidden sm:block">{currentPeriod}</span>
           <button onClick={() => { logout(); navigate('/login'); }} className="ml-2 p-2 rounded-md text-primary-foreground/60 hover:text-primary-foreground hover:bg-primary-foreground/10 transition-[background-color,color] duration-150" title="Cerrar sesión">
             <LogOut className="h-4 w-4" />
           </button>
