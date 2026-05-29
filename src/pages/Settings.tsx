@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUsers, useEvaluations, useAssignments, useActionPlans } from "@/api/queries";
 import { Evaluation } from '@/types';
-import { CURRENT_PERIOD, PERIODS, getPositionLabel, getScoreLabels, getSectionWeights, SECTION_ORDER } from '@/lib/evaluationConfig';
+import { getPositionLabel, getScoreLabels, getSectionWeights, SECTION_ORDER } from '@/lib/evaluationConfig';
+import { useCurrentPeriod } from '@/hooks/useCurrentPeriod';
 import { useTemplateQuestions } from '@/hooks/useEvaluationConfig';
 import { Eye, FileText, ChevronDown, ChevronUp, Lock, Key } from 'lucide-react';
 
@@ -12,7 +13,10 @@ export default function SettingsPage() {
   const { data: evaluations = [] } = useEvaluations();
   const { data: assignments = [] } = useAssignments();
   const { data: actionPlans = [] } = useActionPlans();
-  const [selectedPeriod, setSelectedPeriod] = useState(CURRENT_PERIOD);
+  const currentPeriod = useCurrentPeriod();
+  const { data: periodsData = [] } = usePeriods();
+  const periods = periodsData.map((p: any) => p.period).sort();
+  const [selectedPeriod, setSelectedPeriod] = useState(currentPeriod);
   const [expandedEval, setExpandedEval] = useState<string | null>(null);
 
   // Password change state
@@ -120,7 +124,7 @@ export default function SettingsPage() {
         </div>
         <select value={selectedPeriod} onChange={e => setSelectedPeriod(e.target.value)}
           className="px-4 py-2 rounded-lg border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-accent">
-          {PERIODS.map(p => <option key={p} value={p}>{p}</option>)}
+          {periods.map(p => <option key={p} value={p}>{p}</option>)}
         </select>
       </div>
 
