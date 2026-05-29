@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useUsers, useAssignments, useCreateAssignment, useDeleteAssignment, useEvaluations } from '@/api/queries';
+import { useUsers, useAssignments, useCreateAssignment, useDeleteAssignment, useEvaluations , usePeriods } from '@/api/queries';
 import { Position } from '@/types';
 import { getPositionLabel } from '@/lib/evaluationConfig';
-import { CURRENT_PERIOD, PERIODS, getLegalHierarchy, getAdminHierarchy } from '@/lib/evaluationConfig';
+import { getLegalHierarchy, getAdminHierarchy } from '@/lib/evaluationConfig';
+import { useCurrentPeriod } from '@/hooks/useCurrentPeriod';
 import { Plus, X, AlertTriangle } from 'lucide-react';
 import HierarchyFilters, { filterByHierarchy } from '@/components/HierarchyFilters';
 
@@ -14,7 +15,10 @@ export default function AssignSupervisors() {
   const addAssignment = useCreateAssignment().mutate;
   const removeAssignment = useDeleteAssignment().mutate;
   const { data: evaluations = [] } = useEvaluations();
-  const [selectedPeriod, setSelectedPeriod] = useState(CURRENT_PERIOD);
+  const currentPeriod = useCurrentPeriod();
+  const { data: periodsData = [] } = usePeriods();
+  const periods = periodsData.map((p: any) => p.period).sort();
+  const [selectedPeriod, setSelectedPeriod] = useState(currentPeriod);
   const [selectedEmployee, setSelectedEmployee] = useState<string | null>(null);
 
   // Filters for employee list
@@ -105,7 +109,7 @@ export default function AssignSupervisors() {
         </div>
         <select value={selectedPeriod} onChange={e => { setSelectedPeriod(e.target.value); setSelectedEmployee(null); }}
           className="px-4 py-2 rounded-lg border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-accent">
-          {PERIODS.map(p => <option key={p} value={p}>{p}</option>)}
+          {periods.map(p => <option key={p} value={p}>{p}</option>)}
         </select>
       </div>
 

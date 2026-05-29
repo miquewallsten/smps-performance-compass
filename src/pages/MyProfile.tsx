@@ -2,8 +2,9 @@ import { ScoreBadge } from '@/components/shared/ScoreBadge';
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { useUsers, useEvaluations, useAssignments, useObjectives } from '@/api/queries';
-import { CURRENT_PERIOD, PERIODS, getPositionLabel, getPositionLevel, LEVEL_LABELS } from '@/lib/evaluationConfig';
+import { useUsers, useEvaluations, useAssignments, useObjectives , usePeriods } from '@/api/queries';
+import { getPositionLabel, getPositionLevel, LEVEL_LABELS } from '@/lib/evaluationConfig';
+import { useCurrentPeriod } from '@/hooks/useCurrentPeriod';
 import { User as UserIcon, Target, TrendingUp, Sparkles, Clock } from 'lucide-react';
 
 function TrafficLight({ value }: { value: number }) {
@@ -25,7 +26,10 @@ export default function MyProfile() {
   const { data: evaluations = [] } = useEvaluations();
   const { data: assignments = [] } = useAssignments();
   const { data: users = [] } = useUsers();
-  const [period, setPeriod] = useState(CURRENT_PERIOD);
+  const currentPeriod = useCurrentPeriod();
+  const { data: periodsData = [] } = usePeriods();
+  const periods = periodsData.map((p: any) => p.period).sort();
+  const [period, setPeriod] = useState(currentPeriod);
 
   if (!currentUser) return null;
   const level = getPositionLevel(currentUser.position);
@@ -77,7 +81,7 @@ export default function MyProfile() {
         </div>
         <select value={period} onChange={e => setPeriod(e.target.value)}
           className="px-3 py-2 rounded-lg border border-input bg-background text-sm">
-          {PERIODS.map(p => <option key={p} value={p}>{p}</option>)}
+          {periods.map(p => <option key={p} value={p}>{p}</option>)}
         </select>
       </div>
 

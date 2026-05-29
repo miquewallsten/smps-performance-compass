@@ -1,10 +1,11 @@
 import { useState, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useUsers, useObjectives, useCreateObjectives, useAssignments, useSubmitObjectives, useReviewObjective } from '@/api/queries';
+import { useUsers, useObjectives, useCreateObjectives, useAssignments, useSubmitObjectives, useReviewObjective , usePeriods } from '@/api/queries';
 import {
   AdminObjective, LegalObjective, PersonalObjectives as POType, User,
 } from '@/types';
-import { CURRENT_PERIOD, PERIODS, getPositionLabel, getPositionLevel } from '@/lib/evaluationConfig';
+import { getPositionLabel, getPositionLevel } from '@/lib/evaluationConfig';
+import { useCurrentPeriod } from '@/hooks/useCurrentPeriod';
 import { Target, ChevronDown, ChevronRight, Save, Plus, Trash2, Upload, Download } from 'lucide-react';
 
 // Dynamic import for xlsx to avoid "require is not defined" in browser
@@ -59,7 +60,10 @@ export default function PersonalObjectivesPage() {
   const submitObjectives = useSubmitObjectives().mutate;
   const reviewObjective = useReviewObjective().mutate;
   const [expandedUser, setExpandedUser] = useState<string | null>(null);
-  const [period, setPeriod] = useState(CURRENT_PERIOD);
+  const currentPeriod = useCurrentPeriod();
+  const { data: periodsData = [] } = usePeriods();
+  const periods = periodsData.map((p: any) => p.period).sort();
+  const [period, setPeriod] = useState(currentPeriod);
   const [editingUser, setEditingUser] = useState<string | null>(null);
   const [editAdminObjs, setEditAdminObjs] = useState<AdminObjective[]>([]);
   const [editLegalObj, setEditLegalObj] = useState<LegalObjective>(emptyLegalObj());
@@ -458,7 +462,7 @@ export default function PersonalObjectivesPage() {
           )}
           <select value={period} onChange={e => setPeriod(e.target.value)}
             className="px-3 py-1.5 rounded-lg border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-accent">
-            {PERIODS.map(p => <option key={p} value={p}>{p}</option>)}
+            {periods.map(p => <option key={p} value={p}>{p}</option>)}
           </select>
         </div>
       </div>
