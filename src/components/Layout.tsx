@@ -4,10 +4,10 @@ import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 import {
   Clock,
   LayoutDashboard, ClipboardCheck, Users, BarChart3, Settings, LogOut,
-  UserCheck, ClipboardList, ChevronLeft, ChevronRight, Menu, Map, Shield, FileText, Target, Bot,
+  UserCheck, ChevronLeft, ChevronRight, Menu, Shield, FileText, Target, Bot,
   Megaphone, Palmtree, ChevronDown, HelpCircle, BookOpen, Calendar, User as UserIcon, Briefcase, TrendingUp
 } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { NavLink } from '@/components/NavLink';
 import PeriodEndAlert from '@/components/PeriodEndAlert';
 import { CURRENT_PERIOD, getPositionLevel } from '@/lib/evaluationConfig';
@@ -81,7 +81,7 @@ export default function Layout() {
     if (!modules.communications) return 0;
     return announcements.filter(a => {
       if (a.archived) return false;
-      if (a.readBy.includes(currentUser.id)) return false;
+      if (a.readBy && a.readBy.includes(currentUser.id)) return false;
       if (a.audience === 'all') return true;
       if (a.audience === myLevel) return true;
       if (isAdminOrSuper || isManagingPartner || isSocio) return true;
@@ -99,45 +99,41 @@ export default function Layout() {
     }).length;
   })();
 
-  const showEvalModule = modules.evaluations || isSuperUser;
-  const showCommModule = modules.communications || isSuperUser;
-  const showVacModule = modules.vacations || isSuperUser;
+  const showEvalModule = modules.evaluations;
+  const showCycles = currentUser.position !== 'pasante_carrera' && currentUser.position !== 'pasante' && currentUser.position !== 'pasante_corporativo';
 
   const evalItems = [
     { to: '/dashboard', icon: LayoutDashboard, label: 'Panel', show: true },
-    { to: '/my-profile', icon: UserIcon, label: 'Mis Eval.', show: true },
-    { to: `/users/${currentUser.id}/timeline`, icon: Clock, label: 'Mi Historial', show: true },
-    { to: '/self-evaluation', icon: ClipboardCheck, label: 'Mi Eval.', show: true, badge: pendingEvalCount > 0 ? 1 : 0 },
-    { to: '/my-action-plan', icon: FileText, label: 'Plan Acción', show: true },
-    { to: '/evaluations', icon: ClipboardList, label: 'Evaluar', show: hasTeam || isAdminOrSuper || isManagingPartner, badge: pendingEvalCount > 1 ? pendingEvalCount - (evaluations.some(e => e.evaluatedId === currentUser.id && e.type === 'self' && e.period === CURRENT_PERIOD) ? 0 : 0) : 0 },
+    { to: '/self-evaluation', icon: ClipboardCheck, label: 'Mi Eval.', show: showEvalModule, badge: !showEvalModule ? 0 : (evaluations.some(e => e.evaluatedId === currentUser.id && e.type === 'self' && e.period === CURRENT_PERIOD) ? 0 : 1) },
+    { to: '/evaluations', icon: Users, label: 'Evaluaciones', show: hasTeam && showEvalModule, badge: pendingEvalCount },
+    { to: '/reports', icon: BarChart3, label: 'Reportes', show: canViewAll && showEvalModule },
+    { to: '/score-analysis', icon: TrendingUp, label: 'Análisis', show: canViewAll && showEvalModule },
   ];
 
   const userGroupItems = [
-    { to: '/users', icon: Users, label: 'Usuarios', show: isAdminOrSuper },
-    { to: '/positions', icon: Briefcase, label: 'Áreas y Puestos', show: isAdminOrSuper },
+    { to: '/users', icon: UserIcon, label: 'Usuarios', show: isAdminOrSuper },
+    { to: '/positions', icon: Briefcase, label: 'Puestos', show: isSuperUser },
+    { to: '/assign', icon: UserCheck, label: 'Asignar', show: canViewAll && showEvalModule },
+    { to: '/orgchart', icon: Menu, label: 'Mapa', show: canViewAll && showEvalModule },
+    { to: '/vacations', icon: Palmtree, label: 'Vacaciones', show: modules.vacations, badge: pendingVacationCount },
   ];
 
   const otherItems = [
-    { to: '/reports', icon: BarChart3, label: 'Reportes', show: isAdminOrSuper || isManagingPartner },
-    { to: '/score-analysis', icon: TrendingUp, label: 'Calificaciones', show: isAdminOrSuper || isManagingPartner },
-    { to: '/orgchart', icon: Map, label: 'Organigrama', show: isAdminOrSuper || isManagingPartner || isSocio },
-    { to: '/assign', icon: UserCheck, label: 'Asignar', show: isAdminOrSuper },
-    { to: '/evaluation-templates', icon: BookOpen, label: 'Plantillas', show: isAdminOrSuper },
-    { to: '/question-library', icon: BookOpen, label: 'Preguntas', show: isAdminOrSuper },
-    { to: '/personal-objectives', icon: Target, label: 'Objetivos', show: showEvalModule && (isAdminOrSuper || isManagingPartner || isSocio || hasTeam) },
-    { to: '/communications', icon: Megaphone, label: 'Comunicación', show: showCommModule, badge: unreadAnnouncementCount },
-    { to: '/vacations', icon: Palmtree, label: 'Vacaciones', show: showVacModule, badge: pendingVacationCount },
+    { to: '/my-action-plan', icon: FileText, label: 'Plan Acción', show: showEvalModule && showCycles },
+    { to: '/personal-objectives', icon: Target, label: 'Objetivos', show: showEvalModule && showCycles },
+    { to: '/communications', icon: Megaphone, label: 'Comunicación', show: modules.communications, badge: unreadAnnouncementCount },
+    { to: '/copilot', icon: Bot, label: 'Copilot', show: modules.copilot && isSuperUser },
+    { to: '/question-library', icon: BookOpen, label: 'Preguntas', show: isSuperUser },
     { to: '/period-config', icon: Calendar, label: 'Periodos', show: isAdminOrSuper },
     { to: '/access', icon: Shield, label: 'Acceso Sistema', show: isSuperUser },
-    { to: '/copilot', icon: Bot, label: 'Copilot', show: modules.copilot && isSuperUser },
     { to: '/settings', icon: Settings, label: 'Perfil', show: true },
   ];
 
   const renderNavItem = (item: { to: string; icon: React.ElementType; label: string; badge?: number }) => {
     const isActive = location.pathname === item.to;
     return (
-      <NavLink to={item.to} className={`flex items-center gap-3 px-3 py-1.5 rounded-md text-sm transition-[background-color,color] duration-150 ${isActive ? 'bg-sidebar-accent text-sidebar-primary font-medium' : 'text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent/50'}`}>
-        <item.icon className="h-4 w-4 flex-shrink-0" />
+      <NavLink to={item.to} className={`group flex items-center gap-3 px-3 py-1.5 rounded-md text-sm transition-[background-color,color,transform] duration-150 ${isActive ? 'bg-sidebar-accent text-sidebar-primary font-medium' : 'text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent/50'}`}>
+        <item.icon className={`h-4 w-4 flex-shrink-0 transition-[transform,color] duration-150 ${isActive ? 'text-sidebar-primary' : 'text-sidebar-foreground/40 group-hover:text-sidebar-foreground/70'}`} />
         {!collapsed && <span className="truncate">{item.label}</span>}
         {!collapsed && item.badge && item.badge > 0 && <Badge count={item.badge} />}
       </NavLink>
@@ -145,32 +141,27 @@ export default function Layout() {
   };
 
   return (
-    <div className="h-screen flex flex-col bg-background overflow-hidden">
-      <header className="fixed top-0 left-0 right-0 z-50 h-14 bg-primary text-primary-foreground flex items-center px-4">
-        <button onClick={() => setCollapsed(!collapsed)} className="p-2 rounded-md hover:bg-sidebar-accent transition-colors mr-3 md:block">
-          <Menu className="h-5 w-5" />
-        </button>
-        <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded bg-accent flex items-center justify-center">
-            <span className="text-accent-foreground text-[10px] font-bold font-display leading-none">SM</span>
-          </div>
-          <span className="font-display font-semibold text-sm hidden sm:block">SMPS Performance</span>
-          {isSuperUser && <span className="text-[10px] bg-yellow-400/20 text-yellow-300 px-1.5 py-0.5 rounded-full font-semibold">SUPERUSER</span>}
-          {!isSuperUser && isManagingPartner && <span className="text-[10px] bg-accent/20 text-accent-foreground px-1.5 py-0.5 rounded-full">SOCIO ADM</span>}
-          {!isSuperUser && !isManagingPartner && isAdmin && <span className="text-[10px] bg-yellow-400/10 text-yellow-600 px-1.5 py-0.5 rounded-full">ADMIN</span>}
+    <div className="min-h-screen flex flex-col bg-background">
+      {/* Header */}
+      <header className="h-14 bg-primary text-primary-foreground flex items-center justify-between px-4 sticky top-0 z-40 border-b border-primary/10">
+        <div className="flex items-center gap-3">
+          <button onClick={() => setCollapsed(!collapsed)} className="hidden md:flex items-center justify-center h-8 w-8 rounded-md text-primary-foreground/60 hover:text-primary-foreground hover:bg-primary-foreground/10 transition-[background-color,color,transform] duration-150 active:scale-95" title={collapsed ? 'Expandir menú' : 'Colapsar menú'}>
+            <Menu className="h-4 w-4" />
+          </button>
+          <h1 className="font-display text-lg font-bold tracking-tight">Performance Compass</h1>
         </div>
-        <div className="ml-auto flex items-center gap-2">
-          <span className="text-primary-foreground/60 text-xs hidden lg:block">{currentUser.name}</span>
-          <a href="/help" target="_blank" rel="noopener noreferrer" className="p-1.5 rounded-md text-primary-foreground/60 hover:text-primary-foreground hover:bg-sidebar-accent/50 transition-colors" title="Centro de ayuda">
-            <HelpCircle className="h-4 w-4" />
-          </a>
-          <button onClick={() => { logout(); navigate('/login'); }} className="p-1.5 rounded-md text-primary-foreground/60 hover:text-primary-foreground hover:bg-sidebar-accent/50 transition-colors" title="Cerrar sesión">
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-primary-foreground/70 hidden sm:block">{currentUser.name}</span>
+          <span className="text-xs text-primary-foreground/40 hidden sm:block">&middot;</span>
+          <span className="text-xs text-primary-foreground/50 hidden sm:block">{CURRENT_PERIOD}</span>
+          <button onClick={() => { logout(); navigate('/login'); }} className="ml-2 p-2 rounded-md text-primary-foreground/60 hover:text-primary-foreground hover:bg-primary-foreground/10 transition-[background-color,color] duration-150" title="Cerrar sesión">
             <LogOut className="h-4 w-4" />
           </button>
         </div>
       </header>
 
       <div className="flex flex-1 pt-14 min-h-0 overflow-hidden">
+        {/* Sidebar */}
         <aside className={`${collapsed ? 'w-14' : 'w-52'} bg-sidebar border-r border-sidebar-border transition-[width] duration-200 flex-shrink-0 hidden md:flex flex-col sticky top-14 self-stretch`}>
           <nav className="flex-1 py-3 px-2 space-y-0.5 overflow-y-auto">
             {showEvalModule && (
@@ -193,7 +184,6 @@ export default function Layout() {
                 {!collapsed && <div className="border-b border-sidebar-border my-1.5" />}
               </>
             )}
-            {/* Usuarios Group */}
             {userGroupItems.some(item => item.show) && (
               <>
                 {!collapsed && (
@@ -227,6 +217,7 @@ export default function Layout() {
           </div>
         </aside>
 
+        {/* Mobile bottom nav */}
         <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 border-t border-sidebar-border mobile-bottom-nav flex justify-around px-1 py-0.5">
           {[
             { to: '/dashboard', icon: LayoutDashboard, label: 'Panel' },
@@ -235,25 +226,24 @@ export default function Layout() {
             { to: '/vacations', icon: Palmtree, label: 'Vacaciones' },
             { to: '/settings', icon: Settings, label: 'Más' },
           ].map(item => (
-            <NavLink key={item.to} to={item.to} className="flex flex-col items-center py-1 px-2 text-sidebar-foreground/50 transition-colors" activeClassName="text-sidebar-primary">
+            <NavLink key={item.to} to={item.to} className="flex flex-col items-center py-1 px-2 text-sidebar-foreground/50 transition-[color] duration-150" activeClassName="text-sidebar-primary">
               <item.icon className="h-5 w-5" />
               <span className="text-[10px] mt-0.5 leading-tight">{item.label}</span>
             </NavLink>
           ))}
         </div>
 
+        {/* Main content with page transitions */}
         {location.pathname === '/copilot' ? (
-          <div
-            className="flex-1 min-h-0"
-          >
+          <div className="flex-1 min-h-0">
             <Outlet />
           </div>
         ) : location.pathname.includes('/timeline') ? (
-          <main className={`flex-1 min-h-0 overflow-hidden pb-16 md:pb-0`}>
+          <main className="flex-1 min-h-0 overflow-hidden pb-16 md:pb-0">
             <Outlet />
           </main>
         ) : (
-          <main className={`flex-1 min-h-0 overflow-auto pb-16 md:pb-0`}>
+          <main className="flex-1 min-h-0 overflow-auto pb-16 md:pb-0">
             <div key={location.pathname} className="p-4 md:p-5 max-w-6xl mx-auto smps-page-enter">
               <PeriodEndAlert />
               <Outlet />
