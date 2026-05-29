@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTemplateQuestions, useLibraryQuestionsConfig, useCreateLibraryQuestionConfig, useUpdateLibraryQuestionConfig, useDeleteLibraryQuestionConfig } from '@/hooks/useEvaluationConfig';
 import { SECTION_LABELS, SECTION_ORDER, getSectionByCategory, getPositionLabel, getCategories } from '@/lib/evaluationConfig';
@@ -188,9 +188,10 @@ export default function QuestionLibrary() {
   }, [allQuestions]);
 
   // Auto-expand groups on mount or when grouping changes
-  useMemo(() => {
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
     setExpandedGroups(new Set(grouped.keys()));
-  }, [grouped]);
+  }, [grouped.size, groupMode]);
 
   const toggleGroup = (key: string) => {
     setExpandedGroups(prev => {
