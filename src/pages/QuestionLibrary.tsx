@@ -14,10 +14,10 @@ export function getCategoriesList(): QuestionCategory[] {
   return []; // DB always loads categories — no hardcoded fallback needed
 }
 
-const SECTION_COLORS: Record<EvalSection, { border: string; bg: string; text: string; dot: string }> = {
-  competencias: { border: 'border-l-blue-500', bg: 'bg-blue-50', text: 'text-blue-700', dot: 'bg-blue-500' },
-  tecnico:      { border: 'border-l-violet-500', bg: 'bg-violet-50', text: 'text-violet-700', dot: 'bg-violet-500' },
-  blandas:      { border: 'border-l-emerald-500', bg: 'bg-emerald-50', text: 'text-emerald-700', dot: 'bg-emerald-500' },
+const SECTION_COLORS: Record<EvalSection, { border: string; bg: string; text: string; dot: string; bar: string }> = {
+  competencias: { border: 'border-l-blue-500', bg: 'bg-blue-50', text: 'text-blue-700', dot: 'bg-blue-500', bar: 'bg-blue-500' },
+  tecnico:      { border: 'border-l-violet-500', bg: 'bg-violet-50', text: 'text-violet-700', dot: 'bg-violet-500', bar: 'bg-violet-500' },
+  blandas:      { border: 'border-l-emerald-500', bg: 'bg-emerald-50', text: 'text-emerald-700', dot: 'bg-emerald-500', bar: 'bg-emerald-500' },
 };
 
 const SECTION_LABELS: Record<EvalSection, string> = {
@@ -274,26 +274,58 @@ export default function QuestionLibrary() {
         )}
       </div>
 
-      {/* Section summary pills */}
-      <div className="flex items-center gap-2 flex-wrap">
-        {SECTION_ORDER.map(sec => {
-          const count = stats.bySection[sec] || 0;
-          const pct = stats.total > 0 ? Math.round((count / stats.total) * 100) : 0;
-          const color = SECTION_COLORS[sec];
-          return (
-            <button key={sec} onClick={() => {
-              const existing = filters.find(f => f.type === 'section' && f.value === sec);
-              if (existing) removeFilter('section', sec);
-              else addFilter('section', sec, SECTION_LABELS[sec]);
-            }}
-              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-xs font-medium transition-colors ${filters.some(f => f.type === 'section' && f.value === sec) ? `${color.bg} ${color.text} border-current` : 'bg-background border-input hover:bg-muted'}`}
-            >
-              <span className={`w-2 h-2 rounded-full ${color.dot}`} />
-              {SECTION_LABELS[sec]} <span className="text-muted-foreground">{count}</span>
-              <span className="text-muted-foreground/50">{pct}%</span>
-            </button>
-          );
-        })}
+      {/* Section composition bar */}
+      <div className="rounded-lg border bg-card p-3">
+        <div className="flex items-center gap-3 mb-2">
+          <span className="text-[10px] text-muted-foreground uppercase tracking-widest">Distribución</span>
+          <span className="text-[10px] text-muted-foreground tabular-nums">{stats.total} preguntas</span>
+        </div>
+        {/* Stacked bar */}
+        <div className="flex w-full h-3 rounded-full overflow-hidden bg-muted">
+          {SECTION_ORDER.map(sec => {
+            const count = stats.bySection[sec] || 0;
+            const pct = stats.total > 0 ? (count / stats.total) * 100 : 0;
+            const color = SECTION_COLORS[sec];
+            if (pct === 0) return null;
+            return (
+              <button
+                key={sec}
+                onClick={() => {
+                  const existing = filters.find(f => f.type === 'section' && f.value === sec);
+                  if (existing) removeFilter('section', sec);
+                  else addFilter('section', sec, SECTION_LABELS[sec]);
+                }}
+                className={`${color.bar} transition-[opacity] duration-150 hover:opacity-80 relative group`}
+                style={{ width: `${pct}%` }}
+                title={`${SECTION_LABELS[sec]}: ${count} (${Math.round(pct)}%)`}
+              >
+                {pct > 18 && <span className="absolute inset-0 flex items-center justify-center text-[9px] font-bold text-white/90">{Math.round(pct)}%</span>}
+              </button>
+            );
+          })}
+        </div>
+        {/* Legend */}
+        <div className="flex items-center gap-4 mt-2">
+          {SECTION_ORDER.map(sec => {
+            const count = stats.bySection[sec] || 0;
+            const pct = stats.total > 0 ? Math.round((count / stats.total) * 100) : 0;
+            const color = SECTION_COLORS[sec];
+            const isActive = filters.some(f => f.type === 'section' && f.value === sec);
+            return (
+              <button key={sec} onClick={() => {
+                const existing = filters.find(f => f.type === 'section' && f.value === sec);
+                if (existing) removeFilter('section', sec);
+                else addFilter('section', sec, SECTION_LABELS[sec]);
+              }}
+                className={`flex items-center gap-1.5 text-xs transition-[opacity] duration-150 ${isActive ? 'opacity-100 font-medium' : 'opacity-60 hover:opacity-80'}`}>
+                <span className={`w-2 h-2 rounded-full ${color.dot}`} />
+                <span className={isActive ? color.text : 'text-foreground'}>{SECTION_LABELS[sec]}</span>
+                <span className="text-muted-foreground tabular-nums">{count}</span>
+                <span className="text-muted-foreground/50 tabular-nums">({pct}%)</span>
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {/* Controls bar */}
