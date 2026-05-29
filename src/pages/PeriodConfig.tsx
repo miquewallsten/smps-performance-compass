@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePeriods, useCreatePeriod } from '@/api/queries';
 import { PeriodConfig } from '@/types';
-import { PERIODS } from '@/lib/evaluationConfig';
+import { usePeriods } from '@/api/queries';
 import { Calendar, Save } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -50,10 +50,12 @@ function defaultsFor(period: string): PeriodConfig {
 }
 
 export default function PeriodConfigPage() {
+  const { data: periodsData = [] } = usePeriods();
+  const periods = periodsData.map((p: any) => p.period).sort();
   const { user: currentUser } = useAuth();
   const { data: periodConfigs = [] } = usePeriods();
   const createPeriodMut = useCreatePeriod();
-  const [selectedPeriod, setSelectedPeriod] = useState(PERIODS[0]);
+  const [selectedPeriod, setSelectedPeriod] = useState(periods[0] || '');
   const [saving, setSaving] = useState(false);
   const [seeded, setSeeded] = useState(false);
 
@@ -71,13 +73,13 @@ export default function PeriodConfigPage() {
   useEffect(() => {
     if (seeded || periodConfigs.length === 0) return;
     let needsSeed = false;
-    PERIODS.forEach(p => {
+    periods.forEach(p => {
       if (!periodConfigs.find(c => c.period === p)) {
         needsSeed = true;
       }
     });
     if (needsSeed) {
-      PERIODS.forEach(p => {
+      periods.forEach(p => {
         if (!periodConfigs.find(c => c.period === p)) {
           createPeriodMut.mutate(defaultsFor(p));
         }
@@ -132,7 +134,7 @@ export default function PeriodConfigPage() {
         </div>
         <select value={selectedPeriod} onChange={e => handlePeriodChange(e.target.value)}
           className="px-4 py-2 rounded-lg border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-accent">
-          {PERIODS.map(p => <option key={p} value={p}>{p}</option>)}
+          {periods.map(p => <option key={p} value={p}>{p}</option>)}
         </select>
       </div>
 
