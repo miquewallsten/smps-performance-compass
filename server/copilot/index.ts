@@ -210,7 +210,9 @@ router.post('/chat', upload.single('file'), async (req: Request, res: Response) 
     const cfg = await db.get('SELECT * FROM copilot_config WHERE id=1') as Record<string, unknown>;
     if (!cfg) return res.status(500).json({ error: 'Copilot not configured' });
 
-    const endpoint = (cfg.api_base_url as string) || process.env.OLLAMA_BASE_URL || 'https://ollama.com/v1';
+    const baseUrl = (cfg.api_base_url as string) || process.env.OLLAMA_BASE_URL || 'https://ollama.com/v1';
+    // Ensure we use the full chat completions endpoint, not just the base URL
+    const endpoint = baseUrl.endsWith('/chat/completions') ? baseUrl : baseUrl.replace(/\/+$/, '') + '/chat/completions';
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
     if (cfg.api_key) headers['Authorization'] = `Bearer ${cfg.api_key}`;
     else if (process.env.OLLAMA_API_KEY) headers['Authorization'] = `Bearer ${process.env.OLLAMA_API_KEY}`;

@@ -160,7 +160,7 @@ function CopilotConfigPanel({ config, onSave }: { config: any; onSave: (data: an
                 type="text"
                 value={form.apiBaseUrl}
                 onChange={(e) => setForm({ ...form, apiBaseUrl: e.target.value })}
-                placeholder='https://ollama.com/v1/chat/completions'
+                placeholder='https://ollama.com/v1'
                 className="w-full px-3 py-2 rounded-lg border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-accent"
               />
               <p className="text-xs text-muted-foreground mt-1">
