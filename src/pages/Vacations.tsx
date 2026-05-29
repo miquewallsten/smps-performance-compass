@@ -11,10 +11,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Palmtree, Calendar, Plus, Check, X, Clock, AlertCircle, Plane, Search, Download, Gift } from 'lucide-react';
-import { CURRENT_PERIOD, getPositionLabel, getPositionLevel } from '@/lib/evaluationConfig';
+import { getPositionLabel, getPositionLevel } from '@/lib/evaluationConfig';
+import { useCurrentPeriod } from '@/hooks/useCurrentPeriod';
 import type { Position, ExtraVacationDays as ExtraDaysType } from '@/types';
 
 export default function Vacations() {
+  const currentPeriod = useCurrentPeriod();
   const { user: currentUser } = useAuth();
   const { data: users = [] } = useUsers();
   const { data: assignments = [] } = useAssignments();
@@ -50,7 +52,7 @@ export default function Vacations() {
   const canApprove = isAdmin || isSocio;
 
   const myEvaluados = assignments
-    .filter(a => a.supervisorId === currentUser.id && a.period === CURRENT_PERIOD)
+    .filter(a => a.supervisorId === currentUser.id && a.period === currentPeriod)
     .map(a => a.employeeId);
 
   const activeUsers = (Array.isArray(users) ? users : []).filter(u => u.isActive && !u.isSuperUser);
