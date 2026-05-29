@@ -49,13 +49,20 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 export default function Dashboard() {
   const { user: currentUser } = useAuth();
   const currentPeriod = useCurrentPeriod();
-  const { data: posConfig = [] } = usePositionConfig();
-  const { data: users = [] } = useUsers();
-  const { data: evaluations = [] } = useEvaluations({ period: currentPeriod });
-  const { data: assignments = [] } = useAssignments(currentPeriod);
-  const { data: periodConfigs = [] } = usePeriods();
-  const { data: announcements = [] } = useAnnouncements();
-  const { data: vacationRequests = [] } = useVacationRequests();
+  const { data: posConfigData } = usePositionConfig();
+  const posConfig = Array.isArray(posConfigData) ? posConfigData : [];
+  const { data: usersData } = useUsers();
+  const users = Array.isArray(usersData) ? usersData : [];
+  const { data: evaluationsData } = useEvaluations({ period: currentPeriod });
+  const evaluations = Array.isArray(evaluationsData) ? evaluationsData : [];
+  const { data: assignmentsData } = useAssignments(currentPeriod);
+  const assignments = Array.isArray(assignmentsData) ? assignmentsData : [];
+  const { data: periodConfigsData } = usePeriods();
+  const periodConfigs = Array.isArray(periodConfigsData) ? periodConfigsData : [];
+  const { data: announcementsData } = useAnnouncements();
+  const announcements = Array.isArray(announcementsData) ? announcementsData : [];
+  const { data: vacationRequestsData } = useVacationRequests();
+  const vacationRequests = Array.isArray(vacationRequestsData) ? vacationRequestsData : [];
   const navigate = useNavigate();
   const [expanded, setExpanded] = useState<string | null>(null);
 
