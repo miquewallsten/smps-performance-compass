@@ -274,34 +274,11 @@ export async function migrate(): Promise<void> {
       INDEX idx_evd_user (user_id)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
 
-    `CREATE TABLE IF NOT EXISTS custom_eval_questions (
-      id VARCHAR(36) PRIMARY KEY,
-      position VARCHAR(50) NOT NULL,
-      question_id VARCHAR(36) NOT NULL,
-      category VARCHAR(50) NOT NULL,
-      text TEXT NOT NULL,
-      weight DOUBLE NOT NULL DEFAULT 1,
-      hidden TINYINT(1) NOT NULL DEFAULT 0,
-      UNIQUE KEY custom_eval_questions_position_question_unique (position, question_id)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+    
 
-    `CREATE TABLE IF NOT EXISTS library_questions (
-      id VARCHAR(36) PRIMARY KEY,
-      question_id VARCHAR(36) NOT NULL UNIQUE,
-      category VARCHAR(50) NOT NULL,
-      text TEXT NOT NULL,
-      default_weight INT NOT NULL DEFAULT 1,
-      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-      created_by VARCHAR(36)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+    
 
-    `CREATE TABLE IF NOT EXISTS seed_question_overrides (
-      question_id VARCHAR(36) PRIMARY KEY,
-      text TEXT,
-      category VARCHAR(50),
-      weight INT,
-      hidden TINYINT(1) NOT NULL DEFAULT 0
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+    
 
     `CREATE TABLE IF NOT EXISTS module_config (
       id INT PRIMARY KEY DEFAULT 1,
@@ -769,49 +746,12 @@ export async function migrate(): Promise<void> {
   }
 
 
-  // Migration: Round all weight values to whole numbers in evaluation_responses and custom_eval_questions
+  // Migration: Round all weight values to whole numbers in evaluation_responses
   try {
     const result1 = await run('UPDATE evaluation_responses SET weight = ROUND(weight) WHERE weight != ROUND(weight)');
     console.log('✅ Rounded evaluation_responses weight values to whole numbers');
   } catch (e) {
     console.log('  ⚠ Could not round evaluation_responses weight values:', (e as Error).message);
-  }
-  try {
-    const result2 = await run('UPDATE custom_eval_questions SET weight = ROUND(weight) WHERE weight != ROUND(weight)');
-    console.log('✅ Rounded custom_eval_questions weight values to whole numbers');
-  } catch (e) {
-    console.log('  ⚠ Could not round custom_eval_questions weight values:', (e as Error).message);
-  }
-  try {
-    const result3 = await run('UPDATE seed_question_overrides SET weight = ROUND(weight) WHERE weight IS NOT NULL AND weight != ROUND(weight)');
-    console.log('✅ Rounded seed_question_overrides weight values to whole numbers');
-  } catch (e) {
-    console.log('  ⚠ Could not round seed_question_overrides weight values:', (e as Error).message);
-  }
-
-
-  // Migration: Add section and practice_area columns to custom_eval_questions if missing
-  try {
-    const secColCheck = await getScalar<number>(
-      `SELECT COUNT(*) AS cnt FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'custom_eval_questions' AND COLUMN_NAME = 'section'`
-    );
-    if (secColCheck === 0) {
-      await run('ALTER TABLE custom_eval_questions ADD COLUMN section VARCHAR(50) AFTER weight');
-      console.log('  ✓ Added section column to custom_eval_questions');
-    }
-  } catch (e) {
-    console.log('  ⚠ Could not add section column:', (e as Error).message);
-  }
-  try {
-    const paColCheck = await getScalar<number>(
-      `SELECT COUNT(*) AS cnt FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'custom_eval_questions' AND COLUMN_NAME = 'practice_area'`
-    );
-    if (paColCheck === 0) {
-      await run('ALTER TABLE custom_eval_questions ADD COLUMN practice_area VARCHAR(255) AFTER section');
-      console.log('  ✓ Added practice_area column to custom_eval_questions');
-    }
-  } catch (e) {
-    console.log('  ⚠ Could not add practice_area column:', (e as Error).message);
   }
 
 
@@ -830,14 +770,6 @@ export async function migrate(): Promise<void> {
       }
     } catch (e) {
       console.log(`  ⚠ Could not migrate position '${oldVal}':`, (e as Error).message);
-    }
-    try {
-      const result2 = await run(`UPDATE custom_eval_questions SET position = ? WHERE position = ?`, [newVal, oldVal]);
-      if (result2.affectedRows > 0) {
-        console.log(`  ✓ Migrated ${result2.affectedRows} custom question(s) from position '${oldVal}' to '${newVal}'`);
-      }
-    } catch (e) {
-      console.log(`  ⚠ Could not migrate custom_eval_questions position '${oldVal}':`, (e as Error).message);
     }
   }
 
@@ -945,8 +877,8 @@ export async function migrate(): Promise<void> {
     console.log('  ⚠ Could not link template_questions to question_library:', (e as Error).message);
   }
 
-  // ─── Migration: library_questions table removed ──────────
-  // The old library_questions table has been dropped (superseded by question_library)
+  // ─── Migration: Ghost tables removed ──────────
+  // library_questions, custom_eval_questions, seed_question_overrides tables have been dropped
 
   // Also link template_questions for custom source questions
   try {

@@ -471,12 +471,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
 // Cleanup: Delete old data that shouldn't exist
 export async function cleanupOldCustomQuestions(): Promise<void> {
   console.log('  Cleaning up old evaluation data...');
-  try {
-    await db.run('DELETE FROM custom_eval_questions');
-    console.log('  ✓ Deleted all custom_eval_questions');
-  } catch (err: any) {
-    if (err?.code !== 'ER_NO_SUCH_TABLE') console.error('  Error cleaning custom_eval_questions:', err);
-  }
+  // custom_eval_questions table dropped — no cleanup needed
   
   try {
     await db.run("DELETE FROM template_questions WHERE section IS NULL OR section = ''");
@@ -485,11 +480,6 @@ export async function cleanupOldCustomQuestions(): Promise<void> {
     console.error('  Error cleaning template_questions:', err);
   }
   
-  try {
-    await db.run('DELETE FROM seed_question_overrides');
-    console.log('  ✓ Deleted all seed_question_overrides');
-  } catch (err: any) {
-    if (err?.code !== 'ER_NO_SUCH_TABLE') console.error('  Error cleaning seed_question_overrides:', err);
-  }
+  // seed_question_overrides table dropped — no cleanup needed
 }
 // redeploy trigger Thu May 28 14:07:30 CST 2026

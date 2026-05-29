@@ -227,7 +227,7 @@ export default function Layout() {
           </div>
         </aside>
 
-        <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-sidebar border-t border-sidebar-border flex justify-around px-1 py-0.5">
+        <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 border-t border-sidebar-border mobile-bottom-nav flex justify-around px-1 py-0.5">
           {[
             { to: '/dashboard', icon: LayoutDashboard, label: 'Panel' },
             { to: '/self-evaluation', icon: ClipboardCheck, label: 'Evaluar' },
@@ -244,7 +244,7 @@ export default function Layout() {
 
         {location.pathname === '/copilot' ? (
           <div
-            className="flex-1 min-h-0 smps-fade-in"
+            className="flex-1 min-h-0"
           >
             <Outlet />
           </div>
@@ -254,7 +254,7 @@ export default function Layout() {
           </main>
         ) : (
           <main className={`flex-1 min-h-0 overflow-auto pb-16 md:pb-0`}>
-            <div className="p-4 md:p-5 max-w-6xl mx-auto smps-fade-in">
+            <div key={location.pathname} className="p-4 md:p-5 max-w-6xl mx-auto smps-page-enter">
               <PeriodEndAlert />
               <Outlet />
             </div>

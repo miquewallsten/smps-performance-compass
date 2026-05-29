@@ -82,10 +82,8 @@ export async function seed() {
     const existingSuper = await tx.get(conn, 'SELECT id FROM users WHERE email = ?', [SUPERADMIN_EMAIL]) as { id: string } | undefined;
 
     if (existingSuper) {
-      // Update password hash to ensure it's correct
-      const passwordHash = bcrypt.hashSync(SUPERADMIN_PASSWORD, 12);
-      await tx.run(conn, 'UPDATE users SET password_hash = ?, must_change_password = 0, updated_at = ? WHERE id = ?', [passwordHash, now(), existingSuper.id]);
-      console.log(`  ✓ SuperAdmin already exists (${SUPERADMIN_EMAIL}) - password updated`);
+      // SuperAdmin already exists - skip password re-hashing for faster startup
+      console.log(`  ✓ SuperAdmin already exists (${SUPERADMIN_EMAIL})`);
     } else {
       const saId = uuidv4();
       const saPasswordHash = bcrypt.hashSync(SUPERADMIN_PASSWORD, 12);
@@ -101,13 +99,19 @@ export async function seed() {
 
     // ─── 2. Create regular users ────────────────────────────────────────
     for (const user of USERS) {
+      // Check if user already exists to skip expensive bcrypt hashing
+      const existingUser = await tx.get(conn, 'SELECT id FROM users WHERE email = ?', [user.email]) as { id: string } | undefined;
+      if (existingUser) {
+        console.log(`  ✓ ${user.name} (${user.email}) - ${user.position}${user.isAdmin ? ' [ADMIN]' : ''}${user.isManagingPartner ? ' [MANAGING_PARTNER]' : ''}${!user.isActive ? ' [INACTIVE]' : ''}`);
+        continue;
+      }
       const id = uuidv4();
       const passwordHash = bcrypt.hashSync(user.password, 12);
       const securityAnswerHash = bcrypt.hashSync(user.email.toLowerCase().trim(), 12);
       const securityQuestion = '¿Cuál es su correo electrónico?';
 
       await tx.run(conn,
-        `INSERT IGNORE INTO users (id, email, password_hash, security_question, security_answer, name, position, practice_area, custom_position_id, is_admin, is_super_user, is_managing_partner, is_active, must_change_password, created_at, updated_at)
+        `INSERT INTO users (id, email, password_hash, security_question, security_answer, name, position, practice_area, custom_position_id, is_admin, is_super_user, is_managing_partner, is_active, must_change_password, created_at, updated_at)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, NULL, ?, ?, ?, ?, ?, ?, ?)`,
         [
           id, user.email, passwordHash, securityQuestion, securityAnswerHash,

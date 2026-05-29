@@ -5,8 +5,9 @@
  */
 import { useEffect } from 'react';
 import { usePositionConfig, useSectionWeights, useScoreLabels, useCategories } from './useEvaluationConfig';
+import { usePeriods } from '@/api/queries';
 import {
-  setPositionConfig, setSectionWeights, setScoreLabels, setCategories,
+  setPositionConfig, setSectionWeights, setScoreLabels, setCategories, setPeriods, setCurrentPeriod,
 } from '@/lib/evaluationConfig';
 
 let initialized = false;
@@ -16,6 +17,7 @@ export function useEvalConfigInit() {
   const { data: swData } = useSectionWeights();
   const { data: slData } = useScoreLabels();
   const { data: catData } = useCategories();
+  const { data: periodsData } = usePeriods();
 
   useEffect(() => {
     if (posConfig && posConfig.length > 0) {
@@ -40,6 +42,21 @@ export function useEvalConfigInit() {
       setCategories(catData);
     }
   }, [catData]);
+
+  useEffect(() => {
+    if (periodsData && periodsData.length > 0) {
+      const periodStrings = periodsData.map((p: any) => p.period).sort();
+      setPeriods(periodStrings);
+      // Determine current period: most recent period, or the one whose self-eval dates include now
+      const now = new Date();
+      const current = periodsData.find((p: any) => {
+        const start = new Date(p.self_start);
+        const end = new Date(p.self_end);
+        return now >= start && now <= end;
+      });
+      setCurrentPeriod(current ? current.period : periodStrings[periodStrings.length - 1]);
+    }
+  }, [periodsData]);
 
   useEffect(() => {
     if (posConfig && swData && slData && catData && !initialized) {

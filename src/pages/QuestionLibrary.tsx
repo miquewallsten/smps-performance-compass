@@ -11,7 +11,7 @@ export function getCategoriesList(): QuestionCategory[] {
   if (dbCats && dbCats.length > 0) {
     return dbCats.map((c: any) => c.label || c.id);
   }
-  return ['Desempeño', 'Liderazgo', 'Cumplimiento', 'Habilidades Blandas', 'Trabajo en Equipo', 'Actitud', 'Disponibilidad', 'Desarrollo', 'Comunicación', 'Criterio Técnico'];
+  return []; // DB always loads categories — no hardcoded fallback needed
 }
 
 const SECTION_COLORS: Record<EvalSection, { border: string; bg: string; text: string; dot: string }> = {

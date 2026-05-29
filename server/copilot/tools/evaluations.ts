@@ -118,24 +118,14 @@ export const evaluationsTool: Tool = {
           if (updates.length > 0) { vals.push(args.question_id); await db.run('UPDATE question_library SET ' + updates.join(', ') + ' WHERE question_id=?', vals); }
           return JSON.stringify({ ok: true, msg: 'Pregunta de biblioteca actualizada' });
         }
-        const ov = await db.get('SELECT * FROM seed_question_overrides WHERE question_id=?', [args.question_id]);
-        if (ov) {
-          const updates = []; const vals = [];
-          if (args.text) { updates.push('text=?'); vals.push(args.text); }
-          if (args.category) { updates.push('category=?'); vals.push(args.category); }
-          if (args.weight) { updates.push('weight=?'); vals.push(parseInt(args.weight as string)); }
-          if (args.hidden !== undefined) { updates.push('hidden=?'); vals.push(args.hidden === 'true' ? 1 : 0); }
-          if (updates.length > 0) { vals.push(args.question_id); await db.run('UPDATE seed_question_overrides SET ' + updates.join(', ') + ' WHERE question_id=?', vals); }
-          return JSON.stringify({ ok: true, msg: 'Override actualizada' });
-        }
+        // seed_question_overrides table dropped — question_library is the only source
         return JSON.stringify({ error: 'Pregunta no encontrada' });
       }
       if (act === 'delete_question') {
         if (!args.question_id) return JSON.stringify({ error: 'Falta question_id' });
         const lib = await db.get('SELECT * FROM question_library WHERE question_id=?', [args.question_id]);
         if (lib) { await db.run('DELETE FROM question_library WHERE question_id=?', [args.question_id]); return JSON.stringify({ ok: true, msg: 'Pregunta de biblioteca eliminada' }); }
-        const ov = await db.get('SELECT * FROM seed_question_overrides WHERE question_id=?', [args.question_id]);
-        if (ov) { await db.run('UPDATE seed_question_overrides SET hidden=1 WHERE question_id=?', [args.question_id]); return JSON.stringify({ ok: true, msg: 'Pregunta base ocultada' }); }
+        // seed_question_overrides table dropped — only question_library exists
         return JSON.stringify({ error: 'Pregunta no encontrada' });
       }
       if (act === 'list_library') return JSON.stringify(await db.all('SELECT question_id, category, text, default_weight, default_section FROM question_library ORDER BY category, text'));

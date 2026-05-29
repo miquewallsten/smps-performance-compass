@@ -210,7 +210,29 @@ export const LEVEL_LABELS: Record<string, string> = {
   administrativo: 'Administrativo',
 };
 
-// ─── PERIODS (will come from DB, minimal fallback) ─────────────────────────
+// ─── PERIODS (DB-driven, fallback for initial load) ─────────────────────────
 
-export const PERIODS = ['2025-H2', '2026-H1', '2026-H2'];
-export const CURRENT_PERIOD = '2026-H1';
+let _periods: string[] = ['2025-H2', '2026-H1', '2026-H2'];
+let _currentPeriod: string = '2026-H1';
+
+export function setPeriods(periods: string[]) {
+  _periods = periods;
+  PERIODS = periods;
+}
+
+export function getPeriods(): string[] {
+  return _periods;
+}
+
+export function setCurrentPeriod(period: string) {
+  _currentPeriod = period;
+  CURRENT_PERIOD = period;
+}
+
+export function getCurrentPeriod(): string {
+  return _currentPeriod;
+}
+
+// Live-updating exports (updated by setPeriods/setCurrentPeriod)
+export let PERIODS = _periods;
+export let CURRENT_PERIOD = _currentPeriod;
