@@ -1,8 +1,9 @@
 import { ScoreBadge, scoreColorText, scoreBgClass } from '@/components/shared/ScoreBadge';
 import { useState, useMemo, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useUsers, useEvaluations } from '@/api/queries';
-import { getPositionLabel, getPositionLevel, CURRENT_PERIOD, PERIODS, normalizePracticeArea } from '@/lib/evaluationConfig';
+import { useUsers, useEvaluations , usePeriods } from '@/api/queries';
+import { getPositionLabel, getPositionLevel, normalizePracticeArea } from '@/lib/evaluationConfig';
+import { useCurrentPeriod } from '@/hooks/useCurrentPeriod';
 import { canViewUserEvaluations } from '@/lib/visibility';
 import { BarChart3, Filter, ChevronDown, ChevronRight, TrendingUp, Users } from 'lucide-react';
 
@@ -35,7 +36,10 @@ export default function ScoreAnalysis() {
   const { user: currentUser } = useAuth();
   const { data: users = [] } = useUsers();
   const { data: evaluations = [] } = useEvaluations();
-  const [period, setPeriod] = useState(CURRENT_PERIOD);
+  const currentPeriod = useCurrentPeriod();
+  const { data: periodsData = [] } = usePeriods();
+  const periods = periodsData.map((p: any) => p.period).sort();
+  const [period, setPeriod] = useState(currentPeriod);
   const [groupBy, setGroupBy] = useState<GroupBy>('position');
   const [areaFilter, setAreaFilter] = useState<string>('all');
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
@@ -201,7 +205,7 @@ export default function ScoreAnalysis() {
         </div>
         <select value={period} onChange={e => setPeriod(e.target.value)}
           className="px-3 py-2 rounded-lg border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-accent">
-          {PERIODS.map(p => <option key={p} value={p}>{p}</option>)}
+          {periods.map(p => <option key={p} value={p}>{p}</option>)}
         </select>
       </div>
 
