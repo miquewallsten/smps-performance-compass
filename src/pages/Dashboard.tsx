@@ -266,17 +266,17 @@ export default function Dashboard() {
               <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-2">Avance por Posici\u00f3n</p>
               <ResponsiveContainer width="100%" height={Math.max(100, posData.length * 24)}>
                 <BarChart data={posData} layout="vertical" margin={{ left: 72, right: 8, top: 0, bottom: 0 }}>
-                  <XAxis type="number" domain={[0, 100]} tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))' }} tickFormatter={(v: number) => `${v}%`} axisLine={false} tickLine={false} />
-                  <YAxis type="category" dataKey="name" width={68} tick={{ fontSize: 10, fill: 'hsl(var(--foreground))' }} axisLine={false} tickLine={false} />
+                  <XAxis type="number" domain={[0, 100]} tick={{ fontSize: 9, fill: '#71717a' }} tickFormatter={(v: number) => `${v}%`} axisLine={false} tickLine={false} />
+                  <YAxis type="category" dataKey="name" width={68} tick={{ fontSize: 10, fill: '#1e293b' }} axisLine={false} tickLine={false} />
                   <Tooltip content={<CustomTooltip />} />
-                  <Bar dataKey="selfPct" name="Autoeval." radius={[0, 2, 2, 0]} barSize={6}>
+                  <Bar dataKey="selfPct" name="Autoeval." radius={[0, 2, 2, 0]} barSize={14}>
                     {posData.map((entry: any, idx: number) => (
-                      <Cell key={idx} fill={entry.selfPct >= 80 ? 'hsl(var(--smps-success))' : entry.selfPct >= 50 ? 'hsl(var(--smps-gold))' : 'hsl(var(--accent))'} fillOpacity={0.85} />
+                      <Cell key={idx} fill={entry.selfPct >= 80 ? '#2d8a4e' : entry.selfPct >= 50 ? '#b8860b' : '#c2364d'} fillOpacity={0.85} />
                     ))}
                   </Bar>
-                  <Bar dataKey="supPct" name="Evaluadores" radius={[0, 2, 2, 0]} barSize={6}>
+                  <Bar dataKey="supPct" name="Evaluadores" radius={[0, 2, 2, 0]} barSize={14}>
                     {posData.map((entry: any, idx: number) => (
-                      <Cell key={idx} fill={entry.supPct >= 80 ? 'hsl(var(--smps-success))' : entry.supPct >= 50 ? 'hsl(var(--smps-gold))' : 'hsl(var(--smps-warning))'} fillOpacity={0.85} />
+                      <Cell key={idx} fill={entry.supPct >= 80 ? '#2d8a4e' : entry.supPct >= 50 ? '#b8860b' : '#d48806'} fillOpacity={0.85} />
                     ))}
                   </Bar>
                 </BarChart>
