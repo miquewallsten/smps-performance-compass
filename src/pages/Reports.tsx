@@ -2,13 +2,15 @@ import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUsers, useEvaluations, useAssignments, useActionPlans } from '@/api/queries';
 import { getPositionLabel, getPositionLevel } from '@/lib/evaluationConfig';
-import { CURRENT_PERIOD, getPositionHierarchy, getLegalHierarchy, getAdminHierarchy } from '@/lib/evaluationConfig';
+import { getPositionHierarchy, getLegalHierarchy, getAdminHierarchy } from '@/lib/evaluationConfig';
+import { useCurrentPeriod } from '@/hooks/useCurrentPeriod';
 import { canViewUserEvaluations } from '@/lib/visibility';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 
 type AreaFilter = 'all' | 'legal' | 'administrativo';
 
 export default function Reports() {
+  const currentPeriod = useCurrentPeriod();
   const { user: currentUser } = useAuth();
   const { data: users = [] } = useUsers();
   const { data: evaluations = [] } = useEvaluations();
@@ -22,7 +24,7 @@ export default function Reports() {
   const isSocio = currentUser.position === 'socio';
   const isAdminOrSocio = isAdmin || isSocio || !!currentUser.isManagingPartner;
 
-  const periodAssignments = (Array.isArray(assignments) ? assignments : []).filter(a => a.period === CURRENT_PERIOD);
+  const periodAssignments = (Array.isArray(assignments) ? assignments : []).filter(a => a.period === currentPeriod);
 
   const relevantUserIds = isAdminOrSocio
     ? (Array.isArray(users) ? users : []).filter(u => u.isActive).map(u => u.id)
@@ -46,25 +48,25 @@ export default function Reports() {
   if (!Array.isArray(hierarchy)) hierarchy = [];
 
   // Stage completion data
-  const selfEvalsDone = activeUsers.filter(u => evaluations.some(e => e.type === 'self' && e.evaluatorId === u.id && e.period === CURRENT_PERIOD)).length;
+  const selfEvalsDone = activeUsers.filter(u => evaluations.some(e => e.type === 'self' && e.evaluatorId === u.id && e.period === currentPeriod)).length;
   const supervisorEvalsDone = activeUsers.filter(u => {
     const userAssigns = periodAssignments.filter(a => a.employeeId === u.id);
-    const supEvals = evaluations.filter(e => e.type === 'supervisor' && e.evaluatedId === u.id && e.period === CURRENT_PERIOD);
+    const supEvals = evaluations.filter(e => e.type === 'supervisor' && e.evaluatedId === u.id && e.period === currentPeriod);
     return userAssigns.length > 0 && supEvals.length >= userAssigns.length;
   }).length;
   const feedbackDone = activeUsers.filter(u => {
-    const supEvals = evaluations.filter(e => e.type === 'supervisor' && e.evaluatedId === u.id && e.period === CURRENT_PERIOD);
+    const supEvals = evaluations.filter(e => e.type === 'supervisor' && e.evaluatedId === u.id && e.period === currentPeriod);
     return supEvals.some(e => e.feedbackCompleted);
   }).length;
-  const actionPlansDone = activeUsers.filter(u => actionPlans.some(p => p.employeeId === u.id && p.period === CURRENT_PERIOD)).length;
+  const actionPlansDone = activeUsers.filter(u => actionPlans.some(p => p.employeeId === u.id && p.period === currentPeriod)).length;
 
   const fullyCompleted = activeUsers.filter(u => {
-    const hasSelf = evaluations.some(e => e.type === 'self' && e.evaluatorId === u.id && e.period === CURRENT_PERIOD);
+    const hasSelf = evaluations.some(e => e.type === 'self' && e.evaluatorId === u.id && e.period === currentPeriod);
     const userAssigns = periodAssignments.filter(a => a.employeeId === u.id);
-    const supEvals = evaluations.filter(e => e.type === 'supervisor' && e.evaluatedId === u.id && e.period === CURRENT_PERIOD);
+    const supEvals = evaluations.filter(e => e.type === 'supervisor' && e.evaluatedId === u.id && e.period === currentPeriod);
     const allSupDone = userAssigns.length > 0 && supEvals.length >= userAssigns.length;
     const hasFeedback = supEvals.some(e => e.feedbackCompleted);
-    const hasActionPlan = actionPlans.some(p => p.employeeId === u.id && p.period === CURRENT_PERIOD);
+    const hasActionPlan = actionPlans.some(p => p.employeeId === u.id && p.period === currentPeriod);
     return hasSelf && allSupDone && hasFeedback && hasActionPlan;
   }).length;
 
@@ -87,7 +89,7 @@ export default function Reports() {
   // Self-evaluations by level
   const selfByPosition = hierarchy.map(pos => {
     const posUsers = activeUsers.filter(u => u.position === pos);
-    const done = posUsers.filter(u => evaluations.some(e => e.type === 'self' && e.evaluatorId === u.id && e.period === CURRENT_PERIOD)).length;
+    const done = posUsers.filter(u => evaluations.some(e => e.type === 'self' && e.evaluatorId === u.id && e.period === currentPeriod)).length;
     return { name: getPositionLabel(pos), total: posUsers.length, completado: done, pendiente: posUsers.length - done };
   }).filter(d => d.total > 0);
 
@@ -99,14 +101,14 @@ export default function Reports() {
     posUsers.forEach(u => {
       const userAssigns = periodAssignments.filter(a => a.employeeId === u.id);
       totalExpected += userAssigns.length;
-      done += evaluations.filter(e => e.type === 'supervisor' && e.evaluatedId === u.id && e.period === CURRENT_PERIOD).length;
+      done += evaluations.filter(e => e.type === 'supervisor' && e.evaluatedId === u.id && e.period === currentPeriod).length;
     });
     return { name: getPositionLabel(pos), total: totalExpected, completado: done, pendiente: Math.max(0, totalExpected - done) };
   }).filter(d => d.total > 0);
 
   const avgByPosition = hierarchy.map(pos => {
     const posUsers = activeUsers.filter(u => u.position === pos);
-    const posEvals = (Array.isArray(evaluations) ? evaluations : []).filter(e => e.period === CURRENT_PERIOD && posUsers.some(u => u.id === e.evaluatedId));
+    const posEvals = (Array.isArray(evaluations) ? evaluations : []).filter(e => e.period === currentPeriod && posUsers.some(u => u.id === e.evaluatedId));
     const avg = posEvals.length > 0 ? Math.round(posEvals.reduce((s, e) => s + e.totalScore, 0) / posEvals.length) : 0;
     return { name: getPositionLabel(pos), promedio: avg };
   }).filter(d => d.promedio > 0);
@@ -117,7 +119,7 @@ export default function Reports() {
         <div>
           <h1 className="font-display text-2xl font-bold">Reportes</h1>
           <p className="text-muted-foreground text-sm mt-1">
-            Periodo: {CURRENT_PERIOD} {!isAdminOrSocio && '· Mi Equipo'}
+            Periodo: {currentPeriod} {!isAdminOrSocio && '· Mi Equipo'}
           </p>
         </div>
         <div className="flex items-center gap-1 bg-card rounded-lg border p-1">
