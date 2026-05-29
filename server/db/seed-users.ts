@@ -206,6 +206,26 @@ export async function seed() {
     }
   });
 
+
+    // ─── 6. Seed period configs ────────────────────────────────────────
+    const PERIODS = [
+      { period: '2025-H2', self_start: '2025-06-01', self_end: '2025-07-15', supervisor_start: '2025-07-16', supervisor_end: '2025-09-01', feedback_start: '2025-09-02', feedback_end: '2025-10-15', action_plan_start: '2025-10-16', action_plan_end: '2025-11-30' },
+      { period: '2026-H1', self_start: '2025-12-01', self_end: '2026-01-15', supervisor_start: '2026-01-16', supervisor_end: '2026-03-01', feedback_start: '2026-03-02', feedback_end: '2026-04-15', action_plan_start: '2026-04-16', action_plan_end: '2026-05-31' },
+      { period: '2026-H2', self_start: '2026-06-01', self_end: '2026-07-15', supervisor_start: '2026-07-16', supervisor_end: '2026-09-01', feedback_start: '2026-09-02', feedback_end: '2026-10-15', action_plan_start: '2026-10-16', action_plan_end: '2026-11-30' },
+    ];
+    for (const p of PERIODS) {
+      await db.run(
+        `INSERT INTO period_configs (period, self_start, self_end, supervisor_start, supervisor_end, feedback_start, feedback_end, action_plan_start, action_plan_end)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+         ON DUPLICATE KEY UPDATE self_start=VALUES(self_start), self_end=VALUES(self_end), supervisor_start=VALUES(supervisor_start), supervisor_end=VALUES(supervisor_end), feedback_start=VALUES(feedback_start), feedback_end=VALUES(feedback_end), action_plan_start=VALUES(action_plan_start), action_plan_end=VALUES(action_plan_end)`,
+        [p.period, p.self_start, p.self_end, p.supervisor_start, p.supervisor_end, p.feedback_start, p.feedback_end, p.action_plan_start, p.action_plan_end]
+      );
+    }
+    console.log('  ✓ Period configs seeded');
+    // Clean up broken period configs with wrong naming format (e.g., H1-2026, H2-2026)
+    await db.run("DELETE FROM period_configs WHERE period NOT REGEXP '^[0-9]{4}-H[12]$'");
+    console.log('  ✓ Cleaned up non-standard period configs');
+
   // ─── Summary ──────────────────────────────────────────────────────────
   const userCount = (await db.get('SELECT COUNT(*) as count FROM users') as any).count;
   const assignmentCount = (await db.get('SELECT COUNT(*) as count FROM supervisor_assignments') as any).count;
