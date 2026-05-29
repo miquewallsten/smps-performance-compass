@@ -2,7 +2,8 @@ import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useEvaluations, useAssignments, useActionPlans, useCreateEvaluation } from '@/api/queries';
 import { Evaluation, Position, EvalQuestion } from '@/types';
-import { CURRENT_PERIOD, SECTION_LABELS, SECTION_ORDER, getSectionForQuestion, calculateScore, getSectionWeights, getPositionLabel, getScoreLabels } from '@/lib/evaluationConfig';
+import { SECTION_LABELS, SECTION_ORDER, getSectionForQuestion, calculateScore, getSectionWeights, getPositionLabel, getScoreLabels } from '@/lib/evaluationConfig';
+import { useCurrentPeriod } from '@/hooks/useCurrentPeriod';
 import { useFullTemplate } from '@/hooks/useEvaluationConfig';
 import { CheckCircle, AlertCircle, Ban, Clock, Users, MessageSquare, FileText, ClipboardCheck, ChevronDown, ChevronRight, RotateCcw } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -13,6 +14,7 @@ import { SuccessAnimation } from '@/components/shared/SuccessAnimation';
 const DRAFT_KEY = 'smps-self-eval-draft';
 
 export default function SelfEvaluation() {
+  const currentPeriod = useCurrentPeriod();
   const { user: currentUser } = useAuth();
   const { data: evaluations = [] } = useEvaluations();
   const { data: assignments = [] } = useAssignments();
@@ -73,14 +75,14 @@ export default function SelfEvaluation() {
 
   if (!currentUser) return null;
 
-  const existing = evaluations.find(e => e.type === 'self' && e.evaluatorId === currentUser.id && e.period === CURRENT_PERIOD);
+  const existing = evaluations.find(e => e.type === 'self' && e.evaluatorId === currentUser.id && e.period === currentPeriod);
 
   const selfDone = !!existing || submitted;
-  const mySupAssignments = assignments.filter(a => a.employeeId === currentUser.id && a.period === CURRENT_PERIOD);
-  const supervisorEvals = evaluations.filter(e => e.type === 'supervisor' && e.evaluatedId === currentUser.id && e.period === CURRENT_PERIOD);
+  const mySupAssignments = assignments.filter(a => a.employeeId === currentUser.id && a.period === currentPeriod);
+  const supervisorEvals = evaluations.filter(e => e.type === 'supervisor' && e.evaluatedId === currentUser.id && e.period === currentPeriod);
   const allSupervisorsDone = mySupAssignments.length > 0 && supervisorEvals.length >= mySupAssignments.length;
   const feedbackDone = supervisorEvals.some(e => e.feedbackCompleted);
-  const actionPlanDone = actionPlans.some(p => p.employeeId === currentUser.id && p.period === CURRENT_PERIOD);
+  const actionPlanDone = actionPlans.some(p => p.employeeId === currentUser.id && p.period === currentPeriod);
 
   // ─── Scoring & progress ───────────────────────────────────────────────
   const sectionWeights = getSectionWeights(currentUser.position);
@@ -135,7 +137,7 @@ export default function SelfEvaluation() {
       evaluatedId: currentUser.id,
       evaluatorId: currentUser.id,
       type: 'self',
-      period: CURRENT_PERIOD,
+      period: currentPeriod,
       responses: formattedResponses,
       totalScore,
       comments,
@@ -172,7 +174,7 @@ export default function SelfEvaluation() {
             </svg>
           </div>
           <h2 className="font-display text-xl font-bold mb-1">Autoevaluación Completada</h2>
-          <p className="text-sm text-muted-foreground mb-4">Tu autoevaluación para {CURRENT_PERIOD} ha sido enviada.</p>
+          <p className="text-sm text-muted-foreground mb-4">Tu autoevaluación para {currentPeriod} ha sido enviada.</p>
           {score > 0 && (
             <div className="inline-flex items-baseline gap-2">
               <span className="font-display text-3xl font-bold">{score}%</span>
@@ -232,7 +234,7 @@ export default function SelfEvaluation() {
           <div>
             <h1 className="font-display text-2xl font-bold">Autoevaluación</h1>
             <p className="text-sm text-muted-foreground mt-0.5">
-              {CURRENT_PERIOD} &middot; {answeredQuestions} de {totalQuestions} preguntas
+              {currentPeriod} &middot; {answeredQuestions} de {totalQuestions} preguntas
             </p>
           </div>
           {draftSaved && (
