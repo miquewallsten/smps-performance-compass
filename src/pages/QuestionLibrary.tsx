@@ -95,7 +95,7 @@ export default function QuestionLibrary() {
       const pos = q.position;
       if (!seen.has(key)) {
         const section = (q.section as EvalSection) || getSectionByCategory(q.category);
-        seen.set(key, { id: q.id || key, text, category: q.category, section, positions: pos ? [pos] : [], libraryId: q.library_question_id });
+        seen.set(key, { id: q.id || key, text, category: q.category, section, positions: pos ? [pos] : [], libraryId: q.libraryQuestionId });
       } else if (pos) {
         const existing = seen.get(key)!;
         if (!existing.positions.includes(pos)) existing.positions.push(pos);

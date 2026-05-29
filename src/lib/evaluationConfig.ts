@@ -45,7 +45,7 @@ export function getPositionLevel(pos: string): string {
 
 export function getPositionRank(pos: string): number {
   const entry = _positionConfig.find(p => p.position === pos);
-  if (entry) return entry.position_rank;
+  if (entry) return entry.positionRank;
   return 99;
 }
 
@@ -53,7 +53,7 @@ export function getLegalHierarchy(): string[] {
   if (_positionConfig.length > 0) {
     return _positionConfig
       .filter(p => p.level === 'legal' && p.position !== 'dummy')
-      .sort((a, b) => a.position_rank - b.position_rank)
+      .sort((a, b) => a.positionRank - b.positionRank)
       .map(p => p.position);
   }
   return [];
@@ -63,7 +63,7 @@ export function getAdminHierarchy(): string[] {
   if (_positionConfig.length > 0) {
     return _positionConfig
       .filter(p => p.level === 'administrativo' && p.position !== 'dummy')
-      .sort((a, b) => a.position_rank - b.position_rank)
+      .sort((a, b) => a.positionRank - b.positionRank)
       .map(p => p.position);
   }
   return [];

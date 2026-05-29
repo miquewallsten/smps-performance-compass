@@ -11,6 +11,9 @@ import { setPeriods, setCurrentPeriod } from '@/lib/evaluationConfig';
  *
  * Also keeps the module-level CURRENT_PERIOD in sync for any non-React code
  * that still reads it directly.
+ *
+ * NOTE: Period data comes from the API via toCamelCase(), so property names
+ * are camelCase (selfStart, actionPlanEnd, etc.), NOT snake_case.
  */
 export function useCurrentPeriod(): string {
   const { data: periodsData = [] } = usePeriods();
@@ -22,10 +25,10 @@ export function useCurrentPeriod(): string {
 
     const now = new Date();
 
-    // 1. Find a period where we're within its overall range (self_start → action_plan_end)
+    // 1. Find a period where we're within its overall range (selfStart → actionPlanEnd)
     const current = periodsData.find((p: any) => {
-      const overallStart = new Date(p.self_start);
-      const overallEnd = new Date(p.action_plan_end || p.feedback_end || p.supervisor_end || p.self_end);
+      const overallStart = new Date(p.selfStart || p.self_start);
+      const overallEnd = new Date(p.actionPlanEnd || p.action_plan_end || p.feedbackEnd || p.feedback_end || p.supervisorEnd || p.supervisor_end || p.selfEnd || p.self_end);
       return now >= overallStart && now <= overallEnd;
     });
 
@@ -37,9 +40,9 @@ export function useCurrentPeriod(): string {
 
     // 2. Fallback: most recent period that has already started
     const sorted = [...periodsData].sort(
-      (a: any, b: any) => new Date(a.self_start).getTime() - new Date(b.self_start).getTime()
+      (a: any, b: any) => new Date(a.selfStart || a.self_start).getTime() - new Date(b.selfStart || b.self_start).getTime()
     );
-    const started = sorted.filter((p: any) => new Date(p.self_start) <= now);
+    const started = sorted.filter((p: any) => new Date(p.selfStart || p.self_start) <= now);
     const resolved = started.length > 0
       ? started[started.length - 1].period
       : sorted[sorted.length - 1].period;
