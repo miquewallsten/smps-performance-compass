@@ -173,8 +173,6 @@ export interface PeriodConfig {
   actionPlanEnd: string;
 }
 
-export { PERIODS } from '@/lib/evaluationConfig';
-export { CURRENT_PERIOD } from '@/lib/evaluationConfig';
 
 export type AdminObjectiveStatus = 'draft' | 'pending' | 'approved' | 'rejected';
 
