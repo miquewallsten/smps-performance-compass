@@ -7,6 +7,7 @@ import { useUsers, useEvaluations, useAssignments, useSystemModules, useSystemSt
 import { Position } from '@/types';
 import { getPositionLabel, getPositionLevel } from '@/lib/evaluationConfig';
 import { getLegalHierarchy, getAdminHierarchy } from '@/lib/evaluationConfig';
+import { useCurrentPeriod } from '@/hooks/useCurrentPeriod';
 import { useCompetencies } from '@/hooks/useEvaluationConfig';
 
 type Audience = 'all' | 'admin' | 'evaluator' | 'staff';
@@ -67,7 +68,8 @@ const sections: Section[] = [
 export default function Help() {
   const { data: competenciesData = [] } = useCompetencies();
   const { user: currentUser } = useAuth();
-  const { data: assignments = [] } = useAssignments(CURRENT_PERIOD);
+  const currentPeriod = useCurrentPeriod();
+  const { data: assignments = [] } = useAssignments(currentPeriod);
   const { data: moduleConfig } = useSystemModules();
   const [searchParams] = useSearchParams();
   const competenciesRef = useRef<HTMLDivElement | null>(null);
