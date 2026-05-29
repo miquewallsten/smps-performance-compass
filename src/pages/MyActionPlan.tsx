@@ -1,8 +1,9 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useUsers, useEvaluations, useAssignments, useActionPlans, useCreateActionPlan, useApproveActionPlan } from '@/api/queries';
+import { useUsers, useEvaluations, useAssignments, useActionPlans, useCreateActionPlan, useApproveActionPlan , usePeriods } from '@/api/queries';
 import { ActionPlan, SmartActionItem, QuestionCategory } from '@/types';
-import { CURRENT_PERIOD, PERIODS, getPositionLabel, getPositionRank, SECTION_LABELS, getSectionByCategory } from '@/lib/evaluationConfig';
+import { getPositionLabel, getPositionRank, SECTION_LABELS, getSectionByCategory } from '@/lib/evaluationConfig';
+import { useCurrentPeriod } from '@/hooks/useCurrentPeriod';
 import { getCategoriesList } from '@/pages/QuestionLibrary';
 
 import { FileText, Save, ShieldCheck, ShieldX, Clock, Plus, Trash2, Target } from 'lucide-react';
@@ -48,7 +49,10 @@ export default function MyActionPlan() {
   const { data: actionPlans = [] } = useActionPlans();
   const addOrUpdateActionPlan = useCreateActionPlan().mutate;
   const approveActionPlan = useApproveActionPlan().mutate;
-  const [period, setPeriod] = useState(CURRENT_PERIOD);
+  const currentPeriod = useCurrentPeriod();
+  const { data: periodsData = [] } = usePeriods();
+  const periods = periodsData.map((p: any) => p.period).sort();
+  const [period, setPeriod] = useState(currentPeriod);
   const [items, setItems] = useState<SmartActionItem[]>([emptyItem()]);
   const [approvalComments, setApprovalComments] = useState('');
 
@@ -148,7 +152,7 @@ export default function MyActionPlan() {
         </div>
         <select value={period} onChange={e => setPeriod(e.target.value)}
           className="px-3 py-2 rounded-lg border border-input bg-background text-sm">
-          {PERIODS.map(p => <option key={p} value={p}>{p}</option>)}
+          {periods.map(p => <option key={p} value={p}>{p}</option>)}
         </select>
       </div>
 
