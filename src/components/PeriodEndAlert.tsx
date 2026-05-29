@@ -1,6 +1,6 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { useUsers, useEvaluations, useAssignments, useSystemModules, useSystemStatus, usePeriods, useAnnouncements, useVacationRequests } from '@/api/queries';
-import { CURRENT_PERIOD } from '@/lib/evaluationConfig';
+import { useCurrentPeriod } from '@/hooks/useCurrentPeriod';
 import { AlertTriangle, X } from 'lucide-react';
 import { useState } from 'react';
 
@@ -12,9 +12,10 @@ export default function PeriodEndAlert() {
   const { user: currentUser } = useAuth();
   const { data: periodConfigs = [] } = usePeriods();
   const [dismissed, setDismissed] = useState(false);
+  const currentPeriod = useCurrentPeriod();
 
   if (!currentUser || dismissed) return null;
-  const cfg = periodConfigs.find(c => c.period === CURRENT_PERIOD);
+  const cfg = periodConfigs.find(c => c.period === currentPeriod);
   if (!cfg) return null;
 
   const endStr = cfg.actionPlanEnd || cfg.feedbackEnd || cfg.supervisorEnd;
@@ -33,7 +34,7 @@ export default function PeriodEndAlert() {
       <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
       <div className="flex-1 text-sm">
         <p className="font-semibold text-amber-900 dark:text-amber-100">
-          El periodo {CURRENT_PERIOD} cierra en {diffDays} día{diffDays === 1 ? '' : 's'}
+          El periodo {currentPeriod} cierra en {diffDays} día{diffDays === 1 ? '' : 's'}
         </p>
         <p className="text-amber-800/80 dark:text-amber-200/80 text-xs mt-0.5">
           Fecha límite: {end.toLocaleDateString('es-MX', { day: 'numeric', month: 'long', year: 'numeric' })}.
