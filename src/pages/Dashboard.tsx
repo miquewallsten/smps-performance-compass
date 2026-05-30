@@ -8,7 +8,6 @@ import { ScoreRing } from '@/components/shared/ScoreRing';
 import { Users, CheckCircle, Clock, ChevronDown, ArrowRight, ClipboardList } from 'lucide-react';
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
 type PhaseKey = 'self' | 'supervisor' | 'feedback' | 'action_plan';
 
@@ -34,17 +33,7 @@ function daysUntil(dateStr: string): number | null {
   return Math.ceil((end.getTime() - Date.now()) / 86400000);
 }
 
-const CustomTooltip = ({ active, payload, label }: any) => {
-  if (!active || !payload?.length) return null;
-  return (
-    <div className="rounded-lg border bg-card px-3 py-2 shadow-lg text-xs">
-      <p className="font-display font-semibold mb-1">{label}</p>
-      {payload.map((p: any, i: number) => (
-        <p key={i} className="text-muted-foreground">{p.name}: <span className="text-foreground font-medium">{p.value}%</span></p>
-      ))}
-    </div>
-  );
-};
+
 
 export default function Dashboard() {
   const { user: currentUser } = useAuth();
@@ -270,27 +259,31 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Position chart */}
+          {/* Position progress — compact table */}
           {posData.length > 0 && (
             <div className="rounded-lg border bg-card p-3">
               <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-2">Avance por Posici\u00f3n</p>
-              <ResponsiveContainer width="100%" height={Math.max(100, posData.length * 24)}>
-                <BarChart data={posData} layout="vertical" margin={{ left: 72, right: 8, top: 0, bottom: 0 }}>
-                  <XAxis type="number" domain={[0, 100]} tick={{ fontSize: 9, fill: '#71717a' }} tickFormatter={(v: number) => `${v}%`} axisLine={false} tickLine={false} />
-                  <YAxis type="category" dataKey="name" width={68} tick={{ fontSize: 10, fill: '#1e293b' }} axisLine={false} tickLine={false} />
-                  <Tooltip content={<CustomTooltip />} />
-                  <Bar dataKey="selfPct" name="Autoeval." radius={[0, 2, 2, 0]} barSize={14}>
-                    {posData.map((entry: any, idx: number) => (
-                      <Cell key={idx} fill={entry.selfPct >= 80 ? '#2d8a4e' : entry.selfPct >= 50 ? '#b8860b' : '#c2364d'} fillOpacity={0.85} />
-                    ))}
-                  </Bar>
-                  <Bar dataKey="supPct" name="Evaluadores" radius={[0, 2, 2, 0]} barSize={14}>
-                    {posData.map((entry: any, idx: number) => (
-                      <Cell key={idx} fill={entry.supPct >= 80 ? '#2d8a4e' : entry.supPct >= 50 ? '#b8860b' : '#d48806'} fillOpacity={0.85} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
+              <div className="space-y-1.5">
+                {posData.map((entry: any) => {
+                  const pct = Math.round((entry.selfPct + entry.supPct) / 2);
+                  return (
+                    <div key={entry.name} className="flex items-center gap-2">
+                      <span className="text-[11px] text-foreground w-[72px] truncate shrink-0">{entry.name}</span>
+                      <div className="flex-1 h-1.5 rounded-full bg-muted overflow-hidden">
+                        <div
+                          className="h-full rounded-full transition-[width] duration-700 ease-out"
+                          style={{ width: `${pct}%`, background: pct >= 80 ? 'hsl(var(--smps-success))' : pct >= 50 ? 'hsl(var(--smps-gold))' : pct > 0 ? 'hsl(var(--smps-warning))' : 'hsl(var(--muted-foreground))' }}
+                        />
+                      </div>
+                      <span className="text-[10px] tabular-nums text-muted-foreground w-7 text-right shrink-0">{pct}%</span>
+                    </div>
+                  );
+                })}
+              </div>
+              <div className="flex items-center gap-4 mt-2 pt-2 border-t">
+                <span className="flex items-center gap-1.5 text-[10px] text-muted-foreground"><span className="w-2 h-2 rounded-full bg-accent" />Autoeval.</span>
+                <span className="flex items-center gap-1.5 text-[10px] text-muted-foreground"><span className="w-2 h-2 rounded-full bg-smps-success" />Evaluadores</span>
+              </div>
             </div>
           )}
         </div>
