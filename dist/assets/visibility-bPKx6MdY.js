@@ -1,0 +1,1 @@
+function n(r,i){return r.id===i.id||r.isSuperUser||r.isAdmin||r.isManagingPartner?!0:r.position==="socio"?!(i.isManagingPartner||i.position==="socio"||i.position==="salary_partner"):!0}export{n as c};
