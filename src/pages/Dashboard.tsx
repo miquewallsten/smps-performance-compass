@@ -53,9 +53,9 @@ export default function Dashboard() {
   const posConfig = Array.isArray(posConfigData) ? posConfigData : [];
   const { data: usersData } = useUsers();
   const users = Array.isArray(usersData) ? usersData : [];
-  const { data: evaluationsData } = useEvaluations({ period: currentPeriod });
+  const { data: evaluationsData, error: evalError, isLoading: evalLoading } = useEvaluations({ period: currentPeriod });
   const evaluations = Array.isArray(evaluationsData) ? evaluationsData : [];
-  const { data: assignmentsData } = useAssignments(currentPeriod);
+  const { data: assignmentsData, error: assignError, isLoading: assignLoading } = useAssignments(currentPeriod);
   const assignments = Array.isArray(assignmentsData) ? assignmentsData : [];
   const { data: periodConfigsData } = usePeriods();
   const periodConfigs = Array.isArray(periodConfigsData) ? periodConfigsData : [];
@@ -195,6 +195,8 @@ export default function Dashboard() {
           <div>visible: {visible.length} | selfEvalCount: {selfEvalCount} | supTotal: {supTotal}</div>
           <div>evalSample: {evaluations[0] ? `${evaluations[0].type} ${evaluations[0].period} ${evaluations[0].evaluatedId?.substring(0,8)}` : 'none'}</div>
           <div>assignSample: {assignments[0] ? `${assignments[0].period} ${assignments[0].employeeId?.substring(0,8)}` : 'none'}</div>
+          <div>evalLoad: {String(evalLoading)} | evalErr: {evalError ? String(evalError.message).substring(0,60) : "none"}</div>
+          <div>assignLoad: {String(assignLoading)} | assignErr: {assignError ? String(assignError.message).substring(0,60) : "none"}</div>
         </div>
       )}
       {/* ─── Status line (thin, no card) ────────────────────────────────── */}
