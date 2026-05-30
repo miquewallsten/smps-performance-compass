@@ -186,7 +186,7 @@ export default function Dashboard() {
   return (
     <div className="space-y-3 smps-fade-up">
       {/* DEBUG PANEL */}
-      {process.env.NODE_ENV !== 'production' && (
+      {true && (
         <div style={{position:'fixed',bottom:10,right:10,background:'rgba(0,0,0,0.85)',color:'#0f0',padding:'8px 12px',borderRadius:8,fontSize:10,zIndex:9999,maxWidth:280,fontFamily:'monospace'}}>
           <div>period: {currentPeriod}</div>
           <div>users: {users.length} | isActive sample: {users[0]?.isActive ?? '?'} | keys: {users[0] ? Object.keys(users[0]).slice(0,6).join(',') : 'none'}</div>
