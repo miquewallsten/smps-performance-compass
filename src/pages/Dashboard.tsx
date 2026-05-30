@@ -53,9 +53,9 @@ export default function Dashboard() {
   const posConfig = Array.isArray(posConfigData) ? posConfigData : [];
   const { data: usersData } = useUsers();
   const users = Array.isArray(usersData) ? usersData : [];
-  const { data: evaluationsData, error: evalError, isLoading: evalLoading } = useEvaluations({ period: currentPeriod });
+  const { data: evaluationsData } = useEvaluations({ period: currentPeriod });
   const evaluations = Array.isArray(evaluationsData) ? evaluationsData : [];
-  const { data: assignmentsData, error: assignError, isLoading: assignLoading } = useAssignments(currentPeriod);
+  const { data: assignmentsData } = useAssignments(currentPeriod);
   const assignments = Array.isArray(assignmentsData) ? assignmentsData : [];
   const { data: periodConfigsData } = usePeriods();
   const periodConfigs = Array.isArray(periodConfigsData) ? periodConfigsData : [];
@@ -185,21 +185,6 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-3 smps-fade-up">
-      {/* DEBUG PANEL */}
-      {true && (
-        <div style={{position:'fixed',bottom:10,right:10,background:'rgba(0,0,0,0.85)',color:'#0f0',padding:'8px 12px',borderRadius:8,fontSize:10,zIndex:9999,maxWidth:280,fontFamily:'monospace'}}>
-          <div>period: {currentPeriod}</div>
-          <div>users: {users.length} | isActive sample: {users[0]?.isActive ?? '?'} | keys: {users[0] ? Object.keys(users[0]).slice(0,6).join(',') : 'none'}</div>
-          <div>evaluations: {evaluations.length} | pEvals: {pEvals.length}</div>
-          <div>assignments: {assignments.length} | pAssign: {pAssign.length}</div>
-          <div>visible: {visible.length} | selfEvalCount: {selfEvalCount} | supTotal: {supTotal}</div>
-          <div>evalSample: {evaluations[0] ? `${evaluations[0].type} ${evaluations[0].period} ${evaluations[0].evaluatedId?.substring(0,8)}` : 'none'}</div>
-          <div>assignSample: {assignments[0] ? `${assignments[0].period} ${assignments[0].employeeId?.substring(0,8)}` : 'none'}</div>
-          <div>evalLoad: {String(evalLoading)} | evalErr: {evalError ? String(evalError.message).substring(0,60) : "none"}</div>
-          <div>assignLoad: {String(assignLoading)} | assignErr: {assignError ? String(assignError.message).substring(0,60) : "none"}</div>
-        </div>
-      )}
-      {/* ─── Status line (thin, no card) ────────────────────────────────── */}
       <div className="flex items-center justify-between flex-wrap gap-2">
         <div className="flex items-center gap-2.5 min-w-0">
           <h1 className="font-display text-lg font-bold tracking-tight">Panel de Control</h1>
