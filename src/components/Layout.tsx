@@ -16,7 +16,7 @@ import { getPositionLevel } from '@/lib/evaluationConfig';
 import { useEvalConfigInit } from '@/hooks/useEvalConfigInit';
 import { useCurrentPeriod } from '@/hooks/useCurrentPeriod';
 
-/** Spinner shown inside the content area while a lazy page chunk loads */
+/** Spinner shown inside content area while lazy page chunk loads */
 function ContentLoader() {
   return (
     <div className="flex items-center justify-center py-24">
@@ -106,65 +106,74 @@ export default function Layout() {
     }).length;
   })();
 
-  const pendingVacationCount = canViewAll
-    ? vacationRequests.filter((r: any) => r.status === 'pending').length
-    : 0;
+  const pendingVacationCount = (() => {
+    if (!modules.vacations) return 0;
+    const myEvaluados = assignments.filter(a => a.supervisorId === currentUser.id && a.period === currentPeriod).map(a => a.employeeId);
+    return vacationRequests.filter(r => {
+      if (r.status !== 'pending') return false;
+      if (isAdmin || isSuperUser || isManagingPartner) return true;
+      return myEvaluados.includes(r.userId);
+    }).length;
+  })();
 
-  // ─── NAV ITEMS ──────────────────────────────────────────────────────────────
+  const showEvalModule = modules.evaluations;
+  const showCycles = currentUser.position !== 'pasante_carrera' && currentUser.position !== 'pasante' && currentUser.position !== 'pasante_corporativo';
+
   const evalItems = [
-    { to: '/self-evaluation', icon: ClipboardCheck, label: 'Autoevaluación', show: !!modules.evaluations },
-    { to: '/evaluations', icon: ClipboardList, label: 'Evaluaciones', show: !!modules.evaluations && (hasTeam || isAdminOrSuper) },
-    { to: '/my-action-plan', icon: Target, label: 'Mi Plan de Acción', show: !!modules.evaluations },
+    { to: '/dashboard', icon: LayoutDashboard, label: 'Panel', show: true },
+    { to: '/my-profile', icon: UserIcon, label: 'Mis Eval.', show: showEvalModule },
+    { to: '/self-evaluation', icon: ClipboardCheck, label: 'Autoeval.', show: showEvalModule, badge: !showEvalModule ? 0 : (evaluations.some(e => e.evaluatedId === currentUser.id && e.type === 'self' && e.period === currentPeriod) ? 0 : 1) },
+    { to: '/evaluations', icon: Users, label: 'Evaluar', show: (hasTeam || isAdminOrSuper || isManagingPartner) && showEvalModule, badge: pendingEvalCount },
+    { to: '/my-action-plan', icon: FileText, label: 'Plan Acción', show: showEvalModule && showCycles },
+    { to: '/reports', icon: BarChart3, label: 'Reportes', show: canViewAll && showEvalModule },
+    { to: '/score-analysis', icon: TrendingUp, label: 'Calificaciones', show: canViewAll && showEvalModule },
   ];
 
   const userGroupItems = [
-    { to: '/users', icon: Users, label: 'Usuarios', show: canViewAll },
-    { to: '/positions', icon: Briefcase, label: 'Puestos', show: canViewAll },
-    { to: '/assign', icon: UserCheck, label: 'Asignar Supervisores', show: canViewAll },
-    { to: '/orgchart', icon: BarChart3, label: 'Organigrama', show: canViewAll },
+    { to: '/users', icon: Users, label: 'Usuarios', show: isAdminOrSuper },
+    { to: '/positions', icon: Briefcase, label: 'Áreas y Puestos', show: isAdminOrSuper },
   ];
 
   const otherItems = [
-    { to: '/communications', icon: Megaphone, label: 'Comunicados', show: !!modules.communications, badge: unreadAnnouncementCount },
-    { to: '/vacations', icon: Palmtree, label: 'Vacaciones', show: !!modules.vacations, badge: canViewAll ? pendingVacationCount : 0 },
-    { to: '/my-profile', icon: UserIcon, label: 'Mi Perfil', show: true },
-    { to: '/reports', icon: BarChart3, label: 'Reportes', show: canViewAll },
-    { to: '/score-analysis', icon: TrendingUp, label: 'Análisis de Calificaciones', show: canViewAll },
-    { to: '/settings', icon: Settings, label: 'Configuración', show: true },
-    { to: '/copilot', icon: Bot, label: 'Copiloto IA', show: !!modules.copilot && isSuperUser },
+    { to: '/orgchart', icon: BarChart3, label: 'Organigrama', show: canViewAll },
+    { to: '/assign', icon: UserCheck, label: 'Asignar', show: isAdminOrSuper },
+    { to: '/evaluation-templates', icon: BookOpen, label: 'Plantillas', show: isAdminOrSuper },
+    { to: '/question-library', icon: BookOpen, label: 'Preguntas', show: isAdminOrSuper },
+    { to: '/personal-objectives', icon: Target, label: 'Objetivos', show: showEvalModule && (isAdminOrSuper || isManagingPartner || isSocio || hasTeam) },
+    { to: '/communications', icon: Megaphone, label: 'Comunicación', show: modules.communications, badge: unreadAnnouncementCount },
+    { to: '/vacations', icon: Palmtree, label: 'Vacaciones', show: modules.vacations, badge: pendingVacationCount },
+    { to: '/period-config', icon: Calendar, label: 'Periodos', show: isAdminOrSuper },
+    { to: '/access', icon: Shield, label: 'Acceso Sistema', show: isSuperUser },
+    { to: '/copilot', icon: Bot, label: 'Copilot', show: modules.copilot && isSuperUser },
+    { to: '/settings', icon: Settings, label: 'Perfil', show: true },
   ];
 
-  const renderNavItem = (item: { to: string; icon: any; label: string; show: boolean; badge?: number }) => {
-    if (!item.show) return null;
+  const renderNavItem = (item: { to: string; icon: React.ElementType; label: string; badge?: number }) => {
+    const isActive = location.pathname === item.to;
     return (
-      <NavLink key={item.to} to={item.to}
-        className="flex items-center gap-2 px-3 py-1.5 rounded-md text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent transition-[background-color,color] duration-150 text-sm"
-        activeClassName="bg-sidebar-accent text-sidebar-primary font-medium">
-        <item.icon className="h-4 w-4 flex-shrink-0" />
+      <NavLink to={item.to} className={`group flex items-center gap-3 px-3 py-1.5 rounded-md text-sm transition-[background-color,color,transform] duration-150 ${isActive ? 'bg-sidebar-accent text-sidebar-primary font-medium' : 'text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent/50'}`}>
+        <item.icon className={`h-4 w-4 flex-shrink-0 transition-[transform,color] duration-150 ${isActive ? 'text-sidebar-primary' : 'text-sidebar-foreground/40 group-hover:text-sidebar-foreground/70'}`} />
         {!collapsed && <span className="truncate">{item.label}</span>}
-        {item.badge && item.badge > 0 ? <Badge count={item.badge} /> : null}
-        {item.to === '/self-evaluation' && pendingEvalCount > 0 && !collapsed ? <Badge count={pendingEvalCount} /> : null}
+        {!collapsed && item.badge && item.badge > 0 && <Badge count={item.badge} />}
       </NavLink>
     );
   };
 
-  // ─── RENDER ─────────────────────────────────────────────────────────────────
   return (
-    <div className="h-screen flex flex-col bg-background">
+    <div className="h-screen flex flex-col bg-background overflow-hidden">
       {/* Header */}
-      <header className="h-12 flex items-center justify-between px-4 border-b bg-card flex-shrink-0">
-        <div className="flex items-center gap-2">
-          <button onClick={() => setCollapsed(!collapsed)} className="hidden md:flex items-center justify-center h-8 w-8 rounded-md hover:bg-muted transition-colors">
+      <header className="h-14 bg-primary text-primary-foreground flex items-center justify-between px-4 flex-shrink-0 z-40 border-b border-primary/10">
+        <div className="flex items-center gap-3">
+          <button onClick={() => setCollapsed(!collapsed)} className="hidden md:flex items-center justify-center h-8 w-8 rounded-md text-primary-foreground/60 hover:text-primary-foreground hover:bg-primary-foreground/10 transition-[background-color,color,transform] duration-150 active:scale-95" title={collapsed ? 'Expandir menú' : 'Colapsar menú'}>
             <Menu className="h-4 w-4" />
           </button>
-          <h1 className="font-display text-sm font-bold tracking-tight">SMPS</h1>
-          {currentPeriod && <span className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">{currentPeriod}</span>}
+          <h1 className="font-display text-lg font-bold tracking-tight">Performance Compass</h1>
         </div>
         <div className="flex items-center gap-2">
-          <PeriodEndAlert />
-          <span className="text-xs text-muted-foreground hidden sm:inline">{currentUser.name}</span>
-          <span className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded hidden md:inline">{currentUser.position}</span>
-          <button onClick={logout} className="h-8 w-8 flex items-center justify-center rounded-md hover:bg-muted text-muted-foreground/70 hover:text-foreground/10 transition-[background-color,color] duration-150" title="Cerrar sesión">
+          <span className="text-sm text-primary-foreground/70 hidden sm:block">{currentUser.name}</span>
+          <span className="text-xs text-primary-foreground/40 hidden sm:block">&middot;</span>
+          <span className="text-xs text-primary-foreground/50 hidden sm:block">{currentPeriod}</span>
+          <button onClick={() => { logout(); navigate('/login'); }} className="ml-2 p-2 rounded-md text-primary-foreground/60 hover:text-primary-foreground hover:bg-primary-foreground/10 transition-[background-color,color] duration-150" title="Cerrar sesión">
             <LogOut className="h-4 w-4" />
           </button>
         </div>
@@ -174,7 +183,7 @@ export default function Layout() {
         {/* Sidebar */}
         <aside className={`${collapsed ? 'w-14' : 'w-52'} bg-sidebar border-r border-sidebar-border transition-[width] duration-200 flex-shrink-0 hidden md:flex flex-col`}>
           <nav className="flex-1 py-3 px-2 space-y-0.5 overflow-y-auto">
-            {modules.evaluations && (
+            {showEvalModule && (
               <>
                 {!collapsed && (
                   <button
@@ -243,7 +252,7 @@ export default function Layout() {
           ))}
         </div>
 
-        {/* Main content — Suspense wraps ONLY the Outlet so sidebar/header never unmount */}
+        {/* Main content with page transitions */}
         {location.pathname === '/copilot' ? (
           <div className="flex-1 min-h-0">
             <Suspense fallback={<ContentLoader />}>
@@ -258,7 +267,7 @@ export default function Layout() {
           </main>
         ) : (
           <main className="flex-1 min-h-0 overflow-auto pb-16 md:pb-0">
-            <div className="p-4 md:p-5 max-w-6xl mx-auto">
+            <div key={location.pathname} className="p-4 md:p-5 max-w-6xl mx-auto smps-page-enter">
               <PeriodEndAlert />
               <Suspense fallback={<ContentLoader />}>
                 <Outlet />
