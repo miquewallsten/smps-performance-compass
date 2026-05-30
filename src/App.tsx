@@ -3,10 +3,10 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { lazy, Suspense, Component, ReactNode } from "react";
+import { lazy, Component, ReactNode } from "react";
 import { Loader2 } from "lucide-react";
 
-// ── Code-split all page routes (#15) ─────────────────────────────────────────
+// ── Code-split all page routes ──────────────────────────────────────────
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const SelfEvaluation = lazy(() => import("./pages/SelfEvaluation"));
 const Evaluations = lazy(() => import("./pages/Evaluations"));
@@ -35,15 +35,6 @@ const Login = lazy(() => import("./pages/Login"));
 const ChangePassword = lazy(() => import("./pages/ChangePassword"));
 
 import Layout from "./components/Layout";
-
-// ── Global page loading spinner ──────────────────────────────────────────────
-function PageLoader() {
-  return (
-    <div className="flex items-center justify-center min-h-[60vh]">
-      <Loader2 className="h-6 w-6 animate-spin text-accent" />
-    </div>
-  );
-}
 
 class ErrorBoundary extends Component<{children: ReactNode}, {hasError: boolean, error: Error | null}> {
   constructor(props: {children: ReactNode}) {
@@ -84,60 +75,60 @@ function AppRoutes() {
 
   if (systemInitialized === false) {
     return (
-      <Suspense fallback={<PageLoader />}>
+      <React.Suspense fallback={<div className="flex items-center justify-center min-h-screen"><Loader2 className="h-6 w-6 animate-spin text-accent" /></div>}>
         <SetupPage />
-      </Suspense>
+      </React.Suspense>
     );
   }
 
   if (!user) {
     return (
-      <Suspense fallback={<PageLoader />}>
+      <React.Suspense fallback={<div className="flex items-center justify-center min-h-screen"><Loader2 className="h-6 w-6 animate-spin text-accent" /></div>}>
         <Login />
-      </Suspense>
+      </React.Suspense>
     );
   }
 
   if (user.mustChangePassword) {
     return (
-      <Suspense fallback={<PageLoader />}>
+      <React.Suspense fallback={<div className="flex items-center justify-center min-h-screen"><Loader2 className="h-6 w-6 animate-spin text-accent" /></div>}>
         <ChangePassword />
-      </Suspense>
+      </React.Suspense>
     );
   }
 
+  // NOTE: No Suspense wrapper here! The Layout component handles Suspense
+  // for lazy pages internally so sidebar/header never unmount on navigation.
   return (
-    <Suspense fallback={<PageLoader />}>
-      <Routes>
-        <Route path="/login" element={<Navigate to="/dashboard" replace />} />
-        <Route path="/" element={<Layout />}>
-          <Route index element={<Navigate to="/dashboard" replace />} />
-          <Route path="dashboard" element={<Dashboard />} />
-          <Route path="self-evaluation" element={<SelfEvaluation />} />
-          <Route path="evaluations" element={<Evaluations />} />
-          <Route path="reports" element={<Reports />} />
-          <Route path="score-analysis" element={<ScoreAnalysis />} />
-          <Route path="users" element={<UserManagement />} />
-          <Route path="positions" element={<PositionManagement />} />
-          <Route path="assign" element={<AssignSupervisors />} />
-          <Route path="orgchart" element={<OrgChart />} />
-          <Route path="settings" element={<SettingsPage />} />
-          <Route path="evaluation-templates" element={<EvaluationTemplates />} />
-          <Route path="personal-objectives" element={<PersonalObjectivesPage />} />
-          <Route path="communications" element={<Communications />} />
-          <Route path="vacations" element={<Vacations />} />
-          <Route path="access" element={isSuperUser ? <AccessControl /> : <Navigate to="/dashboard" replace />} />
-          <Route path="period-config" element={<PeriodConfig />} />
-          <Route path="question-library" element={<QuestionLibrary />} />
-          <Route path="my-action-plan" element={<MyActionPlan />} />
-          <Route path="my-profile" element={<MyProfile />} />
-          <Route path="users/:id/timeline" element={<UserTimeline />} />
-          <Route path="copilot" element={moduleConfig?.copilot && isSuperUser ? <CopilotChat /> : <Navigate to="/dashboard" replace />} />
-        </Route>
-        <Route path="/help" element={<Help />} />
-        <Route path="*" element={<NotFound />} />
-      </Routes>
-    </Suspense>
+    <Routes>
+      <Route path="/login" element={<Navigate to="/dashboard" replace />} />
+      <Route path="/" element={<Layout />}>
+        <Route index element={<Navigate to="/dashboard" replace />} />
+        <Route path="dashboard" element={<Dashboard />} />
+        <Route path="self-evaluation" element={<SelfEvaluation />} />
+        <Route path="evaluations" element={<Evaluations />} />
+        <Route path="reports" element={<Reports />} />
+        <Route path="score-analysis" element={<ScoreAnalysis />} />
+        <Route path="users" element={<UserManagement />} />
+        <Route path="positions" element={<PositionManagement />} />
+        <Route path="assign" element={<AssignSupervisors />} />
+        <Route path="orgchart" element={<OrgChart />} />
+        <Route path="settings" element={<SettingsPage />} />
+        <Route path="evaluation-templates" element={<EvaluationTemplates />} />
+        <Route path="personal-objectives" element={<PersonalObjectivesPage />} />
+        <Route path="communications" element={<Communications />} />
+        <Route path="vacations" element={<Vacations />} />
+        <Route path="access" element={isSuperUser ? <AccessControl /> : <Navigate to="/dashboard" replace />} />
+        <Route path="period-config" element={<PeriodConfig />} />
+        <Route path="question-library" element={<QuestionLibrary />} />
+        <Route path="my-action-plan" element={<MyActionPlan />} />
+        <Route path="my-profile" element={<MyProfile />} />
+        <Route path="users/:id/timeline" element={<UserTimeline />} />
+        <Route path="copilot" element={moduleConfig?.copilot && isSuperUser ? <CopilotChat /> : <Navigate to="/dashboard" replace />} />
+      </Route>
+      <Route path="/help" element={<Help />} />
+      <Route path="*" element={<NotFound />} />
+    </Routes>
   );
 }
 

@@ -86,7 +86,12 @@ export default function SelfEvaluation() {
 
   // ─── Scoring & progress ───────────────────────────────────────────────
   const sectionWeights = getSectionWeights(currentUser.position);
-  const { totalScore, sectionScores } = calculateScore(responses, naQuestions, sectionWeights, questions);
+  // Build responses array in the format calculateScore expects
+  const evalResponses = [
+    ...Object.entries(responses).map(([questionId, score]) => ({ questionId, score, notApplicable: false })),
+    ...Object.keys(naQuestions).map(questionId => ({ questionId, score: 0, notApplicable: true })),
+  ];
+  const totalScore = calculateScore(questions, evalResponses);
   const totalQuestions = questions.length;
   const answeredQuestions = Object.keys(responses).length + Object.keys(naQuestions).length;
   const progressPct = totalQuestions > 0 ? Math.round((answeredQuestions / totalQuestions) * 100) : 0;
@@ -264,7 +269,11 @@ export default function SelfEvaluation() {
                 if (responses[q.id] !== undefined) sResponses[q.id] = responses[q.id];
                 if (naQuestions[q.id]) sNA[q.id] = true;
               });
-              const { totalScore: sScore } = calculateScore(sResponses, sNA, sectionWeights, sectionQuestions);
+              const sEvalResponses = [
+                ...Object.entries(sResponses).map(([questionId, score]) => ({ questionId, score, notApplicable: false })),
+                ...Object.keys(sNA).map(questionId => ({ questionId, score: 0, notApplicable: true })),
+              ];
+              const sScore = calculateScore(sectionQuestions, sEvalResponses);
               return sectionAnswered > 0 ? Math.round(sScore) : null;
             })();
 
