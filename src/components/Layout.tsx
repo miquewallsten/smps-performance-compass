@@ -174,7 +174,7 @@ export default function Layout() {
         {/* Sidebar */}
         <aside className={`${collapsed ? 'w-14' : 'w-52'} bg-sidebar border-r border-sidebar-border transition-[width] duration-200 flex-shrink-0 hidden md:flex flex-col`}>
           <nav className="flex-1 py-3 px-2 space-y-0.5 overflow-y-auto">
-            {showEvalModule && (
+            {modules.evaluations && (
               <>
                 {!collapsed && (
                   <button
