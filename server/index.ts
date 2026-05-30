@@ -61,6 +61,29 @@ app.use('/api/auth/security-question', resetPasswordLimiter);
 app.use('/api/', apiLimiter);
 
 // Health check (no rate limit)
+app.get('/api/health/stats', async (_req, res) => {
+  try {
+    const [users, assignments, evaluations, periods, templates, library] = await Promise.all([
+      pool.execute('SELECT COUNT(*) as cnt FROM users WHERE is_active = 1'),
+      pool.execute('SELECT COUNT(*) as cnt FROM supervisor_assignments'),
+      pool.execute('SELECT COUNT(*) as cnt FROM evaluations'),
+      pool.execute('SELECT period, self_start, self_end, supervisor_start, supervisor_end, feedback_start, feedback_end, action_plan_start, action_plan_end FROM period_configs ORDER BY period'),
+      pool.execute('SELECT COUNT(*) as cnt FROM template_questions WHERE is_active = 1'),
+      pool.execute('SELECT COUNT(*) as cnt FROM question_library'),
+    ]);
+    res.json({
+      activeUsers: (users[0] as any)[0]?.cnt,
+      assignments: (assignments[0] as any)[0]?.cnt,
+      evaluations: (evaluations[0] as any)[0]?.cnt,
+      periods: periods[0],
+      templateQuestions: (templates[0] as any)[0]?.cnt,
+      libraryQuestions: (library[0] as any)[0]?.cnt,
+      serverTime: new Date().toISOString(),
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'Stats query failed', details: String(err) });
+  }
+});
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
