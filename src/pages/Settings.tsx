@@ -220,7 +220,7 @@ export default function SettingsPage() {
       {/* Evaluator Evaluations */}
       <div className="smps-surface-elevated">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="font-display text-lg font-semibold">Evaluaciones de Evaluadores — {selectedPeriod}</h3>
+          <h3 className="font-display text-lg font-semibold">Eval. Supervisor — {selectedPeriod}</h3>
           {supervisorAvgScore !== null && supervisorEvals.length > 1 && (
             <div className="text-right">
               <span className="text-2xl font-bold font-display text-accent">{supervisorAvgScore}%</span>

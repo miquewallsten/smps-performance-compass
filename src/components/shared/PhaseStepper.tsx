@@ -4,7 +4,7 @@ export type EvalStage = 'self' | 'supervisor' | 'feedback' | 'action_plan';
 
 const STAGES: { key: EvalStage; label: string; shortLabel: string; icon: React.ElementType }[] = [
   { key: 'self', label: 'Autoevaluación', shortLabel: 'Autoeval.', icon: ClipboardCheck },
-  { key: 'supervisor', label: 'Evaluadores', shortLabel: 'Evaluadores', icon: Users },
+  { key: 'supervisor', label: 'Eval. Supervisor', shortLabel: 'Eval. Sup.', icon: Users },
   { key: 'feedback', label: 'Feedback', shortLabel: 'Feedback', icon: MessageSquare },
   { key: 'action_plan', label: 'Plan de Acción', shortLabel: 'Plan Acción', icon: Target },
 ];

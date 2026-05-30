@@ -267,7 +267,7 @@ export default function ScoreAnalysis() {
           <p className="text-[10px] text-muted-foreground">de {filteredUsers.length}</p>
         </div>
         <div className="smps-surface-card text-center">
-          <p className="text-[11px] text-muted-foreground uppercase tracking-wide">Evaluadores</p>
+          <p className="text-[11px] text-muted-foreground uppercase tracking-wide">Eval. Supervisor</p>
           <p className="font-display text-xl font-bold">{supEvalsCount}</p>
           <p className="text-[10px] text-muted-foreground">recibidas</p>
         </div>

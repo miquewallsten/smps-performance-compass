@@ -118,7 +118,7 @@ export default function PeriodConfigPage() {
 
   const stages: { startKey: keyof PeriodConfig; endKey: keyof PeriodConfig; label: string; color: string }[] = [
     { startKey: 'selfStart', endKey: 'selfEnd', label: 'Autoevaluación', color: '#3b82f6' },
-    { startKey: 'supervisorStart', endKey: 'supervisorEnd', label: 'Evaluación de Evaluadores', color: '#a855f7' },
+    { startKey: 'supervisorStart', endKey: 'supervisorEnd', label: 'Eval. Supervisor', color: '#a855f7' },
     { startKey: 'feedbackStart', endKey: 'feedbackEnd', label: 'Sesión de Feedback', color: '#f59e0b' },
     { startKey: 'actionPlanStart', endKey: 'actionPlanEnd', label: 'Plan de Acción', color: '#22c55e' },
   ];

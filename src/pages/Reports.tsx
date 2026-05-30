@@ -79,7 +79,7 @@ export default function Reports() {
 
   const stageData = [
     { name: 'Autoevaluación', completado: selfEvalsDone, pendiente: totalUsers - selfEvalsDone },
-    { name: 'Eval. Evaluadores', completado: supervisorEvalsDone, pendiente: totalUsers - supervisorEvalsDone },
+    { name: 'Eval. Supervisor', completado: supervisorEvalsDone, pendiente: totalUsers - supervisorEvalsDone },
     { name: 'Sesión Feedback', completado: feedbackDone, pendiente: totalUsers - feedbackDone },
     { name: 'Plan de Acción', completado: actionPlansDone, pendiente: totalUsers - actionPlansDone },
   ];
@@ -182,7 +182,7 @@ export default function Reports() {
         </div>
 
         <div className="smps-surface-card">
-          <h3 className="smps-section-title font-display text-base font-semibold mb-3">Evaluaciones de Evaluadores por Nivel</h3>
+          <h3 className="smps-section-title font-display text-base font-semibold mb-3">Eval. Supervisor por Nivel</h3>
           <ResponsiveContainer width="100%" height={250}>
             <BarChart data={supervisorByPosition}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(214, 20%, 88%)" />
