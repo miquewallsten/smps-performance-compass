@@ -75,6 +75,11 @@ export default function Dashboard() {
 
   const pAssign = (Array.isArray(assignments) ? assignments : []).filter(a => a.period === currentPeriod);
   const pEvals = (Array.isArray(evaluations) ? evaluations : []).filter(e => e.period === currentPeriod);
+  console.log("[Dashboard DEBUG] currentPeriod:", currentPeriod);
+  console.log("[Dashboard DEBUG] users count:", users.length, "sample keys:", users[0] ? Object.keys(users[0]).join(",") : "none");
+  console.log("[Dashboard DEBUG] evaluations count:", evaluations.length, "sample:", evaluations[0] ? { id: evaluations[0].id?.substring(0,8), evaluatedId: evaluations[0].evaluatedId?.substring(0,8), period: evaluations[0].period, type: evaluations[0].type } : "none");
+  console.log("[Dashboard DEBUG] assignments count:", assignments.length, "sample:", assignments[0] ? { id: assignments[0].id?.substring(0,8), employeeId: assignments[0].employeeId?.substring(0,8), period: assignments[0].period } : "none");
+  console.log("[Dashboard DEBUG] pAssign count:", pAssign.length, "pEvals count:", pEvals.length);
   const curCfg = (Array.isArray(periodConfigs) ? periodConfigs : []).find((c: any) => c.period === currentPeriod);
 
   const myTeamIds = isAdminOrMore ? null : pAssign.filter(a => a.supervisorId === currentUser.id).map(a => a.employeeId);
