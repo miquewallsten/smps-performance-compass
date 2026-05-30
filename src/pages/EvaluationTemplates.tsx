@@ -6,7 +6,7 @@ import {
   SECTION_LABELS, SECTION_ORDER, getSectionWeights, getSectionByCategory,
 } from '@/lib/evaluationConfig';
 import { Position, QuestionCategory, EvalQuestion, EvalSection } from '@/types';
-import { ChevronDown, ChevronRight, Plus, Trash2, AlertCircle, Save, BookOpen, Search, Pencil } from 'lucide-react';
+import { ChevronDown, ChevronRight, Trash2, AlertCircle, Save, BookOpen, Search, Pencil, Plus } from 'lucide-react';
 import { getCategoriesList } from './QuestionLibrary';
 
 const MAX_QUESTIONS = 20;
@@ -38,9 +38,6 @@ export default function EvaluationTemplates() {
   const [expandedPosition, setExpandedPosition] = useState<Position | null>(null);
   const [editingPosition, setEditingPosition] = useState<Position | null>(null);
   const [editQuestions, setEditQuestions] = useState<EvalQuestion[]>([]);
-  const [newCategory, setNewCategory] = useState<QuestionCategory>('Desempeño');
-  const [newText, setNewText] = useState('');
-  const [newWeight, setNewWeight] = useState(5);
   const [showLibrary, setShowLibrary] = useState(false);
   const [librarySearch, setLibrarySearch] = useState('');
 
@@ -92,6 +89,15 @@ export default function EvaluationTemplates() {
     return rescaled;
   }, [allQuestions, sectionWeightsMap]);
 
+  // Filtered library questions for inline picker
+  const filteredLibQuestions = useMemo(() => {
+    const search = librarySearch.toLowerCase();
+    return (libQuestions as any[]).filter(q => {
+      if (!search) return true;
+      return (q.text || '').toLowerCase().includes(search) || (q.category || '').toLowerCase().includes(search);
+    });
+  }, [libQuestions, librarySearch]);
+
   const toggle = (pos: Position) => {
     if (editingPosition) return;
     setExpandedPosition(prev => (prev === pos ? null : pos));
@@ -139,20 +145,21 @@ export default function EvaluationTemplates() {
     });
   };
 
-  const handleAddQuestion = () => {
-    if (!newText.trim() || editQuestions.length >= MAX_QUESTIONS) return;
-    const id = `custom-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
-    setEditQuestions(prev => [...prev, { id, category: newCategory, text: newText.trim(), weight: newWeight }]);
-    setNewText('');
-    setNewWeight(5);
-  };
-
   const handleRemoveQuestion = (id: string) => {
     setEditQuestions(prev => prev.filter(q => q.id !== id));
   };
 
   const handleWeightChange = (id: string, weight: number) => {
     setEditQuestions(prev => prev.map(q => q.id === id ? { ...q, weight: Math.max(1, Math.min(100, weight)) } : q));
+  };
+
+  const handleAddFromLibrary = (q: any) => {
+    if (editQuestions.length >= MAX_QUESTIONS) return;
+    const already = editQuestions.some(e => e.text.trim().toLowerCase() === (q.text || '').trim().toLowerCase());
+    if (already) return;
+    const id = `lib-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+    const section = (q.defaultSection as EvalSection) || getSectionByCategory(q.category);
+    setEditQuestions(prev => [...prev, { id, category: q.category, text: q.text, weight: q.defaultWeight || 5, section, practiceArea: q.practiceArea }]);
   };
 
   const renderPositionCard = (pos: Position) => {
@@ -170,79 +177,100 @@ export default function EvaluationTemplates() {
           disabled={!!editingPosition && editingPosition !== pos}
         >
           <div className="flex items-center gap-3">
-            {isOpen ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
-            <span className="font-display font-semibold">{getPositionLabel(pos)}</span>
-            <span className="text-xs text-muted-foreground">{questions.length} preguntas</span>
+            <span className="text-sm font-display font-semibold">{getPositionLabel(pos)}</span>
+            <span className="text-xs text-muted-foreground">{questions.length} pregunta{questions.length !== 1 ? 's' : ''}</span>
           </div>
-          <div className="flex items-center gap-3">
-            <span className={`text-xs font-medium ${Math.abs(tw - 100) < 0.5 ? 'text-smps-success' : 'text-smps-warning'}`}>
-              Σ {Math.round(tw)}%
-            </span>
-            {questions.length > 0 && categories.length > 0 && (
-              <span className="text-[10px] text-muted-foreground">{categories.length} categorías</span>
-            )}
+          <div className="flex items-center gap-2">
+            {posConfig && <span className="text-xs text-muted-foreground">{getPositionLevel(pos) === 'legal' ? '⚖️ Legal' : '📊 Administrativo'}</span>}
+            {isOpen ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
           </div>
         </button>
 
         {isOpen && (
-          <div className="px-5 pb-4 space-y-4">
-            {questions.length === 0 ? (
-              <p className="text-sm text-muted-foreground py-4 text-center">No hay preguntas configuradas para esta posición.</p>
-            ) : (
-              categories.map(cat => {
-                const catQuestions = questions.filter(q => q.category === cat);
-                const catWeight = catQuestions.reduce((s, q) => s + q.weight, 0);
-                return (
-                  <div key={cat}>
-                    <div className="flex items-center gap-2 mb-1.5">
-                      <span className="text-xs font-semibold text-foreground">{cat}</span>
-                      <span className="text-[10px] text-muted-foreground">{Math.round(catWeight)}%</span>
-                    </div>
-                    <div className="space-y-1.5">
-                      {catQuestions.map(q => (
-                        <div key={q.id} className="flex items-center justify-between text-sm py-1 px-2 rounded bg-muted/30">
-                          <span className="flex-1">{q.text}</span>
-                          {isEditing ? (
-                            <div className="flex items-center gap-1">
-                              <input type="number" min={1} max={100} value={q.weight}
-                                onChange={e => handleWeightChange(q.id, parseInt(e.target.value) || 1)}
-                                className="w-14 px-1.5 py-0.5 text-xs rounded border border-input bg-background text-center" />
-                              <button onClick={() => handleRemoveQuestion(q.id)} className="p-1 text-muted-foreground hover:text-destructive"><Trash2 className="h-3 w-3" /></button>
-                            </div>
-                          ) : (
-                            <span className="text-xs text-muted-foreground w-10 text-right">{Math.round(q.weight)}%</span>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                );
-              })
+          <div className="px-5 pb-5 border-t">
+            {questions.length === 0 && !isEditing && (
+              <p className="text-sm text-muted-foreground py-4 text-center">Sin preguntas configuradas</p>
             )}
 
-            {isEditing && (
-              <div className="pt-3 border-t space-y-2">
-                <div className="flex gap-2">
-                  <select value={newCategory} onChange={e => setNewCategory(e.target.value as QuestionCategory)}
-                    className="flex-1 px-2 py-1.5 rounded-lg border border-input bg-background text-sm">
-                    {getCategoriesList().map(c => <option key={c} value={c}>{c}</option>)}
-                  </select>
-                  <input type="text" value={newText} onChange={e => setNewText(e.target.value)}
-                    placeholder="Nueva pregunta..."
-                    className="flex-1 px-3 py-1.5 rounded-lg border border-input bg-background text-sm" />
-                  <input type="number" min={1} max={100} value={newWeight} onChange={e => setNewWeight(parseInt(e.target.value) || 5)}
-                    className="w-16 px-2 py-1.5 rounded-lg border border-input bg-background text-sm text-center" />
-                  <button onClick={handleAddQuestion} disabled={!newText.trim() || editQuestions.length >= MAX_QUESTIONS}
-                    className="px-3 py-1.5 rounded-lg bg-accent text-accent-foreground text-sm font-medium hover:opacity-90 disabled:opacity-40 flex items-center gap-1">
-                    <Plus className="h-3.5 w-3.5" /> Agregar
-                  </button>
+            {categories.map(cat => {
+              const catQs = questions.filter(q => q.category === cat);
+              if (catQs.length === 0) return null;
+              return (
+                <div key={cat} className="mt-3">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">{cat}</p>
+                  <div className="space-y-1.5">
+                    {catQs.map(q => (
+                      <div key={q.id} className="flex items-center gap-2 py-1 px-2 rounded hover:bg-muted/40">
+                        {isEditing ? (
+                          <>
+                            <button onClick={() => handleWeightChange(q.id, q.weight - 1)} className="text-xs text-muted-foreground hover:text-foreground px-0.5">−</button>
+                            <span className="text-xs font-medium w-8 text-center tabular-nums">{Math.round(q.weight)}%</span>
+                            <button onClick={() => handleWeightChange(q.id, q.weight + 1)} className="text-xs text-muted-foreground hover:text-foreground px-0.5">+</button>
+                            <span className="text-sm flex-1">{q.text}</span>
+                            <button onClick={() => handleRemoveQuestion(q.id)} className="p-1 text-muted-foreground hover:text-destructive"><Trash2 className="h-3 w-3" /></button>
+                          </>
+                        ) : (
+                          <span className="text-xs text-muted-foreground w-10 text-right">{Math.round(q.weight)}%</span>
+                        )}
+                        {!isEditing && <span className="text-sm">{q.text}</span>}
+                      </div>
+                    ))}
+                  </div>
                 </div>
-                {editQuestions.length >= MAX_QUESTIONS && (
-                  <p className="text-xs text-smps-warning flex items-center gap-1"><AlertCircle className="h-3 w-3" /> Máximo {MAX_QUESTIONS} preguntas</p>
-                )}
+              );
+            })}
+
+            {isEditing && (
+              <div className="pt-3 border-t space-y-3">
+                {/* Inline Library Picker — only way to add questions */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                      <BookOpen className="h-3.5 w-3.5" /> Agregar desde Biblioteca
+                    </p>
+                    {editQuestions.length >= MAX_QUESTIONS && (
+                      <p className="text-xs text-smps-warning flex items-center gap-1"><AlertCircle className="h-3 w-3" /> Máximo {MAX_QUESTIONS} preguntas</p>
+                    )}
+                  </div>
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <input type="text" value={librarySearch} onChange={e => setLibrarySearch(e.target.value)}
+                      placeholder="Buscar pregunta en la biblioteca..."
+                      className="w-full pl-9 pr-3 py-2 rounded-lg border border-input bg-background text-sm" />
+                  </div>
+                  <div className="max-h-48 overflow-y-auto space-y-1.5">
+                    {filteredLibQuestions.length === 0 && (
+                      <p className="text-xs text-muted-foreground text-center py-4">
+                        {librarySearch ? 'Sin resultados para esta búsqueda' : 'No hay preguntas en la biblioteca. Agrega preguntas desde "Biblioteca de Preguntas".'}
+                      </p>
+                    )}
+                    {filteredLibQuestions.map((q: any) => {
+                      const already = editQuestions.some(e => e.text.trim().toLowerCase() === (q.text || '').trim().toLowerCase());
+                      return (
+                        <div key={q.id} className="flex items-start gap-2 p-2 rounded-lg border hover:bg-muted/30">
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm leading-tight">{q.text}</p>
+                            <div className="flex gap-1.5 mt-0.5">
+                              <span className="text-[10px] bg-accent/10 text-accent px-1.5 py-0.5 rounded-full">{q.category}</span>
+                              {q.defaultSection && <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded-full">{q.defaultSection === 'tecnico' ? 'Técnico' : q.defaultSection === 'blandas' ? 'Blandas' : 'Competencias'}</span>}
+                            </div>
+                          </div>
+                          <button
+                            disabled={already || editQuestions.length >= MAX_QUESTIONS}
+                            onClick={() => handleAddFromLibrary(q)}
+                            className="text-xs px-2.5 py-1 rounded-lg bg-accent text-accent-foreground hover:opacity-90 disabled:opacity-40 whitespace-nowrap shrink-0"
+                          >
+                            {already ? '✓ Añadida' : '+ Agregar'}
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
                 <div className="flex items-center justify-between pt-2">
                   <span className={`text-xs font-medium ${isValid ? 'text-smps-success' : 'text-smps-warning'}`}>
-                    Peso total: {totalWeight}% {isValid ? '✓' : `(debe ser 100%)`}
+                    Peso total: {totalWeight}% {isValid ? '✓' : '(debe ser 100%)'}
                   </span>
                   <div className="flex gap-2">
                     <button onClick={cancelEditing} className="px-3 py-1.5 rounded-lg border text-sm font-medium hover:bg-muted">Cancelar</button>
@@ -286,7 +314,7 @@ export default function EvaluationTemplates() {
       <div className="mb-6">
         <h1 className="font-display text-2xl font-bold">Evaluaciones</h1>
         <p className="text-muted-foreground text-sm">
-          Configuración de evaluaciones por nivel y posición
+          Configuración de evaluaciones por nivel y posición. Las preguntas se agregan desde la Biblioteca de Preguntas.
           {!canEdit && ' (solo lectura)'}
         </p>
       </div>
@@ -312,57 +340,6 @@ export default function EvaluationTemplates() {
           </div>
         </div>
       </div>
-
-      {showLibrary && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/20 backdrop-blur-sm p-4" onClick={() => setShowLibrary(false)}>
-          <div className="bg-card rounded-xl border w-full max-w-2xl max-h-[80vh] overflow-hidden flex flex-col shadow-xl" onClick={e => e.stopPropagation()}>
-            <div className="px-5 py-3 border-b flex items-center justify-between">
-              <h3 className="font-display font-semibold flex items-center gap-2"><BookOpen className="h-4 w-4" /> Importar de Biblioteca</h3>
-              <button onClick={() => { setShowLibrary(false); setLibrarySearch(''); }} className="text-sm text-muted-foreground hover:text-foreground">Cerrar</button>
-            </div>
-            <div className="overflow-y-auto p-4 space-y-2">
-              {libQuestions.length > 0 && (
-                <div className="mb-3">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <input type="text" value={librarySearch} onChange={e => setLibrarySearch(e.target.value)}
-                      placeholder="Buscar por texto o categoría..."
-                      className="w-full pl-9 pr-3 py-2 rounded-lg border border-input bg-background text-sm" />
-                  </div>
-                </div>
-              )}
-              {libQuestions.length === 0 && (
-                <p className="text-sm text-muted-foreground text-center py-8">
-                  No hay preguntas personalizadas en la biblioteca. Agrégalas desde "Biblioteca Preguntas".
-                </p>
-              )}
-              {libQuestions.filter(q => !librarySearch || q.text.toLowerCase().includes(librarySearch.toLowerCase()) || q.category.toLowerCase().includes(librarySearch.toLowerCase())).map(q => {
-                const already = editQuestions.some(e => e.text.trim().toLowerCase() === q.text.trim().toLowerCase());
-                return (
-                  <div key={q.id} className="flex items-start gap-3 p-3 rounded-lg border hover:bg-muted/30">
-                    <div className="flex-1">
-                      <p className="text-sm">{q.text}</p>
-                      <div className="flex gap-2 mt-1">
-                        <span className="text-[10px] bg-accent/10 text-accent px-2 py-0.5 rounded-full">{q.category}</span>
-                      </div>
-                    </div>
-                    <button
-                      disabled={already || editQuestions.length >= MAX_QUESTIONS}
-                      onClick={() => {
-                        const id = `lib-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
-                        setEditQuestions(prev => [...prev, { id, category: q.category, text: q.text, weight: 5 }]);
-                      }}
-                      className="text-xs px-3 py-1.5 rounded-lg bg-accent text-accent-foreground hover:opacity-90 disabled:opacity-40"
-                    >
-                      {already ? 'Ya añadida' : 'Agregar'}
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
