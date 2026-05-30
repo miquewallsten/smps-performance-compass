@@ -178,7 +178,7 @@ export default function EvaluationTemplates() {
         >
           <div className="flex items-center gap-3">
             <span className="text-sm font-display font-semibold">{getPositionLabel(pos)}</span>
-            <span className="text-xs text-muted-foreground">{questions.length} pregunta{questions.length !== 1 ? 's' : ''}</span>
+            <span className="text-xs text-muted-foreground">{questions.length} pregunta{questions.length !== 1 ? 's' : ''}</span><span className="text-xs text-muted-foreground"> · {tw}%</span>
           </div>
           <div className="flex items-center gap-2">
             {posConfig && <span className="text-xs text-muted-foreground">{getPositionLevel(pos) === 'legal' ? '⚖️ Legal' : '📊 Administrativo'}</span>}
