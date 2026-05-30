@@ -235,12 +235,52 @@ router.post('/chat', upload.single('file'), async (req: Request, res: Response) 
     await db.run('INSERT INTO copilot_messages (id,conversation_id,role,content,created_at) VALUES(?,?,?,?,?)',
       [uuidv4(), convId, 'user', fullMessage, new Date().toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, '')]);
 
-    // Load conversation history
-    const history = (await db.all('SELECT role, content FROM copilot_messages WHERE conversation_id=? ORDER BY created_at', [convId])).reverse() as Record<string, unknown>[];
+    // Load conversation history (chronological order: oldest first)
+    // Also load tool_calls and tool_results for full memory
+    const historyRows = await db.all(
+      'SELECT role, content, tool_calls, tool_results FROM copilot_messages WHERE conversation_id=? ORDER BY created_at ASC',
+      [convId]
+    ) as any[];
 
-    const useTools = needsTools(fullMessage, !!fileContent);
+    // Always enable tools if there's conversation history (the user is in a conversation)
+    // or if the current message is not a pure greeting
+    const hasHistory = historyRows.length > 1; // more than just the user's current message
+    const useTools = hasHistory || needsTools(fullMessage, !!fileContent);
     const messages: Record<string, unknown>[] = [{ role: 'system', content: await buildSystemPrompt(cfg, userName, useTools) }];
-    for (const m of history) messages.push({ role: m.role, content: m.content });
+
+    // Rebuild full conversation with tool memory
+    for (const row of historyRows) {
+      if (row.role === 'assistant' && row.tool_calls) {
+        // Reconstruct assistant message with tool_calls
+        try {
+          const tcs = JSON.parse(row.tool_calls);
+          messages.push({ role: 'assistant', content: row.content || null, tool_calls: tcs });
+          // Also add tool results if available
+          if (row.tool_results) {
+            try {
+              const results = JSON.parse(row.tool_results);
+              for (const r of results) {
+                messages.push({ role: 'tool', tool_call_id: r.tool_call_id, content: r.content });
+              }
+            } catch {}
+          }
+        } catch {
+          // If tool_calls parse fails, just add as plain message
+          messages.push({ role: row.role, content: row.content });
+        }
+      } else {
+        messages.push({ role: row.role, content: row.content });
+      }
+    }
+
+    // Memory budget: keep system prompt + last ~50 messages to avoid token overflow
+    if (messages.length > 52) {
+      const systemMsg = messages[0];
+      const recent = messages.slice(-50);
+      messages.length = 0;
+      messages.push(systemMsg);
+      messages.push(...recent);
+    }
 
     const tools = useTools ? getTools(cfg) : [];
     const fns = toolsToFunctions(tools);

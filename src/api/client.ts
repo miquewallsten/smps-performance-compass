@@ -1,4 +1,17 @@
-const API_BASE = import.meta.env.VITE_API_URL || '';
+// API base URL — supports VITE_API_URL env var, falls back to empty string (same-origin).
+// In production, set VITE_API_URL to your API server. In dev, Vite proxy handles it.
+const API_BASE: string = (import.meta.env.VITE_API_URL as string | undefined) ?? '';
+
+// Detect if we're in a browser and the API seems unreachable (helps with iOS Safari / private mode)
+function getApiBase(): string {
+  if (!API_BASE && typeof window !== 'undefined') {
+    // Same-origin — rely on Vite dev proxy or static deployment
+    return '';
+  }
+  return API_BASE;
+}
+
+const apiBase = getApiBase();
 
 // Safe localStorage helpers that work in iOS Safari private mode
 // where setItem throws QuotaExceededError and getItem/removeItem work fine
@@ -138,7 +151,7 @@ export async function apiFetch<T>(path: string, options?: RequestInit): Promise<
 
   let response: Response;
   try {
-    response = await fetch(`${API_BASE}${path}`, {
+    response = await fetch(`${apiBase}${path}`, {
       ...options,
       headers,
     });
@@ -179,3 +192,5 @@ export const api = {
     // Don't set Content-Type header - browser will set it with boundary for FormData
   }),
 };
+
+export { apiBase };

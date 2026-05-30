@@ -103,6 +103,12 @@ app.use('/api/copilot', copilotRoutes);
 app.use('/api/deploy', deployRoutes);
 app.use('/api/users', timelineRoutes);
 
+
+  // ─── TECH DIAGRAM: Public static page at /techdiagram.html ─────────────────
+  app.get("/techdiagram.html", (_req, res) => {
+    res.sendFile(path.resolve(process.cwd(), "dist/techdiagram.html"));
+  });
+
 // Multi-domain routing: serve landing page for bowdot.online, SMPS app for smps.bowdot.online
 // The landing page lives in /landing; the SMPS app lives in /dist
 if (process.env.NODE_ENV === 'production') {

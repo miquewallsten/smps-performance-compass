@@ -6,6 +6,7 @@ import { usePositionConfig } from '@/hooks/useEvaluationConfig';
 import { ScoreBadge } from '@/components/shared/ScoreBadge';
 import { CheckCircle, Clock, ArrowRight, PenLine, UserCheck, Megaphone, CalendarOff } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { DashboardSkeleton } from '@/components/shared/SkeletonPage';
 
 type PhaseKey = 'self' | 'supervisor' | 'feedback' | 'action_plan';
 
@@ -50,6 +51,10 @@ export default function Dashboard() {
   const navigate = useNavigate();
 
   if (!currentUser) return null;
+
+  // Show skeleton while data loads
+  const isDashboardLoading = !usersData || !evaluationsData || !assignmentsData;
+  if (isDashboardLoading) return <DashboardSkeleton />;
 
   const isAdmin = currentUser.isAdmin;
   const isSocio = currentUser.position === 'socio';

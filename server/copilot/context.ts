@@ -68,6 +68,21 @@ export async function buildRichContext(): Promise<string> {
     return t.position + '(' + t.q_count + 'q, peso=' + t.total_weight + '%, secciones=' + (sw ? 'T:' + sw.tecnico + '% C:' + sw.competencias + '% B:' + sw.blandas + '%' : 'sin pesos') + ')';
   }).join(', ');
 
+  // Build question-to-template mapping (which questions are used by which positions)
+  const questionTemplateMap = await db.all(`
+    SELECT ql.question_id, ql.category, LEFT(ql.text, 80) as text_preview,
+      GROUP_CONCAT(DISTINCT tq.position ORDER BY tq.position) as positions
+    FROM question_library ql
+    LEFT JOIN template_questions tq ON tq.library_question_id = ql.id AND tq.is_active = 1
+    GROUP BY ql.id
+    ORDER BY ql.category, ql.text
+  `) as any[];
+
+  const questionMapStr = questionTemplateMap.map((q: any) => {
+    const posList = q.positions ? q.positions.split(',').length + ' plantilla(s): ' + q.positions : 'sin plantilla';
+    return q.question_id + ' [' + q.category + '] ' + q.text_preview + '... → ' + posList;
+  }).join('\n  ');
+
   return `CONTEXTO EN VIVO (fecha: ${today}):
 - Usuarios: ${activeUsers?.c || 0} activos de ${userCount?.c || 0} totales, ${adminCount?.c || 0} admins, ${managingPartnerCount?.c || 0} socios administradores
 - Sistema: ${systemStatus?.status || '?'} | Módulos: eval=${moduleConfig?.evaluations ? 'ON' : 'OFF'} comms=${moduleConfig?.communications ? 'ON' : 'OFF'} vac=${moduleConfig?.vacations ? 'ON' : 'OFF'} copilot=${moduleConfig?.copilot ? 'ON' : 'OFF'}
@@ -78,5 +93,7 @@ export async function buildRichContext(): Promise<string> {
 - Jerarquía Legal: ${legalPositions.join(' > ')}
 - Jerarquía Administrativa: ${adminPositions.join(' > ')}
 - Categorías de evaluación: ${categoryCount?.c || 0} | Preguntas en biblioteca: ${libraryCount?.c || 0}
-- Templates: ${weightSummary}`;
+- Templates: ${weightSummary}
+- Preguntas y plantillas que las usan (${libraryCount?.c || 0} preguntas):
+  ${questionMapStr}`;
 }

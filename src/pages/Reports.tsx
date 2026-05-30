@@ -6,6 +6,7 @@ import { getPositionHierarchy, getLegalHierarchy, getAdminHierarchy } from '@/li
 import { useCurrentPeriod } from '@/hooks/useCurrentPeriod';
 import { canViewUserEvaluations } from '@/lib/visibility';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
+import { ReportsSkeleton } from '@/components/shared/SkeletonPage';
 
 type AreaFilter = 'all' | 'legal' | 'administrativo';
 
@@ -19,6 +20,9 @@ export default function Reports() {
   const [areaFilter, setAreaFilter] = useState<AreaFilter>('all');
 
   if (!currentUser) return null;
+
+  const isReportsLoading = !users || !evaluations || !assignments || !actionPlans;
+  if (isReportsLoading) return <ReportsSkeleton />;
 
   const isAdmin = currentUser.isAdmin;
   const isSocio = currentUser.position === 'socio';

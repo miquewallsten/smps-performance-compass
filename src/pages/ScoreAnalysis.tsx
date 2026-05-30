@@ -6,6 +6,8 @@ import { getPositionLabel, getPositionLevel, normalizePracticeArea } from '@/lib
 import { useCurrentPeriod } from '@/hooks/useCurrentPeriod';
 import { canViewUserEvaluations } from '@/lib/visibility';
 import { BarChart3, Filter, ChevronDown, ChevronRight, TrendingUp, Users } from 'lucide-react';
+import { ResponsiveRadar } from '@nivo/radar';
+import { ScoreAnalysisSkeleton } from '@/components/shared/SkeletonPage';
 
 type GroupBy = 'area' | 'practice' | 'position';
 
@@ -45,6 +47,9 @@ export default function ScoreAnalysis() {
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
 
   if (!currentUser) return null;
+
+  const isScoreLoading = !users || !evaluations;
+  if (isScoreLoading) return <ScoreAnalysisSkeleton />;
 
   const isAdmin = currentUser.isAdmin;
   const isSocio = currentUser.position === 'socio';
@@ -272,6 +277,59 @@ export default function ScoreAnalysis() {
           <p className="text-[10px] text-muted-foreground">recibidas</p>
         </div>
       </div>
+
+      {/* Radar Chart - Competency Overview */}
+      {groupedData.length > 0 && (() => {
+        // Build radar data: one entry per group, with self/supervisor/total as dimensions
+        const radarData = groupedData.filter(r => r.avgTotal !== null).slice(0, 6).map(row => ({
+          group: row.name.length > 15 ? row.name.slice(0, 14) + '…' : row.name,
+          Autoevaluación: row.avgSelf ?? 0,
+          'Eval. Supervisor': row.avgSupervisor ?? 0,
+          Promedio: row.avgTotal ?? 0,
+        }));
+        if (radarData.length < 2) return null;
+        const radarKeys = ['Autoevaluación', 'Eval. Supervisor', 'Promedio'];
+        return (
+          <div className="smps-surface-card">
+            <h3 className="smps-section-title font-display text-base font-semibold mb-3">Comparativa Radar</h3>
+            <div style={{ height: Math.min(400, 100 + radarData.length * 60), width: '100%' }}>
+              <ResponsiveRadar
+                data={radarData}
+                keys={radarKeys}
+                indexBy="group"
+                maxValue={100}
+                curve="linearClosed"
+                borderWidth={2}
+                borderColor={{ from: 'color', modifiers: [] }}
+                gridLevels={5}
+                gridShape="circular"
+                gridLabelOffset={12}
+                dotSize={6}
+                dotColor={{ theme: 'background' }}
+                dotBorderWidth={2}
+                colors={['hsl(145, 60%, 40%)', 'hsl(210, 60%, 50%)', 'hsl(350, 80%, 42%)']}
+                fillOpacity={0.12}
+                blendMode="normal"
+                enableCrosshair={true}
+                crosshairType="intersect"
+                axisTop={null}
+                axisRight={null}
+                axisBottom={null}
+                axisLeft={null}
+                margin={{ top: 30, right: 30, bottom: 30, left: 30 }}
+                theme={{
+                  text: { fontSize: 11, fill: 'hsl(var(--foreground))' },
+                  grid: { stroke: 'hsl(var(--border))' },
+                  dots: { stroke: 'hsl(var(--card))', strokeWidth: 2 },
+                }}
+                legends={[
+                  { anchor: 'bottom', direction: 'row', translateX: 0, translateY: 0, itemWidth: 100, itemHeight: 16, symbolSize: 8, symbolShape: 'circle' }
+                ]}
+              />
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Grouped rows */}
       {groupedData.length === 0 ? (

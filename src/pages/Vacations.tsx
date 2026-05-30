@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useUsers, useAssignments, useVacationConfig, useVacationRequests, useUpdateVacationConfig, useCreateVacationRequest, useUpdateVacationRequest, useAddExtraVacationDays, useDeleteVacationRequest } from '@/api/queries';
+import { useUsers, useAssignments, useVacationConfig, useVacationRequests, useUpdateVacationConfig, useCreateVacationRequest, useUpdateVacationRequest, useAddExtraVacationDays, useCancelVacationRequest } from '@/api/queries';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -28,7 +28,7 @@ export default function Vacations() {
   const addVacationRequest = useCreateVacationRequest().mutate;
   const updateVacationRequestStatus = useUpdateVacationRequest().mutate;
   const addExtraVacationDays = useAddExtraVacationDays().mutate;
-  const deleteVacationRequest = useDeleteVacationRequest().mutate;
+  const deleteVacationRequest = useCancelVacationRequest().mutate;
   const [activeTab, setActiveTab] = useState('my');
   const [showRequest, setShowRequest] = useState(false);
   const [startDate, setStartDate] = useState('');

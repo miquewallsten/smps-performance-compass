@@ -93,8 +93,8 @@ export const evaluationsTool: Tool = {
       if (act === 'create_question') {
         if (!args.text || !args.category) return JSON.stringify({ error: 'Falta text y category' });
         const id = uuidv4(), qid = args.question_id || 'q_' + Date.now();
-        await db.run('INSERT INTO question_library (id,question_id,category,default_section,text,default_weight,created_at,created_by) VALUES(?,?,?,?,?,?,?,?)',
-          [id, qid, args.category, null, args.text, Number(args.weight) || 5, new Date().toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, ''), uid]);
+        await db.run('INSERT INTO question_library (id,question_id,category,default_section,default_weight,text,created_at,created_by) VALUES(?,?,?,?,?,?,?,?,?)',
+          [id, qid, args.category, null, Number(args.weight) || 5, args.text, new Date().toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, ''), uid]);
         return JSON.stringify({ ok: true, qid, msg: 'Pregunta creada en biblioteca' });
       }
       if (act === 'batch_questions') {
@@ -102,7 +102,7 @@ export const evaluationsTool: Tool = {
         const r: Record<string, unknown>[] = [];
         for (const q of qs) {
           if (!q.category || !q.text) { r.push({ text: q.text, error: 'Faltan campos' }); continue; }
-          try { const id = uuidv4(), qid = 'q_' + Date.now() + '_' + Math.random().toString(36).slice(2,6); await db.run('INSERT INTO question_library (id,question_id,category,default_section,text,default_weight,created_at,created_by) VALUES(?,?,?,?,?,?,?,?)', [id, qid, q.category, null, q.text, Number(q.weight) || 5, new Date().toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, ''), uid]); r.push({ qid, ok: true }); } catch (e) { r.push({ text: q.text, error: String(e) }); }
+          try { const id = uuidv4(), qid = 'q_' + Date.now() + '_' + Math.random().toString(36).slice(2,6); await db.run('INSERT INTO question_library (id,question_id,category,default_section,default_weight,text,created_at,created_by) VALUES(?,?,?,?,?,?,?,?,?)', [id, qid, q.category, null, Number(q.weight) || 5, q.text, new Date().toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, ''), uid]); r.push({ qid, ok: true }); } catch (e) { r.push({ text: q.text, error: String(e) }); }
         }
         return JSON.stringify({ msg: `${r.filter(x => x.ok).length}/${qs.length} creadas`, results: r });
       }

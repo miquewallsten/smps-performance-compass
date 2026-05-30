@@ -3,35 +3,47 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import Layout from "./components/Layout";
-import Dashboard from "./pages/Dashboard";
-import SelfEvaluation from "./pages/SelfEvaluation";
-import Evaluations from "./pages/Evaluations";
-import Reports from "./pages/Reports";
-import UserManagement from "./pages/UserManagement";
-import AssignSupervisors from "./pages/AssignSupervisors";
-import SettingsPage from "./pages/Settings";
-import OrgChart from "./pages/OrgChart";
-import AccessControl from "./pages/AccessControl";
-import EvaluationTemplates from "./pages/EvaluationTemplates";
-import PersonalObjectivesPage from "./pages/PersonalObjectives";
-import Communications from "./pages/Communications";
-import Vacations from "./pages/Vacations";
-import PeriodConfig from "./pages/PeriodConfig";
-import Help from "./pages/Help";
-import QuestionLibrary from "./pages/QuestionLibrary";
-import MyActionPlan from "./pages/MyActionPlan";
-import MyProfile from "./pages/MyProfile";
-import UserTimeline from "./pages/UserTimeline";
-import CopilotChat from "./pages/CopilotChat";
-import PositionManagement from "./pages/PositionManagement";
-import ScoreAnalysis from "./pages/ScoreAnalysis";
-import NotFound from "./pages/NotFound";
-import SetupPage from "./pages/Setup";
-import Login from "./pages/Login";
-import ChangePassword from "./pages/ChangePassword";
+import { lazy, Suspense, Component, ReactNode } from "react";
+import { Loader2 } from "lucide-react";
 
-import { Component, ReactNode } from 'react';
+// ── Code-split all page routes (#15) ─────────────────────────────────────────
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const SelfEvaluation = lazy(() => import("./pages/SelfEvaluation"));
+const Evaluations = lazy(() => import("./pages/Evaluations"));
+const Reports = lazy(() => import("./pages/Reports"));
+const UserManagement = lazy(() => import("./pages/UserManagement"));
+const AssignSupervisors = lazy(() => import("./pages/AssignSupervisors"));
+const SettingsPage = lazy(() => import("./pages/Settings"));
+const OrgChart = lazy(() => import("./pages/OrgChart"));
+const AccessControl = lazy(() => import("./pages/AccessControl"));
+const EvaluationTemplates = lazy(() => import("./pages/EvaluationTemplates"));
+const PersonalObjectivesPage = lazy(() => import("./pages/PersonalObjectives"));
+const Communications = lazy(() => import("./pages/Communications"));
+const Vacations = lazy(() => import("./pages/Vacations"));
+const PeriodConfig = lazy(() => import("./pages/PeriodConfig"));
+const Help = lazy(() => import("./pages/Help"));
+const QuestionLibrary = lazy(() => import("./pages/QuestionLibrary"));
+const MyActionPlan = lazy(() => import("./pages/MyActionPlan"));
+const MyProfile = lazy(() => import("./pages/MyProfile"));
+const UserTimeline = lazy(() => import("./pages/UserTimeline"));
+const CopilotChat = lazy(() => import("./pages/CopilotChat"));
+const PositionManagement = lazy(() => import("./pages/PositionManagement"));
+const ScoreAnalysis = lazy(() => import("./pages/ScoreAnalysis"));
+const NotFound = lazy(() => import("./pages/NotFound"));
+const SetupPage = lazy(() => import("./pages/Setup"));
+const Login = lazy(() => import("./pages/Login"));
+const ChangePassword = lazy(() => import("./pages/ChangePassword"));
+
+import Layout from "./components/Layout";
+
+// ── Global page loading spinner ──────────────────────────────────────────────
+function PageLoader() {
+  return (
+    <div className="flex items-center justify-center min-h-[60vh]">
+      <Loader2 className="h-6 w-6 animate-spin text-accent" />
+    </div>
+  );
+}
 
 class ErrorBoundary extends Component<{children: ReactNode}, {hasError: boolean, error: Error | null}> {
   constructor(props: {children: ReactNode}) {
@@ -71,47 +83,61 @@ function AppRoutes() {
   }
 
   if (systemInitialized === false) {
-    return <SetupPage />;
+    return (
+      <Suspense fallback={<PageLoader />}>
+        <SetupPage />
+      </Suspense>
+    );
   }
 
   if (!user) {
-    return <Login />;
+    return (
+      <Suspense fallback={<PageLoader />}>
+        <Login />
+      </Suspense>
+    );
   }
 
   if (user.mustChangePassword) {
-    return <ChangePassword />;
+    return (
+      <Suspense fallback={<PageLoader />}>
+        <ChangePassword />
+      </Suspense>
+    );
   }
 
   return (
-    <Routes>
-      <Route path="/login" element={<Navigate to="/dashboard" replace />} />
-      <Route path="/" element={<Layout />}>
-        <Route index element={<Navigate to="/dashboard" replace />} />
-        <Route path="dashboard" element={<Dashboard />} />
-        <Route path="self-evaluation" element={<SelfEvaluation />} />
-        <Route path="evaluations" element={<Evaluations />} />
-        <Route path="reports" element={<Reports />} />
-        <Route path="score-analysis" element={<ScoreAnalysis />} />
-        <Route path="users" element={<UserManagement />} />
-        <Route path="positions" element={<PositionManagement />} />
-        <Route path="assign" element={<AssignSupervisors />} />
-        <Route path="orgchart" element={<OrgChart />} />
-        <Route path="settings" element={<SettingsPage />} />
-        <Route path="evaluation-templates" element={<EvaluationTemplates />} />
-        <Route path="personal-objectives" element={<PersonalObjectivesPage />} />
-        <Route path="communications" element={<Communications />} />
-        <Route path="vacations" element={<Vacations />} />
-        <Route path="access" element={isSuperUser ? <AccessControl /> : <Navigate to="/dashboard" replace />} />
-        <Route path="period-config" element={<PeriodConfig />} />
-        <Route path="question-library" element={<QuestionLibrary />} />
-        <Route path="my-action-plan" element={<MyActionPlan />} />
-        <Route path="my-profile" element={<MyProfile />} />
-        <Route path="users/:id/timeline" element={<UserTimeline />} />
-        <Route path="copilot" element={moduleConfig?.copilot && isSuperUser ? <CopilotChat /> : <Navigate to="/dashboard" replace />} />
-      </Route>
-      <Route path="/help" element={<Help />} />
-      <Route path="*" element={<NotFound />} />
-    </Routes>
+    <Suspense fallback={<PageLoader />}>
+      <Routes>
+        <Route path="/login" element={<Navigate to="/dashboard" replace />} />
+        <Route path="/" element={<Layout />}>
+          <Route index element={<Navigate to="/dashboard" replace />} />
+          <Route path="dashboard" element={<Dashboard />} />
+          <Route path="self-evaluation" element={<SelfEvaluation />} />
+          <Route path="evaluations" element={<Evaluations />} />
+          <Route path="reports" element={<Reports />} />
+          <Route path="score-analysis" element={<ScoreAnalysis />} />
+          <Route path="users" element={<UserManagement />} />
+          <Route path="positions" element={<PositionManagement />} />
+          <Route path="assign" element={<AssignSupervisors />} />
+          <Route path="orgchart" element={<OrgChart />} />
+          <Route path="settings" element={<SettingsPage />} />
+          <Route path="evaluation-templates" element={<EvaluationTemplates />} />
+          <Route path="personal-objectives" element={<PersonalObjectivesPage />} />
+          <Route path="communications" element={<Communications />} />
+          <Route path="vacations" element={<Vacations />} />
+          <Route path="access" element={isSuperUser ? <AccessControl /> : <Navigate to="/dashboard" replace />} />
+          <Route path="period-config" element={<PeriodConfig />} />
+          <Route path="question-library" element={<QuestionLibrary />} />
+          <Route path="my-action-plan" element={<MyActionPlan />} />
+          <Route path="my-profile" element={<MyProfile />} />
+          <Route path="users/:id/timeline" element={<UserTimeline />} />
+          <Route path="copilot" element={moduleConfig?.copilot && isSuperUser ? <CopilotChat /> : <Navigate to="/dashboard" replace />} />
+        </Route>
+        <Route path="/help" element={<Help />} />
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </Suspense>
   );
 }
 

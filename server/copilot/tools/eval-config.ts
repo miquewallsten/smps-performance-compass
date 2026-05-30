@@ -125,8 +125,8 @@ export const questionLibraryTool: Tool = {
       if (!args.category || !args.text) return JSON.stringify({ error: 'Falta category, text' });
       const { v4: uuid } = await import('uuid');
       const id = uuid(), qid = args.question_id || 'lq_' + Date.now();
-      await db.run('INSERT INTO question_library (id,question_id,category,default_section,text,default_weight,created_at,created_by) VALUES(?,?,?,?,?,?,?,?,?)',
-        [id, qid, args.category, args.default_section || null, args.text, args.default_weight || 5, now(), uid]);
+      await db.run('INSERT INTO question_library (id,question_id,category,default_section,default_weight,text,created_at,created_by) VALUES(?,?,?,?,?,?,?,?,?)',
+        [id, qid, args.category, args.default_section || null, args.default_weight || 5, args.text, now(), uid]);
       return JSON.stringify({ ok: true, qid });
     }
     if (act === 'update') {

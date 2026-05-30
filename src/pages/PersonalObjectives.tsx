@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useUsers, useObjectives, useCreateObjectives, useAssignments, useSubmitObjectives, useReviewObjective , usePeriods } from '@/api/queries';
+import { useUsers, useObjectives, useCreateObjective, useAssignments, useSubmitObjective, useReviewObjective , usePeriods } from '@/api/queries';
 import {
   AdminObjective, LegalObjective, PersonalObjectives as POType, User,
 } from '@/types';
@@ -55,9 +55,9 @@ export default function PersonalObjectivesPage() {
   const { user: currentUser } = useAuth();
   const { data: users = [] } = useUsers();
   const { data: personalObjectives = [] } = useObjectives();
-  const createObjectives = useCreateObjectives().mutate;
+  const createObjectives = useCreateObjective().mutate;
   const { data: assignments = [] } = useAssignments();
-  const submitObjectives = useSubmitObjectives().mutate;
+  const submitObjectives = useSubmitObjective().mutate;
   const reviewObjective = useReviewObjective().mutate;
   const [expandedUser, setExpandedUser] = useState<string | null>(null);
   const currentPeriod = useCurrentPeriod();

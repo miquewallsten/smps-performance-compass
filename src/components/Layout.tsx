@@ -13,6 +13,7 @@ import { NavLink } from '@/components/NavLink';
 import PeriodEndAlert from '@/components/PeriodEndAlert';
 import { getPositionLevel } from '@/lib/evaluationConfig';
 import { useEvalConfigInit } from '@/hooks/useEvalConfigInit';
+import { PageTransition } from '@/components/shared/PageTransition';
 import { useCurrentPeriod } from '@/hooks/useCurrentPeriod';
 
 function Badge({ count }: { count: number }) {
@@ -253,10 +254,12 @@ export default function Layout() {
           </main>
         ) : (
           <main className="flex-1 min-h-0 overflow-auto pb-16 md:pb-0">
-            <div key={location.pathname} className="p-4 md:p-5 max-w-6xl mx-auto smps-page-enter">
-              <PeriodEndAlert />
-              <Outlet />
-            </div>
+            <PageTransition>
+              <div className="p-4 md:p-5 max-w-6xl mx-auto">
+                <PeriodEndAlert />
+                <Outlet />
+              </div>
+            </PageTransition>
           </main>
         )}
       </div>

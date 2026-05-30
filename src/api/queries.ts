@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { api, getToken, normalizeEvaluations, normalizeEvaluation } from './client';
+import { api, getToken, normalizeEvaluations, normalizeEvaluation, apiBase } from './client';
+import { toast } from 'sonner';
 
 // ── Users ──
 export function useUsers() {
@@ -7,22 +8,42 @@ export function useUsers() {
 }
 export function useCreateUser() {
   const qc = useQueryClient();
-  return useMutation({ mutationFn: (data: any) => api.post('/api/users', data), onSuccess: () => qc.invalidateQueries({ queryKey: ['users'] }) });
+  return useMutation({
+    mutationFn: (data: any) => api.post('/api/users', data),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['users'] }); toast.success('Usuario creado exitosamente'); },
+    onError: (err: Error) => toast.error(err.message || 'Error al crear usuario'),
+  });
 }
 export function useUpdateUser() {
   const qc = useQueryClient();
-  return useMutation({ mutationFn: ({ id, ...data }: any) => api.patch(`/api/users/${id}`, data), onSuccess: () => qc.invalidateQueries({ queryKey: ['users'] }) });
+  return useMutation({
+    mutationFn: ({ id, ...data }: any) => api.patch(`/api/users/${id}`, data),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['users'] }); toast.success('Usuario actualizado'); },
+    onError: (err: Error) => toast.error(err.message || 'Error al actualizar'),
+  });
 }
 export function useDeleteUser() {
   const qc = useQueryClient();
-  return useMutation({ mutationFn: (id: string) => api.delete(`/api/users/${id}`), onSuccess: () => qc.invalidateQueries({ queryKey: ['users'] }) });
+  return useMutation({
+    mutationFn: (id: string) => api.delete(`/api/users/${id}`),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['users'] }); toast.success('Usuario eliminado'); },
+    onError: (err: Error) => toast.error(err.message || 'Error al eliminar'),
+  });
 }
 export function useResetUserPassword() {
-  return useMutation({ mutationFn: ({ id, newPassword }: any) => api.post(`/api/users/${id}/reset-password`, { newPassword }) });
+  return useMutation({
+    mutationFn: ({ id, newPassword }: any) => api.post(`/api/users/${id}/reset-password`, { newPassword }),
+    onSuccess: () => toast.success('Contraseña restablecida'),
+    onError: (err: Error) => toast.error(err.message || 'Error al restablecer contraseña'),
+  });
 }
 export function useUpdateUserRole() {
   const qc = useQueryClient();
-  return useMutation({ mutationFn: ({ id, ...data }: any) => api.patch(`/api/users/${id}/role`, data), onSuccess: () => qc.invalidateQueries({ queryKey: ['users'] }) });
+  return useMutation({
+    mutationFn: ({ id, ...data }: any) => api.patch(`/api/users/${id}/role`, data),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['users'] }); toast.success('Rol actualizado'); },
+    onError: (err: Error) => toast.error(err.message || 'Error al actualizar rol'),
+  });
 }
 
 // ── Assignments ──
@@ -31,11 +52,19 @@ export function useAssignments(period?: string) {
 }
 export function useCreateAssignment() {
   const qc = useQueryClient();
-  return useMutation({ mutationFn: (data: any) => api.post('/api/assignments', data), onSuccess: () => qc.invalidateQueries({ queryKey: ['assignments'] }) });
+  return useMutation({
+    mutationFn: (data: any) => api.post('/api/assignments', data),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['assignments'] }); toast.success('Asignación creada'); },
+    onError: (err: Error) => toast.error(err.message || 'Error al crear asignación'),
+  });
 }
 export function useDeleteAssignment() {
   const qc = useQueryClient();
-  return useMutation({ mutationFn: (id: string) => api.delete(`/api/assignments/${id}`), onSuccess: () => qc.invalidateQueries({ queryKey: ['assignments'] }) });
+  return useMutation({
+    mutationFn: (id: string) => api.delete(`/api/assignments/${id}`),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['assignments'] }); toast.success('Asignación eliminada'); },
+    onError: (err: Error) => toast.error(err.message || 'Error al eliminar asignación'),
+  });
 }
 
 // ── Evaluations ──
@@ -66,7 +95,14 @@ export function useCreateEvaluation() {
       const result = await api.post('/api/evaluations', data);
       return normalizeEvaluation(result);
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['evaluations'] })
+    onMutate: async (newEval) => {
+      await qc.cancelQueries({ queryKey: ['evaluations'] });
+      const prev = qc.getQueryData(['evaluations']);
+      qc.setQueryData(['evaluations'], (old: any[]) => old ? [...old, { ...newEval, id: 'temp-' + Date.now(), totalScore: 0 }] : [{ ...newEval, id: 'temp-' + Date.now(), totalScore: 0 }]);
+      return { prev };
+    },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['evaluations'] }); toast.success('Evaluación enviada'); },
+    onError: (err: Error, _vars, context: any) => { if (context?.prev) qc.setQueryData(['evaluations'], context.prev); toast.error(err.message || 'Error al enviar evaluación'); },
   });
 }
 export function useUpdateEvaluation() {
@@ -76,16 +112,25 @@ export function useUpdateEvaluation() {
       const result = await api.patch(`/api/evaluations/${id}`, data);
       return normalizeEvaluation(result);
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['evaluations'] })
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['evaluations'] }); toast.success('Evaluación actualizada'); },
+    onError: (err: Error) => toast.error(err.message || 'Error al actualizar evaluación'),
   });
 }
 export function useCompleteFeedback() {
   const qc = useQueryClient();
-  return useMutation({ mutationFn: (id: string) => api.patch(`/api/evaluations/${id}/feedback`, {}), onSuccess: () => qc.invalidateQueries({ queryKey: ['evaluations'] }) });
+  return useMutation({
+    mutationFn: (id: string) => api.patch(`/api/evaluations/${id}/feedback`, {}),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['evaluations'] }); toast.success('Feedback marcado como completado'); },
+    onError: (err: Error) => toast.error(err.message || 'Error al completar feedback'),
+  });
 }
 export function useApproveNA() {
   const qc = useQueryClient();
-  return useMutation({ mutationFn: ({ id, questionId, approved }: any) => api.patch(`/api/evaluations/${id}/na-approval`, { questionId, approved }), onSuccess: () => qc.invalidateQueries({ queryKey: ['evaluations'] }) });
+  return useMutation({
+    mutationFn: ({ id, questionId, approved }: any) => api.patch(`/api/evaluations/${id}/na-approval`, { questionId, approved }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['evaluations'] }); toast.success('Decisión N/A guardada'); },
+    onError: (err: Error) => toast.error(err.message || 'Error al procesar N/A'),
+  });
 }
 
 
@@ -93,7 +138,7 @@ export function useExportEvaluationsCSV() {
   return useMutation({
     mutationFn: async ({ period }: { period: string }) => {
       const token = getToken();
-      const res = await fetch(`${import.meta.env.VITE_API_URL || ""}/api/evaluations/export/csv?period=${encodeURIComponent(period)}`, {
+      const res = await fetch(`${apiBase}/api/evaluations/export/csv?period=${encodeURIComponent(period)}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) throw new Error("Export failed");
@@ -105,6 +150,8 @@ export function useExportEvaluationsCSV() {
       a.click();
       URL.revokeObjectURL(url);
     },
+    onSuccess: () => toast.success('Archivo CSV descargado'),
+    onError: () => toast.error('Error al exportar CSV'),
   });
 }
 // ── Action Plans ──
@@ -114,15 +161,25 @@ export function useActionPlans(filters?: Record<string, string>) {
 }
 export function useCreateActionPlan() {
   const qc = useQueryClient();
-  return useMutation({ mutationFn: (data: any) => api.post('/api/action-plans', data), onSuccess: () => qc.invalidateQueries({ queryKey: ['actionPlans'] }) });
-}
-export function useUpdateActionPlan() {
-  const qc = useQueryClient();
-  return useMutation({ mutationFn: ({ id, ...data }: any) => api.patch(`/api/action-plans/${id}`, data), onSuccess: () => qc.invalidateQueries({ queryKey: ['actionPlans'] }) });
+  return useMutation({
+    mutationFn: (data: any) => api.post('/api/action-plans', data),
+    onMutate: async (newPlan) => {
+      await qc.cancelQueries({ queryKey: ['actionPlans'] });
+      const prev = qc.getQueryData(['actionPlans']);
+      qc.setQueryData(['actionPlans'], (old: any[]) => old ? [...old, { ...newPlan, id: 'temp-' + Date.now() }] : [{ ...newPlan, id: 'temp-' + Date.now() }]);
+      return { prev };
+    },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['actionPlans'] }); toast.success('Plan de acción guardado'); },
+    onError: (err: Error, _vars, context: any) => { if (context?.prev) qc.setQueryData(['actionPlans'], context.prev); toast.error(err.message || 'Error al guardar plan'); },
+  });
 }
 export function useApproveActionPlan() {
   const qc = useQueryClient();
-  return useMutation({ mutationFn: ({ id, status, comments }: any) => api.post(`/api/action-plans/${id}/approve`, { status, comments }), onSuccess: () => qc.invalidateQueries({ queryKey: ['actionPlans'] }) });
+  return useMutation({
+    mutationFn: ({ id, status, comments }: any) => api.post(`/api/action-plans/${id}/approve`, { status, comments }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['actionPlans'] }); toast.success('Plan de acción procesado'); },
+    onError: (err: Error) => toast.error(err.message || 'Error al procesar plan'),
+  });
 }
 
 // ── Objectives ──
@@ -130,17 +187,29 @@ export function useObjectives(filters?: Record<string, string>) {
   const params = filters ? '?' + new URLSearchParams(filters).toString() : '';
   return useQuery({ queryKey: ['objectives', filters], queryFn: () => api.get<any[]>(`/api/objectives${params}`) });
 }
-export function useCreateObjectives() {
+export function useCreateObjective() {
   const qc = useQueryClient();
-  return useMutation({ mutationFn: (data: any) => api.post('/api/objectives', data), onSuccess: () => qc.invalidateQueries({ queryKey: ['objectives'] }) });
+  return useMutation({
+    mutationFn: (data: any) => api.post('/api/objectives', data),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['objectives'] }); toast.success('Objetivo creado'); },
+    onError: (err: Error) => toast.error(err.message || 'Error al crear objetivo'),
+  });
 }
-export function useSubmitObjectives() {
+export function useSubmitObjective() {
   const qc = useQueryClient();
-  return useMutation({ mutationFn: (id: string) => api.post(`/api/objectives/${id}/submit`, {}), onSuccess: () => qc.invalidateQueries({ queryKey: ['objectives'] }) });
+  return useMutation({
+    mutationFn: (id: string) => api.post(`/api/objectives/${id}/submit`, {}),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['objectives'] }); toast.success('Objetivo enviado'); },
+    onError: (err: Error) => toast.error(err.message || 'Error al enviar objetivo'),
+  });
 }
 export function useReviewObjective() {
   const qc = useQueryClient();
-  return useMutation({ mutationFn: ({ id, objectiveId, status, comment }: any) => api.post(`/api/objectives/${id}/review`, { objectiveId, status, comment }), onSuccess: () => qc.invalidateQueries({ queryKey: ['objectives'] }) });
+  return useMutation({
+    mutationFn: ({ id, objectiveId, status, comment }: any) => api.post(`/api/objectives/${id}/review`, { objectiveId, status, comment }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['objectives'] }); toast.success('Objetivo revisado'); },
+    onError: (err: Error) => toast.error(err.message || 'Error al revisar objetivo'),
+  });
 }
 
 // ── Announcements ──
@@ -149,11 +218,25 @@ export function useAnnouncements() {
 }
 export function useCreateAnnouncement() {
   const qc = useQueryClient();
-  return useMutation({ mutationFn: (data: any) => api.post('/api/announcements', data), onSuccess: () => qc.invalidateQueries({ queryKey: ['announcements'] }) });
+  return useMutation({
+    mutationFn: (data: any) => api.post('/api/announcements', data),
+    onMutate: async (newAnn) => {
+      await qc.cancelQueries({ queryKey: ['announcements'] });
+      const prev = qc.getQueryData(['announcements']);
+      qc.setQueryData(['announcements'], (old: any[]) => old ? [newAnn, ...old] : [newAnn]);
+      return { prev };
+    },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['announcements'] }); toast.success('Comunicado publicado'); },
+    onError: (err: Error, _vars, context: any) => { if (context?.prev) qc.setQueryData(['announcements'], context.prev); toast.error(err.message || 'Error al publicar comunicado'); },
+  });
 }
 export function useUpdateAnnouncement() {
   const qc = useQueryClient();
-  return useMutation({ mutationFn: ({ id, ...data }: any) => api.patch(`/api/announcements/${id}`, data), onSuccess: () => qc.invalidateQueries({ queryKey: ['announcements'] }) });
+  return useMutation({
+    mutationFn: ({ id, ...data }: any) => api.patch(`/api/announcements/${id}`, data),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['announcements'] }); toast.success('Comunicado actualizado'); },
+    onError: (err: Error) => toast.error(err.message || 'Error al actualizar comunicado'),
+  });
 }
 export function useMarkAnnouncementRead() {
   const qc = useQueryClient();
@@ -161,70 +244,59 @@ export function useMarkAnnouncementRead() {
 }
 
 // ── Vacations ──
-export function useVacationRequests(filters?: Record<string, string>) {
-  const params = filters ? '?' + new URLSearchParams(filters).toString() : '';
-  return useQuery({ queryKey: ['vacationRequests', filters], queryFn: () => api.get<any[]>(`/api/vacations/requests${params}`) });
+export function useVacationRequests() {
+  return useQuery({ queryKey: ['vacationRequests'], queryFn: () => api.get<any[]>('/api/vacations/requests') });
+}
+export function useVacationConfig() {
+  return useQuery({ queryKey: ['vacationConfig'], queryFn: () => api.get<any>('/api/vacations/config') });
 }
 export function useCreateVacationRequest() {
   const qc = useQueryClient();
-  return useMutation({ mutationFn: (data: any) => api.post('/api/vacations/requests', data), onSuccess: () => qc.invalidateQueries({ queryKey: ['vacationRequests'] }) });
+  return useMutation({
+    mutationFn: (data: any) => api.post('/api/vacations/requests', data),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['vacationRequests'] }); toast.success('Solicitud de vacaciones enviada'); },
+    onError: (err: Error) => toast.error(err.message || 'Error al enviar solicitud'),
+  });
 }
 export function useUpdateVacationRequest() {
   const qc = useQueryClient();
-  return useMutation({ mutationFn: ({ id, ...data }: any) => api.patch(`/api/vacations/requests/${id}`, data), onSuccess: () => qc.invalidateQueries({ queryKey: ['vacationRequests'] }) });
+  return useMutation({
+    mutationFn: ({ id, ...data }: any) => api.patch(`/api/vacations/requests/${id}`, data),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['vacationRequests'] }); toast.success('Solicitud actualizada'); },
+    onError: (err: Error) => toast.error(err.message || 'Error al actualizar solicitud'),
+  });
 }
 export function useApproveVacationRequest() {
   const qc = useQueryClient();
-  return useMutation({ mutationFn: ({ id, action, comment }: any) => api.post(`/api/vacations/requests/${id}/approve`, { action, comment }), onSuccess: () => qc.invalidateQueries({ queryKey: ['vacationRequests'] }) });
+  return useMutation({
+    mutationFn: ({ id, action, comment }: any) => api.post(`/api/vacations/requests/${id}/approve`, { action, comment }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['vacationRequests'] }); toast.success('Solicitud procesada'); },
+    onError: (err: Error) => toast.error(err.message || 'Error al procesar solicitud'),
+  });
 }
-export function useDeleteVacationRequest() {
+export function useCancelVacationRequest() {
   const qc = useQueryClient();
-  return useMutation({ mutationFn: (id: string) => api.delete(`/api/vacations/requests/${id}`), onSuccess: () => qc.invalidateQueries({ queryKey: ['vacationRequests'] }) });
-}
-export function useVacationConfig() {
-  return useQuery({ queryKey: ['vacationConfig'], queryFn: () => api.get<any[]>('/api/vacations/config') });
+  return useMutation({
+    mutationFn: (id: string) => api.delete(`/api/vacations/requests/${id}`),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['vacationRequests'] }); toast.success('Solicitud cancelada'); },
+    onError: (err: Error) => toast.error(err.message || 'Error al cancelar solicitud'),
+  });
 }
 export function useUpdateVacationConfig() {
   const qc = useQueryClient();
-  return useMutation({ mutationFn: (positions: any[]) => api.patch('/api/vacations/config', { positions }), onSuccess: () => qc.invalidateQueries({ queryKey: ['vacationConfig'] }) });
+  return useMutation({
+    mutationFn: (positions: any[]) => api.patch('/api/vacations/config', { positions }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['vacationConfig'] }); toast.success('Configuración de vacaciones guardada'); },
+    onError: (err: Error) => toast.error(err.message || 'Error al guardar configuración'),
+  });
 }
 export function useAddExtraVacationDays() {
   const qc = useQueryClient();
-  return useMutation({ mutationFn: (data: any) => api.post('/api/vacations/extra-days', data), onSuccess: () => qc.invalidateQueries({ queryKey: ['vacationRequests'] }) });
-}
-
-// ── Positions ──
-export function usePositions(workAreaId?: string) {
-  return useQuery({ queryKey: ['positions', workAreaId], queryFn: () => api.get<any[]>(workAreaId ? `/api/positions?work_area_id=${workAreaId}` : '/api/positions') });
-}
-export function useCreatePosition() {
-  const qc = useQueryClient();
-  return useMutation({ mutationFn: (data: any) => api.post('/api/positions', data), onSuccess: () => { qc.invalidateQueries({ queryKey: ['positions'] }); qc.invalidateQueries({ queryKey: ['workAreas'] }); } });
-}
-export function useUpdatePosition() {
-  const qc = useQueryClient();
-  return useMutation({ mutationFn: ({ id, ...data }: any) => api.patch(`/api/positions/${id}`, data), onSuccess: () => { qc.invalidateQueries({ queryKey: ['positions'] }); qc.invalidateQueries({ queryKey: ['workAreas'] }); qc.invalidateQueries({ queryKey: ['users'] }); } });
-}
-export function useDeletePosition() {
-  const qc = useQueryClient();
-  return useMutation({ mutationFn: (id: string) => api.delete(`/api/positions/${id}`), onSuccess: () => { qc.invalidateQueries({ queryKey: ['positions'] }); qc.invalidateQueries({ queryKey: ['workAreas'] }); } });
-}
-
-// ── Work Areas ──
-export function useWorkAreas() {
-  return useQuery({ queryKey: ['workAreas'], queryFn: () => api.get<any[]>('/api/work-areas') });
-}
-export function useCreateWorkArea() {
-  const qc = useQueryClient();
-  return useMutation({ mutationFn: (data: any) => api.post('/api/work-areas', data), onSuccess: () => qc.invalidateQueries({ queryKey: ['workAreas'] }) });
-}
-export function useUpdateWorkArea() {
-  const qc = useQueryClient();
-  return useMutation({ mutationFn: ({ id, ...data }: any) => api.patch(`/api/work-areas/${id}`, data), onSuccess: () => qc.invalidateQueries({ queryKey: ['workAreas'] }) });
-}
-export function useDeleteWorkArea() {
-  const qc = useQueryClient();
-  return useMutation({ mutationFn: (id: string) => api.delete(`/api/work-areas/${id}`), onSuccess: () => qc.invalidateQueries({ queryKey: ['workAreas'] }) });
+  return useMutation({
+    mutationFn: (data: any) => api.post('/api/vacations/extra-days', data),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['vacationRequests'] }); toast.success('Días extra agregados'); },
+    onError: (err: Error) => toast.error(err.message || 'Error al agregar días extra'),
+  });
 }
 
 // ── Locations ──
@@ -233,15 +305,83 @@ export function useLocations() {
 }
 export function useCreateLocation() {
   const qc = useQueryClient();
-  return useMutation({ mutationFn: (data: any) => api.post('/api/locations', data), onSuccess: () => qc.invalidateQueries({ queryKey: ['locations'] }) });
+  return useMutation({
+    mutationFn: (data: any) => api.post('/api/locations', data),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['locations'] }); toast.success('Ubicación creada'); },
+    onError: (err: Error) => toast.error(err.message || 'Error al crear ubicación'),
+  });
 }
 export function useUpdateLocation() {
   const qc = useQueryClient();
-  return useMutation({ mutationFn: ({ id, ...data }: any) => api.patch(`/api/locations/${id}`, data), onSuccess: () => qc.invalidateQueries({ queryKey: ['locations'] }) });
+  return useMutation({
+    mutationFn: ({ id, ...data }: any) => api.patch(`/api/locations/${id}`, data),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['locations'] }); toast.success('Ubicación actualizada'); },
+    onError: (err: Error) => toast.error(err.message || 'Error al actualizar ubicación'),
+  });
 }
 export function useDeleteLocation() {
   const qc = useQueryClient();
-  return useMutation({ mutationFn: (id: string) => api.delete(`/api/locations/${id}`), onSuccess: () => qc.invalidateQueries({ queryKey: ['locations'] }) });
+  return useMutation({
+    mutationFn: (id: string) => api.delete(`/api/locations/${id}`),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['locations'] }); toast.success('Ubicación eliminada'); },
+    onError: (err: Error) => toast.error(err.message || 'Error al eliminar ubicación'),
+  });
+}
+
+// ── Positions & Work Areas ──
+export function usePositions() {
+  return useQuery({ queryKey: ['positions'], queryFn: () => api.get<any[]>('/api/positions') });
+}
+export function useWorkAreas() {
+  return useQuery({ queryKey: ['workAreas'], queryFn: () => api.get<any[]>('/api/work-areas') });
+}
+export function useCreatePosition() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: any) => api.post('/api/positions', data),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['positions'] }); qc.invalidateQueries({ queryKey: ['workAreas'] }); toast.success('Puesto creado'); },
+    onError: (err: Error) => toast.error(err.message || 'Error al crear puesto'),
+  });
+}
+export function useUpdatePosition() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, ...data }: any) => api.patch(`/api/positions/${id}`, data),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['positions'] }); qc.invalidateQueries({ queryKey: ['workAreas'] }); qc.invalidateQueries({ queryKey: ['users'] }); toast.success('Puesto actualizado'); },
+    onError: (err: Error) => toast.error(err.message || 'Error al actualizar puesto'),
+  });
+}
+export function useDeletePosition() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => api.delete(`/api/positions/${id}`),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['positions'] }); qc.invalidateQueries({ queryKey: ['workAreas'] }); toast.success('Puesto eliminado'); },
+    onError: (err: Error) => toast.error(err.message || 'Error al eliminar puesto'),
+  });
+}
+export function useCreateWorkArea() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: any) => api.post('/api/work-areas', data),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['workAreas'] }); toast.success('Área de práctica creada'); },
+    onError: (err: Error) => toast.error(err.message || 'Error al crear área'),
+  });
+}
+export function useUpdateWorkArea() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, ...data }: any) => api.patch(`/api/work-areas/${id}`, data),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['workAreas'] }); toast.success('Área de práctica actualizada'); },
+    onError: (err: Error) => toast.error(err.message || 'Error al actualizar área'),
+  });
+}
+export function useDeleteWorkArea() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => api.delete(`/api/work-areas/${id}`),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['workAreas'] }); toast.success('Área de práctica eliminada'); },
+    onError: (err: Error) => toast.error(err.message || 'Error al eliminar área'),
+  });
 }
 
 // ── Periods ──
@@ -250,7 +390,11 @@ export function usePeriods() {
 }
 export function useCreatePeriod() {
   const qc = useQueryClient();
-  return useMutation({ mutationFn: (data: any) => api.post('/api/periods', data), onSuccess: () => qc.invalidateQueries({ queryKey: ['periods'] }) });
+  return useMutation({
+    mutationFn: (data: any) => api.post('/api/periods', data),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['periods'] }); toast.success('Periodo creado'); },
+    onError: (err: Error) => toast.error(err.message || 'Error al crear periodo'),
+  });
 }
 
 // ── System ──
@@ -265,11 +409,19 @@ export function useSystemInitialized() {
 }
 export function useUpdateSystemStatus() {
   const qc = useQueryClient();
-  return useMutation({ mutationFn: (data: any) => api.patch('/api/system/status', data), onSuccess: () => qc.invalidateQueries({ queryKey: ['systemStatus'] }) });
+  return useMutation({
+    mutationFn: (data: any) => api.patch('/api/system/status', data),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['systemStatus'] }); toast.success('Estado del sistema actualizado'); },
+    onError: (err: Error) => toast.error(err.message || 'Error al actualizar estado del sistema'),
+  });
 }
 export function useUpdateSystemModules() {
   const qc = useQueryClient();
-  return useMutation({ mutationFn: (data: any) => api.patch('/api/system/modules', data), onSuccess: () => qc.invalidateQueries({ queryKey: ['systemModules'] }) });
+  return useMutation({
+    mutationFn: (data: any) => api.patch('/api/system/modules', data),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['systemModules'] }); toast.success('Módulos actualizados'); },
+    onError: (err: Error) => toast.error(err.message || 'Error al actualizar módulos'),
+  });
 }
 export function useActivationHistory() {
   return useQuery({ queryKey: ['activationHistory'], queryFn: () => api.get<any[]>('/api/system/activation-history') });
@@ -281,7 +433,11 @@ export function useCopilotConfig() {
 }
 export function useUpdateCopilotConfig() {
   const qc = useQueryClient();
-  return useMutation({ mutationFn: (data: any) => api.patch('/api/copilot/config', data), onSuccess: () => qc.invalidateQueries({ queryKey: ['copilotConfig'] }) });
+  return useMutation({
+    mutationFn: (data: any) => api.patch('/api/copilot/config', data),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['copilotConfig'] }); toast.success('Configuración guardada'); },
+    onError: (err: Error) => toast.error(err.message || 'Error al guardar configuración'),
+  });
 }
 export function useCopilotConversations() {
   return useQuery({ queryKey: ['copilotConversations'], queryFn: () => api.get<any[]>('/api/copilot/conversations') });

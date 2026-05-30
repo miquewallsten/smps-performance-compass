@@ -4,6 +4,7 @@ import { getPositionLabel } from '@/lib/evaluationConfig';
 import { getLegalHierarchy, getAdminHierarchy } from '@/lib/evaluationConfig';
 import { useCurrentPeriod } from '@/hooks/useCurrentPeriod';
 import { Users, ChevronDown, ChevronRight } from 'lucide-react';
+import { OrgChartSkeleton } from '@/components/shared/SkeletonPage';
 import { useState } from 'react';
 import HierarchyFilters, { filterByHierarchy } from '@/components/HierarchyFilters';
 
@@ -16,6 +17,10 @@ export default function OrgChart() {
   const [positionFilter, setPositionFilter] = useState('all');
 
   if (!currentUser) return null;
+
+  const isOrgLoading = !users || !assignments;
+  if (isOrgLoading) return <OrgChartSkeleton />;
+
   const isAdmin = currentUser.isAdmin;
   const isSocio = currentUser.position === 'socio';
   const isManagingPartner = !!currentUser.isManagingPartner;
