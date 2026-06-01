@@ -6,7 +6,9 @@ import { pool } from './db/connection.js';
 import { migrate } from './db/migrate.js';
 import { seed } from './db/seed-users.js';
 import { seedEvaluationData, cleanupOldCustomQuestions } from './db/seed-evaluation-data.js';
+import { migrateAuth } from './db/migrate-auth.js';
 import authRoutes from './routes/auth.js';
+import authNewRoutes from './routes/auth-new.js';
 import userRoutes from './routes/users.js';
 import assignmentRoutes from './routes/assignments.js';
 import systemRoutes from './routes/system.js';
@@ -24,6 +26,12 @@ import copilotRoutes from './copilot/index.js';
 import deployRoutes from './routes/deploy.js';
 import timelineRoutes from './routes/timeline.js';
 import { loginLimiter, resetPasswordLimiter, apiLimiter } from './middleware/rate-limit.js';
+
+// Rate limiter for new auth endpoints
+import rateLimit from 'express-rate-limit';
+const activationLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 10, message: { error: 'Demasiados intentos. Intenta de nuevo en 15 minutos.' }, standardHeaders: true, legacyHeaders: false });
+const passwordResetRequestLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 3, message: { error: 'Demasiados intentos de reseteo. Intenta de nuevo en 15 minutos.' }, standardHeaders: true, legacyHeaders: false });
+const passwordResetCompleteLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 5, message: { error: 'Demasiados intentos. Intenta de nuevo en 15 minutos.' }, standardHeaders: true, legacyHeaders: false });
 
 dotenv.config();
 
@@ -57,6 +65,14 @@ app.set("trust proxy", 1);
 app.use('/api/auth/login', loginLimiter);
 app.use('/api/auth/reset-password', resetPasswordLimiter);
 app.use('/api/auth/security-question', resetPasswordLimiter);
+// New auth endpoints rate limiting
+app.use('/api/auth/activate', activationLimiter);
+app.use('/api/auth/resend-activation', activationLimiter);
+app.use('/api/auth/verify-activation', activationLimiter);
+app.use('/api/auth/request-password-reset', passwordResetRequestLimiter);
+app.use('/api/auth/verify-reset-token', passwordResetCompleteLimiter);
+app.use('/api/auth/complete-password-reset', passwordResetCompleteLimiter);
+
 // General API rate limit for all other endpoints
 app.use('/api/', apiLimiter);
 
@@ -86,6 +102,7 @@ app.get('/api/health', (_req, res) => {
 
 // API routes
 app.use('/api/auth', authRoutes);
+app.use('/api/auth', authNewRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/assignments', assignmentRoutes);
 app.use('/api/system', systemRoutes);
@@ -147,6 +164,8 @@ async function startServer() {
   try {
     console.log('Initializing database...');
     await migrate();
+    console.log('Running auth migration...');
+    await migrateAuth();
     console.log('Seeding database...');
     await seed();
     console.log('Seeding evaluation data...');

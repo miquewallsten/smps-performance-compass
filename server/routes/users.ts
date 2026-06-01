@@ -2,6 +2,9 @@ import { Router, Request, Response } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import { db } from '../db/connection.js';
 import { hashPassword, hashSecurityAnswer } from '../auth/security.js';
+import { generateTokenPair, toMySQLDate } from '../services/tokens.js';
+import { sendActivationEmail, sendAdminPasswordResetEmail } from '../services/email.js';
+import { auditLog, getClientIp, getUserAgent } from '../services/audit.js';
 import { authMiddleware } from '../middleware/auth.js';
 import { requireAdmin, requireSelfOrAdmin } from '../middleware/rbac.js';
 import { validate, CreateUserSchema } from '../middleware/validate.js';
@@ -125,13 +128,12 @@ router.post('/', authMiddleware, requireAdmin, validate(CreateUserSchema), async
       isManagingPartner?: boolean;
     };
 
-    if (!name || !email || !position || !password) {
-      return res.status(400).json({ error: 'Name, email, position, and password are required' });
+    if (!name || !email || !position) {
+      return res.status(400).json({ error: 'Name, email, and position are required' });
     }
 
-    if (password.length < 6) {
-      return res.status(400).json({ error: 'Password must be at least 6 characters' });
-    }
+    // Password is optional — if not provided, user will be activated via email link
+    const useActivation = !password;
 
     // Check email uniqueness
     const existing = await db.get('SELECT id FROM users WHERE email = ?', [email]);
@@ -160,15 +162,34 @@ router.post('/', authMiddleware, requireAdmin, validate(CreateUserSchema), async
     }
 
     const id = uuidv4();
-    const hashedPassword = await hashPassword(password);
-    // Default security question so admin-created users can reset
+    const now = new Date().toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, '');
+    let hashedPassword: string | null = null;
+    let activationTokenHash: string | null = null;
+    let activationExpiresAt: string | null = null;
+    let activationToken: string | null = null;
+    let isActive = 1;
+    let mustChangePassword = 0;
+
+    if (useActivation) {
+      // New flow: generate activation token, user sets their own password
+      const tokenPair = generateTokenPair();
+      activationToken = tokenPair.token;
+      activationTokenHash = tokenPair.tokenHash;
+      activationExpiresAt = toMySQLDate(new Date(Date.now() + 48 * 60 * 60 * 1000)); // 48 hours
+      isActive = 0; // Not active until they activate
+      mustChangePassword = 0;
+    } else {
+      // Legacy flow: admin sets password
+      hashedPassword = await hashPassword(password!);
+      mustChangePassword = 1;
+    }
+
     const securityQuestion = '¿Cuál es su correo electrónico?';
     const hashedAnswer = await hashSecurityAnswer(email);
-    const now = new Date().toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, '');
 
     await db.run(
-      `INSERT INTO users (id, email, password_hash, security_question, security_answer, name, position, practice_area, custom_position_id, location_id, is_admin, is_super_user, is_managing_partner, is_active, must_change_password, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO users (id, email, password_hash, security_question, security_answer, name, position, practice_area, custom_position_id, location_id, is_admin, is_super_user, is_managing_partner, is_active, must_change_password, activation_token_hash, activation_expires_at, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         id,
         email,
@@ -183,14 +204,26 @@ router.post('/', authMiddleware, requireAdmin, validate(CreateUserSchema), async
         finalIsAdmin,
         0, // isSuperUser is always false for admin-created users
         finalIsMP,
-        1, // isActive
-        1, // mustChangePassword
+        isActive,
+        mustChangePassword,
+        activationTokenHash,
+        activationExpiresAt,
         now,
         now
       ]
     );
 
+    // Send activation email if using new flow
+    if (useActivation && activationToken) {
+      const emailSent = await sendActivationEmail(email, name, activationToken);
+      if (!emailSent) {
+        console.warn(`Failed to send activation email to ${email}. Admin should share the activation link manually.`);
+      }
+    }
+
     const user = await db.get(`SELECT ${SAFE_USER_COLUMNS} FROM users WHERE id = ?`, [id]) as Record<string, unknown>;
+    // Audit log for user creation
+    await auditLog({ action: 'user_created', userId: id, ipAddress: getClientIp(req), userAgent: getUserAgent(req), metadata: { createdBy: req.user!.id, useActivation, email } });
     // Log hire event to timeline
     await logTimelineEvent(id, 'hire', {
       newValue: position,
@@ -198,7 +231,17 @@ router.post('/', authMiddleware, requireAdmin, validate(CreateUserSchema), async
       note: 'Usuario creado',
       createdBy: req.user!.id
     });
-    return res.status(201).json(sanitizeUser(user));
+    const response: Record<string, unknown> = sanitizeUser(user);
+    if (useActivation) {
+      response.activationSent = true;
+      // Include activation link only if email failed (for admin to share manually)
+      if (!activationToken) {
+        // Token wasn't generated (shouldn't happen)
+      }
+      // Don't include the token in the API response for security
+      // The activation link was sent via email
+    }
+    return res.status(201).json(response);
   } catch (err) {
     console.error('Create user error:', err);
     return res.status(500).json({ error: 'Internal server error' });
@@ -362,28 +405,49 @@ router.delete('/:id', authMiddleware, requireAdmin, async (req: Request, res: Re
 });
 
 // ─── POST /api/users/:id/reset-password ───────────────────────────────────
+// Admin triggers a password reset email for the user.
+// The admin does NOT set the password — the user sets it themselves via email link.
 router.post('/:id/reset-password', authMiddleware, requireAdmin, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { newPassword } = req.body as { newPassword?: string };
-
-    if (!newPassword || newPassword.length < 6) {
-      return res.status(400).json({ error: 'New password must be at least 6 characters' });
-    }
-
-    const user = await db.get('SELECT id FROM users WHERE id = ?', [id]);
+    const user = await db.get('SELECT id, email, name, is_active FROM users WHERE id = ?', [id]) as Record<string, unknown> | undefined;
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    const hashedPassword = await hashPassword(newPassword);
-    const now = new Date().toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, '');
+    // Generate a password reset token with 24-hour expiry (admin-triggered)
+    const { token, tokenHash } = generateTokenPair();
+    const expiresAt = toMySQLDate(new Date(Date.now() + 24 * 60 * 60 * 1000)); // 24 hours
+    const now = toMySQLDate(new Date());
 
-    await db.run('UPDATE users SET password_hash = ?, must_change_password = 1, updated_at = ? WHERE id = ?', [hashedPassword, now, id]);
-    // Log password reset event
-    await logTimelineEvent(id, 'password_reset', { note: 'Contraseña restablecida por administrador', createdBy: req.user!.id });
+    await db.run(
+      `INSERT INTO password_reset_tokens (id, user_id, token_hash, expires_at, ip_address, created_at)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [uuidv4(), id, tokenHash, expiresAt, getClientIp(req), now]
+    );
 
-    return res.json({ message: 'Password reset successfully' });
+    // Send reset email
+    const emailSent = await sendAdminPasswordResetEmail(user.email as string, user.name as string, token);
+
+    await auditLog({
+      action: 'admin_password_reset_requested',
+      userId: id,
+      ipAddress: getClientIp(req),
+      userAgent: getUserAgent(req),
+      metadata: { adminId: req.user!.id, emailSent },
+    });
+
+    // Log timeline event
+    await logTimelineEvent(id, 'password_reset', { note: 'Correo de restablecimiento enviado por administrador', createdBy: req.user!.id });
+
+    const response: Record<string, unknown> = { message: 'Se ha enviado un correo para restablecer la contraseña.' };
+    if (!emailSent) {
+      // Include the reset link if email failed, so admin can share it manually
+      const resetLink = `${process.env.APP_URL || 'https://smps.bowdot.online'}/reset-password?token=${token}`;
+      response.resetLink = resetLink;
+      response.message = 'No se pudo enviar el correo. Comparta el enlace de restablecimiento manualmente.';
+    }
+    return res.json(response);
   } catch (err) {
     console.error('Reset password error:', err);
     return res.status(500).json({ error: 'Internal server error' });

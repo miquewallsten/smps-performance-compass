@@ -3,10 +3,9 @@ import { useAuth } from '@/contexts/AuthContext';
 
 export default function ChangePassword() {
   const { user, changePassword, logout } = useAuth();
+  const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [securityQuestion, setSecurityQuestion] = useState('¿Cuál es su correo electrónico?');
-  const [securityAnswer, setSecurityAnswer] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -14,22 +13,31 @@ export default function ChangePassword() {
     e.preventDefault();
     setError('');
 
-    if (newPassword.length < 6) {
-      setError('La contraseña debe tener al menos 6 caracteres');
+    if (newPassword.length < 8) {
+      setError('La contraseña debe tener al menos 8 caracteres');
+      return;
+    }
+    if (!/[A-Z]/.test(newPassword)) {
+      setError('La contraseña debe contener al menos una letra mayúscula');
+      return;
+    }
+    if (!/[a-z]/.test(newPassword)) {
+      setError('La contraseña debe contener al menos una letra minúscula');
+      return;
+    }
+    if (!/[0-9]/.test(newPassword)) {
+      setError('La contraseña debe contener al menos un número');
       return;
     }
     if (newPassword !== confirmPassword) {
       setError('Las contraseñas no coinciden');
       return;
     }
-    if (!securityAnswer.trim()) {
-      setError('Debe configurar una pregunta de seguridad');
-      return;
-    }
 
     setLoading(true);
     try {
-      await changePassword('', newPassword, securityQuestion, securityAnswer);
+      // For must_change_password flow, currentPassword is empty string (bypassed on server)
+      await changePassword(currentPassword, newPassword);
       window.location.href = '/dashboard';
     } catch (err: any) {
       setError(err.message || 'Error al cambiar la contraseña');
@@ -58,24 +66,18 @@ export default function ChangePassword() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-foreground mb-1.5">Nueva contraseña</label>
-              <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required minLength={6}
-                className="w-full px-4 py-2.5 rounded-lg border border-input bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent" placeholder="Mínimo 6 caracteres" />
+              <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required minLength={8}
+                className="w-full px-4 py-2.5 rounded-lg border border-input bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent" placeholder="Mínimo 8 caracteres, 1 mayúscula, 1 minúscula, 1 número" />
             </div>
             <div>
               <label className="block text-sm font-medium text-foreground mb-1.5">Confirmar contraseña</label>
-              <input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required minLength={6}
+              <input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required minLength={8}
                 className="w-full px-4 py-2.5 rounded-lg border border-input bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent" placeholder="Repita la contraseña" />
             </div>
 
-            <div className="border-t border-border pt-4 mt-4">
-              <p className="text-sm font-medium text-foreground mb-3">Configurar pregunta de seguridad</p>
-              <p className="text-xs text-muted-foreground mb-3">Esta pregunta le permitirá recuperar su contraseña si la olvida.</p>
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-1.5">{securityQuestion}</label>
-                <input type="text" value={securityAnswer} onChange={(e) => setSecurityAnswer(e.target.value)} required
-                  className="w-full px-4 py-2.5 rounded-lg border border-input bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent" placeholder="Su respuesta" />
-              </div>
-            </div>
+            <p className="text-xs text-muted-foreground">
+              Si olvidó su contraseña, puede restablecerla desde la página de inicio de sesión.
+            </p>
 
             <button type="submit" disabled={loading}
               className="w-full py-2.5 rounded-md bg-accent text-accent-foreground font-semibold hover:opacity-90 transition-[opacity,transform] duration-150 active:scale-[0.98] disabled:opacity-50">

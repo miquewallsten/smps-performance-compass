@@ -33,6 +33,9 @@ const NotFound = lazy(() => import("./pages/NotFound"));
 const SetupPage = lazy(() => import("./pages/Setup"));
 const Login = lazy(() => import("./pages/Login"));
 const ChangePassword = lazy(() => import("./pages/ChangePassword"));
+const ActivateAccount = lazy(() => import("./pages/ActivateAccount"));
+const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
+const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 
 import Layout from "./components/Layout";
 
@@ -127,6 +130,9 @@ function AppRoutes() {
         <Route path="copilot" element={moduleConfig?.copilot && isSuperUser ? <CopilotChat /> : <Navigate to="/dashboard" replace />} />
       </Route>
       <Route path="/help" element={<Help />} />
+      <Route path="/activate-account" element={<ActivateAccount />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );

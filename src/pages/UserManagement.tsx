@@ -32,7 +32,7 @@ export default function UserManagement() {
   const [editPosition, setEditPosition] = useState<string | null>(null);
   const [showAddUser, setShowAddUser] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
-  const [newUser, setNewUser] = useState({ name: '', email: '', cve: '', locationId: '', password: '1234' });
+  const [newUser, setNewUser] = useState({ name: '', email: '', cve: '', locationId: '', password: '' });
 
   // Build catalog from API data (single source of truth)
   const sortedAreas = [...workAreas].sort((a: any, b: any) => (a.sortOrder || 0) - (b.sortOrder || 0));
@@ -104,15 +104,22 @@ export default function UserManagement() {
   }, [users, maxReached, updateUserMut]);
 
   const handleResetPassword = useCallback(() => {
-    if (!showPasswordModal || !newPassword || newPassword.length < 6) {
-      toast.error('La contraseña debe tener al menos 6 caracteres');
-      return;
-    }
+    if (!showPasswordModal) return;
     changePasswordMut.mutate(
-      { id: showPasswordModal, newPassword },
-      { onSuccess: () => { toast.success('Contraseña restablecida'); setShowPasswordModal(null); setNewPassword(''); }, onError: (err: Error) => toast.error(err.message || 'Error') }
+      { id: showPasswordModal },
+      { onSuccess: () => { toast.success('Correo de restablecimiento enviado'); setShowPasswordModal(null); setNewPassword(''); }, onError: (err: Error) => toast.error(err.message || 'Error') }
     );
-  }, [showPasswordModal, newPassword, changePasswordMut]);
+  }, [showPasswordModal, changePasswordMut]);
+
+
+
+
+
+
+
+
+
+
 
   const handlePositionChange = useCallback((userId: string, cve: string) => {
     const pos = sortedPositions.find((p: any) => p.id === cve);
@@ -140,9 +147,9 @@ export default function UserManagement() {
         practiceArea: level === 'legal' ? ((pos as any).workAreaId) : undefined,
         customPositionId: (pos as any).id,
         locationId: newUser.locationId || undefined,
-        password: newUser.password || '1234',
+        ...(newUser.password ? { password: newUser.password } : {}),
       },
-      { onSuccess: () => { toast.success('Usuario creado exitosamente'); setNewUser({ name: '', email: '', cve: '', locationId: '', password: '1234' }); setShowAddUser(false); }, onError: (err: Error) => toast.error(err.message || 'Error al crear usuario') }
+      { onSuccess: () => { toast.success('Usuario creado exitosamente'); setNewUser({ name: '', email: '', cve: '', locationId: '', password: '' }); setShowAddUser(false); }, onError: (err: Error) => toast.error(err.message || 'Error al crear usuario') }
     );
   }, [newUser, sortedPositions, sortedAreas, addUserMut]);
 
@@ -310,20 +317,18 @@ export default function UserManagement() {
       {renderUserTable(legalUsers, 'Legal')}
       {renderUserTable(adminUsers, 'Administrativo')}
 
-      {/* Password Reset Modal */}
+      {/* Password Reset Modal — now sends email reset link instead of setting password */}
       {showPasswordModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/20 backdrop-blur-sm" onClick={() => setShowPasswordModal(null)}>
           <div className="smps-surface-elevated w-full max-w-sm shadow-xl" onClick={e => e.stopPropagation()}>
             <h3 className="smps-section-title font-display text-base font-semibold mb-3">Restablecer Contraseña</h3>
             <div>
-              <label className="text-sm font-medium text-foreground">Nueva contraseña</label>
-              <input type="text" value={newPassword} onChange={e => setNewPassword(e.target.value)}
-                placeholder="Mínimo 6 caracteres" className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm mt-1" />
-              <p className="text-xs text-muted-foreground mt-1">El usuario deberá cambiarla al iniciar sesión</p>
+              <p className="text-sm text-foreground">Se enviará un correo electrónico al usuario con un enlace para crear una nueva contraseña.</p>
+              <p className="text-xs text-muted-foreground mt-2">El enlace será válido por 24 horas. Si el correo no se puede enviar, se mostrará un enlace para compartir manualmente.</p>
             </div>
             <div className="flex gap-3 mt-4">
-              <button onClick={() => { setShowPasswordModal(null); setNewPassword(''); }} className="flex-1 py-2 rounded-lg border text-sm font-medium hover:bg-muted transition-colors">Cancelar</button>
-              <button onClick={handleResetPassword} disabled={newPassword.length < 6} className="flex-1 py-2 rounded-lg bg-accent text-accent-foreground text-sm font-medium disabled:opacity-40 hover:opacity-90">Restablecer</button>
+              <button onClick={() => setShowPasswordModal(null)} className="flex-1 py-2 rounded-lg border text-sm font-medium hover:bg-muted transition-colors">Cancelar</button>
+              <button onClick={handleResetPassword} className="flex-1 py-2 rounded-lg bg-accent text-accent-foreground text-sm font-medium hover:opacity-90">Enviar Enlace</button>
             </div>
           </div>
         </div>
@@ -370,14 +375,14 @@ export default function UserManagement() {
                 </select>
               </div>
               <div>
-                <label className="text-sm font-medium text-foreground">Contraseña inicial</label>
-                <input type="text" value={newUser.password} onChange={e => setNewUser(prev => ({ ...prev, password: e.target.value }))}
-                  placeholder="Mínimo 6 caracteres" className="w-full px-3 py-2 rounded-lg border border-input bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent text-sm" />
-                <p className="text-xs text-muted-foreground mt-1">El usuario deberá cambiarla al primer inicio de sesión</p>
+                <label className="text-sm font-medium text-foreground">Contraseña <span className="text-xs text-muted-foreground">(opcional — si se deja vacía, se enviará un enlace de activación)</span></label>
+                <input type="password" value={newUser.password} onChange={e => setNewUser(prev => ({ ...prev, password: e.target.value }))}
+                  placeholder="Dejar vacío para enviar enlace de activación" className="w-full px-3 py-2 rounded-lg border border-input bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent text-sm" />
+                <p className="text-xs text-muted-foreground mt-1">Si se deja vacía, el usuario recibirá un correo de activación para crear su propia contraseña.</p>
               </div>
             </div>
             <div className="flex gap-3 mt-5">
-              <button onClick={() => { setShowAddUser(false); setNewUser({ name: '', email: '', cve: '', locationId: '', password: '1234' }); }} className="flex-1 py-2 rounded-lg border text-sm font-medium hover:bg-muted transition-colors">Cancelar</button>
+              <button onClick={() => { setShowAddUser(false); setNewUser({ name: '', email: '', cve: '', locationId: '', password: '' }); }} className="flex-1 py-2 rounded-lg border text-sm font-medium hover:bg-muted transition-colors">Cancelar</button>
               <button onClick={handleAddUser} disabled={!newUser.name.trim() || !newUser.email.trim() || !newUser.cve} className="flex-1 py-2 rounded-lg bg-accent text-accent-foreground text-sm font-medium disabled:opacity-40 hover:opacity-90 transition-opacity">Crear Usuario</button>
             </div>
           </div>

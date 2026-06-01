@@ -6,6 +6,7 @@ import { hashPassword, verifyPassword, hashSecurityAnswer, verifySecurityAnswer 
 import { authMiddleware } from '../middleware/auth.js';
 import { requireAuthenticated } from '../middleware/rbac.js';
 import { validate, LoginSchema, ChangePasswordSchema, ResetPasswordSchema, SecurityQuestionSchema } from '../middleware/validate.js';
+import { auditLog, getClientIp, getUserAgent } from '../services/audit.js';
 
 const router = Router();
 
@@ -38,14 +39,24 @@ router.post('/login', validate(LoginSchema), async (req: Request, res: Response)
     }
 
     if (!user.is_active) {
+      await auditLog({ action: 'login_failed_deactivated', userId: user.id as string, ipAddress: getClientIp(req), userAgent: getUserAgent(req) });
       return res.status(403).json({ error: 'Account is deactivated' });
+    }
+
+    // Check if account has been activated (has a password set)
+    if (!user.password_hash) {
+      await auditLog({ action: 'login_failed_not_activated', userId: user.id as string, ipAddress: getClientIp(req), userAgent: getUserAgent(req) });
+      return res.status(403).json({ error: 'Cuenta no activada. Revise su correo electrónico para el enlace de activación.' });
     }
 
     const passwordHash = user.password_hash as string;
     const valid = await verifyPassword(password, passwordHash);
     if (!valid) {
+      await auditLog({ action: 'login_failed', userId: user.id as string, ipAddress: getClientIp(req), userAgent: getUserAgent(req) });
       return res.status(401).json({ error: 'Invalid credentials' });
     }
+
+    await auditLog({ action: 'login_success', userId: user.id as string, ipAddress: getClientIp(req), userAgent: getUserAgent(req) });
 
     const role = getRole({
       isAdmin: Boolean(user.is_admin),
@@ -87,6 +98,8 @@ router.post('/logout', authMiddleware, requireAuthenticated, async (req: Request
 
     // Clean up expired sessions
     await db.run('DELETE FROM sessions WHERE expires_at < ?', [new Date().toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, '')]);
+
+    await auditLog({ action: 'logout', userId: payload.id, ipAddress: getClientIp(req), userAgent: getUserAgent(req) });
 
     return res.json({ message: 'Logged out successfully' });
   } catch (err) {
@@ -157,6 +170,8 @@ router.post('/change-password', validate(ChangePasswordSchema), authMiddleware, 
       );
     }
 
+    await auditLog({ action: 'password_changed', userId: req.user!.id, ipAddress: getClientIp(req), userAgent: getUserAgent(req) });
+
     return res.json({ message: 'Password changed successfully' });
   } catch (err) {
     console.error('Change password error:', err);
@@ -222,6 +237,8 @@ router.post('/reset-password', validate(ResetPasswordSchema), async (req: Reques
       'UPDATE users SET password_hash = ?, must_change_password = 0, updated_at = ? WHERE id = ?',
       [hashedPassword, now, user.id as string]
     );
+
+    await auditLog({ action: 'password_reset_completed', userId: user.id as string, ipAddress: getClientIp(req), userAgent: getUserAgent(req) });
 
     return res.json({ message: 'Password reset successfully' });
   } catch (err) {

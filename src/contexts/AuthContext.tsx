@@ -31,11 +31,17 @@ interface AuthContextType {
   isSuperUser: boolean;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
-  changePassword: (currentPassword: string, newPassword: string, securityQuestion?: string, securityAnswer?: string) => Promise<void>;
+  changePassword: (currentPassword: string, newPassword: string) => Promise<void>;
   resetPassword: (email: string, securityAnswer: string, newPassword: string) => Promise<void>;
   getSecurityQuestion: (email: string) => Promise<string>;
   refreshUser: () => Promise<void>;
   initializeSystem: (data: { name: string; email: string; password: string; securityQuestion: string; securityAnswer: string }) => Promise<void>;
+  requestPasswordReset: (email: string) => Promise<string>;
+  completePasswordReset: (token: string, newPassword: string, confirmPassword: string) => Promise<string>;
+  verifyResetToken: (token: string) => Promise<{ email: string; name: string }>;
+  activateAccount: (token: string, password: string, confirmPassword: string) => Promise<string>;
+  verifyActivationToken: (token: string) => Promise<{ email: string; name: string }>;
+  resendActivation: (email: string) => Promise<string>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -96,8 +102,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(null);
   }, []);
 
-  const changePassword = useCallback(async (currentPassword: string, newPassword: string, securityQuestion?: string, securityAnswer?: string) => {
-    await api.post('/api/auth/change-password', { currentPassword, newPassword, securityQuestion, securityAnswer });
+  const changePassword = useCallback(async (currentPassword: string, newPassword: string) => {
+    await api.post('/api/auth/change-password', { currentPassword, newPassword });
     await refreshUser();
   }, [refreshUser]);
 
@@ -117,12 +123,44 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setSystemInitialized(true);
   }, []);
 
+  const requestPasswordReset = useCallback(async (email: string) => {
+    const result = await api.post<{ message: string }>('/api/auth/request-password-reset', { email });
+    return result.message;
+  }, []);
+
+  const completePasswordReset = useCallback(async (token: string, newPassword: string, confirmPassword: string) => {
+    const result = await api.post<{ message: string }>('/api/auth/complete-password-reset', { token, newPassword, confirmPassword });
+    return result.message;
+  }, []);
+
+  const verifyResetToken = useCallback(async (token: string) => {
+    const result = await api.get<{ email: string; name: string }>(`/api/auth/verify-reset-token?token=${encodeURIComponent(token)}`);
+    return result;
+  }, []);
+
+  const activateAccount = useCallback(async (token: string, password: string, confirmPassword: string) => {
+    const result = await api.post<{ message: string }>('/api/auth/activate', { token, password, confirmPassword });
+    return result.message;
+  }, []);
+
+  const verifyActivationToken = useCallback(async (token: string) => {
+    const result = await api.get<{ email: string; name: string }>(`/api/auth/verify-activation?token=${encodeURIComponent(token)}`);
+    return result;
+  }, []);
+
+  const resendActivation = useCallback(async (email: string) => {
+    const result = await api.post<{ message: string }>('/api/auth/resend-activation', { email });
+    return result.message;
+  }, []);
+
   return (
     <AuthContext.Provider value={{
       user, loading, systemInitialized, moduleConfig,
       isSuperUser: user?.isSuperUser ?? false,
       login, logout, changePassword, resetPassword, getSecurityQuestion,
       refreshUser, initializeSystem,
+      requestPasswordReset, completePasswordReset, verifyResetToken,
+      activateAccount, verifyActivationToken, resendActivation,
     }}>
       {children}
     </AuthContext.Provider>
