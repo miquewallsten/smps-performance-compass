@@ -29,6 +29,7 @@ import { loginLimiter, resetPasswordLimiter, apiLimiter } from './middleware/rat
 import { authMiddleware } from './middleware/auth.js';
 import { hasRole } from './middleware/permissions.js';
 import { auditLog, getClientIp, getUserAgent } from './services/audit.js';
+import { startBackupScheduler } from './services/backup-scheduler.js';
 
 // Rate limiter for new auth endpoints
 import rateLimit from 'express-rate-limit';
@@ -181,6 +182,7 @@ async function startServer() {
     
     app.listen(PORT, () => {
       console.log(`Server running on port ${PORT} in ${process.env.NODE_ENV || 'development'} mode`);
+      startBackupScheduler();
     });
   } catch (err) {
     console.error('Failed to start server:', err);
