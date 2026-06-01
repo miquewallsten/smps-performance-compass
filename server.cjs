@@ -130250,9 +130250,9 @@ async function seedEvaluationData() {
   const now3 = () => (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "");
   await db.transaction(async (conn) => {
     const sectionWeights = [
-      { position: "socio", tecnico: 60, competencias: 20, blandas: 20 },
-      { position: "salary_partner", tecnico: 60, competencias: 20, blandas: 20 },
-      { position: "counsel", tecnico: 60, competencias: 20, blandas: 20 },
+      { position: "socio", tecnico: 50, competencias: 25, blandas: 25 },
+      { position: "salary_partner", tecnico: 50, competencias: 25, blandas: 25 },
+      { position: "counsel", tecnico: 100, competencias: 0, blandas: 0 },
       { position: "asociado_sr", tecnico: 60, competencias: 20, blandas: 20 },
       { position: "asociado_mid", tecnico: 60, competencias: 20, blandas: 20 },
       { position: "asociado_jr", tecnico: 40, competencias: 40, blandas: 20 },
@@ -131575,7 +131575,15 @@ router.get("/overview", async (req, res) => {
         _source: "live"
       });
     }
-    return res.json({ ...summary, _source: "cached" });
+    return res.json({
+      period: summary.period,
+      totalEmployees: summary.total_employees || 0,
+      selfEvalCompleted: summary.self_eval_completed || 0,
+      supervisorEvalCompleted: summary.supervisor_eval_completed || 0,
+      feedbackCompleted: summary.feedback_completed || 0,
+      avgScore: summary.avg_overall_score ? Math.round(summary.avg_overall_score * 10) / 10 : null,
+      _source: "cached"
+    });
   } catch (err) {
     console.error("Analytics overview error:", err);
     return res.status(500).json({ error: "Internal server error" });
@@ -132399,8 +132407,7 @@ router2.get("/", async (req, res) => {
       query += " AND is_read = 0";
     }
     query += " AND (expires_at IS NULL OR expires_at > NOW())";
-    query += " ORDER BY created_at DESC LIMIT ? OFFSET ?";
-    params.push(limit, offset);
+    query += ` ORDER BY created_at DESC LIMIT ${limit} OFFSET ${offset}`;
     const notifications = await db.all(query, params);
     let countQuery = "SELECT COUNT(*) as cnt FROM notifications WHERE recipient_id = ?";
     const countParams = [userId];
@@ -138828,9 +138835,9 @@ router9.post("/", authMiddleware, async (req, res) => {
         for (const item of items) {
           await tx.run(
             conn,
-            `INSERT INTO smart_action_items (id, action_plan_id, competencia, objetivo, acciones, que_evitar, fecha_revision, apoyos)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-            [v4_default(), id, item.competencia || "", item.objetivo || "", item.acciones || "", item.queEvitar || "", item.fechaRevision || "", item.apoyos || ""]
+            `INSERT INTO smart_action_items (id, action_plan_id, competencia, objetivo, acciones, que_evitar, fecha_revision, apoyos, category, description)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [v4_default(), id, item.competencia || "", item.objetivo || "", item.acciones || "", item.queEvitar || "", item.fechaRevision || "", item.apoyos || "", item.category || "action_plan", item.description || ""]
           );
         }
       }
@@ -138884,8 +138891,8 @@ router9.patch(
           for (const item of items) {
             await tx.run(
               conn,
-              `INSERT INTO smart_action_items (id, action_plan_id, competencia, objetivo, acciones, que_evitar, fecha_revision, apoyos) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-              [v4_default(), req.params.id, item.competencia || "", item.objetivo || "", item.acciones || "", item.queEvitar || "", item.fechaRevision || "", item.apoyos || ""]
+              `INSERT INTO smart_action_items (id, action_plan_id, competencia, objetivo, acciones, que_evitar, fecha_revision, apoyos, category, description) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+              [v4_default(), req.params.id, item.competencia || "", item.objetivo || "", item.acciones || "", item.queEvitar || "", item.fechaRevision || "", item.apoyos || "", item.category || "action_plan", item.description || ""]
             );
           }
         });
@@ -139285,8 +139292,8 @@ router12.post("/requests", authMiddleware, async (req, res) => {
     const id = v4_default();
     const now3 = (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "");
     await db.run(
-      "INSERT INTO vacation_requests (id, user_id, start_date, end_date, days, reason, status, created_at, period) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-      [id, userId, startDate, endDate, days, reason || "", "pending", now3, period || null]
+      "INSERT INTO vacation_requests (id, user_id, start_date, end_date, days, reason, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+      [id, userId, startDate, endDate, days, reason || "", "pending", now3]
     );
     const request = await db.get("SELECT * FROM vacation_requests WHERE id = ?", [id]);
     const supervisors = await db.all(
@@ -139441,6 +139448,37 @@ router12.patch("/config", authMiddleware, requireAdmin, async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
+router12.get("/extra-days", authMiddleware, async (req, res) => {
+  try {
+    const { userId, period } = req.query;
+    const role = normalizeRole(req.user);
+    if (hasRole(req.user, ["super_user", "admin", "socio"])) {
+      let sql2 = "SELECT * FROM extra_vacation_days WHERE 1=1";
+      const params2 = [];
+      if (userId) {
+        sql2 += " AND user_id = ?";
+        params2.push(userId);
+      }
+      if (period) {
+        sql2 += " AND period = ?";
+        params2.push(period);
+      }
+      const extras2 = await db.all(sql2, params2);
+      return res.json(extras2);
+    }
+    let sql = "SELECT * FROM extra_vacation_days WHERE user_id = ?";
+    const params = [req.user.id];
+    if (period) {
+      sql += " AND period = ?";
+      params.push(period);
+    }
+    const extras = await db.all(sql, params);
+    return res.json(extras);
+  } catch (err) {
+    console.error("Get extra days error:", err);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+});
 router12.post("/extra-days", authMiddleware, requireAdmin, async (req, res) => {
   try {
     const { userId, days, reason, period } = req.body;
@@ -139450,7 +139488,7 @@ router12.post("/extra-days", authMiddleware, requireAdmin, async (req, res) => {
     const id = v4_default();
     const now3 = (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "");
     await db.run(
-      "INSERT INTO extra_vacation_days (id, user_id, days, reason, added_by, added_at, period) VALUES (?, ?, ?, ?, ?, ?, ?)",
+      "INSERT INTO extra_vacation_days (id, user_id, days, reason, added_by, created_at, period) VALUES (?, ?, ?, ?, ?, ?, ?)",
       [id, userId, days, reason, req.user.id, now3, period]
     );
     const extra = await db.get("SELECT * FROM extra_vacation_days WHERE id = ?", [id]);
@@ -143653,8 +143691,7 @@ router20.get("/:id/timeline", authMiddleware, async (req, res) => {
     sql += " ORDER BY event_date DESC, created_at DESC";
     const limitNum = Math.min(parseInt(limit || "50", 10), 200);
     const offsetNum = parseInt(offset || "0", 10);
-    sql += " LIMIT ? OFFSET ?";
-    params.push(limitNum, offsetNum);
+    sql += ` LIMIT ${limitNum} OFFSET ${offsetNum}`;
     const events = await db.all(sql, params);
     let countSql = "SELECT COUNT(*) as total FROM user_timeline WHERE user_id = ?";
     const countParams = [id];

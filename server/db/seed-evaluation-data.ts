@@ -74,9 +74,9 @@ export async function seedEvaluationData(): Promise<void> {
     // 1. SECTION WEIGHTS (per position, from Excel)
     // ═══════════════════════════════════════════════════════════════════
     const sectionWeights: { position: string; tecnico: number; competencias: number; blandas: number }[] = [
-      { position: 'socio', tecnico: 60, competencias: 20, blandas: 20 },
-      { position: 'salary_partner', tecnico: 60, competencias: 20, blandas: 20 },
-      { position: 'counsel', tecnico: 60, competencias: 20, blandas: 20 },
+      { position: 'socio', tecnico: 50, competencias: 25, blandas: 25 },
+      { position: 'salary_partner', tecnico: 50, competencias: 25, blandas: 25 },
+      { position: 'counsel', tecnico: 100, competencias: 0, blandas: 0 },
       { position: 'asociado_sr', tecnico: 60, competencias: 20, blandas: 20 },
       { position: 'asociado_mid', tecnico: 60, competencias: 20, blandas: 20 },
       { position: 'asociado_jr', tecnico: 40, competencias: 40, blandas: 20 },

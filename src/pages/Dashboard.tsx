@@ -1,6 +1,6 @@
 import * as React from "react";
 import { useAuth } from '@/contexts/AuthContext';
-import { useAnalyticsOverview, useAnalyticsEvaluations, usePendingActions, useUnreadNotificationCount } from '@/api/queries';
+import { useAnalyticsOverview, useAnalyticsEvaluations, usePendingActions, useUnreadNotificationCount, usePeriods } from '@/api/queries';
 import { useCurrentPeriod } from '@/hooks/useCurrentPeriod';
 import { ScoreBadge } from '@/components/shared/ScoreBadge';
 import { CheckCircle, Clock, ArrowRight, PenLine, UserCheck, Bell, Megaphone, CalendarOff, AlertTriangle, FileCheck, Target } from 'lucide-react';
@@ -34,8 +34,20 @@ function daysUntil(dateStr: string): number | null {
 export default function Dashboard() {
   const { user: currentUser } = useAuth();
   const currentPeriod = useCurrentPeriod();
+  const { data: periodsData = [] } = usePeriods();
+  // Determine which period to use for analytics display
+  // If the current period just started and has no data, fall back to the previous period
+  const previousPeriod = (() => {
+    const sorted = [...periodsData].sort((a: any, b: any) => b.period.localeCompare(a.period));
+    const prev = sorted.find((p: any) => p.period < currentPeriod);
+    return prev ? prev.period : currentPeriod;
+  })();
+  // Use previous period for analytics if current has no data
   const { data: overview, isLoading: overviewLoading } = useAnalyticsOverview(currentPeriod);
-  const { data: evalAnalytics, isLoading: evalLoading } = useAnalyticsEvaluations(currentPeriod);
+  const hasCurrentData = overview && (overview.totalEmployees > 0 || overview.selfEvalCompleted > 0);
+  const analyticsPeriod = hasCurrentData ? currentPeriod : previousPeriod;
+  const isPeriodTransition = !hasCurrentData && analyticsPeriod !== currentPeriod;
+  const { data: evalAnalytics, isLoading: evalLoading } = useAnalyticsEvaluations(analyticsPeriod);
   const { data: pendingActions, isLoading: actionsLoading } = usePendingActions(currentPeriod);
   const { data: notifCount } = useUnreadNotificationCount();
   const navigate = useNavigate();
@@ -76,7 +88,7 @@ export default function Dashboard() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="font-display text-lg font-bold">Panel</h1>
-          <p className="text-xs text-muted-foreground">Periodo: {currentPeriod}</p>
+          <p className="text-xs text-muted-foreground">Periodo: {currentPeriod}{isPeriodTransition && <span className="ml-1 text-amber-600">(mostrando datos de {analyticsPeriod})</span>}</p>
         </div>
         {notifCount?.unread > 0 && (
           <button onClick={() => navigate('/notifications')} className="flex items-center gap-1.5 text-sm text-accent hover:opacity-80 transition-opacity">

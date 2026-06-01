@@ -13,6 +13,7 @@ import { useState, useEffect, useRef, Suspense } from 'react';
 import { Loader2 } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import PeriodEndAlert from '@/components/PeriodEndAlert';
+import PeriodTransitionAlert from '@/components/PeriodTransitionAlert';
 import { getPositionLevel } from '@/lib/evaluationConfig';
 import { useEvalConfigInit } from '@/hooks/useEvalConfigInit';
 import NotificationBell from '@/components/NotificationBell';
@@ -271,6 +272,7 @@ export default function Layout() {
           <main className="flex-1 min-h-0 overflow-auto pb-16 md:pb-0">
             <div key={location.pathname} className="p-4 md:p-5 max-w-6xl mx-auto smps-page-enter">
               <PeriodEndAlert />
+              <PeriodTransitionAlert />
               <Suspense fallback={<ContentLoader />}>
                 <Outlet />
               </Suspense>

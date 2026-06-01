@@ -66,8 +66,7 @@ router.get('/:id/timeline', authMiddleware, async (req: Request, res: Response) 
 
     const limitNum = Math.min(parseInt(limit || '50', 10), 200);
     const offsetNum = parseInt(offset || '0', 10);
-    sql += ' LIMIT ? OFFSET ?';
-    params.push(limitNum, offsetNum);
+    sql += ` LIMIT ${limitNum} OFFSET ${offsetNum}`;
 
     const events = await db.all(sql, params);
 

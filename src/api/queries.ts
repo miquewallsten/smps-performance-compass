@@ -290,6 +290,16 @@ export function useUpdateVacationConfig() {
     onError: (err: Error) => toast.error(err.message || 'Error al guardar configuración'),
   });
 }
+// ── Extra Vacation Days ──
+export function useExtraVacationDays(userId?: string, period?: string) {
+  const params = new URLSearchParams();
+  if (userId) params.set('userId', userId);
+  if (period) params.set('period', period);
+  const qs = params.toString();
+  return useQuery({ queryKey: ['extraVacationDays', userId, period], queryFn: () => api.get<any[]>(`/api/vacations/extra-days${qs ? `?${qs}` : ''}`) });
+}
+
+
 export function useAddExtraVacationDays() {
   const qc = useQueryClient();
   return useMutation({

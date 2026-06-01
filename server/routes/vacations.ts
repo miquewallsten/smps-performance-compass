@@ -3,7 +3,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { db, tx } from '../db/connection.js';
 import { authMiddleware } from '../middleware/auth.js';
 import { requireAdmin } from '../middleware/rbac.js';
-import { isAdminOrSocio, isSupervisorOf, getSuperviseeIds } from '../middleware/permissions.js';
+import { isAdminOrSocio, isSupervisorOf, getSuperviseeIds, hasRole, normalizeRole } from '../middleware/permissions.js';
 
 import { createNotification } from '../services/notifications.js';
 
@@ -65,8 +65,8 @@ router.post('/requests', authMiddleware, async (req: Request, res: Response) => 
     const id = uuidv4();
     const now = new Date().toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, '');
     await db.run(
-      'INSERT INTO vacation_requests (id, user_id, start_date, end_date, days, reason, status, created_at, period) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-      [id, userId, startDate, endDate, days, reason || '', 'pending', now, period || null]
+      'INSERT INTO vacation_requests (id, user_id, start_date, end_date, days, reason, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+      [id, userId, startDate, endDate, days, reason || '', 'pending', now]
     );
 
     const request = await db.get('SELECT * FROM vacation_requests WHERE id = ?', [id]);
@@ -295,7 +295,7 @@ router.post('/extra-days', authMiddleware, requireAdmin, async (req: Request, re
     const id = uuidv4();
     const now = new Date().toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, '');
     await db.run(
-      'INSERT INTO extra_vacation_days (id, user_id, days, reason, added_by, added_at, period) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      'INSERT INTO extra_vacation_days (id, user_id, days, reason, added_by, created_at, period) VALUES (?, ?, ?, ?, ?, ?, ?)',
       [id, userId, days, reason, req.user!.id, now, period]
     );
 

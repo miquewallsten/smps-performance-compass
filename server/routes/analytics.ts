@@ -63,7 +63,15 @@ router.get('/overview', async (req: Request, res: Response) => {
       });
     }
     
-    return res.json({ ...summary, _source: 'cached' });
+    return res.json({
+        period: (summary as any).period,
+        totalEmployees: (summary as any).total_employees || 0,
+        selfEvalCompleted: (summary as any).self_eval_completed || 0,
+        supervisorEvalCompleted: (summary as any).supervisor_eval_completed || 0,
+        feedbackCompleted: (summary as any).feedback_completed || 0,
+        avgScore: (summary as any).avg_overall_score ? Math.round((summary as any).avg_overall_score * 10) / 10 : null,
+        _source: 'cached',
+      });
   } catch (err) {
     console.error('Analytics overview error:', err);
     return res.status(500).json({ error: 'Internal server error' });

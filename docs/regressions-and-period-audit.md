@@ -237,3 +237,55 @@ However, pages that display historical data (Dashboard, Reports, Org Chart, Scor
 | 5 | Analytics pages show zeros for empty period | No fallback to previous period | 🟡 Moderate | Add fallback logic |
 | 6 | Layout loads all vacation requests | No period filter on vacation requests | 🟢 Low | Not user-visible bug |
 
+
+---
+
+## REGRESSIONS FOUND AND FIXED — Session 2 (2026-06-01)
+
+### Bug #1: Notifications API — LIMIT/OFFSET MySQL Error (CRITICAL)
+
+**File:** `server/routes/notifications.ts` (line 41-42)  
+**Root Cause:** MySQL prepared statements (`pool.execute`) do not accept `LIMIT ?` and `OFFSET ?` as bind parameters. This caused `ER_WRONG_ARGUMENTS` errors.  
+**Fix:** Changed from parameterized `LIMIT ? OFFSET ?` to inline `${limit} OFFSET ${offset}` since these are validated integers.  
+**Severity:** 🔴 Critical — Notifications page and notification bell completely broken.
+
+### Bug #2: Timeline API — LIMIT/OFFSET MySQL Error (CRITICAL)
+
+**File:** `server/routes/timeline.ts` (line 69-70)  
+**Root Cause:** Same as Bug #1.  
+**Fix:** Same approach — inline validated integer values.  
+**Severity:** 🔴 Critical — User timeline endpoint returned 500 error.
+
+### Bug #3: Vacation Requests — Unknown Column 'period' (CRITICAL)
+
+**File:** `server/routes/vacations.ts` (line 68)  
+**Root Cause:** `vacation_requests` table does not have a `period` column, but the INSERT tried to use it.  
+**Fix:** Removed `period` from the INSERT statement. Frontend still sends it but backend ignores it.  
+**Severity:** 🔴 Critical — Creating vacation requests always failed.
+
+### Bug #4: Action Plans — Missing Required Column 'category' (CRITICAL)
+
+**File:** `server/routes/action-plans.ts` (lines 74, 130)  
+**Root Cause:** `smart_action_items` table has NOT NULL columns `category` and `description` without defaults, but INSERT didn't include them.  
+**Fix:** Added `category` and `description` columns to INSERT statements with defaults.  
+**Severity:** 🔴 Critical — Creating action plans always failed.
+
+### Bug #5: Analytics Overview — Inconsistent Response Format (MODERATE)
+
+**File:** `server/routes/analytics.ts` (line 67)  
+**Root Cause:** Cached analytics data used snake_case column names while live-computed data used camelCase. Frontend expects consistent format.  
+**Fix:** Normalized cached response to map snake_case to camelCase.  
+**Severity:** 🟡 Moderate — Dashboard showed inconsistent data structures.
+
+### Bug #6: Extra Vacation Days — Unknown Column 'added_at' (MODERATE)
+
+**File:** `server/routes/vacations.ts` (line 298)  
+**Root Cause:** Table has `created_at` but INSERT used `added_at`.  
+**Fix:** Changed `added_at` to `created_at`.  
+**Severity:** 🟡 Moderate — Adding extra vacation days failed.
+
+### Bug #7: extra_vacation_days Table Missing 'period' Column (MODERATE)
+
+**Root Cause:** Migration defines `period` column but it wasn't present in the actual table.  
+**Fix:** ALTER TABLE to add `period VARCHAR(50) DEFAULT NULL`.  
+**Severity:** 🟡 Moderate — Extra vacation days couldn't be filtered by period.

@@ -59,10 +59,14 @@ export default function EvaluationViewer({ evaluation, onClose }: Props) {
   };
 
   const evalPos = evaluated.position;
+  const evalPracticeArea = evaluated.practiceArea || 'corporativo';
   const evalQuestions = customQuestions[evalPos] || [];
   const sectionWeightsMap = getSectionWeights(evalPos);
   const questions = (() => {
-    const tecnicas = evalQuestions.filter(q => q.section === 'tecnico');
+    const tecnicasRaw = evalQuestions.filter(q => q.section === 'tecnico');
+    const tecnicas = tecnicasRaw.filter(q => !q.practiceArea || q.practiceArea === evalPracticeArea || q.practiceArea === 'general').length > 0
+      ? tecnicasRaw.filter(q => !q.practiceArea || q.practiceArea === evalPracticeArea || q.practiceArea === 'general')
+      : tecnicasRaw.filter(q => !q.practiceArea || q.practiceArea === 'corporativo');
     const competencias = evalQuestions.filter(q => q.section === 'competencias');
     const blandas = evalQuestions.filter(q => q.section === 'blandas');
     const rescale = (qs: EvalQuestion[], target: number) => {

@@ -38,8 +38,7 @@ router.get('/', async (req: Request, res: Response) => {
     // Filter out expired notifications
     query += ' AND (expires_at IS NULL OR expires_at > NOW())';
 
-    query += ' ORDER BY created_at DESC LIMIT ? OFFSET ?';
-    params.push(limit, offset);
+    query += ` ORDER BY created_at DESC LIMIT ${limit} OFFSET ${offset}`;
 
     const notifications = await db.all(query, params);
 

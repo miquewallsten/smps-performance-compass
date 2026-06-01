@@ -173,7 +173,10 @@ export default function Evaluations() {
     const empQuestions = customQuestions[empPos] || [];
     const sectionWeightsMap = getSectionWeights(empPos);
     const questions = (() => {
-      const tecnicas = empQuestions.filter(q => q.section === 'tecnico');
+      const empPracticeArea = emp.practiceArea || 'corporativo';
+      const tecnicas = empQuestions.filter(q => q.section === 'tecnico' && (!q.practiceArea || q.practiceArea === empPracticeArea || q.practiceArea === 'general'));
+      // Fallback: if no tecnico questions match the practice area, use corporativo
+      const tecnicasForArea = tecnicas.length > 0 ? tecnicas : empQuestions.filter(q => q.section === 'tecnico' && (!q.practiceArea || q.practiceArea === 'corporativo'));
       const competencias = empQuestions.filter(q => q.section === 'competencias');
       const blandas = empQuestions.filter(q => q.section === 'blandas');
       const rescale = (qs: EvalQuestion[], target: number) => {
@@ -182,7 +185,7 @@ export default function Evaluations() {
         return qs.map(q => ({ ...q, weight: Math.round(((q.weight || 1) / sum) * target * 100) / 100 }));
       };
       return [
-        ...rescale(tecnicas, sectionWeightsMap.tecnico),
+        ...rescale(tecnicasForArea, sectionWeightsMap.tecnico),
         ...rescale(competencias, sectionWeightsMap.competencias),
         ...rescale(blandas, sectionWeightsMap.blandas),
       ];
@@ -459,7 +462,7 @@ export default function Evaluations() {
       {/* NA Approval Section */}
       {(() => {
         const evalsWithPendingNA = evaluations.filter(ev => {
-          if (ev.period !== currentPeriod) return false;
+          if (ev.period !== viewPeriod) return false;
           if (ev.type !== 'self') return false;
           if (!isSupervisor(ev.evaluatedId) && !isAdminOrSocio) return false;
           return (ev.responses || []).some(r => r.notApplicable && !normalizeNA(ev.naApprovals)[r.questionId]);
@@ -472,10 +475,14 @@ export default function Evaluations() {
               {evalsWithPendingNA.map(ev => {
                 const evaluated = users.find(u => u.id === ev.evaluatedId);
                 const evalPos = evaluated?.position || '';
+                const evalPracticeArea = evaluated?.practiceArea || 'corporativo';
                 const evalQuestions = customQuestions[evalPos] || [];
                 const sectionWeightsMap2 = getSectionWeights(evalPos);
                 const questions = (() => {
-                  const tecnicas = evalQuestions.filter(q => q.section === 'tecnico');
+                  const tecnicasRaw = evalQuestions.filter(q => q.section === 'tecnico');
+                  const tecnicas = tecnicasRaw.filter(q => !q.practiceArea || q.practiceArea === evalPracticeArea || q.practiceArea === 'general').length > 0
+                    ? tecnicasRaw.filter(q => !q.practiceArea || q.practiceArea === evalPracticeArea || q.practiceArea === 'general')
+                    : tecnicasRaw.filter(q => !q.practiceArea || q.practiceArea === 'corporativo');
                   const competencias = evalQuestions.filter(q => q.section === 'competencias');
                   const blandas = evalQuestions.filter(q => q.section === 'blandas');
                   const rescale = (qs: EvalQuestion[], target: number) => {

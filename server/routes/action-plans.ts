@@ -71,9 +71,9 @@ router.post('/', authMiddleware, async (req: Request, res: Response) => {
       if (items && Array.isArray(items)) {
         for (const item of items) {
           await tx.run(conn,
-            `INSERT INTO smart_action_items (id, action_plan_id, competencia, objetivo, acciones, que_evitar, fecha_revision, apoyos)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-            [uuidv4(), id, item.competencia || '', item.objetivo || '', item.acciones || '', item.queEvitar || '', item.fechaRevision || '', item.apoyos || '']);
+            `INSERT INTO smart_action_items (id, action_plan_id, competencia, objetivo, acciones, que_evitar, fecha_revision, apoyos, category, description)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [uuidv4(), id, item.competencia || '', item.objetivo || '', item.acciones || '', item.queEvitar || '', item.fechaRevision || '', item.apoyos || '', item.category || 'action_plan', item.description || '']);
         }
       }
     });
@@ -127,8 +127,8 @@ router.patch('/:id', authMiddleware,
         await tx.run(conn, 'DELETE FROM smart_action_items WHERE action_plan_id = ?', [req.params.id]);
         for (const item of items) {
           await tx.run(conn,
-            `INSERT INTO smart_action_items (id, action_plan_id, competencia, objetivo, acciones, que_evitar, fecha_revision, apoyos) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-            [uuidv4(), req.params.id, item.competencia || '', item.objetivo || '', item.acciones || '', item.queEvitar || '', item.fechaRevision || '', item.apoyos || '']);
+            `INSERT INTO smart_action_items (id, action_plan_id, competencia, objetivo, acciones, que_evitar, fecha_revision, apoyos, category, description) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [uuidv4(), req.params.id, item.competencia || '', item.objetivo || '', item.acciones || '', item.queEvitar || '', item.fechaRevision || '', item.apoyos || '', item.category || 'action_plan', item.description || '']);
         }
       });
     } else {
