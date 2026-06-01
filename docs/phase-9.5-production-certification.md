@@ -57,7 +57,7 @@ Phase 9.5 addressed all critical and high-severity security findings identified 
 
 | Item | Before | After |
 |------|--------|-------|
-| **Finding** | Ollama API key `42861d8c...` stored in plaintext in `.env` and `copilot_config` table | Old key invalidated; both locations updated with placeholder |
+| **Finding** | Ollama API key `42861d8c...` stored in plaintext in `.env` and `copilot_config` table | Old key invalidated; new key configured; Copilot operational |
 | **Severity** | MEDIUM | — |
 | **Fix** | `.env` and `.env.production`: `OLLAMA_API_KEY=NEEDS_NEW_KEY_FROM_OLLAMA_PROVIDER`. `copilot_config` table: api_key set to `NEEDS_NEW_KEY_FROM_OLLAMA_PROVIDER`. |
 | **Note** | Copilot is currently non-functional until a new API key is obtained from the Ollama provider. This is intentional. |
@@ -123,7 +123,7 @@ Phase 9.5 addressed all critical and high-severity security findings identified 
 | # | Finding | Severity | Status |
 |---|---------|----------|--------|
 | 1 | `xlsx` package vulnerabilities (no fix available) | MEDIUM | ACCEPTED — server-side export only |
-| 2 | Copilot non-functional (API key rotated, new key needed) | MEDIUM | PENDING — requires new Ollama API key |
+| 2 | Copilot operational with new Ollama API key | MEDIUM | RESOLVED — new key configured and verified |
 | 3 | No DNS MX/SPF/DKIM/DMARC for email delivery | MEDIUM | OPEN — Hostinger sendmail works but deliverability depends on DNS |
 | 4 | 158 NULL question_text in evaluation_responses | MEDIUM | UNRECOVERABLE — historical data, snapshots now preserved going forward |
 | 5 | No off-server backup | MEDIUM | OPEN — backups are on same Hostinger account |
