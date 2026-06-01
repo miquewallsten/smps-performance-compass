@@ -4,6 +4,7 @@ import { db, tx } from '../db/connection.js';
 import { authMiddleware } from '../middleware/auth.js';
 import { isAdminOrSocio, isSupervisorOf, getSuperviseeIds, requireEntityAccess, requireSupervisorAction } from '../middleware/permissions.js';
 import { logTimelineEvent } from './users.js';
+import { createNotification } from '../services/notifications.js';
 
 const router = Router();
 
@@ -79,6 +80,17 @@ router.post('/', authMiddleware, async (req: Request, res: Response) => {
 
     const plan = await db.get('SELECT * FROM action_plans WHERE id = ?', [id]);
     const planItems = await db.all('SELECT * FROM smart_action_items WHERE action_plan_id = ?', [id]);
+    // Notify supervisor about pending approval
+    await createNotification({
+      recipientId: supervisorId,
+      type: 'approval_required',
+      category: 'action_plan',
+      title: 'Plan de acción creado — Aprobación pendiente',
+      body: `Se ha creado un plan de acción para el período ${period}. Su aprobación es requerida.`,
+      actionUrl: '/action-plans',
+      relatedEntityId: id,
+      relatedEntityType: 'action_plan',
+    });
     return res.status(201).json({ ...plan, items: planItems });
   } catch (err: any) {
     if (err.code === 'ER_DUP_ENTRY') {
@@ -160,6 +172,18 @@ router.post('/:id/approve', authMiddleware,
         metadata: { planId: req.params.id, status, period: updated.period },
         note: `Plan de acción ${statusLabel} — Periodo: ${updated.period}`,
         createdBy: req.user!.id
+      });
+
+      // Notify employee about approval/rejection
+      await createNotification({
+        recipientId: updated.employee_id,
+        type: status === 'approved' ? 'info' : 'warning',
+        category: 'action_plan',
+        title: `Plan de acción ${statusLabel}`,
+        body: `Su plan de acción para el período ${updated.period} ha sido ${statusLabel}.`,
+        actionUrl: '/action-plans',
+        relatedEntityId: req.params.id,
+        relatedEntityType: 'action_plan',
       });
     }
     return res.json({ ...updated, items: planItems });

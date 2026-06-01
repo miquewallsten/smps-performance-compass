@@ -272,3 +272,28 @@ export async function verifyEmailConfig(): Promise<{ ok: boolean; message: strin
     return { ok: false, message: `Email verification failed: ${(error as Error).message}` };
   }
 }
+
+/**
+ * Send a generic template email (used by notification service).
+ * Returns true if sent, false if not.
+ */
+export async function sendTemplateEmail(params: {
+  to: string;
+  subject: string;
+  html: string;
+}): Promise<boolean> {
+  try {
+    const result = await getTransporter().sendMail({
+      from: getFromAddress(),
+      to: params.to,
+      subject: params.subject,
+      html: params.html,
+    });
+    const accepted = result.accepted?.length ?? 0;
+    const envelopeRecipients = (result.envelope as any)?.to?.length ?? 0;
+    return accepted > 0 || envelopeRecipients > 0;
+  } catch (error) {
+    console.error(`📧 Failed to send template email to ${params.to}:`, error);
+    return false;
+  }
+}

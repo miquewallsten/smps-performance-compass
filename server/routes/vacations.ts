@@ -5,6 +5,8 @@ import { authMiddleware } from '../middleware/auth.js';
 import { requireAdmin } from '../middleware/rbac.js';
 import { isAdminOrSocio, isSupervisorOf, getSuperviseeIds } from '../middleware/permissions.js';
 
+import { createNotification } from '../services/notifications.js';
+
 const router = Router();
 
 // ─── GET /api/vacations/requests ───────────────────────────────────────────
@@ -68,6 +70,26 @@ router.post('/requests', authMiddleware, async (req: Request, res: Response) => 
     );
 
     const request = await db.get('SELECT * FROM vacation_requests WHERE id = ?', [id]);
+
+    // Notify supervisor(s) about pending vacation approval
+    const supervisors = await db.all(
+      'SELECT supervisor_id FROM supervisor_assignments WHERE employee_id = ?',
+      [userId]
+    );
+    const reqUser = await db.get('SELECT name FROM users WHERE id = ?', [userId]);
+    for (const sa of supervisors as any[]) {
+      await createNotification({
+        recipientId: sa.supervisor_id,
+        type: 'approval_required',
+        category: 'vacation',
+        title: `Solicitud de vacaciones — ${(reqUser as any)?.name || 'Empleado'}`,
+        body: `Solicitud de ${days} día(s) de vacaciones del ${startDate} al ${endDate}.`,
+        actionUrl: '/vacations',
+        relatedEntityId: id,
+        relatedEntityType: 'vacation_request',
+      });
+    }
+
     return res.status(201).json({ ...request, approvals: [] });
   } catch (err) {
     console.error('Create vacation request error:', err);
@@ -103,6 +125,20 @@ router.patch('/requests/:id', authMiddleware, async (req: Request, res: Response
 
     const updated = await db.get('SELECT * FROM vacation_requests WHERE id = ?', [req.params.id]);
     const approvals = await db.all('SELECT * FROM vacation_approvals WHERE vacation_request_id = ?', [req.params.id]);
+
+    // Notify employee about vacation decision
+    const actionLabel = action === 'approved' ? 'aprobada' : 'rechazada';
+    await createNotification({
+      recipientId: request.user_id,
+      type: action === 'approved' ? 'info' : 'warning',
+      category: 'vacation',
+      title: `Vacaciones ${actionLabel}`,
+      body: `Su solicitud de vacaciones del ${request.start_date} al ${request.end_date} ha sido ${actionLabel}.`,
+      actionUrl: '/vacations',
+      relatedEntityId: req.params.id,
+      relatedEntityType: 'vacation_request',
+    });
+
     return res.json({ ...updated, approvals });
   } catch (err) {
     console.error('Update vacation request error:', err);
@@ -141,6 +177,20 @@ router.post('/requests/:id/approve', authMiddleware, async (req: Request, res: R
 
     const updated = await db.get('SELECT * FROM vacation_requests WHERE id = ?', [req.params.id]);
     const approvals = await db.all('SELECT * FROM vacation_approvals WHERE vacation_request_id = ?', [req.params.id]);
+
+    // Notify employee about vacation decision
+    const actionLabel = action === 'approved' ? 'aprobada' : 'rechazada';
+    await createNotification({
+      recipientId: request.user_id,
+      type: action === 'approved' ? 'info' : 'warning',
+      category: 'vacation',
+      title: `Vacaciones ${actionLabel}`,
+      body: `Su solicitud de vacaciones del ${request.start_date} al ${request.end_date} ha sido ${actionLabel}.`,
+      actionUrl: '/vacations',
+      relatedEntityId: req.params.id,
+      relatedEntityType: 'vacation_request',
+    });
+
     return res.json({ ...updated, approvals });
   } catch (err) {
     console.error('Approve vacation error:', err);

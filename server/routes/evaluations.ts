@@ -4,6 +4,7 @@ import { db, tx } from '../db/connection.js';
 import { authMiddleware } from '../middleware/auth.js';
 import { isAdminOrSocio, isSupervisorOf, getSuperviseeIds, hasRole, normalizeRole, requireEntityAccess, requireSupervisorAction } from '../middleware/permissions.js';
 import { logTimelineEvent } from './users.js';
+import { createNotification } from '../services/notifications.js';
 
 const router = Router();
 
@@ -339,6 +340,40 @@ router.put('/:id', authMiddleware,
         note: `${evalType === 'self' ? 'Autoevaluación' : 'Evaluación de supervisor'} completada — Periodo: ${updated.period}, Calificación: ${updated.total_score}%`,
         createdBy: req.user!.id
       });
+
+      // Send notification about completed evaluation
+      if (evalType === 'self') {
+        // Notify supervisor(s) that self-eval is done
+        const supervisors = await db.all(
+          'SELECT supervisor_id FROM supervisor_assignments WHERE employee_id = ? AND period = ?',
+          [updated.evaluated_id, updated.period]
+        );
+        const evalUser = await db.get('SELECT name FROM users WHERE id = ?', [updated.evaluated_id]);
+        for (const sa of supervisors as any[]) {
+          await createNotification({
+            recipientId: sa.supervisor_id,
+            type: 'info',
+            category: 'evaluation',
+            title: `Autoevaluación completada — ${(evalUser as any)?.name || 'Empleado'}`,
+            body: `Período: ${updated.period}. Listo para su evaluación de supervisor.`,
+            actionUrl: '/evaluations',
+            relatedEntityId: req.params.id,
+            relatedEntityType: 'evaluation',
+          });
+        }
+      } else {
+        // Notify employee that supervisor eval is done
+        await createNotification({
+          recipientId: updated.evaluated_id,
+          type: 'info',
+          category: 'evaluation',
+          title: 'Evaluación de supervisor completada',
+          body: `Su evaluación de supervisor para el período ${updated.period} ha sido completada. Calificación: ${updated.total_score}%.`,
+          actionUrl: '/evaluations',
+          relatedEntityId: req.params.id,
+          relatedEntityType: 'evaluation',
+        });
+      }
     }
     const evalNaApprovals = await db.all('SELECT * FROM evaluation_na_approvals WHERE evaluation_id = ?', [req.params.id]);
     return res.json({ ...updated, responses: evalResponses, naApprovals: evalNaApprovals });

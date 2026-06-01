@@ -547,3 +547,61 @@ export function useAnalyticsActionPlans(period?: string) {
     queryFn: () => api.get<any>(`/api/analytics/action-plans${params}`),
   });
 }
+
+// ── Notifications ──
+export function useNotifications(options?: { limit?: number; offset?: number; unread?: boolean }) {
+  const params = new URLSearchParams();
+  if (options?.limit) params.set('limit', String(options.limit));
+  if (options?.offset) params.set('offset', String(options.offset));
+  if (options?.unread) params.set('unread', 'true');
+  const qs = params.toString();
+  return useQuery({
+    queryKey: ['notifications', options],
+    queryFn: () => api.get<any>(`/api/notifications${qs ? `?${qs}` : ''}`),
+  });
+}
+
+export function useUnreadNotificationCount() {
+  return useQuery({
+    queryKey: ['unreadNotificationCount'],
+    queryFn: () => api.get<{ unread: number }>('/api/notifications/count'),
+    refetchInterval: 60000, // Poll every minute
+  });
+}
+
+export function useMarkNotificationRead() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => api.patch(`/api/notifications/${id}/read`, {}),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['notifications'] }); qc.invalidateQueries({ queryKey: ['unreadNotificationCount'] }); },
+  });
+}
+
+export function useMarkAllNotificationsRead() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => api.post('/api/notifications/read-all', {}),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['notifications'] }); qc.invalidateQueries({ queryKey: ['unreadNotificationCount'] }); },
+  });
+}
+
+export function useNotificationPreferences() {
+  return useQuery({ queryKey: ['notificationPreferences'], queryFn: () => api.get<any[]>('/api/notifications/preferences') });
+}
+
+export function useUpdateNotificationPreferences() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: any) => api.patch('/api/notifications/preferences', data),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['notificationPreferences'] }); toast.success('Preferencias actualizadas'); },
+    onError: (err: Error) => toast.error(err.message || 'Error al actualizar preferencias'),
+  });
+}
+
+export function usePendingActions(period?: string) {
+  return useQuery({
+    queryKey: ['pendingActions', period],
+    queryFn: () => api.get<any>(`/api/notifications/pending-actions${period ? `?period=${period}` : ''}`),
+    enabled: !!period,
+  });
+}

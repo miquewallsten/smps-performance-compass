@@ -13,6 +13,9 @@ import { migrateIndexes } from './db/migrate-indexes.js';
 import { migrateAnalytics } from './db/migrate-analytics.js';
 import analyticsRoutes from './routes/analytics.js';
 import { refreshAnalytics } from './services/analytics-refresh.js';
+import { migrateNotifications } from './db/migrate-notifications.js';
+import notificationRoutes from './routes/notifications.js';
+import { startNotificationScheduler } from './services/notification-scheduler.js';
 
 import authRoutes from './routes/auth.js';
 import authNewRoutes from './routes/auth-new.js';
@@ -135,6 +138,7 @@ app.use('/api/copilot', copilotRoutes);
 app.use('/api/deploy', deployRoutes);
 app.use('/api/users', timelineRoutes);
 app.use('/api/analytics', analyticsRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 
   // ─── TECH DIAGRAM: Public static page at /techdiagram.html ─────────────────
@@ -190,6 +194,8 @@ async function startServer() {
     await migrateIndexes();
     console.log('Running analytics migration...');
     await migrateAnalytics();
+    console.log('Running notifications migration...');
+    await migrateNotifications();
     console.log('Seeding database...');
     await seed();
     console.log('Seeding evaluation data...');
@@ -199,6 +205,7 @@ async function startServer() {
     app.listen(PORT, () => {
       console.log(`Server running on port ${PORT} in ${process.env.NODE_ENV || 'development'} mode`);
       startBackupScheduler();
+      startNotificationScheduler();
       // Refresh analytics tables on startup, then every 30 minutes
       refreshAnalytics();
       setInterval(() => refreshAnalytics(), 30 * 60 * 1000);
