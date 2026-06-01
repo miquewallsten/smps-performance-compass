@@ -33974,27 +33974,27 @@ var require_router = __commonJS({
     var slice = Array.prototype.slice;
     var flatten = Array.prototype.flat;
     var methods = METHODS.map((method) => method.toLowerCase());
-    module2.exports = Router19;
+    module2.exports = Router20;
     module2.exports.Route = Route;
-    function Router19(options) {
-      if (!(this instanceof Router19)) {
-        return new Router19(options);
+    function Router20(options) {
+      if (!(this instanceof Router20)) {
+        return new Router20(options);
       }
       const opts = options || {};
-      function router19(req, res, next) {
-        router19.handle(req, res, next);
+      function router20(req, res, next) {
+        router20.handle(req, res, next);
       }
-      Object.setPrototypeOf(router19, this);
-      router19.caseSensitive = opts.caseSensitive;
-      router19.mergeParams = opts.mergeParams;
-      router19.params = {};
-      router19.strict = opts.strict;
-      router19.stack = [];
-      return router19;
+      Object.setPrototypeOf(router20, this);
+      router20.caseSensitive = opts.caseSensitive;
+      router20.mergeParams = opts.mergeParams;
+      router20.params = {};
+      router20.strict = opts.strict;
+      router20.stack = [];
+      return router20;
     }
-    Router19.prototype = function() {
+    Router20.prototype = function() {
     };
-    Router19.prototype.param = function param(name, fn) {
+    Router20.prototype.param = function param(name, fn) {
       if (!name) {
         throw new TypeError("argument name is required");
       }
@@ -34014,7 +34014,7 @@ var require_router = __commonJS({
       params.push(fn);
       return this;
     };
-    Router19.prototype.handle = function handle(req, res, callback) {
+    Router20.prototype.handle = function handle(req, res, callback) {
       if (!callback) {
         throw new TypeError("argument callback is required");
       }
@@ -34141,7 +34141,7 @@ var require_router = __commonJS({
         }
       }
     };
-    Router19.prototype.use = function use(handler) {
+    Router20.prototype.use = function use(handler) {
       let offset = 0;
       let path3 = "/";
       if (typeof handler !== "function") {
@@ -34174,7 +34174,7 @@ var require_router = __commonJS({
       }
       return this;
     };
-    Router19.prototype.route = function route(path3) {
+    Router20.prototype.route = function route(path3) {
       const route2 = new Route(path3);
       const layer = new Layer(path3, {
         sensitive: this.caseSensitive,
@@ -34189,7 +34189,7 @@ var require_router = __commonJS({
       return route2;
     };
     methods.concat("all").forEach(function(method) {
-      Router19.prototype[method] = function(path3) {
+      Router20.prototype[method] = function(path3) {
         const route = this.route(path3);
         route[method].apply(route, slice.call(arguments, 1));
         return this;
@@ -34372,13 +34372,13 @@ var require_application = __commonJS({
     var compileTrust = require_utils3().compileTrust;
     var resolve = require("node:path").resolve;
     var once = require_once();
-    var Router19 = require_router();
+    var Router20 = require_router();
     var slice = Array.prototype.slice;
     var flatten = Array.prototype.flat;
     var app2 = exports2 = module2.exports = {};
     var trustProxyDefaultSymbol = "@@symbol:trust_proxy_default";
     app2.init = function init() {
-      var router19 = null;
+      var router20 = null;
       this.cache = /* @__PURE__ */ Object.create(null);
       this.engines = /* @__PURE__ */ Object.create(null);
       this.settings = /* @__PURE__ */ Object.create(null);
@@ -34387,13 +34387,13 @@ var require_application = __commonJS({
         configurable: true,
         enumerable: true,
         get: function getrouter() {
-          if (router19 === null) {
-            router19 = new Router19({
+          if (router20 === null) {
+            router20 = new Router20({
               caseSensitive: this.enabled("case sensitive routing"),
               strict: this.enabled("strict routing")
             });
           }
-          return router19;
+          return router20;
         }
       });
     };
@@ -34464,15 +34464,15 @@ var require_application = __commonJS({
       if (fns.length === 0) {
         throw new TypeError("app.use() requires a middleware function");
       }
-      var router19 = this.router;
+      var router20 = this.router;
       fns.forEach(function(fn2) {
         if (!fn2 || !fn2.handle || !fn2.set) {
-          return router19.use(path3, fn2);
+          return router20.use(path3, fn2);
         }
         debug(".use app under %s", path3);
         fn2.mountpath = path3;
         fn2.parent = this;
-        router19.use(path3, function mounted_app(req, res, next) {
+        router20.use(path3, function mounted_app(req, res, next) {
           var orig = req.app;
           fn2.handle(req, res, function(err) {
             Object.setPrototypeOf(req, orig.request);
@@ -56055,7 +56055,7 @@ var require_express = __commonJS({
     var EventEmitter = require("node:events").EventEmitter;
     var mixin = require_merge_descriptors();
     var proto = require_application();
-    var Router19 = require_router();
+    var Router20 = require_router();
     var req = require_request();
     var res = require_response();
     exports2 = module2.exports = createApplication;
@@ -56077,8 +56077,8 @@ var require_express = __commonJS({
     exports2.application = proto;
     exports2.request = req;
     exports2.response = res;
-    exports2.Route = Router19.Route;
-    exports2.Router = Router19;
+    exports2.Route = Router20.Route;
+    exports2.Router = Router20;
     exports2.json = bodyParser.json;
     exports2.raw = bodyParser.raw;
     exports2.static = require_serve_static();
@@ -126869,7 +126869,7 @@ __export(index_exports, {
   default: () => index_default
 });
 module.exports = __toCommonJS(index_exports);
-var import_express19 = __toESM(require_express2(), 1);
+var import_express20 = __toESM(require_express2(), 1);
 var import_cors = __toESM(require_lib4(), 1);
 var import_path2 = __toESM(require("path"), 1);
 var import_dotenv = __toESM(require_main(), 1);
@@ -130534,9 +130534,134 @@ async function migrateIndexes() {
   console.log("Index migration complete.");
 }
 
-// server/routes/auth.ts
+// server/db/migrate-analytics.ts
+async function migrateAnalytics() {
+  console.log("Running analytics migration...");
+  try {
+    await db.run(`CREATE TABLE IF NOT EXISTS analytics_evaluation_summary (
+      id VARCHAR(36) PRIMARY KEY,
+      evaluation_id VARCHAR(36) NOT NULL,
+      period VARCHAR(50) NOT NULL,
+      evaluated_id VARCHAR(36) NOT NULL,
+      evaluated_name VARCHAR(255) NOT NULL,
+      evaluated_position VARCHAR(50) DEFAULT NULL,
+      evaluated_practice_area VARCHAR(100) DEFAULT NULL,
+      evaluator_id VARCHAR(36) NOT NULL,
+      evaluator_name VARCHAR(255) DEFAULT NULL,
+      eval_type VARCHAR(50) NOT NULL,
+      total_score DOUBLE DEFAULT 0,
+      completed_at DATETIME DEFAULT NULL,
+      feedback_completed TINYINT(1) DEFAULT 0,
+      response_count INT DEFAULT 0,
+      na_count INT DEFAULT 0,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      UNIQUE KEY uq_aes_evaluation (evaluation_id),
+      KEY idx_aes_period (period),
+      KEY idx_aes_evaluated (evaluated_id),
+      KEY idx_aes_evaluator (evaluator_id),
+      KEY idx_aes_type (eval_type),
+      KEY idx_aes_period_type (period, eval_type),
+      KEY idx_aes_period_position (period, evaluated_position)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`);
+    console.log("  \u2713 Created analytics_evaluation_summary");
+  } catch (err) {
+    if (err.message?.includes("already exists")) console.log("  \u2713 analytics_evaluation_summary already exists");
+    else console.error("  \u2717 analytics_evaluation_summary:", err.message?.slice(0, 100));
+  }
+  try {
+    await db.run(`CREATE TABLE IF NOT EXISTS analytics_period_summary (
+      period VARCHAR(50) PRIMARY KEY,
+      total_employees INT DEFAULT 0,
+      total_evaluated INT DEFAULT 0,
+      self_eval_completed INT DEFAULT 0,
+      supervisor_eval_completed INT DEFAULT 0,
+      feedback_completed INT DEFAULT 0,
+      action_plans_created INT DEFAULT 0,
+      avg_self_score DOUBLE DEFAULT NULL,
+      avg_supervisor_score DOUBLE DEFAULT NULL,
+      avg_overall_score DOUBLE DEFAULT NULL,
+      completion_rate DOUBLE DEFAULT 0,
+      self_start DATE DEFAULT NULL,
+      self_end DATE DEFAULT NULL,
+      supervisor_start DATE DEFAULT NULL,
+      supervisor_end DATE DEFAULT NULL,
+      action_plan_end DATE DEFAULT NULL,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      KEY idx_aps_completion (completion_rate)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`);
+    console.log("  \u2713 Created analytics_period_summary");
+  } catch (err) {
+    if (err.message?.includes("already exists")) console.log("  \u2713 analytics_period_summary already exists");
+    else console.error("  \u2717 analytics_period_summary:", err.message?.slice(0, 100));
+  }
+  try {
+    await db.run(`CREATE TABLE IF NOT EXISTS analytics_user_activity (
+      id VARCHAR(36) PRIMARY KEY,
+      user_id VARCHAR(36) NOT NULL,
+      period VARCHAR(50) DEFAULT NULL,
+      has_self_eval TINYINT(1) DEFAULT 0,
+      has_supervisor_eval TINYINT(1) DEFAULT 0,
+      has_feedback TINYINT(1) DEFAULT 0,
+      has_action_plan TINYINT(1) DEFAULT 0,
+      has_objectives TINYINT(1) DEFAULT 0,
+      login_count INT DEFAULT 0,
+      last_login DATETIME DEFAULT NULL,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      UNIQUE KEY uq_aua_user_period (user_id, period),
+      KEY idx_aua_user (user_id),
+      KEY idx_aua_period (period)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`);
+    console.log("  \u2713 Created analytics_user_activity");
+  } catch (err) {
+    if (err.message?.includes("already exists")) console.log("  \u2713 analytics_user_activity already exists");
+    else console.error("  \u2717 analytics_user_activity:", err.message?.slice(0, 100));
+  }
+  try {
+    await db.run(`CREATE TABLE IF NOT EXISTS analytics_copilot_views (
+      id VARCHAR(36) PRIMARY KEY,
+      view_name VARCHAR(100) NOT NULL,
+      description TEXT DEFAULT NULL,
+      query_template TEXT NOT NULL,
+      allowed_params JSON DEFAULT NULL,
+      risk_level ENUM('low','medium','high') DEFAULT 'low',
+      is_active TINYINT(1) DEFAULT 1,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      UNIQUE KEY uq_acv_name (view_name)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`);
+    console.log("  \u2713 Created analytics_copilot_views");
+  } catch (err) {
+    if (err.message?.includes("already exists")) console.log("  \u2713 analytics_copilot_views already exists");
+    else console.error("  \u2717 analytics_copilot_views:", err.message?.slice(0, 100));
+  }
+  try {
+    const existing = await db.get("SELECT COUNT(*) as cnt FROM analytics_copilot_views");
+    if (existing?.cnt === 0) {
+      const views = [
+        { name: "evaluation_completion_rate", desc: "Evaluation completion rate by period", query: "SELECT period, COUNT(*) as total, SUM(CASE WHEN completed_at IS NOT NULL THEN 1 ELSE 0 END) as completed, ROUND(SUM(CASE WHEN completed_at IS NOT NULL THEN 1 ELSE 0 END) / COUNT(*) * 100, 1) as rate FROM evaluations GROUP BY period", params: '["period"]', risk: "low" },
+        { name: "avg_score_by_period", desc: "Average evaluation score by period", query: "SELECT period, type, ROUND(AVG(total_score), 1) as avg_score, COUNT(*) as count FROM evaluations WHERE completed_at IS NOT NULL GROUP BY period, type", params: '["period","type"]', risk: "low" },
+        { name: "supervisor_coverage", desc: "Supervisor assignment coverage", query: "SELECT period, COUNT(DISTINCT employee_id) as assigned, (SELECT COUNT(*) FROM users WHERE is_active=1 AND is_super_user=0) as total FROM supervisor_assignments GROUP BY period", params: '["period"]', risk: "low" },
+        { name: "action_plan_status", desc: "Action plan completion status", query: "SELECT period, status, COUNT(*) as count FROM action_plans GROUP BY period, status", params: '["period","status"]', risk: "low" },
+        { name: "vacation_summary", desc: "Vacation request summary", query: "SELECT status, COUNT(*) as count, SUM(days) as total_days FROM vacation_requests GROUP BY status", params: '["status"]', risk: "low" },
+        { name: "login_activity", desc: "User login activity", query: 'SELECT DATE(created_at) as date, COUNT(*) as logins, COUNT(DISTINCT user_id) as unique_users FROM authentication_audit WHERE action = "login_success" GROUP BY DATE(created_at) ORDER BY date DESC LIMIT 30', params: "[]", risk: "low" }
+      ];
+      for (const v of views) {
+        await db.run(
+          `INSERT INTO analytics_copilot_views (id, view_name, description, query_template, allowed_params, risk_level) VALUES (?, ?, ?, ?, ?, ?)`,
+          [crypto.randomUUID(), v.name, v.desc, v.query, v.params, v.risk]
+        );
+      }
+      console.log("  \u2713 Seeded 6 copilot analytics views");
+    }
+  } catch (err) {
+    console.error("  \u2717 Copilot views seed error:", err.message?.slice(0, 100));
+  }
+  console.log("Analytics migration complete.");
+}
+
+// server/routes/analytics.ts
 var import_express = __toESM(require_express2(), 1);
-init_dist_node();
 
 // server/auth/jwt.ts
 var import_jsonwebtoken = __toESM(require_jsonwebtoken(), 1);
@@ -130577,19 +130702,6 @@ function getRole(user) {
   return "user";
 }
 
-// server/auth/security.ts
-var SALT_ROUNDS = 12;
-async function hashPassword(password) {
-  return bcryptjs_default.hash(password, SALT_ROUNDS);
-}
-async function verifyPassword(password, hash2) {
-  return bcryptjs_default.compare(password, hash2);
-}
-async function hashSecurityAnswer2(answer) {
-  const normalized = answer.toLowerCase().trim().replace(/\s+/g, " ");
-  return bcryptjs_default.hash(normalized, SALT_ROUNDS);
-}
-
 // server/middleware/auth.ts
 async function authMiddleware(req, res, next) {
   const authHeader = req.headers.authorization;
@@ -130612,6 +130724,601 @@ async function authMiddleware(req, res, next) {
   }
   req.user = { ...payload, id: payload.sub };
   next();
+}
+
+// server/services/audit.ts
+init_dist_node();
+async function auditLog(params) {
+  try {
+    const id = v4_default();
+    const now3 = (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "");
+    await db.run(
+      `INSERT INTO authentication_audit (id, user_id, action, ip_address, user_agent, metadata, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [
+        id,
+        params.userId || null,
+        params.action,
+        params.ipAddress || null,
+        params.userAgent || null,
+        params.metadata ? JSON.stringify(params.metadata) : null,
+        now3
+      ]
+    );
+  } catch (err) {
+    console.error("Audit log error:", err);
+  }
+}
+function getClientIp(req) {
+  const forwarded = req.headers["x-forwarded-for"];
+  if (typeof forwarded === "string") {
+    return forwarded.split(",")[0].trim();
+  }
+  if (Array.isArray(forwarded) && forwarded.length > 0) {
+    return forwarded[0].trim();
+  }
+  return req.ip || "unknown";
+}
+function getUserAgent(req) {
+  const ua = req.headers["user-agent"];
+  if (typeof ua === "string") return ua.slice(0, 500);
+  return "unknown";
+}
+
+// server/middleware/permissions.ts
+function normalizeRole(user) {
+  if (user.role === "super_user") return "super_user";
+  if (user.role === "admin") return "admin";
+  if (user.position === "socio" || user.position === "salary_partner") return "socio";
+  return "employee";
+}
+function hasRole(user, roles) {
+  const role = normalizeRole(user);
+  if (role === "super_user") return true;
+  if (role === "admin") return roles.some((r) => r === "admin" || r === "managing_partner");
+  if (role === "socio") return roles.includes("socio") || roles.includes("admin");
+  return roles.includes(role);
+}
+function isAdminOrSocio(user) {
+  return hasRole(user, ["super_user", "admin", "socio"]);
+}
+async function isSupervisorOf(supervisorId, employeeId, period) {
+  try {
+    const periodClause = period ? " AND period = ?" : "";
+    const params = period ? [supervisorId, employeeId, period] : [supervisorId, employeeId];
+    const assignment = await db.get(
+      `SELECT id FROM supervisor_assignments WHERE supervisor_id = ? AND employee_id = ?${periodClause} LIMIT 1`,
+      params
+    );
+    return !!assignment;
+  } catch {
+    return false;
+  }
+}
+async function getSuperviseeIds(supervisorId, period) {
+  try {
+    const periodClause = period ? " AND period = ?" : "";
+    const params = period ? [supervisorId, period] : [supervisorId];
+    const rows = await db.all(
+      `SELECT DISTINCT employee_id FROM supervisor_assignments WHERE supervisor_id = ?${periodClause}`,
+      params
+    );
+    return rows.map((r) => r.employee_id);
+  } catch {
+    return [];
+  }
+}
+async function logDenial(req, resource, reason) {
+  try {
+    await auditLog({
+      action: "authorization_denied",
+      // reuse — we'll add proper type later
+      userId: req.user?.id || null,
+      ipAddress: getClientIp(req),
+      userAgent: getUserAgent(req),
+      metadata: { type: "authorization_denied", resource, reason }
+    });
+  } catch {
+  }
+}
+function requireEntityAccess(opts) {
+  return async (req, res, next) => {
+    if (!req.user) return res.status(401).json({ error: "Not authenticated" });
+    const bypassRoles = opts.bypassRoles || ["super_user", "admin", "socio"];
+    if (hasRole(req.user, bypassRoles)) return next();
+    try {
+      const entityId = req.params.id;
+      if (!entityId) return res.status(400).json({ error: "Resource ID required" });
+      const entity = await db.get(opts.query, [...opts.queryParams || [], entityId]);
+      if (!entity) return res.status(404).json({ error: "Resource not found" });
+      const employeeId = entity.employee_id || entity.evaluated_id || entity.user_id;
+      if (employeeId && req.user.id === employeeId) {
+        req._entity = entity;
+        return next();
+      }
+      const supervisorId = entity.supervisor_id || entity.evaluator_id;
+      if (supervisorId && req.user.id === supervisorId) {
+        req._entity = entity;
+        return next();
+      }
+      if (opts.allowSupervisor !== false && employeeId) {
+        const period = entity.period || req.query.period;
+        if (await isSupervisorOf(req.user.id, employeeId, period)) {
+          req._entity = entity;
+          return next();
+        }
+      }
+      logDenial(req, req.path, `no entity access: not owner/supervisor of ${entityId}`);
+      return res.status(403).json({ error: "Access denied" });
+    } catch (err) {
+      console.error("Entity access check error:", err);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  };
+}
+function requireSupervisorAction(opts) {
+  return async (req, res, next) => {
+    if (!req.user) return res.status(401).json({ error: "Not authenticated" });
+    if (hasRole(req.user, ["super_user", "admin"])) return next();
+    try {
+      const entityId = req.params.id;
+      if (!entityId) return res.status(400).json({ error: "Resource ID required" });
+      const entity = await db.get(opts.query, [...opts.queryParams || [], entityId]);
+      if (!entity) return res.status(404).json({ error: "Resource not found" });
+      const supervisorId = entity.supervisor_id || entity.evaluator_id;
+      if (supervisorId && req.user.id === supervisorId) {
+        req._entity = entity;
+        return next();
+      }
+      const employeeId = entity.employee_id || entity.evaluated_id || entity.user_id;
+      if (employeeId) {
+        const period = entity.period || req.query.period;
+        if (await isSupervisorOf(req.user.id, employeeId, period)) {
+          req._entity = entity;
+          return next();
+        }
+      }
+      logDenial(req, req.path, `supervisor action denied for ${entityId}`);
+      return res.status(403).json({ error: "Only the supervisor or an administrator can perform this action" });
+    } catch (err) {
+      console.error("Supervisor action check error:", err);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  };
+}
+
+// server/routes/analytics.ts
+var router = (0, import_express.Router)();
+router.use(authMiddleware);
+async function getVisibleUserIds(user) {
+  const role = normalizeRole(user);
+  if (hasRole(user, ["super_user", "admin", "socio"])) return null;
+  const superviseeIds = await getSuperviseeIds(user.id);
+  return [user.id, ...superviseeIds];
+}
+router.get("/overview", async (req, res) => {
+  try {
+    const period = req.query.period;
+    if (!period) return res.status(400).json({ error: "period query parameter required" });
+    const summary = await db.get(
+      "SELECT * FROM analytics_period_summary WHERE period = ?",
+      [period]
+    );
+    if (!summary) {
+      const totalUsers = await db.get("SELECT COUNT(*) as cnt FROM users WHERE is_active = 1 AND is_super_user = 0");
+      const selfCompleted = await db.get(
+        'SELECT COUNT(DISTINCT evaluator_id) as cnt FROM evaluations WHERE period = ? AND type = "self" AND completed_at IS NOT NULL',
+        [period]
+      );
+      const supCompleted = await db.get(
+        'SELECT COUNT(DISTINCT evaluated_id) as cnt FROM evaluations WHERE period = ? AND type = "supervisor" AND completed_at IS NOT NULL',
+        [period]
+      );
+      const feedbackCompleted = await db.get(
+        "SELECT COUNT(DISTINCT evaluated_id) as cnt FROM evaluations WHERE period = ? AND feedback_completed = 1",
+        [period]
+      );
+      const avgScore = await db.get(
+        "SELECT AVG(total_score) as avg FROM evaluations WHERE period = ? AND completed_at IS NOT NULL",
+        [period]
+      );
+      return res.json({
+        period,
+        totalEmployees: totalUsers?.cnt || 0,
+        selfEvalCompleted: selfCompleted?.cnt || 0,
+        supervisorEvalCompleted: supCompleted?.cnt || 0,
+        feedbackCompleted: feedbackCompleted?.cnt || 0,
+        avgScore: avgScore?.avg ? Math.round(avgScore.avg * 10) / 10 : null,
+        _source: "live"
+      });
+    }
+    return res.json({ ...summary, _source: "cached" });
+  } catch (err) {
+    console.error("Analytics overview error:", err);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+});
+router.get("/evaluations", async (req, res) => {
+  try {
+    const period = req.query.period;
+    if (!period) return res.status(400).json({ error: "period query parameter required" });
+    const visibleIds = await getVisibleUserIds(req.user);
+    let query = "SELECT * FROM analytics_evaluation_summary WHERE period = ?";
+    const params = [period];
+    if (visibleIds) {
+      const placeholders = visibleIds.map(() => "?").join(",");
+      query += ` AND evaluated_id IN (${placeholders})`;
+      params.push(...visibleIds);
+    }
+    const evaluations = await db.all(query, params);
+    const total = evaluations.length;
+    const completed = evaluations.filter((e) => e.completed_at).length;
+    const avgScore = completed > 0 ? Math.round(evaluations.filter((e) => e.completed_at).reduce((s, e) => s + (e.total_score || 0), 0) / completed * 10) / 10 : null;
+    const byType = {};
+    for (const e of evaluations) {
+      if (!byType[e.eval_type]) byType[e.eval_type] = { total: 0, completed: 0, avgScore: null };
+      byType[e.eval_type].total++;
+      if (e.completed_at) {
+        byType[e.eval_type].completed++;
+      }
+    }
+    for (const type of Object.keys(byType)) {
+      const typeEvals = evaluations.filter((e) => e.eval_type === type && e.completed_at);
+      byType[type].avgScore = typeEvals.length > 0 ? Math.round(typeEvals.reduce((s, e) => s + (e.total_score || 0), 0) / typeEvals.length * 10) / 10 : null;
+    }
+    const byPosition = {};
+    for (const e of evaluations) {
+      const pos = e.evaluated_position || "unknown";
+      if (!byPosition[pos]) byPosition[pos] = { total: 0, completed: 0, avgScore: null };
+      byPosition[pos].total++;
+      if (e.completed_at) byPosition[pos].completed++;
+    }
+    for (const pos of Object.keys(byPosition)) {
+      const posEvals = evaluations.filter((e) => e.evaluated_position === pos && e.eval_type === "self" && e.completed_at);
+      byPosition[pos].avgScore = posEvals.length > 0 ? Math.round(posEvals.reduce((s, e) => s + (e.total_score || 0), 0) / posEvals.length * 10) / 10 : null;
+    }
+    return res.json({
+      period,
+      total,
+      completed,
+      avgScore,
+      byType,
+      byPosition,
+      evaluations,
+      _source: evaluations.length > 0 && evaluations[0].evaluated_name ? "cached" : "live"
+    });
+  } catch (err) {
+    console.error("Analytics evaluations error:", err);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+});
+router.get("/trends", async (req, res) => {
+  try {
+    const periods = await db.all(
+      "SELECT * FROM analytics_period_summary ORDER BY period DESC LIMIT 10"
+    );
+    const periodTrends = await db.all(`
+      SELECT e.period, e.type, 
+             COUNT(*) as total,
+             SUM(CASE WHEN e.completed_at IS NOT NULL THEN 1 ELSE 0 END) as completed,
+             ROUND(AVG(CASE WHEN e.completed_at IS NOT NULL THEN e.total_score ELSE NULL END), 1) as avg_score
+      FROM evaluations e
+      GROUP BY e.period, e.type
+      ORDER BY e.period ASC, e.type
+    `);
+    return res.json({
+      periodSummaries: periods,
+      evaluationTrends: periodTrends
+    });
+  } catch (err) {
+    console.error("Analytics trends error:", err);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+});
+router.get("/objectives", async (req, res) => {
+  try {
+    const period = req.query.period;
+    const visibleIds = await getVisibleUserIds(req.user);
+    let query = "SELECT po.*, u.name as user_name, u.position FROM personal_objectives po JOIN users u ON po.user_id = u.id WHERE 1=1";
+    const params = [];
+    if (period) {
+      query += " AND po.period = ?";
+      params.push(period);
+    }
+    if (visibleIds) {
+      const placeholders = visibleIds.map(() => "?").join(",");
+      query += ` AND po.user_id IN (${placeholders})`;
+      params.push(...visibleIds);
+    }
+    const objectives = await db.all(query, params);
+    const total = objectives.length;
+    const byStatus = {};
+    for (const o of objectives) {
+      byStatus[o.status] = (byStatus[o.status] || 0) + 1;
+    }
+    return res.json({ period, total, byStatus, objectives });
+  } catch (err) {
+    console.error("Analytics objectives error:", err);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+});
+router.get("/vacations", async (req, res) => {
+  try {
+    const period = req.query.period;
+    const visibleIds = await getVisibleUserIds(req.user);
+    let query = "SELECT vr.*, u.name as user_name, u.position FROM vacation_requests vr JOIN users u ON vr.user_id = u.id WHERE 1=1";
+    const params = [];
+    if (visibleIds) {
+      const placeholders = visibleIds.map(() => "?").join(",");
+      query += ` AND vr.user_id IN (${placeholders})`;
+      params.push(...visibleIds);
+    }
+    const requests = await db.all(query, params);
+    const total = requests.length;
+    const byStatus = {};
+    let totalDays = 0;
+    for (const r of requests) {
+      byStatus[r.status] = (byStatus[r.status] || 0) + 1;
+      totalDays += r.days || 0;
+    }
+    return res.json({ period, total, byStatus, totalDays, requests });
+  } catch (err) {
+    console.error("Analytics vacations error:", err);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+});
+router.get("/action-plans", async (req, res) => {
+  try {
+    const period = req.query.period;
+    const visibleIds = await getVisibleUserIds(req.user);
+    let query = "SELECT ap.*, u.name as employee_name, u.position FROM action_plans ap JOIN users u ON ap.employee_id = u.id WHERE 1=1";
+    const params = [];
+    if (period) {
+      query += " AND ap.period = ?";
+      params.push(period);
+    }
+    if (visibleIds) {
+      const placeholders = visibleIds.map(() => "?").join(",");
+      query += ` AND ap.employee_id IN (${placeholders})`;
+      params.push(...visibleIds);
+    }
+    const plans = await db.all(query, params);
+    const total = plans.length;
+    const byStatus = {};
+    for (const p of plans) {
+      const status = p.approval_status || p.status || "unknown";
+      byStatus[status] = (byStatus[status] || 0) + 1;
+    }
+    return res.json({ period, total, byStatus, plans });
+  } catch (err) {
+    console.error("Analytics action-plans error:", err);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+});
+var analytics_default = router;
+
+// server/services/analytics-refresh.ts
+init_dist_node();
+async function refreshAnalytics() {
+  console.log("[Analytics] Refreshing analytics tables...");
+  const startTime = Date.now();
+  try {
+    await refreshEvaluationSummary();
+    await refreshPeriodSummary();
+    await refreshUserActivity();
+    const elapsed = Date.now() - startTime;
+    console.log(`[Analytics] Refresh completed in ${elapsed}ms`);
+  } catch (err) {
+    console.error("[Analytics] Refresh error:", err);
+  }
+}
+async function refreshEvaluationSummary() {
+  try {
+    await db.run("DELETE FROM analytics_evaluation_summary");
+    const evaluations = await db.all(`
+      SELECT e.id, e.evaluator_id, e.evaluated_id, e.type, e.period, e.total_score,
+             e.completed_at, e.feedback_completed,
+             ev.name as evaluated_name, ev.position as evaluated_position, ev.practice_area as evaluated_practice_area,
+             er.name as evaluator_name
+      FROM evaluations e
+      JOIN users ev ON ev.id = e.evaluated_id
+      LEFT JOIN users er ON er.id = e.evaluator_id
+    `);
+    for (const e of evaluations) {
+      const responseCount = await db.get(
+        "SELECT COUNT(*) as cnt FROM evaluation_responses WHERE evaluation_id = ?",
+        [e.id]
+      );
+      const naCount = await db.get(
+        "SELECT COUNT(*) as cnt FROM evaluation_responses WHERE evaluation_id = ? AND not_applicable = 1",
+        [e.id]
+      );
+      await db.run(
+        `INSERT INTO analytics_evaluation_summary 
+         (id, evaluation_id, period, evaluated_id, evaluated_name, evaluated_position, evaluated_practice_area,
+          evaluator_id, evaluator_name, eval_type, total_score, completed_at, feedback_completed, response_count, na_count)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          v4_default(),
+          e.id,
+          e.period,
+          e.evaluated_id,
+          e.evaluated_name,
+          e.evaluated_position,
+          e.evaluated_practice_area,
+          e.evaluator_id,
+          e.evaluator_name,
+          e.type,
+          e.total_score,
+          e.completed_at,
+          e.feedback_completed ? 1 : 0,
+          responseCount?.cnt || 0,
+          naCount?.cnt || 0
+        ]
+      );
+    }
+    console.log(`[Analytics] Refreshed ${evaluations.length} evaluation summaries`);
+  } catch (err) {
+    console.error("[Analytics] Evaluation summary refresh error:", err);
+  }
+}
+async function refreshPeriodSummary() {
+  try {
+    const periods = await db.all("SELECT DISTINCT period FROM evaluations ORDER BY period");
+    for (const p of periods) {
+      const period = p.period;
+      const totalUsers = await db.get("SELECT COUNT(*) as cnt FROM users WHERE is_active = 1 AND is_super_user = 0");
+      const totalEvaluated = await db.get(
+        'SELECT COUNT(DISTINCT evaluated_id) as cnt FROM evaluations WHERE period = ? AND type = "supervisor" AND completed_at IS NOT NULL',
+        [period]
+      );
+      const selfCompleted = await db.get(
+        'SELECT COUNT(DISTINCT evaluator_id) as cnt FROM evaluations WHERE period = ? AND type = "self" AND completed_at IS NOT NULL',
+        [period]
+      );
+      const supCompleted = await db.get(
+        'SELECT COUNT(DISTINCT evaluated_id) as cnt FROM evaluations WHERE period = ? AND type = "supervisor" AND completed_at IS NOT NULL',
+        [period]
+      );
+      const feedbackCompleted = await db.get(
+        "SELECT COUNT(DISTINCT evaluated_id) as cnt FROM evaluations WHERE period = ? AND feedback_completed = 1",
+        [period]
+      );
+      const actionPlansCreated = await db.get(
+        "SELECT COUNT(*) as cnt FROM action_plans WHERE period = ?",
+        [period]
+      );
+      const avgSelf = await db.get(
+        'SELECT AVG(total_score) as avg FROM evaluations WHERE period = ? AND type = "self" AND completed_at IS NOT NULL',
+        [period]
+      );
+      const avgSup = await db.get(
+        'SELECT AVG(total_score) as avg FROM evaluations WHERE period = ? AND type = "supervisor" AND completed_at IS NOT NULL',
+        [period]
+      );
+      const overallAvg = await db.get(
+        "SELECT AVG(total_score) as avg FROM evaluations WHERE period = ? AND completed_at IS NOT NULL",
+        [period]
+      );
+      const totalEmps = totalUsers?.cnt || 0;
+      const totalEval = totalEvaluated?.cnt || 0;
+      const completionRate = totalEmps > 0 ? Math.round(totalEval / totalEmps * 100) : 0;
+      const periodConfig = await db.get("SELECT * FROM period_configs WHERE period = ?", [period]);
+      await db.run(
+        `INSERT INTO analytics_period_summary 
+         (period, total_employees, total_evaluated, self_eval_completed, supervisor_eval_completed,
+          feedback_completed, action_plans_created, avg_self_score, avg_supervisor_score, avg_overall_score,
+          completion_rate, self_start, self_end, supervisor_start, supervisor_end, action_plan_end)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+         ON DUPLICATE KEY UPDATE
+         total_employees=VALUES(total_employees), total_evaluated=VALUES(total_evaluated),
+         self_eval_completed=VALUES(self_eval_completed), supervisor_eval_completed=VALUES(supervisor_eval_completed),
+         feedback_completed=VALUES(feedback_completed), action_plans_created=VALUES(action_plans_created),
+         avg_self_score=VALUES(avg_self_score), avg_supervisor_score=VALUES(avg_supervisor_score),
+         avg_overall_score=VALUES(avg_overall_score), completion_rate=VALUES(completion_rate),
+         self_start=VALUES(self_start), self_end=VALUES(self_end),
+         supervisor_start=VALUES(supervisor_start), supervisor_end=VALUES(supervisor_end),
+         action_plan_end=VALUES(action_plan_end)`,
+        [
+          period,
+          totalEmps,
+          totalEval,
+          selfCompleted?.cnt || 0,
+          supCompleted?.cnt || 0,
+          feedbackCompleted?.cnt || 0,
+          actionPlansCreated?.cnt || 0,
+          avgSelf?.avg ? Math.round(avgSelf.avg * 10) / 10 : null,
+          avgSup?.avg ? Math.round(avgSup.avg * 10) / 10 : null,
+          overallAvg?.avg ? Math.round(overallAvg.avg * 10) / 10 : null,
+          completionRate,
+          periodConfig?.self_start || null,
+          periodConfig?.self_end || null,
+          periodConfig?.supervisor_start || null,
+          periodConfig?.supervisor_end || null,
+          periodConfig?.action_plan_end || null
+        ]
+      );
+    }
+    console.log(`[Analytics] Refreshed ${periods.length} period summaries`);
+  } catch (err) {
+    console.error("[Analytics] Period summary refresh error:", err);
+  }
+}
+async function refreshUserActivity() {
+  try {
+    const periods = await db.all("SELECT DISTINCT period FROM evaluations ORDER BY period");
+    for (const p of periods) {
+      const period = p.period;
+      const users = await db.all("SELECT id FROM users WHERE is_active = 1 AND is_super_user = 0");
+      for (const u of users) {
+        const hasSelfEval = await db.get(
+          'SELECT id FROM evaluations WHERE evaluator_id = ? AND type = "self" AND period = ? AND completed_at IS NOT NULL LIMIT 1',
+          [u.id, period]
+        );
+        const hasSupEval = await db.get(
+          'SELECT id FROM evaluations WHERE evaluated_id = ? AND type = "supervisor" AND period = ? AND completed_at IS NOT NULL LIMIT 1',
+          [u.id, period]
+        );
+        const hasFeedback = await db.get(
+          "SELECT id FROM evaluations WHERE evaluated_id = ? AND feedback_completed = 1 AND period = ? LIMIT 1",
+          [u.id, period]
+        );
+        const hasActionPlan = await db.get(
+          "SELECT id FROM action_plans WHERE employee_id = ? AND period = ? LIMIT 1",
+          [u.id, period]
+        );
+        const hasObjectives = await db.get(
+          "SELECT id FROM personal_objectives WHERE user_id = ? AND period = ? LIMIT 1",
+          [u.id, period]
+        );
+        const loginInfo = await db.get(
+          'SELECT COUNT(*) as cnt, MAX(created_at) as last FROM authentication_audit WHERE user_id = ? AND action = "login_success"',
+          [u.id]
+        );
+        await db.run(
+          `INSERT INTO analytics_user_activity 
+           (id, user_id, period, has_self_eval, has_supervisor_eval, has_feedback, has_action_plan, has_objectives, login_count, last_login)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+           ON DUPLICATE KEY UPDATE
+           has_self_eval=VALUES(has_self_eval), has_supervisor_eval=VALUES(has_supervisor_eval),
+           has_feedback=VALUES(has_feedback), has_action_plan=VALUES(has_action_plan),
+           has_objectives=VALUES(has_objectives), login_count=VALUES(login_count), last_login=VALUES(last_login)`,
+          [
+            v4_default(),
+            u.id,
+            period,
+            hasSelfEval ? 1 : 0,
+            hasSupEval ? 1 : 0,
+            hasFeedback ? 1 : 0,
+            hasActionPlan ? 1 : 0,
+            hasObjectives ? 1 : 0,
+            loginInfo?.cnt || 0,
+            loginInfo?.last || null
+          ]
+        );
+      }
+    }
+    console.log("[Analytics] Refreshed user activity");
+  } catch (err) {
+    console.error("[Analytics] User activity refresh error:", err);
+  }
+}
+
+// server/routes/auth.ts
+var import_express2 = __toESM(require_express2(), 1);
+init_dist_node();
+
+// server/auth/security.ts
+var SALT_ROUNDS = 12;
+async function hashPassword(password) {
+  return bcryptjs_default.hash(password, SALT_ROUNDS);
+}
+async function verifyPassword(password, hash2) {
+  return bcryptjs_default.compare(password, hash2);
+}
+async function hashSecurityAnswer2(answer) {
+  const normalized = answer.toLowerCase().trim().replace(/\s+/g, " ");
+  return bcryptjs_default.hash(normalized, SALT_ROUNDS);
 }
 
 // server/middleware/rbac.ts
@@ -134729,47 +135436,8 @@ var SystemInitSchema = external_exports.object({
   securityAnswer: external_exports.string().min(1, "Respuesta de seguridad requerida").max(500)
 });
 
-// server/services/audit.ts
-init_dist_node();
-async function auditLog(params) {
-  try {
-    const id = v4_default();
-    const now3 = (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "");
-    await db.run(
-      `INSERT INTO authentication_audit (id, user_id, action, ip_address, user_agent, metadata, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [
-        id,
-        params.userId || null,
-        params.action,
-        params.ipAddress || null,
-        params.userAgent || null,
-        params.metadata ? JSON.stringify(params.metadata) : null,
-        now3
-      ]
-    );
-  } catch (err) {
-    console.error("Audit log error:", err);
-  }
-}
-function getClientIp(req) {
-  const forwarded = req.headers["x-forwarded-for"];
-  if (typeof forwarded === "string") {
-    return forwarded.split(",")[0].trim();
-  }
-  if (Array.isArray(forwarded) && forwarded.length > 0) {
-    return forwarded[0].trim();
-  }
-  return req.ip || "unknown";
-}
-function getUserAgent(req) {
-  const ua = req.headers["user-agent"];
-  if (typeof ua === "string") return ua.slice(0, 500);
-  return "unknown";
-}
-
 // server/routes/auth.ts
-var router = (0, import_express.Router)();
+var router2 = (0, import_express2.Router)();
 function sanitizeUser(user) {
   const { password_hash, security_answer, ...safe } = user;
   return {
@@ -134781,7 +135449,7 @@ function sanitizeUser(user) {
     mustChangePassword: Boolean(user.must_change_password)
   };
 }
-router.post("/login", validate2(LoginSchema), async (req, res) => {
+router2.post("/login", validate2(LoginSchema), async (req, res) => {
   try {
     const { email, password } = req.body;
     if (!email || !password) {
@@ -134825,7 +135493,7 @@ router.post("/login", validate2(LoginSchema), async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router.post("/logout", authMiddleware, requireAuthenticated, async (req, res) => {
+router2.post("/logout", authMiddleware, requireAuthenticated, async (req, res) => {
   try {
     const authHeader = req.headers.authorization;
     const token = authHeader.substring(7);
@@ -134844,7 +135512,7 @@ router.post("/logout", authMiddleware, requireAuthenticated, async (req, res) =>
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router.get("/me", authMiddleware, requireAuthenticated, async (req, res) => {
+router2.get("/me", authMiddleware, requireAuthenticated, async (req, res) => {
   try {
     const user = await db.get("SELECT * FROM users WHERE id = ?", [req.user.id]);
     if (!user) {
@@ -134856,7 +135524,7 @@ router.get("/me", authMiddleware, requireAuthenticated, async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router.post("/change-password", validate2(ChangePasswordSchema), authMiddleware, requireAuthenticated, async (req, res) => {
+router2.post("/change-password", validate2(ChangePasswordSchema), authMiddleware, requireAuthenticated, async (req, res) => {
   try {
     const { currentPassword, newPassword, securityQuestion, securityAnswer } = req.body;
     const user = await db.get("SELECT * FROM users WHERE id = ?", [req.user.id]);
@@ -134896,18 +135564,18 @@ router.post("/change-password", validate2(ChangePasswordSchema), authMiddleware,
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router.post("/security-question", async (req, res) => {
+router2.post("/security-question", async (req, res) => {
   await auditLog({ action: "legacy_auth_endpoint_access", userId: null, ipAddress: getClientIp(req), userAgent: getUserAgent(req), metadata: { endpoint: "POST /api/auth/security-question" } });
   return res.status(410).json({ error: "Este m\xE9todo de recuperaci\xF3n ha sido retirado. Utilice la recuperaci\xF3n por correo electr\xF3nico." });
 });
-router.post("/reset-password", async (req, res) => {
+router2.post("/reset-password", async (req, res) => {
   await auditLog({ action: "legacy_auth_endpoint_access", userId: null, ipAddress: getClientIp(req), userAgent: getUserAgent(req), metadata: { endpoint: "POST /api/auth/reset-password" } });
   return res.status(410).json({ error: "Este m\xE9todo de recuperaci\xF3n ha sido retirado. Utilice la recuperaci\xF3n por correo electr\xF3nico." });
 });
-var auth_default = router;
+var auth_default = router2;
 
 // server/routes/auth-new.ts
-var import_express2 = __toESM(require_express2(), 1);
+var import_express3 = __toESM(require_express2(), 1);
 init_dist_node();
 
 // server/services/password.ts
@@ -135115,7 +135783,7 @@ async function sendAdminPasswordResetEmail(to, name, token) {
 }
 
 // server/routes/auth-new.ts
-var router2 = (0, import_express2.Router)();
+var router3 = (0, import_express3.Router)();
 var ActivateSchema = external_exports.object({
   token: external_exports.string().min(1, "Token requerido"),
   password: external_exports.string().min(8, "La contrase\xF1a debe tener al menos 8 caracteres"),
@@ -135138,7 +135806,7 @@ var CompletePasswordResetSchema = external_exports.object({
 var ResendActivationSchema = external_exports.object({
   email: external_exports.string().email("Email inv\xE1lido")
 });
-router2.post("/activate", async (req, res) => {
+router3.post("/activate", async (req, res) => {
   try {
     const parseResult = ActivateSchema.safeParse(req.body);
     if (!parseResult.success) {
@@ -135196,7 +135864,7 @@ router2.post("/activate", async (req, res) => {
     return res.status(500).json({ error: "Error interno del servidor" });
   }
 });
-router2.get("/verify-activation", async (req, res) => {
+router3.get("/verify-activation", async (req, res) => {
   try {
     const token = req.query.token;
     if (!token) {
@@ -135227,7 +135895,7 @@ router2.get("/verify-activation", async (req, res) => {
     return res.status(500).json({ error: "Error interno del servidor" });
   }
 });
-router2.post("/resend-activation", async (req, res) => {
+router3.post("/resend-activation", async (req, res) => {
   try {
     const parseResult = ResendActivationSchema.safeParse(req.body);
     if (!parseResult.success) {
@@ -135261,7 +135929,7 @@ router2.post("/resend-activation", async (req, res) => {
     return res.status(500).json({ error: "Error interno del servidor" });
   }
 });
-router2.post("/request-password-reset", async (req, res) => {
+router3.post("/request-password-reset", async (req, res) => {
   try {
     const parseResult = RequestPasswordResetSchema.safeParse(req.body);
     if (!parseResult.success) {
@@ -135296,7 +135964,7 @@ router2.post("/request-password-reset", async (req, res) => {
     return res.status(500).json({ error: "Error interno del servidor" });
   }
 });
-router2.get("/verify-reset-token", async (req, res) => {
+router3.get("/verify-reset-token", async (req, res) => {
   try {
     const token = req.query.token;
     if (!token) {
@@ -135330,7 +135998,7 @@ router2.get("/verify-reset-token", async (req, res) => {
     return res.status(500).json({ error: "Error interno del servidor" });
   }
 });
-router2.post("/complete-password-reset", async (req, res) => {
+router3.post("/complete-password-reset", async (req, res) => {
   try {
     const parseResult = CompletePasswordResetSchema.safeParse(req.body);
     if (!parseResult.success) {
@@ -135390,137 +136058,13 @@ router2.post("/complete-password-reset", async (req, res) => {
     return res.status(500).json({ error: "Error interno del servidor" });
   }
 });
-var auth_new_default = router2;
+var auth_new_default = router3;
 
 // server/routes/users.ts
-var import_express3 = __toESM(require_express2(), 1);
+var import_express4 = __toESM(require_express2(), 1);
 init_dist_node();
 init_tokens();
-
-// server/middleware/permissions.ts
-function normalizeRole(user) {
-  if (user.role === "super_user") return "super_user";
-  if (user.role === "admin") return "admin";
-  if (user.position === "socio" || user.position === "salary_partner") return "socio";
-  return "employee";
-}
-function hasRole(user, roles) {
-  const role = normalizeRole(user);
-  if (role === "super_user") return true;
-  if (role === "admin") return roles.some((r) => r === "admin" || r === "managing_partner");
-  if (role === "socio") return roles.includes("socio") || roles.includes("admin");
-  return roles.includes(role);
-}
-function isAdminOrSocio(user) {
-  return hasRole(user, ["super_user", "admin", "socio"]);
-}
-async function isSupervisorOf(supervisorId, employeeId, period) {
-  try {
-    const periodClause = period ? " AND period = ?" : "";
-    const params = period ? [supervisorId, employeeId, period] : [supervisorId, employeeId];
-    const assignment = await db.get(
-      `SELECT id FROM supervisor_assignments WHERE supervisor_id = ? AND employee_id = ?${periodClause} LIMIT 1`,
-      params
-    );
-    return !!assignment;
-  } catch {
-    return false;
-  }
-}
-async function getSuperviseeIds(supervisorId, period) {
-  try {
-    const periodClause = period ? " AND period = ?" : "";
-    const params = period ? [supervisorId, period] : [supervisorId];
-    const rows = await db.all(
-      `SELECT DISTINCT employee_id FROM supervisor_assignments WHERE supervisor_id = ?${periodClause}`,
-      params
-    );
-    return rows.map((r) => r.employee_id);
-  } catch {
-    return [];
-  }
-}
-async function logDenial(req, resource, reason) {
-  try {
-    await auditLog({
-      action: "authorization_denied",
-      // reuse — we'll add proper type later
-      userId: req.user?.id || null,
-      ipAddress: getClientIp(req),
-      userAgent: getUserAgent(req),
-      metadata: { type: "authorization_denied", resource, reason }
-    });
-  } catch {
-  }
-}
-function requireEntityAccess(opts) {
-  return async (req, res, next) => {
-    if (!req.user) return res.status(401).json({ error: "Not authenticated" });
-    const bypassRoles = opts.bypassRoles || ["super_user", "admin", "socio"];
-    if (hasRole(req.user, bypassRoles)) return next();
-    try {
-      const entityId = req.params.id;
-      if (!entityId) return res.status(400).json({ error: "Resource ID required" });
-      const entity = await db.get(opts.query, [...opts.queryParams || [], entityId]);
-      if (!entity) return res.status(404).json({ error: "Resource not found" });
-      const employeeId = entity.employee_id || entity.evaluated_id || entity.user_id;
-      if (employeeId && req.user.id === employeeId) {
-        req._entity = entity;
-        return next();
-      }
-      const supervisorId = entity.supervisor_id || entity.evaluator_id;
-      if (supervisorId && req.user.id === supervisorId) {
-        req._entity = entity;
-        return next();
-      }
-      if (opts.allowSupervisor !== false && employeeId) {
-        const period = entity.period || req.query.period;
-        if (await isSupervisorOf(req.user.id, employeeId, period)) {
-          req._entity = entity;
-          return next();
-        }
-      }
-      logDenial(req, req.path, `no entity access: not owner/supervisor of ${entityId}`);
-      return res.status(403).json({ error: "Access denied" });
-    } catch (err) {
-      console.error("Entity access check error:", err);
-      return res.status(500).json({ error: "Internal server error" });
-    }
-  };
-}
-function requireSupervisorAction(opts) {
-  return async (req, res, next) => {
-    if (!req.user) return res.status(401).json({ error: "Not authenticated" });
-    if (hasRole(req.user, ["super_user", "admin"])) return next();
-    try {
-      const entityId = req.params.id;
-      if (!entityId) return res.status(400).json({ error: "Resource ID required" });
-      const entity = await db.get(opts.query, [...opts.queryParams || [], entityId]);
-      if (!entity) return res.status(404).json({ error: "Resource not found" });
-      const supervisorId = entity.supervisor_id || entity.evaluator_id;
-      if (supervisorId && req.user.id === supervisorId) {
-        req._entity = entity;
-        return next();
-      }
-      const employeeId = entity.employee_id || entity.evaluated_id || entity.user_id;
-      if (employeeId) {
-        const period = entity.period || req.query.period;
-        if (await isSupervisorOf(req.user.id, employeeId, period)) {
-          req._entity = entity;
-          return next();
-        }
-      }
-      logDenial(req, req.path, `supervisor action denied for ${entityId}`);
-      return res.status(403).json({ error: "Only the supervisor or an administrator can perform this action" });
-    } catch (err) {
-      console.error("Supervisor action check error:", err);
-      return res.status(500).json({ error: "Internal server error" });
-    }
-  };
-}
-
-// server/routes/users.ts
-var router3 = (0, import_express3.Router)();
+var router4 = (0, import_express4.Router)();
 async function getMaxAdminUsers() {
   try {
     const row = await db.get("SELECT max_admin_users FROM system_status WHERE id = 1");
@@ -135534,7 +136078,7 @@ function sanitizeUser2(user) {
   return safe;
 }
 var SAFE_USER_COLUMNS = `id, name, email, position, practice_area, custom_position_id, location_id, is_admin, is_super_user, is_managing_partner, is_active, must_change_password, created_at, updated_at`;
-router3.get("/", authMiddleware, async (req, res) => {
+router4.get("/", authMiddleware, async (req, res) => {
   try {
     if (!hasRole(req.user, ["super_user", "admin", "socio"])) {
       await auditLog({ action: "authorization_denied", userId: req.user.id, ipAddress: getClientIp(req), userAgent: getUserAgent(req), metadata: { resource: "GET /api/users", reason: "employee cannot list users" } });
@@ -135547,7 +136091,7 @@ router3.get("/", authMiddleware, async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router3.get("/:id", authMiddleware, async (req, res) => {
+router4.get("/:id", authMiddleware, async (req, res) => {
   try {
     const targetId = req.params.id;
     const userId = req.user.id;
@@ -135575,7 +136119,7 @@ router3.get("/:id", authMiddleware, async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router3.post("/", authMiddleware, requireAdmin, validate2(CreateUserSchema), async (req, res) => {
+router4.post("/", authMiddleware, requireAdmin, validate2(CreateUserSchema), async (req, res) => {
   try {
     const { name, email, position, password, practiceArea, customPositionId, locationId, isAdmin, isManagingPartner } = req.body;
     if (!name || !email || !position) {
@@ -135675,7 +136219,7 @@ router3.post("/", authMiddleware, requireAdmin, validate2(CreateUserSchema), asy
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router3.patch("/:id", authMiddleware, requireSelfOrAdmin, async (req, res) => {
+router4.patch("/:id", authMiddleware, requireSelfOrAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     const user = await db.get("SELECT * FROM users WHERE id = ?", [id]);
@@ -135810,7 +136354,7 @@ router3.patch("/:id", authMiddleware, requireSelfOrAdmin, async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router3.delete("/:id", authMiddleware, requireAdmin, async (req, res) => {
+router4.delete("/:id", authMiddleware, requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     const user = await db.get("SELECT id FROM users WHERE id = ?", [id]);
@@ -135826,7 +136370,7 @@ router3.delete("/:id", authMiddleware, requireAdmin, async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router3.post("/:id/reset-password", authMiddleware, requireAdmin, async (req, res) => {
+router4.post("/:id/reset-password", authMiddleware, requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     const user = await db.get("SELECT id, email, name, is_active FROM users WHERE id = ?", [id]);
@@ -135862,7 +136406,7 @@ router3.post("/:id/reset-password", authMiddleware, requireAdmin, async (req, re
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router3.patch("/:id/role", authMiddleware, requireAdmin, async (req, res) => {
+router4.patch("/:id/role", authMiddleware, requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     const { isAdmin, isManagingPartner, isSuperUser } = req.body;
@@ -135941,7 +136485,7 @@ router3.patch("/:id/role", authMiddleware, requireAdmin, async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-var users_default = router3;
+var users_default = router4;
 async function logTimelineEvent(userId, eventType, options = {}) {
   try {
     const now3 = (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "");
@@ -135968,10 +136512,10 @@ async function logTimelineEvent(userId, eventType, options = {}) {
 }
 
 // server/routes/assignments.ts
-var import_express4 = __toESM(require_express2(), 1);
+var import_express5 = __toESM(require_express2(), 1);
 init_dist_node();
-var router4 = (0, import_express4.Router)();
-router4.get("/", authMiddleware, async (req, res) => {
+var router5 = (0, import_express5.Router)();
+router5.get("/", authMiddleware, async (req, res) => {
   try {
     const { period, employeeId, supervisorId } = req.query;
     let sql = "SELECT * FROM supervisor_assignments WHERE 1=1";
@@ -136006,7 +136550,7 @@ router4.get("/", authMiddleware, async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router4.post("/", authMiddleware, requireAdmin, async (req, res) => {
+router5.post("/", authMiddleware, requireAdmin, async (req, res) => {
   try {
     const { employeeId, supervisorId, period } = req.body;
     if (!employeeId || !supervisorId || !period) {
@@ -136034,7 +136578,7 @@ router4.post("/", authMiddleware, requireAdmin, async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router4.delete("/:id", authMiddleware, requireAdmin, async (req, res) => {
+router5.delete("/:id", authMiddleware, requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     const assignment = await db.get("SELECT id FROM supervisor_assignments WHERE id = ?", [id]);
@@ -136057,10 +136601,10 @@ router4.delete("/:id", authMiddleware, requireAdmin, async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-var assignments_default = router4;
+var assignments_default = router5;
 
 // server/routes/system.ts
-var import_express5 = __toESM(require_express2(), 1);
+var import_express6 = __toESM(require_express2(), 1);
 init_dist_node();
 
 // server/data/positionCatalog.ts
@@ -136111,7 +136655,7 @@ var POSITION_CATALOG = [
 ];
 
 // server/routes/system.ts
-var router5 = (0, import_express5.Router)();
+var router6 = (0, import_express6.Router)();
 function sanitizeUser3(user) {
   const { password_hash, security_answer, ...safe } = user;
   return safe;
@@ -136133,7 +136677,7 @@ var VACATION_DEFAULTS = {
   soporte: 10,
   archivista: 10
 };
-router5.get("/initialized", async (_req, res) => {
+router6.get("/initialized", async (_req, res) => {
   try {
     const row = await db.get("SELECT id FROM system_status LIMIT 1");
     return res.json({ initialized: !!row });
@@ -136142,7 +136686,7 @@ router5.get("/initialized", async (_req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router5.post("/init", validate2(SystemInitSchema), async (req, res) => {
+router6.post("/init", validate2(SystemInitSchema), async (req, res) => {
   try {
     const existing = await db.get("SELECT id FROM system_status LIMIT 1");
     if (existing) {
@@ -136221,7 +136765,7 @@ router5.post("/init", validate2(SystemInitSchema), async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router5.get("/status", authMiddleware, async (req, res) => {
+router6.get("/status", authMiddleware, async (req, res) => {
   try {
     if (!hasRole(req.user, ["super_user", "admin"])) {
       await auditLog({ action: "authorization_denied", userId: req.user.id, ipAddress: getClientIp(req), userAgent: getUserAgent(req), metadata: { resource: "GET /api/system/status", reason: "non-admin access" } });
@@ -136237,7 +136781,7 @@ router5.get("/status", authMiddleware, async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router5.patch("/status", authMiddleware, requireSuperUser, async (req, res) => {
+router6.patch("/status", authMiddleware, requireSuperUser, async (req, res) => {
   try {
     const { status, activationDate, paymentPlan, maxUsers, tickets, maxAdminUsers } = req.body;
     const updates = [];
@@ -136298,7 +136842,7 @@ router5.patch("/status", authMiddleware, requireSuperUser, async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router5.get("/modules", authMiddleware, async (_req, res) => {
+router6.get("/modules", authMiddleware, async (_req, res) => {
   try {
     const row = await db.get("SELECT * FROM module_config LIMIT 1");
     if (!row) {
@@ -136310,7 +136854,7 @@ router5.get("/modules", authMiddleware, async (_req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router5.patch("/modules", authMiddleware, requireSuperUser, async (req, res) => {
+router6.patch("/modules", authMiddleware, requireSuperUser, async (req, res) => {
   try {
     const { evaluations, communications, vacations, copilot } = req.body;
     const updates = [];
@@ -136342,7 +136886,7 @@ router5.patch("/modules", authMiddleware, requireSuperUser, async (req, res) => 
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router5.get("/activation-history", authMiddleware, requireSuperUser, async (_req, res) => {
+router6.get("/activation-history", authMiddleware, requireSuperUser, async (_req, res) => {
   try {
     const rows = await db.all("SELECT * FROM activation_history ORDER BY date DESC");
     return res.json(rows);
@@ -136351,8 +136895,8 @@ router5.get("/activation-history", authMiddleware, requireSuperUser, async (_req
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-var system_default = router5;
-router5.post("/backfill-timeline", authMiddleware, requireSuperUser, async (req, res) => {
+var system_default = router6;
+router6.post("/backfill-timeline", authMiddleware, requireSuperUser, async (req, res) => {
   try {
     const { v4: uuidv4 } = await Promise.resolve().then(() => (init_dist_node(), dist_node_exports));
     let totalCreated = 0;
@@ -136409,9 +136953,9 @@ router5.post("/backfill-timeline", authMiddleware, requireSuperUser, async (req,
 });
 
 // server/routes/evaluations.ts
-var import_express6 = __toESM(require_express2(), 1);
+var import_express7 = __toESM(require_express2(), 1);
 init_dist_node();
-var router6 = (0, import_express6.Router)();
+var router7 = (0, import_express7.Router)();
 async function fetchResponses(evaluationIds) {
   if (evaluationIds.length === 0) return /* @__PURE__ */ new Map();
   const placeholders = evaluationIds.map(() => "?").join(",");
@@ -136434,7 +136978,7 @@ async function fetchNaApprovals(evaluationIds) {
   }
   return map;
 }
-router6.get("/export/csv", authMiddleware, async (req, res) => {
+router7.get("/export/csv", authMiddleware, async (req, res) => {
   try {
     const { period } = req.query;
     if (!period) return res.status(400).json({ error: "period query parameter is required" });
@@ -136537,7 +137081,7 @@ router6.get("/export/csv", authMiddleware, async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router6.get("/", authMiddleware, async (req, res) => {
+router7.get("/", authMiddleware, async (req, res) => {
   try {
     const { period, evaluatorId, evaluatedId, type } = req.query;
     let sql = "SELECT * FROM evaluations WHERE 1=1";
@@ -136581,7 +137125,7 @@ router6.get("/", authMiddleware, async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router6.get(
+router7.get(
   "/:id",
   authMiddleware,
   requireEntityAccess({
@@ -136601,7 +137145,7 @@ router6.get(
     }
   }
 );
-router6.post("/", authMiddleware, async (req, res) => {
+router7.post("/", authMiddleware, async (req, res) => {
   try {
     const { evaluatorId, evaluatedId, period, type, comments, supervisorComments, responses } = req.body;
     if (!evaluatorId || !evaluatedId || !period || !type) {
@@ -136658,7 +137202,7 @@ router6.post("/", authMiddleware, async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router6.put(
+router7.put(
   "/:id",
   authMiddleware,
   requireEntityAccess({
@@ -136722,7 +137266,7 @@ router6.put(
     }
   }
 );
-router6.patch(
+router7.patch(
   "/:id/feedback",
   authMiddleware,
   requireSupervisorAction({
@@ -136754,7 +137298,7 @@ router6.patch(
     }
   }
 );
-router6.patch(
+router7.patch(
   "/:id/na-approval",
   authMiddleware,
   requireSupervisorAction({
@@ -136782,13 +137326,13 @@ router6.patch(
     }
   }
 );
-var evaluations_default = router6;
+var evaluations_default = router7;
 
 // server/routes/action-plans.ts
-var import_express7 = __toESM(require_express2(), 1);
+var import_express8 = __toESM(require_express2(), 1);
 init_dist_node();
-var router7 = (0, import_express7.Router)();
-router7.get("/", authMiddleware, async (req, res) => {
+var router8 = (0, import_express8.Router)();
+router8.get("/", authMiddleware, async (req, res) => {
   try {
     const { employeeId, period } = req.query;
     let sql = "SELECT * FROM action_plans WHERE 1=1";
@@ -136821,7 +137365,7 @@ router7.get("/", authMiddleware, async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router7.post("/", authMiddleware, async (req, res) => {
+router8.post("/", authMiddleware, async (req, res) => {
   try {
     const { employeeId, supervisorId, period, content, items } = req.body;
     if (!employeeId || !supervisorId || !period) {
@@ -136865,7 +137409,7 @@ router7.post("/", authMiddleware, async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router7.patch(
+router8.patch(
   "/:id",
   authMiddleware,
   requireEntityAccess({
@@ -136910,7 +137454,7 @@ router7.patch(
     }
   }
 );
-router7.post(
+router8.post(
   "/:id/approve",
   authMiddleware,
   requireSupervisorAction({
@@ -136946,13 +137490,13 @@ router7.post(
     }
   }
 );
-var action_plans_default = router7;
+var action_plans_default = router8;
 
 // server/routes/objectives.ts
-var import_express8 = __toESM(require_express2(), 1);
+var import_express9 = __toESM(require_express2(), 1);
 init_dist_node();
-var router8 = (0, import_express8.Router)();
-router8.get("/", authMiddleware, async (req, res) => {
+var router9 = (0, import_express9.Router)();
+router9.get("/", authMiddleware, async (req, res) => {
   try {
     const { userId, period } = req.query;
     let sql = "SELECT * FROM personal_objectives WHERE 1=1";
@@ -136990,7 +137534,7 @@ router8.get("/", authMiddleware, async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router8.post("/", authMiddleware, async (req, res) => {
+router9.post("/", authMiddleware, async (req, res) => {
   try {
     const { userId, period, type, adminObjectives, legalObjective } = req.body;
     if (!userId || !period || !type) {
@@ -137073,7 +137617,7 @@ router8.post("/", authMiddleware, async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router8.post("/:id/submit", authMiddleware, async (req, res) => {
+router9.post("/:id/submit", authMiddleware, async (req, res) => {
   try {
     const obj = await db.get("SELECT * FROM personal_objectives WHERE id = ?", [req.params.id]);
     if (!obj) return res.status(404).json({ error: "Objectives not found" });
@@ -137097,7 +137641,7 @@ router8.post("/:id/submit", authMiddleware, async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router8.post("/:id/review", authMiddleware, async (req, res) => {
+router9.post("/:id/review", authMiddleware, async (req, res) => {
   try {
     const obj = await db.get("SELECT * FROM personal_objectives WHERE id = ?", [req.params.id]);
     if (!obj) return res.status(404).json({ error: "Objectives not found" });
@@ -137123,17 +137667,17 @@ router8.post("/:id/review", authMiddleware, async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-var objectives_default = router8;
+var objectives_default = router9;
 
 // server/routes/announcements.ts
-var import_express9 = __toESM(require_express2(), 1);
+var import_express10 = __toESM(require_express2(), 1);
 init_dist_node();
-var router9 = (0, import_express9.Router)();
+var router10 = (0, import_express10.Router)();
 function getUserLevel(user) {
   const legalPositions = ["socio", "salary_partner", "counsel", "asociado_sr", "asociado_mid", "asociado_jr", "pasante_carrera", "pasante"];
   return legalPositions.includes(user.position) ? "legal" : "administrativo";
 }
-router9.get("/", authMiddleware, async (req, res) => {
+router10.get("/", authMiddleware, async (req, res) => {
   try {
     const includeArchived = req.query.includeArchived === "true";
     let sql = "SELECT * FROM announcements WHERE 1=1";
@@ -137158,7 +137702,7 @@ router9.get("/", authMiddleware, async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router9.post("/", authMiddleware, requireAdmin, async (req, res) => {
+router10.post("/", authMiddleware, requireAdmin, async (req, res) => {
   try {
     const { title, body, audience, expiresAt } = req.body;
     if (!title || !body || !audience) return res.status(400).json({ error: "title, body, and audience required" });
@@ -137176,7 +137720,7 @@ router9.post("/", authMiddleware, requireAdmin, async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router9.patch("/:id", authMiddleware, requireAdmin, async (req, res) => {
+router10.patch("/:id", authMiddleware, requireAdmin, async (req, res) => {
   try {
     const announcement = await db.get("SELECT * FROM announcements WHERE id = ?", [req.params.id]);
     if (!announcement) return res.status(404).json({ error: "Announcement not found" });
@@ -137215,7 +137759,7 @@ router9.patch("/:id", authMiddleware, requireAdmin, async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router9.post("/:id/read", authMiddleware, async (req, res) => {
+router10.post("/:id/read", authMiddleware, async (req, res) => {
   try {
     const announcement = await db.get("SELECT * FROM announcements WHERE id = ?", [req.params.id]);
     if (!announcement) return res.status(404).json({ error: "Announcement not found" });
@@ -137229,13 +137773,13 @@ router9.post("/:id/read", authMiddleware, async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-var announcements_default = router9;
+var announcements_default = router10;
 
 // server/routes/vacations.ts
-var import_express10 = __toESM(require_express2(), 1);
+var import_express11 = __toESM(require_express2(), 1);
 init_dist_node();
-var router10 = (0, import_express10.Router)();
-router10.get("/requests", authMiddleware, async (req, res) => {
+var router11 = (0, import_express11.Router)();
+router11.get("/requests", authMiddleware, async (req, res) => {
   try {
     const { userId, status } = req.query;
     let sql = "SELECT * FROM vacation_requests WHERE 1=1";
@@ -137267,7 +137811,7 @@ router10.get("/requests", authMiddleware, async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router10.post("/requests", authMiddleware, async (req, res) => {
+router11.post("/requests", authMiddleware, async (req, res) => {
   try {
     const { userId, startDate, endDate, days, reason, period } = req.body;
     if (!userId || !startDate || !endDate || !days) {
@@ -137294,7 +137838,7 @@ router10.post("/requests", authMiddleware, async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router10.patch("/requests/:id", authMiddleware, async (req, res) => {
+router11.patch("/requests/:id", authMiddleware, async (req, res) => {
   try {
     const request = await db.get("SELECT * FROM vacation_requests WHERE id = ?", [req.params.id]);
     if (!request) return res.status(404).json({ error: "Request not found" });
@@ -137327,7 +137871,7 @@ router10.patch("/requests/:id", authMiddleware, async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router10.post("/requests/:id/approve", authMiddleware, async (req, res) => {
+router11.post("/requests/:id/approve", authMiddleware, async (req, res) => {
   try {
     const request = await db.get("SELECT * FROM vacation_requests WHERE id = ?", [req.params.id]);
     if (!request) return res.status(404).json({ error: "Request not found" });
@@ -137356,7 +137900,7 @@ router10.post("/requests/:id/approve", authMiddleware, async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router10.delete("/requests/:id", authMiddleware, async (req, res) => {
+router11.delete("/requests/:id", authMiddleware, async (req, res) => {
   try {
     const request = await db.get("SELECT * FROM vacation_requests WHERE id = ?", [req.params.id]);
     if (!request) return res.status(404).json({ error: "Request not found" });
@@ -137375,7 +137919,7 @@ router10.delete("/requests/:id", authMiddleware, async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router10.get("/config", authMiddleware, requireAdmin, async (_req, res) => {
+router11.get("/config", authMiddleware, requireAdmin, async (_req, res) => {
   try {
     const config = await db.all("SELECT * FROM vacation_config");
     return res.json(config);
@@ -137384,7 +137928,7 @@ router10.get("/config", authMiddleware, requireAdmin, async (_req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router10.patch("/config", authMiddleware, requireAdmin, async (req, res) => {
+router11.patch("/config", authMiddleware, requireAdmin, async (req, res) => {
   try {
     const { positions } = req.body;
     if (!Array.isArray(positions)) return res.status(400).json({ error: "positions array required" });
@@ -137401,7 +137945,7 @@ router10.patch("/config", authMiddleware, requireAdmin, async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router10.post("/extra-days", authMiddleware, requireAdmin, async (req, res) => {
+router11.post("/extra-days", authMiddleware, requireAdmin, async (req, res) => {
   try {
     const { userId, days, reason, period } = req.body;
     if (!userId || !days || !reason || !period) {
@@ -137420,13 +137964,13 @@ router10.post("/extra-days", authMiddleware, requireAdmin, async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-var vacations_default = router10;
+var vacations_default = router11;
 
 // server/routes/evaluation-config.ts
 init_dist_node();
-var import_express11 = __toESM(require_express2(), 1);
-var router11 = (0, import_express11.Router)();
-router11.get("/categories", authMiddleware, async (_req, res) => {
+var import_express12 = __toESM(require_express2(), 1);
+var router12 = (0, import_express12.Router)();
+router12.get("/categories", authMiddleware, async (_req, res) => {
   try {
     const categories = await db.all("SELECT * FROM evaluation_categories ORDER BY sort_order");
     return res.json(categories);
@@ -137435,7 +137979,7 @@ router11.get("/categories", authMiddleware, async (_req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router11.post("/categories", authMiddleware, requireAdmin, async (req, res) => {
+router12.post("/categories", authMiddleware, requireAdmin, async (req, res) => {
   try {
     const { id, label, section, is_technical_subcategory, sort_order } = req.body;
     if (!id || !label || !section) {
@@ -137456,7 +138000,7 @@ router11.post("/categories", authMiddleware, requireAdmin, async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router11.get("/section-weights", authMiddleware, async (_req, res) => {
+router12.get("/section-weights", authMiddleware, async (_req, res) => {
   try {
     const weights = await db.all("SELECT * FROM section_weights");
     return res.json(weights);
@@ -137465,7 +138009,7 @@ router11.get("/section-weights", authMiddleware, async (_req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router11.get("/section-weights/:position", authMiddleware, async (req, res) => {
+router12.get("/section-weights/:position", authMiddleware, async (req, res) => {
   try {
     const row = await db.get("SELECT * FROM section_weights WHERE position = ?", [req.params.position]);
     if (!row) {
@@ -137477,7 +138021,7 @@ router11.get("/section-weights/:position", authMiddleware, async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router11.patch("/section-weights/:position", authMiddleware, requireAdmin, async (req, res) => {
+router12.patch("/section-weights/:position", authMiddleware, requireAdmin, async (req, res) => {
   try {
     const { tecnico, competencias, blandas } = req.body;
     if (tecnico === void 0 || competencias === void 0 || blandas === void 0) {
@@ -137504,7 +138048,7 @@ router11.patch("/section-weights/:position", authMiddleware, requireAdmin, async
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router11.get("/competencies", authMiddleware, async (_req, res) => {
+router12.get("/competencies", authMiddleware, async (_req, res) => {
   try {
     const competencies = await db.all("SELECT * FROM competency_definitions ORDER BY position_level, sort_order");
     return res.json(competencies);
@@ -137513,7 +138057,7 @@ router11.get("/competencies", authMiddleware, async (_req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router11.get("/competencies/:positionLevel", authMiddleware, async (req, res) => {
+router12.get("/competencies/:positionLevel", authMiddleware, async (req, res) => {
   try {
     const competencies = await db.all("SELECT * FROM competency_definitions WHERE position_level = ? ORDER BY sort_order", [req.params.positionLevel]);
     return res.json(competencies);
@@ -137522,7 +138066,7 @@ router11.get("/competencies/:positionLevel", authMiddleware, async (req, res) =>
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router11.get("/template-questions", authMiddleware, async (req, res) => {
+router12.get("/template-questions", authMiddleware, async (req, res) => {
   try {
     const { position, practiceArea, section, category, is_active } = req.query;
     let sql = "SELECT tq.*, ql.question_id as library_question_id_ref, ql.category as library_category, ql.text as library_text, ql.default_section, ql.default_weight FROM template_questions tq LEFT JOIN question_library ql ON tq.library_question_id = ql.id WHERE 1=1";
@@ -137555,7 +138099,7 @@ router11.get("/template-questions", authMiddleware, async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router11.put("/template-questions/:position", authMiddleware, requireAdmin, async (req, res) => {
+router12.put("/template-questions/:position", authMiddleware, requireAdmin, async (req, res) => {
   try {
     const { position } = req.params;
     const { questions } = req.body;
@@ -137599,7 +138143,7 @@ router11.put("/template-questions/:position", authMiddleware, requireAdmin, asyn
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router11.patch("/template-questions/:id", authMiddleware, requireAdmin, async (req, res) => {
+router12.patch("/template-questions/:id", authMiddleware, requireAdmin, async (req, res) => {
   try {
     const { text, category, weight, section, isActive, is_active, sortOrder, sort_order } = req.body;
     const updates = [];
@@ -137637,7 +138181,7 @@ router11.patch("/template-questions/:id", authMiddleware, requireAdmin, async (r
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router11.get("/full-template/:position", authMiddleware, async (req, res) => {
+router12.get("/full-template/:position", authMiddleware, async (req, res) => {
   try {
     const { position } = req.params;
     const practiceArea = req.query.practiceArea || "corporativo";
@@ -137684,7 +138228,7 @@ router11.get("/full-template/:position", authMiddleware, async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router11.get("/positions", authMiddleware, async (_req, res) => {
+router12.get("/positions", authMiddleware, async (_req, res) => {
   try {
     const positions = await db.all("SELECT * FROM position_config WHERE is_active = 1 ORDER BY level, sort_order");
     return res.json(positions);
@@ -137693,7 +138237,7 @@ router11.get("/positions", authMiddleware, async (_req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router11.get("/score-labels", authMiddleware, async (_req, res) => {
+router12.get("/score-labels", authMiddleware, async (_req, res) => {
   try {
     const labels = await db.all("SELECT * FROM score_config ORDER BY score");
     return res.json(labels);
@@ -137702,7 +138246,7 @@ router11.get("/score-labels", authMiddleware, async (_req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router11.get("/library", authMiddleware, async (_req, res) => {
+router12.get("/library", authMiddleware, async (_req, res) => {
   try {
     const questions = await db.all("SELECT * FROM question_library ORDER BY category, created_at");
     return res.json(questions);
@@ -137711,7 +138255,7 @@ router11.get("/library", authMiddleware, async (_req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router11.post("/library", authMiddleware, requireAdmin, async (req, res) => {
+router12.post("/library", authMiddleware, requireAdmin, async (req, res) => {
   try {
     const { category, text, defaultSection, defaultWeight } = req.body;
     if (!category || !text) {
@@ -137733,7 +138277,7 @@ router11.post("/library", authMiddleware, requireAdmin, async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router11.patch("/library/:id", authMiddleware, requireAdmin, async (req, res) => {
+router12.patch("/library/:id", authMiddleware, requireAdmin, async (req, res) => {
   try {
     const { category, text, defaultSection, defaultWeight } = req.body;
     const updates = [];
@@ -137781,7 +138325,7 @@ router11.patch("/library/:id", authMiddleware, requireAdmin, async (req, res) =>
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router11.delete("/library/:id", authMiddleware, requireAdmin, async (req, res) => {
+router12.delete("/library/:id", authMiddleware, requireAdmin, async (req, res) => {
   try {
     const usageCount = await db.getScalar("SELECT COUNT(*) as cnt FROM template_questions WHERE library_question_id = ?", [req.params.id]);
     if (usageCount && usageCount > 0) {
@@ -137794,7 +138338,7 @@ router11.delete("/library/:id", authMiddleware, requireAdmin, async (req, res) =
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router11.post("/reseed", authMiddleware, requireAdmin, async (_req, res) => {
+router12.post("/reseed", authMiddleware, requireAdmin, async (_req, res) => {
   try {
     await db.run("DELETE FROM template_questions WHERE source = 'seed'");
     await db.run("DELETE FROM section_weights");
@@ -137809,12 +138353,12 @@ router11.post("/reseed", authMiddleware, requireAdmin, async (_req, res) => {
     return res.status(500).json({ error: "Reseed failed: " + (err instanceof Error ? err.message : String(err)) });
   }
 });
-var evaluation_config_default = router11;
+var evaluation_config_default = router12;
 
 // server/routes/positions.ts
-var import_express12 = __toESM(require_express2(), 1);
-var router12 = (0, import_express12.Router)();
-router12.get("/", authMiddleware, async (req, res) => {
+var import_express13 = __toESM(require_express2(), 1);
+var router13 = (0, import_express13.Router)();
+router13.get("/", authMiddleware, async (req, res) => {
   try {
     const { work_area_id } = req.query;
     let sql = `SELECT cp.*, wa.label AS work_area_label, wa.level AS work_area_level
@@ -137833,7 +138377,7 @@ router12.get("/", authMiddleware, async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router12.get("/:id", authMiddleware, async (req, res) => {
+router13.get("/:id", authMiddleware, async (req, res) => {
   try {
     const position = await db.get(
       `SELECT cp.*, wa.label AS work_area_label, wa.level AS work_area_level
@@ -137849,7 +138393,7 @@ router12.get("/:id", authMiddleware, async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router12.post("/", authMiddleware, requireAdmin, async (req, res) => {
+router13.post("/", authMiddleware, requireAdmin, async (req, res) => {
   try {
     const { id, label, workAreaId, basePosition } = req.body;
     if (!id || !label || !workAreaId || !basePosition) {
@@ -137876,7 +138420,7 @@ router12.post("/", authMiddleware, requireAdmin, async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router12.patch("/:id", authMiddleware, requireAdmin, async (req, res) => {
+router13.patch("/:id", authMiddleware, requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     const { label, workAreaId, basePosition, newId } = req.body;
@@ -137931,7 +138475,7 @@ router12.patch("/:id", authMiddleware, requireAdmin, async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router12.delete("/:id", authMiddleware, requireAdmin, async (req, res) => {
+router13.delete("/:id", authMiddleware, requireAdmin, async (req, res) => {
   try {
     const position = await db.get("SELECT * FROM custom_positions WHERE id = ?", [req.params.id]);
     if (!position) return res.status(404).json({ error: "Position not found" });
@@ -137949,12 +138493,12 @@ router12.delete("/:id", authMiddleware, requireAdmin, async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-var positions_default = router12;
+var positions_default = router13;
 
 // server/routes/work-areas.ts
-var import_express13 = __toESM(require_express2(), 1);
-var router13 = (0, import_express13.Router)();
-router13.get("/", authMiddleware, async (_req, res) => {
+var import_express14 = __toESM(require_express2(), 1);
+var router14 = (0, import_express14.Router)();
+router14.get("/", authMiddleware, async (_req, res) => {
   try {
     const areas = await db.all(
       `SELECT wa.*, 
@@ -137978,7 +138522,7 @@ router13.get("/", authMiddleware, async (_req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router13.post("/", authMiddleware, requireAdmin, async (req, res) => {
+router14.post("/", authMiddleware, requireAdmin, async (req, res) => {
   try {
     const { id, label, level, sortOrder } = req.body;
     if (!id || !label || !level) {
@@ -138002,7 +138546,7 @@ router13.post("/", authMiddleware, requireAdmin, async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router13.patch("/:id", authMiddleware, requireAdmin, async (req, res) => {
+router14.patch("/:id", authMiddleware, requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     const { label, level, sortOrder } = req.body;
@@ -138037,7 +138581,7 @@ router13.patch("/:id", authMiddleware, requireAdmin, async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router13.delete("/:id", authMiddleware, requireAdmin, async (req, res) => {
+router14.delete("/:id", authMiddleware, requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     const area = await db.get("SELECT * FROM work_areas WHERE id = ?", [id]);
@@ -138056,12 +138600,12 @@ router13.delete("/:id", authMiddleware, requireAdmin, async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-var work_areas_default = router13;
+var work_areas_default = router14;
 
 // server/routes/locations.ts
-var import_express14 = __toESM(require_express2(), 1);
-var router14 = (0, import_express14.Router)();
-router14.get("/", authMiddleware, async (_req, res) => {
+var import_express15 = __toESM(require_express2(), 1);
+var router15 = (0, import_express15.Router)();
+router15.get("/", authMiddleware, async (_req, res) => {
   try {
     const locations = await db.all(
       `SELECT l.*, 
@@ -138074,7 +138618,7 @@ router14.get("/", authMiddleware, async (_req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router14.post("/", authMiddleware, requireAdmin, async (req, res) => {
+router15.post("/", authMiddleware, requireAdmin, async (req, res) => {
   try {
     const { id, label, city, office, floor, desk, sortOrder } = req.body;
     if (!id || !label) {
@@ -138095,7 +138639,7 @@ router14.post("/", authMiddleware, requireAdmin, async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router14.patch("/:id", authMiddleware, requireAdmin, async (req, res) => {
+router15.patch("/:id", authMiddleware, requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     const { label, city, office, floor, desk, sortOrder } = req.body;
@@ -138139,7 +138683,7 @@ router14.patch("/:id", authMiddleware, requireAdmin, async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router14.delete("/:id", authMiddleware, requireAdmin, async (req, res) => {
+router15.delete("/:id", authMiddleware, requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     const location = await db.get("SELECT * FROM locations WHERE id = ?", [id]);
@@ -138158,12 +138702,12 @@ router14.delete("/:id", authMiddleware, requireAdmin, async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-var locations_default = router14;
+var locations_default = router15;
 
 // server/routes/periods.ts
-var import_express15 = __toESM(require_express2(), 1);
-var router15 = (0, import_express15.Router)();
-router15.get("/", authMiddleware, async (_req, res) => {
+var import_express16 = __toESM(require_express2(), 1);
+var router16 = (0, import_express16.Router)();
+router16.get("/", authMiddleware, async (_req, res) => {
   try {
     const periods = await db.all("SELECT * FROM period_configs");
     return res.json(periods);
@@ -138172,7 +138716,7 @@ router15.get("/", authMiddleware, async (_req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router15.post("/", authMiddleware, requireAdmin, async (req, res) => {
+router16.post("/", authMiddleware, requireAdmin, async (req, res) => {
   try {
     const { period, selfStart, selfEnd, supervisorStart, supervisorEnd, feedbackStart, feedbackEnd, actionPlanStart, actionPlanEnd } = req.body;
     if (!period || !selfStart || !selfEnd || !supervisorStart || !supervisorEnd || !feedbackStart || !feedbackEnd || !actionPlanStart || !actionPlanEnd) {
@@ -138191,10 +138735,10 @@ router15.post("/", authMiddleware, requireAdmin, async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-var periods_default = router15;
+var periods_default = router16;
 
 // server/copilot/index.ts
-var import_express16 = __toESM(require_express2(), 1);
+var import_express17 = __toESM(require_express2(), 1);
 init_dist_node();
 var import_multer = __toESM(require("multer"), 1);
 
@@ -141114,7 +141658,7 @@ function getTools(cfg) {
 var TOOL_COUNT = ALL_TOOLS.length;
 
 // server/copilot/index.ts
-var router16 = (0, import_express16.Router)();
+var router17 = (0, import_express17.Router)();
 var upload = (0, import_multer.default)({
   storage: import_multer.default.memoryStorage(),
   limits: { fileSize: 10 * 1024 * 1024 },
@@ -141150,8 +141694,8 @@ function llmErrorMessage(status, body) {
       return detail ? `Error del servicio de IA (${status}): ${detail}` : `Error del servicio de IA (c\xF3digo ${status}). Intenta de nuevo.`;
   }
 }
-router16.use(authMiddleware, requireSuperUser);
-router16.use(async (_req, res, next) => {
+router17.use(authMiddleware, requireSuperUser);
+router17.use(async (_req, res, next) => {
   try {
     const moduleConfig = await db.get("SELECT copilot FROM module_config WHERE id=1");
     if (!moduleConfig?.copilot) {
@@ -141163,7 +141707,7 @@ router16.use(async (_req, res, next) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router16.get("/config", async (_req, res) => {
+router17.get("/config", async (_req, res) => {
   try {
     let cfg = await db.get("SELECT * FROM copilot_config WHERE id=1");
     if (!cfg) {
@@ -141179,7 +141723,7 @@ router16.get("/config", async (_req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 });
-router16.patch("/config", async (req, res) => {
+router17.patch("/config", async (req, res) => {
   try {
     const fieldMap = {
       model: "model",
@@ -141231,7 +141775,7 @@ router16.patch("/config", async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router16.put("/config", async (req, res) => {
+router17.put("/config", async (req, res) => {
   try {
     const { model, api_provider, api_base_url, api_key, can_manage_users, can_manage_evaluations, can_manage_vacations, can_manage_announcements, can_manage_periods, can_manage_system, can_view_reports, max_tokens, temperature } = req.body;
     const current = await db.get("SELECT api_key FROM copilot_config WHERE id=1");
@@ -141250,7 +141794,7 @@ router16.put("/config", async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router16.post("/conversations", async (req, res) => {
+router17.post("/conversations", async (req, res) => {
   try {
     const { title } = req.body;
     const id = v4_default();
@@ -141262,7 +141806,7 @@ router16.post("/conversations", async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 });
-router16.get("/conversations", async (_req, res) => {
+router17.get("/conversations", async (_req, res) => {
   try {
     const convs = await db.all("SELECT * FROM copilot_conversations WHERE user_id=? ORDER BY updated_at DESC", [_req.user.id]);
     res.json(convs);
@@ -141271,7 +141815,7 @@ router16.get("/conversations", async (_req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 });
-router16.get("/conversations/:id", async (req, res) => {
+router17.get("/conversations/:id", async (req, res) => {
   try {
     const conv = await db.get("SELECT * FROM copilot_conversations WHERE id=? AND user_id=?", [req.params.id, req.user.id]);
     if (!conv) return res.status(404).json({ error: "Conversation not found" });
@@ -141282,7 +141826,7 @@ router16.get("/conversations/:id", async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 });
-router16.delete("/conversations/:id", async (req, res) => {
+router17.delete("/conversations/:id", async (req, res) => {
   try {
     await db.run("DELETE FROM copilot_messages WHERE conversation_id=?", [req.params.id]);
     await db.run("DELETE FROM copilot_conversations WHERE id=? AND user_id=?", [req.params.id, req.user.id]);
@@ -141292,7 +141836,7 @@ router16.delete("/conversations/:id", async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 });
-router16.delete("/conversations", async (req, res) => {
+router17.delete("/conversations", async (req, res) => {
   try {
     const convs = await db.all("SELECT id FROM copilot_conversations WHERE user_id=?", [req.user.id]);
     for (const c of convs) {
@@ -141305,7 +141849,7 @@ router16.delete("/conversations", async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 });
-router16.post("/chat", upload.single("file"), async (req, res) => {
+router17.post("/chat", upload.single("file"), async (req, res) => {
   try {
     const { message, conversationId } = req.body;
     if (!message && !req.file) return res.status(400).json({ error: "Message or file required" });
@@ -141494,17 +142038,17 @@ ${fileContent}` : message || "";
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-var copilot_default = router16;
+var copilot_default = router17;
 
 // server/routes/deploy.ts
-var import_express17 = __toESM(require_express2(), 1);
+var import_express18 = __toESM(require_express2(), 1);
 var import_crypto4 = __toESM(require("crypto"), 1);
 var import_child_process = require("child_process");
 var import_util4 = require("util");
-var router17 = (0, import_express17.Router)();
+var router18 = (0, import_express18.Router)();
 var execAsync = (0, import_util4.promisify)(import_child_process.exec);
 var DEPLOY_SECRET = process.env.DEPLOY_WEBHOOK_SECRET || "smps-deploy-webhook-2025";
-router17.post("/", async (req, res) => {
+router18.post("/", async (req, res) => {
   try {
     const signature = req.headers["x-hub-signature-256"];
     if (!signature) {
@@ -141559,12 +142103,12 @@ async function deployAsync() {
     console.error("[Deploy] Error:", deployErr);
   }
 }
-var deploy_default = router17;
+var deploy_default = router18;
 
 // server/routes/timeline.ts
-var import_express18 = __toESM(require_express2(), 1);
+var import_express19 = __toESM(require_express2(), 1);
 init_dist_node();
-var router18 = (0, import_express18.Router)();
+var router19 = (0, import_express19.Router)();
 async function canAccessTimeline(requester, targetId) {
   if (requester.id === targetId) return "allow";
   if (hasRole(requester, ["super_user", "admin", "socio"])) return "allow";
@@ -141572,7 +142116,7 @@ async function canAccessTimeline(requester, targetId) {
   if (await isSupervisorOf(targetId, requester.id)) return "allow";
   return "deny";
 }
-router18.get("/:id/timeline", authMiddleware, async (req, res) => {
+router19.get("/:id/timeline", authMiddleware, async (req, res) => {
   try {
     const { id } = req.params;
     const { type, from, to, limit, offset } = req.query;
@@ -141628,7 +142172,7 @@ router18.get("/:id/timeline", authMiddleware, async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router18.post("/:id/timeline", authMiddleware, requireAdmin, async (req, res) => {
+router19.post("/:id/timeline", authMiddleware, requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     const { eventType, note, metadata, oldValue, newValue } = req.body;
@@ -141665,7 +142209,7 @@ router18.post("/:id/timeline", authMiddleware, requireAdmin, async (req, res) =>
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router18.patch("/:id/timeline/:eventId", authMiddleware, requireAdmin, async (req, res) => {
+router19.patch("/:id/timeline/:eventId", authMiddleware, requireAdmin, async (req, res) => {
   try {
     const { id, eventId } = req.params;
     const { note } = req.body;
@@ -141685,7 +142229,7 @@ router18.patch("/:id/timeline/:eventId", authMiddleware, requireAdmin, async (re
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router18.delete("/:id/timeline/:eventId", authMiddleware, requireAdmin, async (req, res) => {
+router19.delete("/:id/timeline/:eventId", authMiddleware, requireAdmin, async (req, res) => {
   try {
     const { id, eventId } = req.params;
     const event = await db.get("SELECT * FROM user_timeline WHERE id = ?", [eventId]);
@@ -141699,7 +142243,7 @@ router18.delete("/:id/timeline/:eventId", authMiddleware, requireAdmin, async (r
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-var timeline_default = router18;
+var timeline_default = router19;
 
 // node_modules/express-rate-limit/dist/index.mjs
 var import_node_net = require("node:net");
@@ -142796,7 +143340,7 @@ if (process.env.NODE_ENV === "production" && !process.env.JWT_SECRET) {
   console.error("FATAL: JWT_SECRET environment variable is not set. Refusing to start in production without it.");
   process.exit(1);
 }
-var app = (0, import_express19.default)();
+var app = (0, import_express20.default)();
 var PORT = process.env.PORT || 3e3;
 if (process.env.NODE_ENV === "production") {
   app.use((0, import_cors.default)({
@@ -142806,7 +143350,7 @@ if (process.env.NODE_ENV === "production") {
 } else {
   app.use((0, import_cors.default)());
 }
-app.use(import_express19.default.json());
+app.use(import_express20.default.json());
 app.set("trust proxy", 1);
 app.use("/api/auth/login", loginLimiter);
 app.use("/api/auth/reset-password", resetPasswordLimiter);
@@ -142860,6 +143404,7 @@ app.use("/api/periods", periods_default);
 app.use("/api/copilot", copilot_default);
 app.use("/api/deploy", deploy_default);
 app.use("/api/users", timeline_default);
+app.use("/api/analytics", analytics_default);
 app.get("/techdiagram.html", (_req, res) => {
   res.sendFile(import_path2.default.resolve(process.cwd(), "dist/techdiagram.html"));
 });
@@ -142869,13 +143414,13 @@ if (process.env.NODE_ENV === "production") {
   const landingPath = import_path2.default.resolve(process.cwd(), "landing");
   app.use((req, _res, next) => {
     if (!isSmpsDomain(req.get("host")) && !req.path.startsWith("/api")) {
-      import_express19.default.static(landingPath)(req, _res, next);
+      import_express20.default.static(landingPath)(req, _res, next);
     } else {
       next();
     }
   });
   const distPath = import_path2.default.resolve(process.cwd(), "dist");
-  app.use(import_express19.default.static(distPath));
+  app.use(import_express20.default.static(distPath));
   app.use((req, res) => {
     if (isSmpsDomain(req.get("host"))) {
       res.sendFile(import_path2.default.join(distPath, "index.html"));
@@ -142896,6 +143441,8 @@ async function startServer() {
     await migrateFKs();
     console.log("Running index migration...");
     await migrateIndexes();
+    console.log("Running analytics migration...");
+    await migrateAnalytics();
     console.log("Seeding database...");
     await seed();
     console.log("Seeding evaluation data...");
@@ -142904,6 +143451,8 @@ async function startServer() {
     app.listen(PORT, () => {
       console.log(`Server running on port ${PORT} in ${process.env.NODE_ENV || "development"} mode`);
       startBackupScheduler();
+      refreshAnalytics();
+      setInterval(() => refreshAnalytics(), 30 * 60 * 1e3);
     });
   } catch (err) {
     console.error("Failed to start server:", err);

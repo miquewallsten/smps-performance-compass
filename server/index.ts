@@ -10,6 +10,10 @@ import { migrateAuth } from './db/migrate-auth.js';
 import { migrateSnapshots } from './db/migrate-snapshots.js';
 import { migrateFKs } from './db/migrate-fks.js';
 import { migrateIndexes } from './db/migrate-indexes.js';
+import { migrateAnalytics } from './db/migrate-analytics.js';
+import analyticsRoutes from './routes/analytics.js';
+import { refreshAnalytics } from './services/analytics-refresh.js';
+
 import authRoutes from './routes/auth.js';
 import authNewRoutes from './routes/auth-new.js';
 import userRoutes from './routes/users.js';
@@ -130,6 +134,7 @@ app.use('/api/periods', periodRoutes);
 app.use('/api/copilot', copilotRoutes);
 app.use('/api/deploy', deployRoutes);
 app.use('/api/users', timelineRoutes);
+app.use('/api/analytics', analyticsRoutes);
 
 
   // ─── TECH DIAGRAM: Public static page at /techdiagram.html ─────────────────
@@ -183,6 +188,8 @@ async function startServer() {
     await migrateFKs();
     console.log('Running index migration...');
     await migrateIndexes();
+    console.log('Running analytics migration...');
+    await migrateAnalytics();
     console.log('Seeding database...');
     await seed();
     console.log('Seeding evaluation data...');
@@ -192,6 +199,9 @@ async function startServer() {
     app.listen(PORT, () => {
       console.log(`Server running on port ${PORT} in ${process.env.NODE_ENV || 'development'} mode`);
       startBackupScheduler();
+      // Refresh analytics tables on startup, then every 30 minutes
+      refreshAnalytics();
+      setInterval(() => refreshAnalytics(), 30 * 60 * 1000);
     });
   } catch (err) {
     console.error('Failed to start server:', err);
