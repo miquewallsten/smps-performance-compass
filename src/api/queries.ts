@@ -500,3 +500,50 @@ export function useDeleteTimelineEvent() {
     onSuccess: (_data: any, variables: any) => qc.invalidateQueries({ queryKey: ['timeline', variables.userId] }),
   });
 }
+
+// ── Analytics ──
+export function useAnalyticsOverview(period: string) {
+  return useQuery({
+    queryKey: ['analyticsOverview', period],
+    queryFn: () => api.get<any>(`/api/analytics/overview?period=${period}`),
+    enabled: !!period,
+  });
+}
+
+export function useAnalyticsEvaluations(period: string) {
+  return useQuery({
+    queryKey: ['analyticsEvaluations', period],
+    queryFn: () => api.get<any>(`/api/analytics/evaluations?period=${period}`),
+    enabled: !!period,
+  });
+}
+
+export function useAnalyticsTrends() {
+  return useQuery({
+    queryKey: ['analyticsTrends'],
+    queryFn: () => api.get<any>('/api/analytics/trends'),
+  });
+}
+
+export function useAnalyticsObjectives(period?: string) {
+  const params = period ? `?period=${period}` : '';
+  return useQuery({
+    queryKey: ['analyticsObjectives', period],
+    queryFn: () => api.get<any>(`/api/analytics/objectives${params}`),
+  });
+}
+
+export function useAnalyticsVacations() {
+  return useQuery({
+    queryKey: ['analyticsVacations'],
+    queryFn: () => api.get<any>('/api/analytics/vacations'),
+  });
+}
+
+export function useAnalyticsActionPlans(period?: string) {
+  const params = period ? `?period=${period}` : '';
+  return useQuery({
+    queryKey: ['analyticsActionPlans', period],
+    queryFn: () => api.get<any>(`/api/analytics/action-plans${params}`),
+  });
+}
