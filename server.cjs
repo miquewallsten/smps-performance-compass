@@ -130280,13 +130280,9 @@ async function hashPassword(password) {
 async function verifyPassword(password, hash2) {
   return bcryptjs_default.compare(password, hash2);
 }
-async function hashSecurityAnswer(answer) {
+async function hashSecurityAnswer2(answer) {
   const normalized = answer.toLowerCase().trim().replace(/\s+/g, " ");
   return bcryptjs_default.hash(normalized, SALT_ROUNDS);
-}
-async function verifySecurityAnswer(answer, hash2) {
-  const normalized = answer.toLowerCase().trim().replace(/\s+/g, " ");
-  return bcryptjs_default.compare(normalized, hash2);
 }
 
 // server/middleware/auth.ts
@@ -134595,51 +134591,13 @@ router.post("/change-password", validate2(ChangePasswordSchema), authMiddleware,
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router.post("/security-question", validate2(SecurityQuestionSchema), async (req, res) => {
-  try {
-    const { email } = req.body;
-    if (!email) {
-      return res.status(400).json({ error: "Email is required" });
-    }
-    const user = await db.get("SELECT security_question FROM users WHERE email = ?", [email]);
-    if (!user) {
-      return res.json({ securityQuestion: null });
-    }
-    return res.json({ securityQuestion: user.security_question });
-  } catch (err) {
-    console.error("Security question error:", err);
-    return res.status(500).json({ error: "Internal server error" });
-  }
+router.post("/security-question", async (req, res) => {
+  await auditLog({ action: "legacy_auth_endpoint_access", userId: null, ipAddress: getClientIp(req), userAgent: getUserAgent(req), metadata: { endpoint: "POST /api/auth/security-question" } });
+  return res.status(410).json({ error: "Este m\xE9todo de recuperaci\xF3n ha sido retirado. Utilice la recuperaci\xF3n por correo electr\xF3nico." });
 });
-router.post("/reset-password", validate2(ResetPasswordSchema), async (req, res) => {
-  try {
-    const { email, securityAnswer, newPassword } = req.body;
-    if (!email || !securityAnswer || !newPassword) {
-      return res.status(400).json({ error: "Email, security answer, and new password are required" });
-    }
-    if (newPassword.length < 6) {
-      return res.status(400).json({ error: "New password must be at least 6 characters" });
-    }
-    const user = await db.get("SELECT * FROM users WHERE email = ?", [email]);
-    if (!user) {
-      return res.status(404).json({ error: "User not found" });
-    }
-    const validAnswer = await verifySecurityAnswer(securityAnswer, user.security_answer);
-    if (!validAnswer) {
-      return res.status(401).json({ error: "Incorrect security answer" });
-    }
-    const hashedPassword = await hashPassword(newPassword);
-    const now3 = (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "");
-    await db.run(
-      "UPDATE users SET password_hash = ?, must_change_password = 0, updated_at = ? WHERE id = ?",
-      [hashedPassword, now3, user.id]
-    );
-    await auditLog({ action: "password_reset_completed", userId: user.id, ipAddress: getClientIp(req), userAgent: getUserAgent(req) });
-    return res.json({ message: "Password reset successfully" });
-  } catch (err) {
-    console.error("Reset password error:", err);
-    return res.status(500).json({ error: "Internal server error" });
-  }
+router.post("/reset-password", async (req, res) => {
+  await auditLog({ action: "legacy_auth_endpoint_access", userId: null, ipAddress: getClientIp(req), userAgent: getUserAgent(req), metadata: { endpoint: "POST /api/auth/reset-password" } });
+  return res.status(410).json({ error: "Este m\xE9todo de recuperaci\xF3n ha sido retirado. Utilice la recuperaci\xF3n por correo electr\xF3nico." });
 });
 var auth_default = router;
 
@@ -135359,7 +135317,7 @@ router3.post("/", authMiddleware, requireAdmin, validate2(CreateUserSchema), asy
       mustChangePassword = 1;
     }
     const securityQuestion = "\xBFCu\xE1l es su correo electr\xF3nico?";
-    const hashedAnswer = await hashSecurityAnswer(email);
+    const hashedAnswer = await hashSecurityAnswer2(email);
     await db.run(
       `INSERT INTO users (id, email, password_hash, security_question, security_answer, name, position, practice_area, custom_position_id, location_id, is_admin, is_super_user, is_managing_partner, is_active, must_change_password, activation_token_hash, activation_expires_at, created_at, updated_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -135899,7 +135857,7 @@ router5.post("/init", validate2(SystemInitSchema), async (req, res) => {
     const now3 = (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "").replace("T", " ").replace(/\.\d{3}Z$/, "");
     const userId = v4_default();
     const hashedPassword = await hashPassword(password);
-    const hashedAnswer = await hashSecurityAnswer(securityAnswer);
+    const hashedAnswer = await hashSecurityAnswer2(securityAnswer);
     await db.transaction(async (conn) => {
       await tx.run(
         conn,

@@ -2,10 +2,10 @@ import { Router, Request, Response } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import { db, tx } from '../db/connection.js';
 import { signToken, hashToken, getTokenExpiry, getRole } from '../auth/jwt.js';
-import { hashPassword, verifyPassword, hashSecurityAnswer, verifySecurityAnswer } from '../auth/security.js';
+import { hashPassword, verifyPassword } from '../auth/security.js';
 import { authMiddleware } from '../middleware/auth.js';
 import { requireAuthenticated } from '../middleware/rbac.js';
-import { validate, LoginSchema, ChangePasswordSchema, ResetPasswordSchema, SecurityQuestionSchema } from '../middleware/validate.js';
+import { validate, LoginSchema, ChangePasswordSchema } from '../middleware/validate.js';
 import { auditLog, getClientIp, getUserAgent } from '../services/audit.js';
 
 const router = Router();
@@ -180,71 +180,17 @@ router.post('/change-password', validate(ChangePasswordSchema), authMiddleware, 
 });
 
 // ─── POST /api/auth/security-question ───────────────────────────────────────
-router.post('/security-question', validate(SecurityQuestionSchema), async (req: Request, res: Response) => {
-  try {
-    const { email } = req.body as { email?: string };
-
-    if (!email) {
-      return res.status(400).json({ error: 'Email is required' });
-    }
-
-    const user = await db.get('SELECT security_question FROM users WHERE email = ?', [email]) as { security_question: string } | undefined;
-
-    if (!user) {
-      // Don't reveal whether the email exists
-      return res.json({ securityQuestion: null });
-    }
-
-    return res.json({ securityQuestion: user.security_question });
-  } catch (err) {
-    console.error('Security question error:', err);
-    return res.status(500).json({ error: 'Internal server error' });
-  }
+// DISABLED: Legacy security-question recovery removed. Use email-based reset.
+router.post('/security-question', async (req: Request, res: Response) => {
+  await auditLog({ action: 'legacy_auth_endpoint_access', userId: null, ipAddress: getClientIp(req), userAgent: getUserAgent(req), metadata: { endpoint: 'POST /api/auth/security-question' } });
+  return res.status(410).json({ error: 'Este método de recuperación ha sido retirado. Utilice la recuperación por correo electrónico.' });
 });
 
 // ─── POST /api/auth/reset-password ──────────────────────────────────────────
-router.post('/reset-password', validate(ResetPasswordSchema), async (req: Request, res: Response) => {
-  try {
-    const { email, securityAnswer, newPassword } = req.body as {
-      email?: string;
-      securityAnswer?: string;
-      newPassword?: string;
-    };
-
-    if (!email || !securityAnswer || !newPassword) {
-      return res.status(400).json({ error: 'Email, security answer, and new password are required' });
-    }
-
-    if (newPassword.length < 6) {
-      return res.status(400).json({ error: 'New password must be at least 6 characters' });
-    }
-
-    const user = await db.get('SELECT * FROM users WHERE email = ?', [email]) as Record<string, unknown> | undefined;
-
-    if (!user) {
-      return res.status(404).json({ error: 'User not found' });
-    }
-
-    const validAnswer = await verifySecurityAnswer(securityAnswer, user.security_answer as string);
-    if (!validAnswer) {
-      return res.status(401).json({ error: 'Incorrect security answer' });
-    }
-
-    const hashedPassword = await hashPassword(newPassword);
-    const now = new Date().toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, '');
-
-    await db.run(
-      'UPDATE users SET password_hash = ?, must_change_password = 0, updated_at = ? WHERE id = ?',
-      [hashedPassword, now, user.id as string]
-    );
-
-    await auditLog({ action: 'password_reset_completed', userId: user.id as string, ipAddress: getClientIp(req), userAgent: getUserAgent(req) });
-
-    return res.json({ message: 'Password reset successfully' });
-  } catch (err) {
-    console.error('Reset password error:', err);
-    return res.status(500).json({ error: 'Internal server error' });
-  }
+// DISABLED: Legacy security-answer-based reset removed. Use email-based reset.
+router.post('/reset-password', async (req: Request, res: Response) => {
+  await auditLog({ action: 'legacy_auth_endpoint_access', userId: null, ipAddress: getClientIp(req), userAgent: getUserAgent(req), metadata: { endpoint: 'POST /api/auth/reset-password' } });
+  return res.status(410).json({ error: 'Este método de recuperación ha sido retirado. Utilice la recuperación por correo electrónico.' });
 });
 
 export default router;

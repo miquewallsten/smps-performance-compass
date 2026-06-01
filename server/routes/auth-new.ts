@@ -2,7 +2,7 @@
  * New authentication endpoints for activation and password reset.
  *
  * These endpoints complement (not replace) the existing auth routes.
- * The old security-question flow remains operational for backward compatibility.
+ * The old security-question flow has been DISABLED (410 Gone). Use email-based reset.
  *
  * Endpoints:
  *   POST /api/auth/activate              — Activate account with token + set password

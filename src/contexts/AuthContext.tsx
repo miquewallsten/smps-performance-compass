@@ -32,8 +32,6 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   changePassword: (currentPassword: string, newPassword: string) => Promise<void>;
-  resetPassword: (email: string, securityAnswer: string, newPassword: string) => Promise<void>;
-  getSecurityQuestion: (email: string) => Promise<string>;
   refreshUser: () => Promise<void>;
   initializeSystem: (data: { name: string; email: string; password: string; securityQuestion: string; securityAnswer: string }) => Promise<void>;
   requestPasswordReset: (email: string) => Promise<string>;
@@ -107,14 +105,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await refreshUser();
   }, [refreshUser]);
 
-  const getSecurityQuestion = useCallback(async (email: string) => {
-    const result = await api.post<{ securityQuestion: string }>('/api/auth/security-question', { email });
-    return result.securityQuestion;
-  }, []);
-
-  const resetPassword = useCallback(async (email: string, securityAnswer: string, newPassword: string) => {
-    await api.post('/api/auth/reset-password', { email, securityAnswer, newPassword });
-  }, []);
 
   const initializeSystem = useCallback(async (data: { name: string; email: string; password: string; securityQuestion: string; securityAnswer: string }) => {
     const result = await api.post<{ token: string; user: AuthUser }>('/api/system/init', data);
@@ -157,7 +147,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     <AuthContext.Provider value={{
       user, loading, systemInitialized, moduleConfig,
       isSuperUser: user?.isSuperUser ?? false,
-      login, logout, changePassword, resetPassword, getSecurityQuestion,
+      login, logout, changePassword,
       refreshUser, initializeSystem,
       requestPasswordReset, completePasswordReset, verifyResetToken,
       activateAccount, verifyActivationToken, resendActivation,
