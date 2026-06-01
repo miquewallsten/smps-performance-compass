@@ -143452,16 +143452,13 @@ var import_child_process = require("child_process");
 var import_util4 = require("util");
 var router19 = (0, import_express19.Router)();
 var execAsync = (0, import_util4.promisify)(import_child_process.exec);
-var DEPLOY_SECRET = (() => {
-  const secret = process.env.DEPLOY_WEBHOOK_SECRET;
-  if (!secret) {
-    console.error("\u26A0\uFE0F  DEPLOY_WEBHOOK_SECRET is not set. Deploy webhook is DISABLED.");
-    return null;
-  }
-  return secret;
-})();
+function getDeploySecret() {
+  return process.env.DEPLOY_WEBHOOK_SECRET || null;
+}
 router19.post("/", async (req, res) => {
+  const DEPLOY_SECRET = getDeploySecret();
   if (!DEPLOY_SECRET) {
+    console.error("[Deploy] DEPLOY_WEBHOOK_SECRET is not set. Deploy webhook is DISABLED.");
     return res.status(503).json({ error: "Deploy webhook is not configured" });
   }
   try {
