@@ -1,3 +1,4 @@
+import * as React from "react";
 import { CheckCircle, ClipboardCheck, Users, MessageSquare, Target } from 'lucide-react';
 
 export type EvalStage = 'self' | 'supervisor' | 'feedback' | 'action_plan';

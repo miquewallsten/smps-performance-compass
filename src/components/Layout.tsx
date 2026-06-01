@@ -1,3 +1,4 @@
+import * as React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAssignments, useEvaluations, useAnnouncements, useVacationRequests, useSystemStatus, useSystemModules } from '@/api/queries';
 import { useNavigate, useLocation, Outlet } from 'react-router-dom';

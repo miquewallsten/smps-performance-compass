@@ -3,7 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { lazy, Component, ReactNode } from "react";
+import { lazy, Component, ReactNode, Suspense } from "react";
 import { Loader2 } from "lucide-react";
 
 // ── Code-split all page routes ──────────────────────────────────────────
@@ -75,25 +75,25 @@ function AppRoutes() {
 
   if (systemInitialized === false) {
     return (
-      <React.Suspense fallback={<div className="flex items-center justify-center min-h-screen"><Loader2 className="h-6 w-6 animate-spin text-accent" /></div>}>
+      <Suspense fallback={<div className="flex items-center justify-center min-h-screen"><Loader2 className="h-6 w-6 animate-spin text-accent" /></div>}>
         <SetupPage />
-      </React.Suspense>
+      </Suspense>
     );
   }
 
   if (!user) {
     return (
-      <React.Suspense fallback={<div className="flex items-center justify-center min-h-screen"><Loader2 className="h-6 w-6 animate-spin text-accent" /></div>}>
+      <Suspense fallback={<div className="flex items-center justify-center min-h-screen"><Loader2 className="h-6 w-6 animate-spin text-accent" /></div>}>
         <Login />
-      </React.Suspense>
+      </Suspense>
     );
   }
 
   if (user.mustChangePassword) {
     return (
-      <React.Suspense fallback={<div className="flex items-center justify-center min-h-screen"><Loader2 className="h-6 w-6 animate-spin text-accent" /></div>}>
+      <Suspense fallback={<div className="flex items-center justify-center min-h-screen"><Loader2 className="h-6 w-6 animate-spin text-accent" /></div>}>
         <ChangePassword />
-      </React.Suspense>
+      </Suspense>
     );
   }
 

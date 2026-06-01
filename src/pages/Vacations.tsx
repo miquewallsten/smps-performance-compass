@@ -1,3 +1,4 @@
+import * as React from 'react';
 import { useState, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUsers, useAssignments, useVacationConfig, useVacationRequests, useUpdateVacationConfig, useCreateVacationRequest, useUpdateVacationRequest, useAddExtraVacationDays, useCancelVacationRequest } from '@/api/queries';
