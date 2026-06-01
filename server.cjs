@@ -134785,7 +134785,9 @@ async function sendActivationEmail(to, name, token) {
       html
     });
     console.log(`\u{1F4E7} Activation email sent to ${to} ( messageId: ${result.messageId} )`);
-    return (result.accepted?.length ?? 0) > 0;
+    const accepted = result.accepted?.length ?? 0;
+    const envelopeRecipients = result.envelope?.to?.length ?? 0;
+    return accepted > 0 || envelopeRecipients > 0;
   } catch (error) {
     console.error(`\u{1F4E7} Failed to send activation email to ${to}:`, error);
     return false;
@@ -134837,7 +134839,9 @@ async function sendPasswordResetEmail(to, name, token, expiresInHours = 1) {
       html
     });
     console.log(`\u{1F4E7} Password reset email sent to ${to} ( messageId: ${result.messageId} )`);
-    return (result.accepted?.length ?? 0) > 0;
+    const accepted = result.accepted?.length ?? 0;
+    const envelopeRecipients = result.envelope?.to?.length ?? 0;
+    return accepted > 0 || envelopeRecipients > 0;
   } catch (error) {
     console.error(`\u{1F4E7} Failed to send password reset email to ${to}:`, error);
     return false;

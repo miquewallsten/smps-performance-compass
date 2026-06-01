@@ -155,7 +155,10 @@ export async function sendActivationEmail(
       html,
     });
     console.log(`📧 Activation email sent to ${to} ( messageId: ${result.messageId} )`);
-    return (result.accepted?.length ?? 0) > 0;
+    // sendmail transport returns envelope.to but no accepted array
+    const accepted = result.accepted?.length ?? 0;
+    const envelopeRecipients = (result.envelope as any)?.to?.length ?? 0;
+    return accepted > 0 || envelopeRecipients > 0;
   } catch (error) {
     console.error(`📧 Failed to send activation email to ${to}:`, error);
     return false;
@@ -220,7 +223,10 @@ export async function sendPasswordResetEmail(
       html,
     });
     console.log(`📧 Password reset email sent to ${to} ( messageId: ${result.messageId} )`);
-    return (result.accepted?.length ?? 0) > 0;
+    // sendmail transport returns envelope.to but no accepted array
+    const accepted = result.accepted?.length ?? 0;
+    const envelopeRecipients = (result.envelope as any)?.to?.length ?? 0;
+    return accepted > 0 || envelopeRecipients > 0;
   } catch (error) {
     console.error(`📧 Failed to send password reset email to ${to}:`, error);
     return false;
