@@ -3,16 +3,23 @@ import { v4 as uuidv4 } from 'uuid';
 import { db } from '../db/connection.js';
 import { authMiddleware } from '../middleware/auth.js';
 import { requireAdmin } from '../middleware/rbac.js';
+import { hasRole, normalizeRole, isSupervisorOf } from '../middleware/permissions.js';
+import { auditLog, getClientIp, getUserAgent } from '../services/audit.js';
 
 const router = Router();
 
 // Helper to check if user can access a timeline
-function canAccessTimeline(requester: { id: string; role: string }, targetId: string): boolean {
+// Returns 'allow' or 'deny' so the caller can log the denial
+async function canAccessTimeline(requester: { id: string; role: string; position: string }, targetId: string): Promise<'allow' | 'deny'> {
   // User can always see their own timeline
-  if (requester.id === targetId) return true;
-  // Admins and super_users can see any user's timeline
-  if (requester.role === 'admin' || requester.role === 'super_user') return true;
-  return false;
+  if (requester.id === targetId) return 'allow';
+  // Admins, super_users, and socios can see any user's timeline
+  if (hasRole(requester as any, ['super_user', 'admin', 'socio'])) return 'allow';
+  // Direct supervisors can see their supervisee's timeline
+  if (await isSupervisorOf(requester.id, targetId)) return 'allow';
+  // Direct supervisor of the requester (reverse direction) — user can see their own supervisor's timeline
+  if (await isSupervisorOf(targetId, requester.id)) return 'allow';
+  return 'deny';
 }
 
 // ─── GET /api/users/:id/timeline ──────────────────────────────────────────
@@ -27,7 +34,9 @@ router.get('/:id/timeline', authMiddleware, async (req: Request, res: Response) 
       offset?: string;
     };
 
-    if (!canAccessTimeline(req.user!, id)) {
+    const accessResult = await canAccessTimeline(req.user!, id);
+    if (accessResult === 'deny') {
+      await auditLog({ action: 'authorization_denied', userId: req.user!.id, ipAddress: getClientIp(req), userAgent: getUserAgent(req), metadata: { resource: 'GET /api/users/:id/timeline', targetId: id, reason: 'unrelated employee' } });
       return res.status(403).json({ error: 'Access denied' });
     }
 

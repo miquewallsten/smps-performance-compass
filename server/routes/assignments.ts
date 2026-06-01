@@ -3,11 +3,17 @@ import { v4 as uuidv4 } from 'uuid';
 import { db, tx } from '../db/connection.js';
 import { authMiddleware } from '../middleware/auth.js';
 import { requireAdmin } from '../middleware/rbac.js';
+import { hasRole, normalizeRole, getSuperviseeIds } from '../middleware/permissions.js';
+import { auditLog, getClientIp, getUserAgent } from '../services/audit.js';
 import { logTimelineEvent } from './users.js';
 
 const router = Router();
 
 // ─── GET /api/assignments ────────────────────────────────────────────────
+// Authorization:
+// - super_user, admin, socio → see all assignments
+// - supervisor → assignments involving their direct supervisees
+// - employee → assignments involving themselves
 router.get('/', authMiddleware, async (req: Request, res: Response) => {
   try {
     const { period, employeeId, supervisorId } = req.query as {
@@ -16,6 +22,7 @@ router.get('/', authMiddleware, async (req: Request, res: Response) => {
       supervisorId?: string;
     };
 
+    // Build base query
     let sql = 'SELECT * FROM supervisor_assignments WHERE 1=1';
     const params: string[] = [];
 
@@ -32,8 +39,30 @@ router.get('/', authMiddleware, async (req: Request, res: Response) => {
       params.push(supervisorId);
     }
 
-    const assignments = await db.all(sql, params);
-    return res.json(assignments);
+    const role = normalizeRole(req.user!);
+
+    // super_user, admin, socio → see all (no filtering)
+    if (role === 'super_user' || role === 'admin' || role === 'socio') {
+      const assignments = await db.all(sql, params);
+      return res.json(assignments);
+    }
+
+    // supervisor → assignments where they are the supervisor
+    // employee → assignments where they are the employee OR supervisor
+    const userId = req.user!.id;
+    const superviseeIds = await getSuperviseeIds(userId, period);
+
+    // Build visibility filter: employee can see own assignments, supervisor can see supervisee assignments
+    const visibleIds = new Set<string>([userId, ...superviseeIds]);
+
+    const allAssignments = await db.all(sql, params);
+
+    // Filter in-memory since SQL filtering would require complex OR clauses
+    const filtered = allAssignments.filter((a: any) =>
+      visibleIds.has(a.employee_id) || visibleIds.has(a.supervisor_id)
+    );
+
+    return res.json(filtered);
   } catch (err) {
     console.error('List assignments error:', err);
     return res.status(500).json({ error: 'Internal server error' });

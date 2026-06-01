@@ -6,6 +6,8 @@ import { hashPassword, hashSecurityAnswer } from '../auth/security.js';
 import { authMiddleware } from '../middleware/auth.js';
 import { validate, SystemInitSchema } from '../middleware/validate.js';
 import { requireSuperUser } from '../middleware/rbac.js';
+import { hasRole, normalizeRole } from '../middleware/permissions.js';
+import { auditLog, getClientIp, getUserAgent } from '../services/audit.js';
 import { WORK_AREAS, POSITION_CATALOG } from '../data/positionCatalog.js';
 
 const router = Router();
@@ -149,8 +151,14 @@ router.post('/init', validate(SystemInitSchema), async (req: Request, res: Respo
 });
 
 // ─── GET /api/system/status ──────────────────────────────────────────────────
+// Authorization: super_user, admin only. Socio and employee denied.
 router.get('/status', authMiddleware, async (req: Request, res: Response) => {
   try {
+    if (!hasRole(req.user!, ['super_user', 'admin'])) {
+      await auditLog({ action: 'authorization_denied', userId: req.user!.id, ipAddress: getClientIp(req), userAgent: getUserAgent(req), metadata: { resource: 'GET /api/system/status', reason: 'non-admin access' } });
+      return res.status(403).json({ error: 'Admin access required' });
+    }
+
     const row = await db.get('SELECT * FROM system_status LIMIT 1');
     if (!row) {
       return res.status(404).json({ error: 'System not initialized' });

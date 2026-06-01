@@ -7,6 +7,7 @@ import { sendActivationEmail, sendAdminPasswordResetEmail } from '../services/em
 import { auditLog, getClientIp, getUserAgent } from '../services/audit.js';
 import { authMiddleware } from '../middleware/auth.js';
 import { requireAdmin, requireSelfOrAdmin } from '../middleware/rbac.js';
+import { hasRole, normalizeRole, isSupervisorOf } from '../middleware/permissions.js';
 import { validate, CreateUserSchema } from '../middleware/validate.js';
 
 const router = Router();
@@ -33,39 +34,18 @@ function sanitizeUser(user: Record<string, unknown>) {
 const SAFE_USER_COLUMNS = `id, name, email, position, practice_area, custom_position_id, location_id, is_admin, is_super_user, is_managing_partner, is_active, must_change_password, created_at, updated_at`;
 
 // ─── GET /api/users ──────────────────────────────────────────────────────
-// Visibility rules:
-// - SuperUser & Admin: see all active users (excluding other SuperUsers)
-// - Managing Partner (Socio Administrador): see all except SuperUsers
-// - Other Socios: see all except other Socios, Managing Partners, and Salary Partners
-// - Regular users: see users they supervise + themselves
+// Authorization: super_user, admin, socio → see all users
+// employee → 403 (user listing is admin-only; employees use GET /api/users/:id)
 router.get('/', authMiddleware, async (req: Request, res: Response) => {
   try {
+    // Only super_user, admin, and socio may list all users
+    if (!hasRole(req.user!, ['super_user', 'admin', 'socio'])) {
+      await auditLog({ action: 'authorization_denied', userId: req.user!.id, ipAddress: getClientIp(req), userAgent: getUserAgent(req), metadata: { resource: 'GET /api/users', reason: 'employee cannot list users' } });
+      return res.status(403).json({ error: 'Insufficient permissions' });
+    }
+
     const allUsers = await db.all(`SELECT ${SAFE_USER_COLUMNS} FROM users`);
-    const activeUsers = allUsers.filter((u: any) => u.is_active === 1 || u.is_active === true);
-    const role = req.user!.role;
-    
-    // SuperUser and Admin can see all users (including inactive for management)
-    if (role === 'super_user' || role === 'admin') {
-      return res.json(allUsers);
-    }
-    
-    // Regular user: fetch their assignments to determine visibility
-    const userId = req.user!.id;
-    const assignments = await db.all(
-      'SELECT employee_id, supervisor_id FROM supervisor_assignments WHERE (employee_id = ? OR supervisor_id = ?)',
-      [userId, userId]
-    );
-    
-    // Visible user IDs: self + anyone in their assignments
-    const visibleIds = new Set<string>([userId]);
-    for (const a of assignments) {
-      visibleIds.add(a.employee_id);
-      visibleIds.add(a.supervisor_id);
-    }
-    
-    // Regular users only see active users in their scope
-    const visibleUsers = activeUsers.filter((u: any) => visibleIds.has(u.id));
-    return res.json(visibleUsers);
+    return res.json(allUsers);
   } catch (err) {
     console.error('List users error:', err);
     return res.status(500).json({ error: 'Internal server error' });
@@ -73,15 +53,15 @@ router.get('/', authMiddleware, async (req: Request, res: Response) => {
 });
 
 // ─── GET /api/users/:id ────────────────────────────────────────────────────
-// Allow: self, admin, super_user, or anyone who supervises/is supervised by the target
+// Authorization: self, direct supervisor, admin, super_user, socio
+// Deny: unrelated employees → 403
 router.get('/:id', authMiddleware, async (req: Request, res: Response) => {
   try {
     const targetId = req.params.id;
-    const role = req.user!.role;
     const userId = req.user!.id;
 
-    // Admin and super_user can see any user
-    if (role === 'admin' || role === 'super_user') {
+    // Admin, super_user, and socio can see any user
+    if (hasRole(req.user!, ['super_user', 'admin', 'socio'])) {
       const user = await db.get(`SELECT ${SAFE_USER_COLUMNS} FROM users WHERE id = ?`, [targetId]) as Record<string, unknown> | undefined;
       if (!user) return res.status(404).json({ error: 'User not found' });
       return res.json(sanitizeUser(user));
@@ -94,18 +74,17 @@ router.get('/:id', authMiddleware, async (req: Request, res: Response) => {
       return res.json(sanitizeUser(user));
     }
 
-    // Check if user has an assignment relationship with target
-    const assignment = await db.get(
-      'SELECT id FROM supervisor_assignments WHERE (supervisor_id = ? AND employee_id = ?) OR (employee_id = ? AND supervisor_id = ?) LIMIT 1',
-      [userId, targetId, userId, targetId]
-    ) as Record<string, unknown> | undefined;
-
-    if (assignment) {
+    // Check if user is the direct supervisor of the target OR is supervised by the target
+    const isDirectSupervisor = await isSupervisorOf(userId, targetId);
+    const isSupervisedBy = await isSupervisorOf(targetId, userId);
+    if (isDirectSupervisor || isSupervisedBy) {
       const user = await db.get(`SELECT ${SAFE_USER_COLUMNS} FROM users WHERE id = ?`, [targetId]) as Record<string, unknown> | undefined;
       if (!user) return res.status(404).json({ error: 'User not found' });
       return res.json(sanitizeUser(user));
     }
 
+    // Unrelated employee — deny
+    await auditLog({ action: 'authorization_denied', userId: req.user!.id, ipAddress: getClientIp(req), userAgent: getUserAgent(req), metadata: { resource: 'GET /api/users/:id', targetId, reason: 'unrelated employee' } });
     return res.status(403).json({ error: 'Access denied' });
   } catch (err) {
     console.error('Get user error:', err);

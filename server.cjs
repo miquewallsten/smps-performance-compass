@@ -135098,6 +135098,130 @@ var auth_new_default = router2;
 var import_express3 = __toESM(require_express2(), 1);
 init_dist_node();
 init_tokens();
+
+// server/middleware/permissions.ts
+function normalizeRole(user) {
+  if (user.role === "super_user") return "super_user";
+  if (user.role === "admin") return "admin";
+  if (user.position === "socio" || user.position === "salary_partner") return "socio";
+  return "employee";
+}
+function hasRole(user, roles) {
+  const role = normalizeRole(user);
+  if (role === "super_user") return true;
+  if (role === "admin") return roles.some((r) => r === "admin" || r === "managing_partner");
+  if (role === "socio") return roles.includes("socio") || roles.includes("admin");
+  return roles.includes(role);
+}
+function isAdminOrSocio(user) {
+  return hasRole(user, ["super_user", "admin", "socio"]);
+}
+async function isSupervisorOf(supervisorId, employeeId, period) {
+  try {
+    const periodClause = period ? " AND period = ?" : "";
+    const params = period ? [supervisorId, employeeId, period] : [supervisorId, employeeId];
+    const assignment = await db.get(
+      `SELECT id FROM supervisor_assignments WHERE supervisor_id = ? AND employee_id = ?${periodClause} LIMIT 1`,
+      params
+    );
+    return !!assignment;
+  } catch {
+    return false;
+  }
+}
+async function getSuperviseeIds(supervisorId, period) {
+  try {
+    const periodClause = period ? " AND period = ?" : "";
+    const params = period ? [supervisorId, period] : [supervisorId];
+    const rows = await db.all(
+      `SELECT DISTINCT employee_id FROM supervisor_assignments WHERE supervisor_id = ?${periodClause}`,
+      params
+    );
+    return rows.map((r) => r.employee_id);
+  } catch {
+    return [];
+  }
+}
+async function logDenial(req, resource, reason) {
+  try {
+    await auditLog({
+      action: "authorization_denied",
+      // reuse — we'll add proper type later
+      userId: req.user?.id || null,
+      ipAddress: getClientIp(req),
+      userAgent: getUserAgent(req),
+      metadata: { type: "authorization_denied", resource, reason }
+    });
+  } catch {
+  }
+}
+function requireEntityAccess(opts) {
+  return async (req, res, next) => {
+    if (!req.user) return res.status(401).json({ error: "Not authenticated" });
+    const bypassRoles = opts.bypassRoles || ["super_user", "admin", "socio"];
+    if (hasRole(req.user, bypassRoles)) return next();
+    try {
+      const entityId = req.params.id;
+      if (!entityId) return res.status(400).json({ error: "Resource ID required" });
+      const entity = await db.get(opts.query, [...opts.queryParams || [], entityId]);
+      if (!entity) return res.status(404).json({ error: "Resource not found" });
+      const employeeId = entity.employee_id || entity.evaluated_id || entity.user_id;
+      if (employeeId && req.user.id === employeeId) {
+        req._entity = entity;
+        return next();
+      }
+      const supervisorId = entity.supervisor_id || entity.evaluator_id;
+      if (supervisorId && req.user.id === supervisorId) {
+        req._entity = entity;
+        return next();
+      }
+      if (opts.allowSupervisor !== false && employeeId) {
+        const period = entity.period || req.query.period;
+        if (await isSupervisorOf(req.user.id, employeeId, period)) {
+          req._entity = entity;
+          return next();
+        }
+      }
+      logDenial(req, req.path, `no entity access: not owner/supervisor of ${entityId}`);
+      return res.status(403).json({ error: "Access denied" });
+    } catch (err) {
+      console.error("Entity access check error:", err);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  };
+}
+function requireSupervisorAction(opts) {
+  return async (req, res, next) => {
+    if (!req.user) return res.status(401).json({ error: "Not authenticated" });
+    if (hasRole(req.user, ["super_user", "admin"])) return next();
+    try {
+      const entityId = req.params.id;
+      if (!entityId) return res.status(400).json({ error: "Resource ID required" });
+      const entity = await db.get(opts.query, [...opts.queryParams || [], entityId]);
+      if (!entity) return res.status(404).json({ error: "Resource not found" });
+      const supervisorId = entity.supervisor_id || entity.evaluator_id;
+      if (supervisorId && req.user.id === supervisorId) {
+        req._entity = entity;
+        return next();
+      }
+      const employeeId = entity.employee_id || entity.evaluated_id || entity.user_id;
+      if (employeeId) {
+        const period = entity.period || req.query.period;
+        if (await isSupervisorOf(req.user.id, employeeId, period)) {
+          req._entity = entity;
+          return next();
+        }
+      }
+      logDenial(req, req.path, `supervisor action denied for ${entityId}`);
+      return res.status(403).json({ error: "Only the supervisor or an administrator can perform this action" });
+    } catch (err) {
+      console.error("Supervisor action check error:", err);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  };
+}
+
+// server/routes/users.ts
 var router3 = (0, import_express3.Router)();
 async function getMaxAdminUsers() {
   try {
@@ -135114,24 +135238,12 @@ function sanitizeUser2(user) {
 var SAFE_USER_COLUMNS = `id, name, email, position, practice_area, custom_position_id, location_id, is_admin, is_super_user, is_managing_partner, is_active, must_change_password, created_at, updated_at`;
 router3.get("/", authMiddleware, async (req, res) => {
   try {
+    if (!hasRole(req.user, ["super_user", "admin", "socio"])) {
+      await auditLog({ action: "authorization_denied", userId: req.user.id, ipAddress: getClientIp(req), userAgent: getUserAgent(req), metadata: { resource: "GET /api/users", reason: "employee cannot list users" } });
+      return res.status(403).json({ error: "Insufficient permissions" });
+    }
     const allUsers = await db.all(`SELECT ${SAFE_USER_COLUMNS} FROM users`);
-    const activeUsers = allUsers.filter((u) => u.is_active === 1 || u.is_active === true);
-    const role = req.user.role;
-    if (role === "super_user" || role === "admin") {
-      return res.json(allUsers);
-    }
-    const userId = req.user.id;
-    const assignments = await db.all(
-      "SELECT employee_id, supervisor_id FROM supervisor_assignments WHERE (employee_id = ? OR supervisor_id = ?)",
-      [userId, userId]
-    );
-    const visibleIds = /* @__PURE__ */ new Set([userId]);
-    for (const a of assignments) {
-      visibleIds.add(a.employee_id);
-      visibleIds.add(a.supervisor_id);
-    }
-    const visibleUsers = activeUsers.filter((u) => visibleIds.has(u.id));
-    return res.json(visibleUsers);
+    return res.json(allUsers);
   } catch (err) {
     console.error("List users error:", err);
     return res.status(500).json({ error: "Internal server error" });
@@ -135140,9 +135252,8 @@ router3.get("/", authMiddleware, async (req, res) => {
 router3.get("/:id", authMiddleware, async (req, res) => {
   try {
     const targetId = req.params.id;
-    const role = req.user.role;
     const userId = req.user.id;
-    if (role === "admin" || role === "super_user") {
+    if (hasRole(req.user, ["super_user", "admin", "socio"])) {
       const user = await db.get(`SELECT ${SAFE_USER_COLUMNS} FROM users WHERE id = ?`, [targetId]);
       if (!user) return res.status(404).json({ error: "User not found" });
       return res.json(sanitizeUser2(user));
@@ -135152,15 +135263,14 @@ router3.get("/:id", authMiddleware, async (req, res) => {
       if (!user) return res.status(404).json({ error: "User not found" });
       return res.json(sanitizeUser2(user));
     }
-    const assignment = await db.get(
-      "SELECT id FROM supervisor_assignments WHERE (supervisor_id = ? AND employee_id = ?) OR (employee_id = ? AND supervisor_id = ?) LIMIT 1",
-      [userId, targetId, userId, targetId]
-    );
-    if (assignment) {
+    const isDirectSupervisor = await isSupervisorOf(userId, targetId);
+    const isSupervisedBy = await isSupervisorOf(targetId, userId);
+    if (isDirectSupervisor || isSupervisedBy) {
       const user = await db.get(`SELECT ${SAFE_USER_COLUMNS} FROM users WHERE id = ?`, [targetId]);
       if (!user) return res.status(404).json({ error: "User not found" });
       return res.json(sanitizeUser2(user));
     }
+    await auditLog({ action: "authorization_denied", userId: req.user.id, ipAddress: getClientIp(req), userAgent: getUserAgent(req), metadata: { resource: "GET /api/users/:id", targetId, reason: "unrelated employee" } });
     return res.status(403).json({ error: "Access denied" });
   } catch (err) {
     console.error("Get user error:", err);
@@ -135580,8 +135690,19 @@ router4.get("/", authMiddleware, async (req, res) => {
       sql += " AND supervisor_id = ?";
       params.push(supervisorId);
     }
-    const assignments = await db.all(sql, params);
-    return res.json(assignments);
+    const role = normalizeRole(req.user);
+    if (role === "super_user" || role === "admin" || role === "socio") {
+      const assignments = await db.all(sql, params);
+      return res.json(assignments);
+    }
+    const userId = req.user.id;
+    const superviseeIds = await getSuperviseeIds(userId, period);
+    const visibleIds = /* @__PURE__ */ new Set([userId, ...superviseeIds]);
+    const allAssignments = await db.all(sql, params);
+    const filtered = allAssignments.filter(
+      (a) => visibleIds.has(a.employee_id) || visibleIds.has(a.supervisor_id)
+    );
+    return res.json(filtered);
   } catch (err) {
     console.error("List assignments error:", err);
     return res.status(500).json({ error: "Internal server error" });
@@ -135804,6 +135925,10 @@ router5.post("/init", validate2(SystemInitSchema), async (req, res) => {
 });
 router5.get("/status", authMiddleware, async (req, res) => {
   try {
+    if (!hasRole(req.user, ["super_user", "admin"])) {
+      await auditLog({ action: "authorization_denied", userId: req.user.id, ipAddress: getClientIp(req), userAgent: getUserAgent(req), metadata: { resource: "GET /api/system/status", reason: "non-admin access" } });
+      return res.status(403).json({ error: "Admin access required" });
+    }
     const row = await db.get("SELECT * FROM system_status LIMIT 1");
     if (!row) {
       return res.status(404).json({ error: "System not initialized" });
@@ -135988,130 +136113,6 @@ router5.post("/backfill-timeline", authMiddleware, requireSuperUser, async (req,
 // server/routes/evaluations.ts
 var import_express6 = __toESM(require_express2(), 1);
 init_dist_node();
-
-// server/middleware/permissions.ts
-function normalizeRole(user) {
-  if (user.role === "super_user") return "super_user";
-  if (user.role === "admin") return "admin";
-  if (user.position === "socio" || user.position === "salary_partner") return "socio";
-  return "employee";
-}
-function hasRole(user, roles) {
-  const role = normalizeRole(user);
-  if (role === "super_user") return true;
-  if (role === "admin") return roles.some((r) => r === "admin" || r === "managing_partner");
-  if (role === "socio") return roles.includes("socio") || roles.includes("admin");
-  return roles.includes(role);
-}
-function isAdminOrSocio(user) {
-  return hasRole(user, ["super_user", "admin", "socio"]);
-}
-async function isSupervisorOf(supervisorId, employeeId, period) {
-  try {
-    const periodClause = period ? " AND period = ?" : "";
-    const params = period ? [supervisorId, employeeId, period] : [supervisorId, employeeId];
-    const assignment = await db.get(
-      `SELECT id FROM supervisor_assignments WHERE supervisor_id = ? AND employee_id = ?${periodClause} LIMIT 1`,
-      params
-    );
-    return !!assignment;
-  } catch {
-    return false;
-  }
-}
-async function getSuperviseeIds(supervisorId, period) {
-  try {
-    const periodClause = period ? " AND period = ?" : "";
-    const params = period ? [supervisorId, period] : [supervisorId];
-    const rows = await db.all(
-      `SELECT DISTINCT employee_id FROM supervisor_assignments WHERE supervisor_id = ?${periodClause}`,
-      params
-    );
-    return rows.map((r) => r.employee_id);
-  } catch {
-    return [];
-  }
-}
-async function logDenial(req, resource, reason) {
-  try {
-    await auditLog({
-      action: "authorization_denied",
-      // reuse — we'll add proper type later
-      userId: req.user?.id || null,
-      ipAddress: getClientIp(req),
-      userAgent: getUserAgent(req),
-      metadata: { type: "authorization_denied", resource, reason }
-    });
-  } catch {
-  }
-}
-function requireEntityAccess(opts) {
-  return async (req, res, next) => {
-    if (!req.user) return res.status(401).json({ error: "Not authenticated" });
-    const bypassRoles = opts.bypassRoles || ["super_user", "admin", "socio"];
-    if (hasRole(req.user, bypassRoles)) return next();
-    try {
-      const entityId = req.params.id;
-      if (!entityId) return res.status(400).json({ error: "Resource ID required" });
-      const entity = await db.get(opts.query, [...opts.queryParams || [], entityId]);
-      if (!entity) return res.status(404).json({ error: "Resource not found" });
-      const employeeId = entity.employee_id || entity.evaluated_id || entity.user_id;
-      if (employeeId && req.user.id === employeeId) {
-        req._entity = entity;
-        return next();
-      }
-      const supervisorId = entity.supervisor_id || entity.evaluator_id;
-      if (supervisorId && req.user.id === supervisorId) {
-        req._entity = entity;
-        return next();
-      }
-      if (opts.allowSupervisor !== false && employeeId) {
-        const period = entity.period || req.query.period;
-        if (await isSupervisorOf(req.user.id, employeeId, period)) {
-          req._entity = entity;
-          return next();
-        }
-      }
-      logDenial(req, req.path, `no entity access: not owner/supervisor of ${entityId}`);
-      return res.status(403).json({ error: "Access denied" });
-    } catch (err) {
-      console.error("Entity access check error:", err);
-      return res.status(500).json({ error: "Internal server error" });
-    }
-  };
-}
-function requireSupervisorAction(opts) {
-  return async (req, res, next) => {
-    if (!req.user) return res.status(401).json({ error: "Not authenticated" });
-    if (hasRole(req.user, ["super_user", "admin"])) return next();
-    try {
-      const entityId = req.params.id;
-      if (!entityId) return res.status(400).json({ error: "Resource ID required" });
-      const entity = await db.get(opts.query, [...opts.queryParams || [], entityId]);
-      if (!entity) return res.status(404).json({ error: "Resource not found" });
-      const supervisorId = entity.supervisor_id || entity.evaluator_id;
-      if (supervisorId && req.user.id === supervisorId) {
-        req._entity = entity;
-        return next();
-      }
-      const employeeId = entity.employee_id || entity.evaluated_id || entity.user_id;
-      if (employeeId) {
-        const period = entity.period || req.query.period;
-        if (await isSupervisorOf(req.user.id, employeeId, period)) {
-          req._entity = entity;
-          return next();
-        }
-      }
-      logDenial(req, req.path, `supervisor action denied for ${entityId}`);
-      return res.status(403).json({ error: "Only the supervisor or an administrator can perform this action" });
-    } catch (err) {
-      console.error("Supervisor action check error:", err);
-      return res.status(500).json({ error: "Internal server error" });
-    }
-  };
-}
-
-// server/routes/evaluations.ts
 var router6 = (0, import_express6.Router)();
 async function fetchResponses(evaluationIds) {
   if (evaluationIds.length === 0) return /* @__PURE__ */ new Map();
@@ -141253,16 +141254,20 @@ var deploy_default = router17;
 var import_express18 = __toESM(require_express2(), 1);
 init_dist_node();
 var router18 = (0, import_express18.Router)();
-function canAccessTimeline(requester, targetId) {
-  if (requester.id === targetId) return true;
-  if (requester.role === "admin" || requester.role === "super_user") return true;
-  return false;
+async function canAccessTimeline(requester, targetId) {
+  if (requester.id === targetId) return "allow";
+  if (hasRole(requester, ["super_user", "admin", "socio"])) return "allow";
+  if (await isSupervisorOf(requester.id, targetId)) return "allow";
+  if (await isSupervisorOf(targetId, requester.id)) return "allow";
+  return "deny";
 }
 router18.get("/:id/timeline", authMiddleware, async (req, res) => {
   try {
     const { id } = req.params;
     const { type, from, to, limit, offset } = req.query;
-    if (!canAccessTimeline(req.user, id)) {
+    const accessResult = await canAccessTimeline(req.user, id);
+    if (accessResult === "deny") {
+      await auditLog({ action: "authorization_denied", userId: req.user.id, ipAddress: getClientIp(req), userAgent: getUserAgent(req), metadata: { resource: "GET /api/users/:id/timeline", targetId: id, reason: "unrelated employee" } });
       return res.status(403).json({ error: "Access denied" });
     }
     const user = await db.get("SELECT id FROM users WHERE id = ?", [id]);
