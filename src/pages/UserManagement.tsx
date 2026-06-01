@@ -5,7 +5,9 @@ import { useUsers, useEvaluations, useUpdateUser, useResetUserPassword, useCreat
 import { Position } from '@/types';
 import { getPositionLabel } from '@/lib/evaluationConfig';
 import { getLegalHierarchy, getAdminHierarchy } from '@/lib/evaluationConfig';
-import { Eye, Key, UserCheck, UserX, Search, Plus, Trash2, Star, Shield, Pencil, MapPin, Clock, Loader2 } from 'lucide-react';
+import { Eye, Key, UserCheck, UserX, Search, Plus, Trash2, Star, Shield, Pencil, MapPin, Clock, Loader2, X, ChevronRight } from 'lucide-react';
+import { ScoreBadge } from '@/components/shared/ScoreBadge';
+import { calculateScore, getScoreLabels } from '@/lib/evaluationConfig';
 import EvaluationViewer from '@/components/EvaluationViewer';
 import { toast } from 'sonner';
 
@@ -389,7 +391,64 @@ export default function UserManagement() {
         </div>
       )}
 
-      {evalToView && <EvaluationViewer evaluation={evalToView} onClose={() => setViewingEval(null)} />}
+      {/* User Evaluations Modal */}
+      {selectedUser && !viewingEval && (() => {
+        const targetUser = users.find(u => u.id === selectedUser);
+        if (!targetUser) return null;
+        const userEvals = evaluations.filter(e => e.evaluatedId === selectedUser);
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/20 backdrop-blur-sm" onClick={() => setSelectedUser(null)}>
+            <div className="smps-surface-elevated w-full max-w-lg shadow-xl max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-display text-base font-semibold">Evaluaciones de {targetUser.name}</h3>
+                <button onClick={() => setSelectedUser(null)} className="p-1.5 rounded-lg hover:bg-muted transition-colors"><X className="h-4 w-4" /></button>
+              </div>
+              {userEvals.length === 0 ? (
+                <p className="text-sm text-muted-foreground py-6 text-center">Sin evaluaciones registradas</p>
+              ) : (
+                <div className="space-y-2">
+                  {userEvals.map(ev => {
+                    const evaluator = users.find(u => u.id === ev.evaluatorId);
+                    const score = ev.responses && ev.responses.length > 0
+                      ? calculateScore(
+                          ev.responses.map((r: any) => ({ id: r.questionId, weight: r.weight || 1 })),
+                          ev.responses.map((r: any) => ({ questionId: r.questionId, score: r.score, notApplicable: r.notApplicable, noElements: r.noElements })),
+                          ev.naApprovals || {}
+                        )
+                      : null;
+                    return (
+                      <button
+                        key={ev.id}
+                        onClick={() => setViewingEval(ev.id)}
+                        className="w-full text-left p-3 rounded-lg border border-border hover:bg-muted/50 transition-colors flex items-center justify-between gap-3"
+                      >
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-medium px-1.5 py-0.5 rounded bg-accent/10 text-accent">{ev.period}</span>
+                            <span className="text-xs px-1.5 py-0.5 rounded bg-muted">{ev.type === 'self' ? 'Autoevaluación' : 'Supervisor'}</span>
+                          </div>
+                          {ev.type === 'supervisor' && evaluator && (
+                            <p className="text-xs text-muted-foreground mt-1">Evaluador: {evaluator.name}</p>
+                          )}
+                          {ev.completedAt && (
+                            <p className="text-xs text-muted-foreground mt-0.5">Completada: {new Date(ev.completedAt).toLocaleDateString('es-MX')}</p>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <ScoreBadge value={score} size="md" />
+                          <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })()}
+
+      {evalToView && <EvaluationViewer evaluation={evalToView} onClose={() => { setViewingEval(null); }} />}
     </div>
   );
 }
