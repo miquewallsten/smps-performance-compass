@@ -224,7 +224,7 @@ router.delete('/requests/:id', authMiddleware, async (req: Request, res: Respons
 });
 
 // ─── GET /api/vacations/config ──────────────────────────────────────────────
-router.get('/config', authMiddleware, requireAdmin, async (_req: Request, res: Response) => {
+router.get('/config', authMiddleware, async (_req: Request, res: Response) => {
   try {
     const config = await db.all('SELECT * FROM vacation_config');
     return res.json(config);
@@ -254,6 +254,35 @@ router.patch('/config', authMiddleware, requireAdmin, async (req: Request, res: 
     return res.status(500).json({ error: 'Internal server error' });
   }
 });
+
+// ─── GET /api/vacations/extra-days ──────────────────────────────────────────
+router.get('/extra-days', authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const { userId, period } = req.query as { userId?: string; period?: string };
+    const role = normalizeRole(req.user!);
+
+    // Admin/super_user/socio can see all, employees see own only
+    if (hasRole(req.user!, ['super_user', 'admin', 'socio'])) {
+      let sql = 'SELECT * FROM extra_vacation_days WHERE 1=1';
+      const params: string[] = [];
+      if (userId) { sql += ' AND user_id = ?'; params.push(userId); }
+      if (period) { sql += ' AND period = ?'; params.push(period); }
+      const extras = await db.all(sql, params);
+      return res.json(extras);
+    }
+
+    // Regular employee: see own extra days only
+    let sql = 'SELECT * FROM extra_vacation_days WHERE user_id = ?';
+    const params: string[] = [req.user!.id];
+    if (period) { sql += ' AND period = ?'; params.push(period); }
+    const extras = await db.all(sql, params);
+    return res.json(extras);
+  } catch (err) {
+    console.error('Get extra days error:', err);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 
 // ─── POST /api/vacations/extra-days ──────────────────────────────────────────
 router.post('/extra-days', authMiddleware, requireAdmin, async (req: Request, res: Response) => {

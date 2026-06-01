@@ -5,7 +5,7 @@ import { useUsers, useEvaluations, useAssignments, useActionPlans, usePeriods } 
 import { Evaluation } from '@/types';
 import { getPositionLabel, getScoreLabels, getSectionWeights, SECTION_ORDER } from '@/lib/evaluationConfig';
 import { useCurrentPeriod } from '@/hooks/useCurrentPeriod';
-import { useTemplateQuestions } from '@/hooks/useEvaluationConfig';
+import { useTemplateQuestions, useFullTemplate } from '@/hooks/useEvaluationConfig';
 import { Eye, FileText, ChevronDown, ChevronUp, Lock, Key } from 'lucide-react';
 
 export default function SettingsPage() {
@@ -19,6 +19,8 @@ export default function SettingsPage() {
   const periods = periodsData.map((p: any) => p.period).sort();
   const [selectedPeriod, setSelectedPeriod] = useState(currentPeriod);
   const [expandedEval, setExpandedEval] = useState<string | null>(null);
+  const { data: templateData } = useFullTemplate(currentUser?.position || 'socio', currentUser?.practiceArea || 'corporativo');
+  const templateQuestions = templateData?.questions || [];
 
   // Password change state
   const [showPasswordForm, setShowPasswordForm] = useState(false);
@@ -65,8 +67,7 @@ export default function SettingsPage() {
   const renderEvalDetail = (ev: Evaluation) => {
     const evaluated = users.find(u => u.id === ev.evaluatedId);
     if (!evaluated) return null;
-    // Note: customQuestions is now DB-driven via useTemplateQuestions
-    const questions = []; // Will be replaced with template data
+    const questions = templateQuestions.map((q: any) => ({ id: q.questionId || q.id, category: q.category, text: q.questionText || q.text, weight: q.weight, section: q.section, practiceArea: q.practiceArea }));
     const categories = [...new Set(questions.map(q => q.category))];
 
     return (

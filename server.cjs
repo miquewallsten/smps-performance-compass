@@ -139415,7 +139415,7 @@ router12.delete("/requests/:id", authMiddleware, async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router12.get("/config", authMiddleware, requireAdmin, async (_req, res) => {
+router12.get("/config", authMiddleware, async (_req, res) => {
   try {
     const config = await db.all("SELECT * FROM vacation_config");
     return res.json(config);
