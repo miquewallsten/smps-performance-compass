@@ -1,4 +1,5 @@
 import express from 'express';
+import helmet from 'helmet';
 import cors from 'cors';
 import path from 'path';
 import dotenv from 'dotenv';
@@ -40,12 +41,14 @@ import { authMiddleware } from './middleware/auth.js';
 import { hasRole } from './middleware/permissions.js';
 import { auditLog, getClientIp, getUserAgent } from './services/audit.js';
 import { startBackupScheduler } from './services/backup-scheduler.js';
+import { startSessionCleanupScheduler } from './services/session-cleanup.js';
 
 // Rate limiter for new auth endpoints
 import rateLimit from 'express-rate-limit';
 const activationLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 10, message: { error: 'Demasiados intentos. Intenta de nuevo en 15 minutos.' }, standardHeaders: true, legacyHeaders: false });
 const passwordResetRequestLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 3, message: { error: 'Demasiados intentos de reseteo. Intenta de nuevo en 15 minutos.' }, standardHeaders: true, legacyHeaders: false });
 const passwordResetCompleteLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 5, message: { error: 'Demasiados intentos. Intenta de nuevo en 15 minutos.' }, standardHeaders: true, legacyHeaders: false });
+const deployLimiter = rateLimit({ windowMs: 60 * 1000, max: 3, message: { error: 'Demasiados intentos de despliegue.' }, standardHeaders: true, legacyHeaders: false });
 
 dotenv.config();
 
@@ -70,6 +73,12 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 app.use(express.json());
+
+// ─── SECURITY HEADERS ─────────────────────────────────────────────────────────
+app.use(helmet({
+  contentSecurityPolicy: false, // Disabled for SPA; CSP should be added later
+  crossOriginEmbedderPolicy: false, // Allow iframe embedding for future integrations
+}));
 
 // Trust proxy for rate limiting behind Passenger/nginx
 app.set("trust proxy", 1);
@@ -135,7 +144,7 @@ app.use('/api/work-areas', workAreaRoutes);
 app.use('/api/locations', locationRoutes);
 app.use('/api/periods', periodRoutes);
 app.use('/api/copilot', copilotRoutes);
-app.use('/api/deploy', deployRoutes);
+app.use('/api/deploy', deployLimiter, deployRoutes);
 app.use('/api/users', timelineRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/notifications', notificationRoutes);
@@ -205,6 +214,7 @@ async function startServer() {
     app.listen(PORT, () => {
       console.log(`Server running on port ${PORT} in ${process.env.NODE_ENV || 'development'} mode`);
       startBackupScheduler();
+      startSessionCleanupScheduler();
       startNotificationScheduler();
       // Refresh analytics tables on startup, then every 30 minutes
       refreshAnalytics();

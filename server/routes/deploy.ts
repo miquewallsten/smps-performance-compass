@@ -5,13 +5,28 @@ import { promisify } from 'util';
 
 const router = Router();
 const execAsync = promisify(exec);
-const DEPLOY_SECRET = process.env.DEPLOY_WEBHOOK_SECRET || 'smps-deploy-webhook-2025';
+
+// ─── SECURITY: Deploy webhook secret must be set in environment ──────────
+// No default value allowed. If missing, the endpoint is disabled.
+const DEPLOY_SECRET = (() => {
+  const secret = process.env.DEPLOY_WEBHOOK_SECRET;
+  if (!secret) {
+    console.error('⚠️  DEPLOY_WEBHOOK_SECRET is not set. Deploy webhook is DISABLED.');
+    return null;
+  }
+  return secret;
+})();
 
 // ─── POST /api/deploy ──────────────────────────────────────────────────────
 // Called by GitHub Actions after pushing built artifacts
 // NOTE: Build artifacts (dist/, server.cjs) are uploaded via SCP by CI,
 // they are NOT in git. This webhook only handles git pull + npm install + restart.
 router.post('/', async (req: Request, res: Response) => {
+  // If no secret configured, endpoint is disabled
+  if (!DEPLOY_SECRET) {
+    return res.status(503).json({ error: 'Deploy webhook is not configured' });
+  }
+
   try {
     const signature = req.headers['x-hub-signature-256'] as string;
     if (!signature) {

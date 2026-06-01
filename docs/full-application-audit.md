@@ -169,7 +169,7 @@ The application is production-ready for its current scale (14 users). It will re
 
 ### HIGH — Ollama API Key in Plaintext
 
-**Production .env contains:** `OLLAMA_API_KEY=42861d8c531d4528a77137876e6e7ec3.vW97sgyFn2wAoPoeFAwhwA7f`
+**Production .env contains:** `OLLAMA_API_KEY=NEEDS_NEW_KEY_FROM_OLLAMA_PROVIDER`
 **Also in:** copilot_config table
 **Impact:** Anyone with DB read access can extract the API key
 **Fix:** Encrypt API keys at rest, decrypt only at runtime

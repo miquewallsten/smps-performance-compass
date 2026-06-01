@@ -12,7 +12,7 @@ const router = Router();
 
 // Helper to strip sensitive fields from a user row
 function sanitizeUser(user: Record<string, unknown>) {
-  const { password_hash, security_answer, ...safe } = user;
+  const { password_hash, security_answer, activation_token_hash, ...safe } = user;
   return {
     ...safe,
     isAdmin: Boolean(user.is_admin),
@@ -29,24 +29,30 @@ router.post('/login', validate(LoginSchema), async (req: Request, res: Response)
     const { email, password } = req.body as { email?: string; password?: string };
 
     if (!email || !password) {
-      return res.status(400).json({ error: 'Email and password are required' });
+      return res.status(401).json({ error: 'Invalid credentials' });
     }
 
     const user = await db.get('SELECT * FROM users WHERE email = ?', [email]) as Record<string, unknown> | undefined;
 
+    // SECURITY: All login failures return identical response to prevent account enumeration.
+    // Detailed reasons are logged to audit only.
     if (!user) {
+      // Unknown email — log but return same message
+      await auditLog({ action: 'login_failed_unknown_email', ipAddress: getClientIp(req), userAgent: getUserAgent(req), metadata: { email } });
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
     if (!user.is_active) {
+      // Deactivated account — log but return same message
       await auditLog({ action: 'login_failed_deactivated', userId: user.id as string, ipAddress: getClientIp(req), userAgent: getUserAgent(req) });
-      return res.status(403).json({ error: 'Account is deactivated' });
+      return res.status(401).json({ error: 'Invalid credentials' });
     }
 
     // Check if account has been activated (has a password set)
     if (!user.password_hash) {
+      // Unactivated account — log but return same message
       await auditLog({ action: 'login_failed_not_activated', userId: user.id as string, ipAddress: getClientIp(req), userAgent: getUserAgent(req) });
-      return res.status(403).json({ error: 'Cuenta no activada. Revise su correo electrónico para el enlace de activación.' });
+      return res.status(401).json({ error: 'Invalid credentials' });
     }
 
     const passwordHash = user.password_hash as string;

@@ -126870,6 +126870,550 @@ __export(index_exports, {
 });
 module.exports = __toCommonJS(index_exports);
 var import_express21 = __toESM(require_express2(), 1);
+
+// node_modules/helmet/index.mjs
+var dangerouslyDisableDefaultSrc = /* @__PURE__ */ Symbol("dangerouslyDisableDefaultSrc");
+var SHOULD_BE_QUOTED = /* @__PURE__ */ new Set(["none", "self", "strict-dynamic", "report-sample", "inline-speculation-rules", "unsafe-inline", "unsafe-eval", "unsafe-hashes", "wasm-unsafe-eval"]);
+var getDefaultDirectives = () => ({
+  "default-src": ["'self'"],
+  "base-uri": ["'self'"],
+  "font-src": ["'self'", "https:", "data:"],
+  "form-action": ["'self'"],
+  "frame-ancestors": ["'self'"],
+  "img-src": ["'self'", "data:"],
+  "object-src": ["'none'"],
+  "script-src": ["'self'"],
+  "script-src-attr": ["'none'"],
+  "style-src": ["'self'", "https:", "'unsafe-inline'"],
+  "upgrade-insecure-requests": []
+});
+var dashify = (str) => str.replace(/[A-Z]/g, (capitalLetter) => "-" + capitalLetter.toLowerCase());
+var assertDirectiveValueIsValid = (directiveName, directiveValue) => {
+  if (/;|,/.test(directiveValue)) {
+    throw new Error(`Content-Security-Policy received an invalid directive value for ${JSON.stringify(directiveName)}`);
+  }
+};
+var assertDirectiveValueEntryIsValid = (directiveName, directiveValueEntry) => {
+  if (SHOULD_BE_QUOTED.has(directiveValueEntry) || directiveValueEntry.startsWith("nonce-") || directiveValueEntry.startsWith("sha256-") || directiveValueEntry.startsWith("sha384-") || directiveValueEntry.startsWith("sha512-")) {
+    throw new Error(`Content-Security-Policy received an invalid directive value for ${JSON.stringify(directiveName)}. ${JSON.stringify(directiveValueEntry)} should be quoted`);
+  }
+};
+function normalizeDirectives(options) {
+  const defaultDirectives = getDefaultDirectives();
+  const { useDefaults = true, directives: rawDirectives = defaultDirectives } = options;
+  const result = /* @__PURE__ */ new Map();
+  const directiveNamesSeen = /* @__PURE__ */ new Set();
+  const directivesExplicitlyDisabled = /* @__PURE__ */ new Set();
+  for (const rawDirectiveName in rawDirectives) {
+    if (!Object.hasOwn(rawDirectives, rawDirectiveName)) {
+      continue;
+    }
+    if (rawDirectiveName.length === 0 || /[^a-zA-Z0-9-]/.test(rawDirectiveName)) {
+      throw new Error(`Content-Security-Policy received an invalid directive name ${JSON.stringify(rawDirectiveName)}`);
+    }
+    const directiveName = dashify(rawDirectiveName);
+    if (directiveNamesSeen.has(directiveName)) {
+      throw new Error(`Content-Security-Policy received a duplicate directive ${JSON.stringify(directiveName)}`);
+    }
+    directiveNamesSeen.add(directiveName);
+    const rawDirectiveValue = rawDirectives[rawDirectiveName];
+    let directiveValue;
+    if (rawDirectiveValue === null) {
+      if (directiveName === "default-src") {
+        throw new Error("Content-Security-Policy needs a default-src but it was set to `null`. If you really want to disable it, set it to `contentSecurityPolicy.dangerouslyDisableDefaultSrc`.");
+      }
+      directivesExplicitlyDisabled.add(directiveName);
+      continue;
+    } else if (typeof rawDirectiveValue === "string") {
+      directiveValue = [rawDirectiveValue];
+    } else if (!rawDirectiveValue) {
+      throw new Error(`Content-Security-Policy received an invalid directive value for ${JSON.stringify(directiveName)}`);
+    } else if (rawDirectiveValue === dangerouslyDisableDefaultSrc) {
+      if (directiveName === "default-src") {
+        directivesExplicitlyDisabled.add("default-src");
+        continue;
+      } else {
+        throw new Error(`Content-Security-Policy: tried to disable ${JSON.stringify(directiveName)} as if it were default-src; simply omit the key`);
+      }
+    } else {
+      directiveValue = rawDirectiveValue;
+    }
+    for (const element of directiveValue) {
+      if (typeof element !== "string") continue;
+      assertDirectiveValueIsValid(directiveName, element);
+      assertDirectiveValueEntryIsValid(directiveName, element);
+    }
+    result.set(directiveName, directiveValue);
+  }
+  if (useDefaults) {
+    Object.entries(defaultDirectives).forEach(([defaultDirectiveName, defaultDirectiveValue]) => {
+      if (!result.has(defaultDirectiveName) && !directivesExplicitlyDisabled.has(defaultDirectiveName)) {
+        result.set(defaultDirectiveName, defaultDirectiveValue);
+      }
+    });
+  }
+  if (!result.size) {
+    throw new Error("Content-Security-Policy has no directives. Either set some or disable the header");
+  }
+  if (!result.has("default-src") && !directivesExplicitlyDisabled.has("default-src")) {
+    throw new Error("Content-Security-Policy needs a default-src but none was provided. If you really want to disable it, set it to `contentSecurityPolicy.dangerouslyDisableDefaultSrc`.");
+  }
+  return result;
+}
+function getHeaderValue(req, res, normalizedDirectives) {
+  const result = [];
+  for (const [directiveName, rawDirectiveValue] of normalizedDirectives) {
+    let directiveValue = "";
+    for (const element of rawDirectiveValue) {
+      if (typeof element === "function") {
+        const newElement = element(req, res);
+        assertDirectiveValueEntryIsValid(directiveName, newElement);
+        directiveValue += " " + newElement;
+      } else {
+        directiveValue += " " + element;
+      }
+    }
+    if (directiveValue) {
+      assertDirectiveValueIsValid(directiveName, directiveValue);
+      result.push(`${directiveName}${directiveValue}`);
+    } else {
+      result.push(directiveName);
+    }
+  }
+  return result.join(";");
+}
+var contentSecurityPolicy = function contentSecurityPolicy2(options = {}) {
+  const headerName = options.reportOnly ? "Content-Security-Policy-Report-Only" : "Content-Security-Policy";
+  const normalizedDirectives = normalizeDirectives(options);
+  return function contentSecurityPolicyMiddleware(req, res, next) {
+    const result = getHeaderValue(req, res, normalizedDirectives);
+    if (result instanceof Error) {
+      next(result);
+    } else {
+      res.setHeader(headerName, result);
+      next();
+    }
+  };
+};
+contentSecurityPolicy.getDefaultDirectives = getDefaultDirectives;
+contentSecurityPolicy.dangerouslyDisableDefaultSrc = dangerouslyDisableDefaultSrc;
+var ALLOWED_POLICIES$2 = /* @__PURE__ */ new Set(["require-corp", "credentialless", "unsafe-none"]);
+function getHeaderValueFromOptions$6({ policy = "require-corp" }) {
+  if (ALLOWED_POLICIES$2.has(policy)) {
+    return policy;
+  } else {
+    throw new Error(`Cross-Origin-Embedder-Policy does not support the ${JSON.stringify(policy)} policy`);
+  }
+}
+function crossOriginEmbedderPolicy(options = {}) {
+  const headerValue = getHeaderValueFromOptions$6(options);
+  return function crossOriginEmbedderPolicyMiddleware(_req, res, next) {
+    res.setHeader("Cross-Origin-Embedder-Policy", headerValue);
+    next();
+  };
+}
+var ALLOWED_POLICIES$1 = /* @__PURE__ */ new Set(["same-origin", "same-origin-allow-popups", "noopener-allow-popups", "unsafe-none"]);
+function getHeaderValueFromOptions$5({ policy = "same-origin" }) {
+  if (ALLOWED_POLICIES$1.has(policy)) {
+    return policy;
+  } else {
+    throw new Error(`Cross-Origin-Opener-Policy does not support the ${JSON.stringify(policy)} policy`);
+  }
+}
+function crossOriginOpenerPolicy(options = {}) {
+  const headerValue = getHeaderValueFromOptions$5(options);
+  return function crossOriginOpenerPolicyMiddleware(_req, res, next) {
+    res.setHeader("Cross-Origin-Opener-Policy", headerValue);
+    next();
+  };
+}
+var ALLOWED_POLICIES = /* @__PURE__ */ new Set(["same-origin", "same-site", "cross-origin"]);
+function getHeaderValueFromOptions$4({ policy = "same-origin" }) {
+  if (ALLOWED_POLICIES.has(policy)) {
+    return policy;
+  } else {
+    throw new Error(`Cross-Origin-Resource-Policy does not support the ${JSON.stringify(policy)} policy`);
+  }
+}
+function crossOriginResourcePolicy(options = {}) {
+  const headerValue = getHeaderValueFromOptions$4(options);
+  return function crossOriginResourcePolicyMiddleware(_req, res, next) {
+    res.setHeader("Cross-Origin-Resource-Policy", headerValue);
+    next();
+  };
+}
+function originAgentCluster() {
+  return function originAgentClusterMiddleware(_req, res, next) {
+    res.setHeader("Origin-Agent-Cluster", "?1");
+    next();
+  };
+}
+var ALLOWED_TOKENS = /* @__PURE__ */ new Set(["no-referrer", "no-referrer-when-downgrade", "same-origin", "origin", "strict-origin", "origin-when-cross-origin", "strict-origin-when-cross-origin", "unsafe-url", ""]);
+function getHeaderValueFromOptions$3({ policy = ["no-referrer"] }) {
+  const tokens = typeof policy === "string" ? [policy] : policy;
+  if (tokens.length === 0) {
+    throw new Error("Referrer-Policy received no policy tokens");
+  }
+  const tokensSeen = /* @__PURE__ */ new Set();
+  tokens.forEach((token) => {
+    if (!ALLOWED_TOKENS.has(token)) {
+      throw new Error(`Referrer-Policy received an unexpected policy token ${JSON.stringify(token)}`);
+    } else if (tokensSeen.has(token)) {
+      throw new Error(`Referrer-Policy received a duplicate policy token ${JSON.stringify(token)}`);
+    }
+    tokensSeen.add(token);
+  });
+  return tokens.join(",");
+}
+function referrerPolicy(options = {}) {
+  const headerValue = getHeaderValueFromOptions$3(options);
+  return function referrerPolicyMiddleware(_req, res, next) {
+    res.setHeader("Referrer-Policy", headerValue);
+    next();
+  };
+}
+var DEFAULT_MAX_AGE = 365 * 24 * 60 * 60;
+function parseMaxAge(value = DEFAULT_MAX_AGE) {
+  if (value >= 0 && Number.isFinite(value)) {
+    return Math.floor(value);
+  } else {
+    throw new Error(`Strict-Transport-Security: ${JSON.stringify(value)} is not a valid value for maxAge. Please choose a positive integer.`);
+  }
+}
+function getHeaderValueFromOptions$2(options) {
+  if ("maxage" in options) {
+    throw new Error("Strict-Transport-Security received an unsupported property, `maxage`. Did you mean to pass `maxAge`?");
+  }
+  if ("includeSubdomains" in options) {
+    throw new Error('Strict-Transport-Security middleware should use `includeSubDomains` instead of `includeSubdomains`. (The correct one has an uppercase "D".)');
+  }
+  const directives = [`max-age=${parseMaxAge(options.maxAge)}`];
+  if (options.includeSubDomains === void 0 || options.includeSubDomains) {
+    directives.push("includeSubDomains");
+  }
+  if (options.preload) {
+    directives.push("preload");
+  }
+  return directives.join("; ");
+}
+function strictTransportSecurity(options = {}) {
+  const headerValue = getHeaderValueFromOptions$2(options);
+  return function strictTransportSecurityMiddleware(_req, res, next) {
+    res.setHeader("Strict-Transport-Security", headerValue);
+    next();
+  };
+}
+function xContentTypeOptions() {
+  return function xContentTypeOptionsMiddleware(_req, res, next) {
+    res.setHeader("X-Content-Type-Options", "nosniff");
+    next();
+  };
+}
+function xDnsPrefetchControl(options = {}) {
+  const headerValue = options.allow ? "on" : "off";
+  return function xDnsPrefetchControlMiddleware(_req, res, next) {
+    res.setHeader("X-DNS-Prefetch-Control", headerValue);
+    next();
+  };
+}
+function xDownloadOptions() {
+  return function xDownloadOptionsMiddleware(_req, res, next) {
+    res.setHeader("X-Download-Options", "noopen");
+    next();
+  };
+}
+function getHeaderValueFromOptions$1({ action: action2 = "sameorigin" }) {
+  const normalizedAction = typeof action2 === "string" ? action2.toUpperCase() : action2;
+  switch (normalizedAction) {
+    case "SAME-ORIGIN":
+      return "SAMEORIGIN";
+    case "DENY":
+    case "SAMEORIGIN":
+      return normalizedAction;
+    default:
+      throw new Error(`X-Frame-Options received an invalid action ${JSON.stringify(action2)}`);
+  }
+}
+function xFrameOptions(options = {}) {
+  const headerValue = getHeaderValueFromOptions$1(options);
+  return function xFrameOptionsMiddleware(_req, res, next) {
+    res.setHeader("X-Frame-Options", headerValue);
+    next();
+  };
+}
+var ALLOWED_PERMITTED_POLICIES = /* @__PURE__ */ new Set(["none", "master-only", "by-content-type", "all"]);
+function getHeaderValueFromOptions({ permittedPolicies = "none" }) {
+  if (ALLOWED_PERMITTED_POLICIES.has(permittedPolicies)) {
+    return permittedPolicies;
+  } else {
+    throw new Error(`X-Permitted-Cross-Domain-Policies does not support ${JSON.stringify(permittedPolicies)}`);
+  }
+}
+function xPermittedCrossDomainPolicies(options = {}) {
+  const headerValue = getHeaderValueFromOptions(options);
+  return function xPermittedCrossDomainPoliciesMiddleware(_req, res, next) {
+    res.setHeader("X-Permitted-Cross-Domain-Policies", headerValue);
+    next();
+  };
+}
+function xPoweredBy() {
+  return function xPoweredByMiddleware(_req, res, next) {
+    res.removeHeader("X-Powered-By");
+    next();
+  };
+}
+function xXssProtection() {
+  return function xXssProtectionMiddleware(_req, res, next) {
+    res.setHeader("X-XSS-Protection", "0");
+    next();
+  };
+}
+function getMiddlewareFunctionsFromOptions(options) {
+  const result = [];
+  switch (options.contentSecurityPolicy) {
+    case void 0:
+    case true:
+      result.push(contentSecurityPolicy());
+      break;
+    case false:
+      break;
+    default:
+      result.push(contentSecurityPolicy(options.contentSecurityPolicy));
+      break;
+  }
+  switch (options.crossOriginEmbedderPolicy) {
+    case void 0:
+    case false:
+      break;
+    case true:
+      result.push(crossOriginEmbedderPolicy());
+      break;
+    default:
+      result.push(crossOriginEmbedderPolicy(options.crossOriginEmbedderPolicy));
+      break;
+  }
+  switch (options.crossOriginOpenerPolicy) {
+    case void 0:
+    case true:
+      result.push(crossOriginOpenerPolicy());
+      break;
+    case false:
+      break;
+    default:
+      result.push(crossOriginOpenerPolicy(options.crossOriginOpenerPolicy));
+      break;
+  }
+  switch (options.crossOriginResourcePolicy) {
+    case void 0:
+    case true:
+      result.push(crossOriginResourcePolicy());
+      break;
+    case false:
+      break;
+    default:
+      result.push(crossOriginResourcePolicy(options.crossOriginResourcePolicy));
+      break;
+  }
+  switch (options.originAgentCluster) {
+    case void 0:
+    case true:
+      result.push(originAgentCluster());
+      break;
+    case false:
+      break;
+    default:
+      console.warn("Origin-Agent-Cluster does not take options. Remove the property to silence this warning.");
+      result.push(originAgentCluster());
+      break;
+  }
+  switch (options.referrerPolicy) {
+    case void 0:
+    case true:
+      result.push(referrerPolicy());
+      break;
+    case false:
+      break;
+    default:
+      result.push(referrerPolicy(options.referrerPolicy));
+      break;
+  }
+  if ("strictTransportSecurity" in options && "hsts" in options) {
+    throw new Error("Strict-Transport-Security option was specified twice. Remove the `hsts` option to fix this error.");
+  }
+  const strictTransportSecurityOption = options.strictTransportSecurity ?? options.hsts;
+  switch (strictTransportSecurityOption) {
+    case void 0:
+    case true:
+      result.push(strictTransportSecurity());
+      break;
+    case false:
+      break;
+    default:
+      result.push(strictTransportSecurity(strictTransportSecurityOption));
+      break;
+  }
+  if ("xContentTypeOptions" in options && "noSniff" in options) {
+    throw new Error("X-Content-Type-Options option was specified twice. Remove the `noSniff` option to fix this error.");
+  }
+  const xContentTypeOptionsOption = options.xContentTypeOptions ?? options.noSniff;
+  switch (xContentTypeOptionsOption) {
+    case void 0:
+    case true:
+      result.push(xContentTypeOptions());
+      break;
+    case false:
+      break;
+    default:
+      console.warn("X-Content-Type-Options does not take options. Remove the property to silence this warning.");
+      result.push(xContentTypeOptions());
+      break;
+  }
+  if ("xDnsPrefetchControl" in options && "dnsPrefetchControl" in options) {
+    throw new Error("X-DNS-Prefetch-Control option was specified twice. Remove the `dnsPrefetchControl` option to fix this error.");
+  }
+  const xDnsPrefetchControlOption = options.xDnsPrefetchControl ?? options.dnsPrefetchControl;
+  switch (xDnsPrefetchControlOption) {
+    case void 0:
+    case true:
+      result.push(xDnsPrefetchControl());
+      break;
+    case false:
+      break;
+    default:
+      result.push(xDnsPrefetchControl(xDnsPrefetchControlOption));
+      break;
+  }
+  if ("xDownloadOptions" in options && "ieNoOpen" in options) {
+    throw new Error("X-Download-Options option was specified twice. Remove the `ieNoOpen` option to fix this error.");
+  }
+  const xDownloadOptionsOption = options.xDownloadOptions ?? options.ieNoOpen;
+  switch (xDownloadOptionsOption) {
+    case void 0:
+    case true:
+      result.push(xDownloadOptions());
+      break;
+    case false:
+      break;
+    default:
+      console.warn("X-Download-Options does not take options. Remove the property to silence this warning.");
+      result.push(xDownloadOptions());
+      break;
+  }
+  if ("xFrameOptions" in options && "frameguard" in options) {
+    throw new Error("X-Frame-Options option was specified twice. Remove the `frameguard` option to fix this error.");
+  }
+  const xFrameOptionsOption = options.xFrameOptions ?? options.frameguard;
+  switch (xFrameOptionsOption) {
+    case void 0:
+    case true:
+      result.push(xFrameOptions());
+      break;
+    case false:
+      break;
+    default:
+      result.push(xFrameOptions(xFrameOptionsOption));
+      break;
+  }
+  if ("xPermittedCrossDomainPolicies" in options && "permittedCrossDomainPolicies" in options) {
+    throw new Error("X-Permitted-Cross-Domain-Policies option was specified twice. Remove the `permittedCrossDomainPolicies` option to fix this error.");
+  }
+  const xPermittedCrossDomainPoliciesOption = options.xPermittedCrossDomainPolicies ?? options.permittedCrossDomainPolicies;
+  switch (xPermittedCrossDomainPoliciesOption) {
+    case void 0:
+    case true:
+      result.push(xPermittedCrossDomainPolicies());
+      break;
+    case false:
+      break;
+    default:
+      result.push(xPermittedCrossDomainPolicies(xPermittedCrossDomainPoliciesOption));
+      break;
+  }
+  if ("xPoweredBy" in options && "hidePoweredBy" in options) {
+    throw new Error("X-Powered-By option was specified twice. Remove the `hidePoweredBy` option to fix this error.");
+  }
+  const xPoweredByOption = options.xPoweredBy ?? options.hidePoweredBy;
+  switch (xPoweredByOption) {
+    case void 0:
+    case true:
+      result.push(xPoweredBy());
+      break;
+    case false:
+      break;
+    default:
+      console.warn("X-Powered-By does not take options. Remove the property to silence this warning.");
+      result.push(xPoweredBy());
+      break;
+  }
+  if ("xXssProtection" in options && "xssFilter" in options) {
+    throw new Error("X-XSS-Protection option was specified twice. Remove the `xssFilter` option to fix this error.");
+  }
+  const xXssProtectionOption = options.xXssProtection ?? options.xssFilter;
+  switch (xXssProtectionOption) {
+    case void 0:
+    case true:
+      result.push(xXssProtection());
+      break;
+    case false:
+      break;
+    default:
+      console.warn("X-XSS-Protection does not take options. Remove the property to silence this warning.");
+      result.push(xXssProtection());
+      break;
+  }
+  return result;
+}
+var helmet = Object.assign(
+  function helmet2(options = {}) {
+    if (options.constructor?.name === "IncomingMessage") {
+      throw new Error("It appears you have done something like `app.use(helmet)`, but it should be `app.use(helmet())`.");
+    }
+    const middlewareFunctions = getMiddlewareFunctionsFromOptions(options);
+    return function helmetMiddleware(req, res, next) {
+      let middlewareIndex = 0;
+      (function internalNext(err) {
+        if (err) {
+          next(err);
+          return;
+        }
+        const middlewareFunction = middlewareFunctions[middlewareIndex];
+        if (middlewareFunction) {
+          middlewareIndex++;
+          middlewareFunction(req, res, internalNext);
+        } else {
+          next();
+        }
+      })();
+    };
+  },
+  {
+    contentSecurityPolicy,
+    crossOriginEmbedderPolicy,
+    crossOriginOpenerPolicy,
+    crossOriginResourcePolicy,
+    originAgentCluster,
+    referrerPolicy,
+    strictTransportSecurity,
+    xContentTypeOptions,
+    xDnsPrefetchControl,
+    xDownloadOptions,
+    xFrameOptions,
+    xPermittedCrossDomainPolicies,
+    xPoweredBy,
+    xXssProtection,
+    // Legacy aliases
+    dnsPrefetchControl: xDnsPrefetchControl,
+    xssFilter: xXssProtection,
+    permittedCrossDomainPolicies: xPermittedCrossDomainPolicies,
+    ieNoOpen: xDownloadOptions,
+    noSniff: xContentTypeOptions,
+    frameguard: xFrameOptions,
+    hidePoweredBy: xPoweredBy,
+    hsts: strictTransportSecurity
+  }
+);
+
+// server/index.ts
 var import_cors = __toESM(require_lib4(), 1);
 var import_path2 = __toESM(require("path"), 1);
 var import_dotenv = __toESM(require_main(), 1);
@@ -130718,6 +131262,14 @@ async function authMiddleware(req, res, next) {
     const blocked = await db.get("SELECT id FROM sessions WHERE token_hash = ?", [tokenHash]);
     if (blocked) {
       return res.status(401).json({ error: "Token revoked" });
+    }
+    const user = await db.get("SELECT id, is_active FROM users WHERE id = ?", [payload.sub]);
+    if (!user) {
+      return res.status(401).json({ error: "User not found" });
+    }
+    if (!user.is_active) {
+      await db.run("DELETE FROM sessions WHERE user_id = ?", [payload.sub]);
+      return res.status(401).json({ error: "Account deactivated" });
     }
   } catch (err) {
     return res.status(500).json({ error: "Database error" });
@@ -136383,7 +136935,7 @@ var SystemInitSchema = external_exports.object({
 // server/routes/auth.ts
 var router3 = (0, import_express3.Router)();
 function sanitizeUser(user) {
-  const { password_hash, security_answer, ...safe } = user;
+  const { password_hash, security_answer, activation_token_hash, ...safe } = user;
   return {
     ...safe,
     isAdmin: Boolean(user.is_admin),
@@ -136397,19 +136949,20 @@ router3.post("/login", validate2(LoginSchema), async (req, res) => {
   try {
     const { email, password } = req.body;
     if (!email || !password) {
-      return res.status(400).json({ error: "Email and password are required" });
+      return res.status(401).json({ error: "Invalid credentials" });
     }
     const user = await db.get("SELECT * FROM users WHERE email = ?", [email]);
     if (!user) {
+      await auditLog({ action: "login_failed_unknown_email", ipAddress: getClientIp(req), userAgent: getUserAgent(req), metadata: { email } });
       return res.status(401).json({ error: "Invalid credentials" });
     }
     if (!user.is_active) {
       await auditLog({ action: "login_failed_deactivated", userId: user.id, ipAddress: getClientIp(req), userAgent: getUserAgent(req) });
-      return res.status(403).json({ error: "Account is deactivated" });
+      return res.status(401).json({ error: "Invalid credentials" });
     }
     if (!user.password_hash) {
       await auditLog({ action: "login_failed_not_activated", userId: user.id, ipAddress: getClientIp(req), userAgent: getUserAgent(req) });
-      return res.status(403).json({ error: "Cuenta no activada. Revise su correo electr\xF3nico para el enlace de activaci\xF3n." });
+      return res.status(401).json({ error: "Invalid credentials" });
     }
     const passwordHash = user.password_hash;
     const valid = await verifyPassword(password, passwordHash);
@@ -142899,8 +143452,18 @@ var import_child_process = require("child_process");
 var import_util4 = require("util");
 var router19 = (0, import_express19.Router)();
 var execAsync = (0, import_util4.promisify)(import_child_process.exec);
-var DEPLOY_SECRET = process.env.DEPLOY_WEBHOOK_SECRET || "smps-deploy-webhook-2025";
+var DEPLOY_SECRET = (() => {
+  const secret = process.env.DEPLOY_WEBHOOK_SECRET;
+  if (!secret) {
+    console.error("\u26A0\uFE0F  DEPLOY_WEBHOOK_SECRET is not set. Deploy webhook is DISABLED.");
+    return null;
+  }
+  return secret;
+})();
 router19.post("/", async (req, res) => {
+  if (!DEPLOY_SECRET) {
+    return res.status(503).json({ error: "Deploy webhook is not configured" });
+  }
   try {
     const signature = req.headers["x-hub-signature-256"];
     if (!signature) {
@@ -144183,10 +144746,87 @@ function startBackupScheduler() {
   console.log("[Backup] Scheduler started (daily DB at 3AM CST, weekly source Sun 4AM CST)");
 }
 
+// server/services/session-cleanup.ts
+function toMySQLDate2(d) {
+  return d.toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "");
+}
+async function runSessionCleanup() {
+  const now3 = toMySQLDate2(/* @__PURE__ */ new Date());
+  const result = {
+    expiredSessions: 0,
+    expiredResetTokens: 0,
+    expiredActivationTokens: 0,
+    inactiveUserSessions: 0
+  };
+  try {
+    const sessionsResult = await db.run("DELETE FROM sessions WHERE expires_at < ?", [now3]);
+    result.expiredSessions = sessionsResult.changes || 0;
+    if (result.expiredSessions > 0) {
+      console.log(`[SessionCleanup] Removed ${result.expiredSessions} expired sessions`);
+    }
+    const resetResult = await db.run(
+      "DELETE FROM password_reset_tokens WHERE expires_at < ? AND used_at IS NOT NULL",
+      [now3]
+    );
+    result.expiredResetTokens = resetResult.changes || 0;
+    const expiredUnused = await db.run(
+      "UPDATE password_reset_tokens SET used_at = ? WHERE expires_at < ? AND used_at IS NULL",
+      [now3, now3]
+    );
+    if (result.expiredResetTokens > 0 || (expiredUnused.changes || 0) > 0) {
+      console.log(`[SessionCleanup] Cleaned ${result.expiredResetTokens} used expired reset tokens, marked ${expiredUnused.changes || 0} unused expired tokens`);
+    }
+    const activationResult = await db.run(
+      "UPDATE users SET activation_token_hash = NULL, activation_expires_at = NULL WHERE activation_expires_at IS NOT NULL AND activation_expires_at < ? AND activated_at IS NOT NULL",
+      [now3]
+    );
+    result.expiredActivationTokens = activationResult.changes || 0;
+    if (result.expiredActivationTokens > 0) {
+      console.log(`[SessionCleanup] Cleared ${result.expiredActivationTokens} expired activation tokens`);
+    }
+    const inactiveSessionsResult = await db.run(
+      "DELETE FROM sessions WHERE user_id IN (SELECT id FROM users WHERE is_active = 0)"
+    );
+    result.inactiveUserSessions = inactiveSessionsResult.changes || 0;
+    if (result.inactiveUserSessions > 0) {
+      console.log(`[SessionCleanup] Removed ${result.inactiveUserSessions} sessions for inactive users`);
+    }
+    console.log(`[SessionCleanup] Cleanup complete: ${result.expiredSessions} sessions, ${result.expiredResetTokens} reset tokens, ${result.expiredActivationTokens} activation tokens, ${result.inactiveUserSessions} inactive user sessions`);
+    return result;
+  } catch (err) {
+    console.error("[SessionCleanup] Error during cleanup:", err);
+    throw err;
+  }
+}
+function startSessionCleanupScheduler() {
+  if (process.env.NODE_ENV !== "production") {
+    console.log("[SessionCleanup] Scheduler disabled in development mode");
+    return;
+  }
+  let lastCleanup = null;
+  const check = () => {
+    const now3 = /* @__PURE__ */ new Date();
+    const cstOffset = -6 * 60;
+    const cst = new Date(now3.getTime() + cstOffset * 60 * 1e3);
+    const todayStr = cst.toISOString().slice(0, 10);
+    const hour = cst.getUTCHours();
+    if (hour === 3 && lastCleanup !== todayStr) {
+      lastCleanup = todayStr;
+      runSessionCleanup().catch((err) => console.error("[SessionCleanup] Scheduled cleanup failed:", err));
+    }
+  };
+  setInterval(check, 60 * 60 * 1e3);
+  setTimeout(() => {
+    runSessionCleanup().catch((err) => console.error("[SessionCleanup] Startup cleanup failed:", err));
+  }, 90 * 1e3);
+  console.log("[SessionCleanup] Scheduler started (daily at 3AM CST)");
+}
+
 // server/index.ts
 var activationLimiter = rate_limit_default({ windowMs: 15 * 60 * 1e3, max: 10, message: { error: "Demasiados intentos. Intenta de nuevo en 15 minutos." }, standardHeaders: true, legacyHeaders: false });
 var passwordResetRequestLimiter = rate_limit_default({ windowMs: 15 * 60 * 1e3, max: 3, message: { error: "Demasiados intentos de reseteo. Intenta de nuevo en 15 minutos." }, standardHeaders: true, legacyHeaders: false });
 var passwordResetCompleteLimiter = rate_limit_default({ windowMs: 15 * 60 * 1e3, max: 5, message: { error: "Demasiados intentos. Intenta de nuevo en 15 minutos." }, standardHeaders: true, legacyHeaders: false });
+var deployLimiter = rate_limit_default({ windowMs: 60 * 1e3, max: 3, message: { error: "Demasiados intentos de despliegue." }, standardHeaders: true, legacyHeaders: false });
 import_dotenv.default.config();
 if (process.env.NODE_ENV === "production" && !process.env.JWT_SECRET) {
   console.error("FATAL: JWT_SECRET environment variable is not set. Refusing to start in production without it.");
@@ -144203,6 +144843,12 @@ if (process.env.NODE_ENV === "production") {
   app.use((0, import_cors.default)());
 }
 app.use(import_express21.default.json());
+app.use(helmet({
+  contentSecurityPolicy: false,
+  // Disabled for SPA; CSP should be added later
+  crossOriginEmbedderPolicy: false
+  // Allow iframe embedding for future integrations
+}));
 app.set("trust proxy", 1);
 app.use("/api/auth/login", loginLimiter);
 app.use("/api/auth/reset-password", resetPasswordLimiter);
@@ -144254,7 +144900,7 @@ app.use("/api/work-areas", work_areas_default);
 app.use("/api/locations", locations_default);
 app.use("/api/periods", periods_default);
 app.use("/api/copilot", copilot_default);
-app.use("/api/deploy", deploy_default);
+app.use("/api/deploy", deployLimiter, deploy_default);
 app.use("/api/users", timeline_default);
 app.use("/api/analytics", analytics_default);
 app.use("/api/notifications", notifications_default);
@@ -144306,6 +144952,7 @@ async function startServer() {
     app.listen(PORT, () => {
       console.log(`Server running on port ${PORT} in ${process.env.NODE_ENV || "development"} mode`);
       startBackupScheduler();
+      startSessionCleanupScheduler();
       startNotificationScheduler();
       refreshAnalytics();
       setInterval(() => refreshAnalytics(), 30 * 60 * 1e3);

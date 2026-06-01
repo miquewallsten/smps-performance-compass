@@ -30,6 +30,17 @@ export async function authMiddleware(req: Request, res: Response, next: NextFunc
     if (blocked) {
       return res.status(401).json({ error: 'Token revoked' });
     }
+
+    // SECURITY: Verify the user still exists and is active
+    const user = await db.get('SELECT id, is_active FROM users WHERE id = ?', [payload.sub]) as Record<string, unknown> | undefined;
+    if (!user) {
+      return res.status(401).json({ error: 'User not found' });
+    }
+    if (!user.is_active) {
+      // Inactive user — revoke all their sessions to force re-authentication
+      await db.run('DELETE FROM sessions WHERE user_id = ?', [payload.sub]);
+      return res.status(401).json({ error: 'Account deactivated' });
+    }
   } catch (err) {
     return res.status(500).json({ error: 'Database error' });
   }

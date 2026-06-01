@@ -2,8 +2,6 @@ import * as React from 'react';
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePeriods, useCreatePeriod } from '@/api/queries';
-import { PeriodConfig } from '@/types';
-import { usePeriods } from '@/api/queries';
 import { Calendar, Save } from 'lucide-react';
 import { toast } from 'sonner';
 
