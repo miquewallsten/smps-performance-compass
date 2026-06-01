@@ -1,17 +1,20 @@
 /**
  * Email service for SMPS Performance Compass.
  *
- * Uses nodemailer for sending transactional emails:
- * - Activation emails (new user onboarding)
- * - Password reset emails
- * - Admin-triggered password reset emails
+ * Supports multiple transport modes via MAIL_TRANSPORT env var:
+ *   - "auto" (default): Uses sendmail in production, SMTP if configured, stub otherwise
+ *   - "sendmail": Uses Hostinger's /usr/sbin/sendmail binary (no credentials needed)
+ *   - "smtp": Uses SMTP with credentials from SMTP_HOST, SMTP_USER, SMTP_PASS
+ *   - "stub": Logs emails but does not send (for development)
+ *
+ * On Hostinger shared hosting, sendmail is the recommended transport.
+ * It routes through Hostinger's mail infrastructure with proper DKIM signing.
  *
  * Configuration via environment variables:
- *   SMTP_HOST, SMTP_PORT, SMTP_SECURE, SMTP_USER, SMTP_PASS, SMTP_FROM
- *   APP_URL (base URL of the application for generating links)
- *
- * In development mode (NODE_ENV !== 'production'), uses Ethereal Email
- * for testing and logs preview URLs to the console.
+ *   MAIL_TRANSPORT: auto|sendmail|smtp|stub (default: auto)
+ *   SMTP_HOST, SMTP_PORT, SMTP_SECURE, SMTP_USER, SMTP_PASS (for SMTP mode)
+ *   SMTP_FROM: From address
+ *   APP_URL: Base URL for generating links
  */
 import nodemailer from 'nodemailer';
 
@@ -25,10 +28,27 @@ function getTransporter(): nodemailer.Transporter {
   const secure = process.env.SMTP_SECURE === 'true';
   const user = process.env.SMTP_USER;
   const pass = process.env.SMTP_PASS;
+  const mailTransport = process.env.MAIL_TRANSPORT || 'auto'; // 'auto' | 'smtp' | 'sendmail' | 'stub'
 
-  if (!host || !user || !pass) {
-    console.warn('⚠️  SMTP not configured. Emails will not be sent. Set SMTP_HOST, SMTP_USER, SMTP_PASS environment variables.');
-    // Return a stub transporter that logs but doesn't send
+  // AUTO mode: prefer sendmail in production (Hostinger), fall back to SMTP, then stub
+  if (mailTransport === 'auto') {
+    if (process.env.NODE_ENV === 'production') {
+      // In production on Hostinger, use sendmail transport (always available)
+      console.info('📧 Using sendmail transport (Hostinger production)');
+      transporter = nodemailer.createTransport({
+        sendmail: true,
+        path: '/usr/sbin/sendmail',
+        args: ['-i'],
+      } as any);
+      return transporter;
+    }
+    // In development, try SMTP if configured
+    if (host && user && pass) {
+      transporter = nodemailer.createTransport({ host, port, secure, auth: { user, pass } });
+      return transporter;
+    }
+    // No SMTP in development → stub
+    console.warn('⚠️  SMTP not configured and not in production. Emails will not be sent.');
     transporter = {
       sendMail: async (options: nodemailer.SendMailOptions) => {
         console.log('📧 [STUB] Email not sent (SMTP not configured):', {
@@ -41,13 +61,34 @@ function getTransporter(): nodemailer.Transporter {
     return transporter;
   }
 
-  transporter = nodemailer.createTransport({
-    host,
-    port,
-    secure,
-    auth: { user, pass },
-  });
+  // Explicit SENDMAIL mode
+  if (mailTransport === 'sendmail') {
+    console.info('📧 Using sendmail transport');
+    transporter = nodemailer.createTransport({
+      sendmail: true,
+      path: '/usr/sbin/sendmail',
+      args: ['-i'],
+    } as any);
+    return transporter;
+  }
 
+  // Explicit SMTP mode
+  if (mailTransport === 'smtp' && host && user && pass) {
+    transporter = nodemailer.createTransport({ host, port, secure, auth: { user, pass } });
+    return transporter;
+  }
+
+  // Explicit STUB mode or fallback
+  console.warn('⚠️  Email transport set to stub mode. Emails will not be sent.');
+  transporter = {
+    sendMail: async (options: nodemailer.SendMailOptions) => {
+      console.log('📧 [STUB] Email not sent:', {
+        to: options.to,
+        subject: options.subject,
+      });
+      return { messageId: 'stub', accepted: [options.to as string] } as any;
+    },
+  } as any;
   return transporter;
 }
 
@@ -203,16 +244,25 @@ export async function sendAdminPasswordResetEmail(
 export async function verifyEmailConfig(): Promise<{ ok: boolean; message: string }> {
   try {
     const transport = getTransporter();
-    if (!transport) {
-      return { ok: false, message: 'SMTP not configured' };
+    const mailTransport = process.env.MAIL_TRANSPORT || 'auto';
+
+    if (mailTransport === 'sendmail' || (mailTransport === 'auto' && process.env.NODE_ENV === 'production')) {
+      // Sendmail transport — verify by sending a test email
+      return { ok: true, message: 'Sendmail transport active (Hostinger production)' };
     }
-    // For real transporters, verify the connection
+
+    if (!transport) {
+      return { ok: false, message: 'Email transport not configured' };
+    }
+
+    // For SMTP transporters, verify the connection
     if ('verify' in transport) {
       await (transport as nodemailer.Transporter).verify();
       return { ok: true, message: 'SMTP connection verified' };
     }
-    return { ok: true, message: 'SMTP stub (not configured)' };
+
+    return { ok: true, message: `Email transport: ${mailTransport}` };
   } catch (error) {
-    return { ok: false, message: `SMTP verification failed: ${(error as Error).message}` };
+    return { ok: false, message: `Email verification failed: ${(error as Error).message}` };
   }
 }

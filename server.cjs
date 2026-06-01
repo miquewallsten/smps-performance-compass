@@ -134682,8 +134682,22 @@ function getTransporter() {
   const secure = process.env.SMTP_SECURE === "true";
   const user = process.env.SMTP_USER;
   const pass = process.env.SMTP_PASS;
-  if (!host || !user || !pass) {
-    console.warn("\u26A0\uFE0F  SMTP not configured. Emails will not be sent. Set SMTP_HOST, SMTP_USER, SMTP_PASS environment variables.");
+  const mailTransport = process.env.MAIL_TRANSPORT || "auto";
+  if (mailTransport === "auto") {
+    if (process.env.NODE_ENV === "production") {
+      console.info("\u{1F4E7} Using sendmail transport (Hostinger production)");
+      transporter = import_nodemailer.default.createTransport({
+        sendmail: true,
+        path: "/usr/sbin/sendmail",
+        args: ["-i"]
+      });
+      return transporter;
+    }
+    if (host && user && pass) {
+      transporter = import_nodemailer.default.createTransport({ host, port, secure, auth: { user, pass } });
+      return transporter;
+    }
+    console.warn("\u26A0\uFE0F  SMTP not configured and not in production. Emails will not be sent.");
     transporter = {
       sendMail: async (options) => {
         console.log("\u{1F4E7} [STUB] Email not sent (SMTP not configured):", {
@@ -134695,12 +134709,29 @@ function getTransporter() {
     };
     return transporter;
   }
-  transporter = import_nodemailer.default.createTransport({
-    host,
-    port,
-    secure,
-    auth: { user, pass }
-  });
+  if (mailTransport === "sendmail") {
+    console.info("\u{1F4E7} Using sendmail transport");
+    transporter = import_nodemailer.default.createTransport({
+      sendmail: true,
+      path: "/usr/sbin/sendmail",
+      args: ["-i"]
+    });
+    return transporter;
+  }
+  if (mailTransport === "smtp" && host && user && pass) {
+    transporter = import_nodemailer.default.createTransport({ host, port, secure, auth: { user, pass } });
+    return transporter;
+  }
+  console.warn("\u26A0\uFE0F  Email transport set to stub mode. Emails will not be sent.");
+  transporter = {
+    sendMail: async (options) => {
+      console.log("\u{1F4E7} [STUB] Email not sent:", {
+        to: options.to,
+        subject: options.subject
+      });
+      return { messageId: "stub", accepted: [options.to] };
+    }
+  };
   return transporter;
 }
 function getFromAddress() {
