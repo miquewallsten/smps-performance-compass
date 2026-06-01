@@ -5,6 +5,9 @@ import { v4 as uuidv4 } from 'uuid';
 import { db } from '../../db/connection.js';
 import { hashPassword } from '../../auth/security.js';
 import { Tool, USER_FIELDS } from '../types.js';
+import { generateTokenPair, toMySQLDate } from '../../services/tokens.js';
+import { sendActivationEmail } from '../../services/email.js';
+import { auditLog } from '../../services/audit.js';
 
 export const usersTool: Tool = {
   name: 'users',
@@ -41,33 +44,49 @@ export const usersTool: Tool = {
     if (act === 'search') return JSON.stringify(await db.all('SELECT id,name,email,position,is_admin,is_managing_partner,is_active FROM users WHERE name LIKE ? OR email LIKE ? LIMIT 50', [`%${args.q}%`, `%${args.q}%`]));
     if (act === 'get') { const u = await db.get(`SELECT ${USER_FIELDS} FROM users WHERE id=?`, [args.id]); return u ? JSON.stringify(u) : JSON.stringify({ error: 'No encontrado' }); }
     if (act === 'create') {
-      if (!args.name || !args.email || !args.position || !args.password) return JSON.stringify({ error: 'Campos obligatorios: name, email, position, password' });
-      if ((args.password as string).length < 6) return JSON.stringify({ error: 'Contraseña min 6' });
+      if (!args.name || !args.email || !args.position) return JSON.stringify({ error: 'Campos obligatorios: name, email, position' });
+      // SECURITY: Copilot never sets passwords. Always use activation flow.
+      if (args.password) return JSON.stringify({ error: 'Copilot no puede asignar contraseñas. Se enviará un enlace de activación al usuario.' });
       const ex = await db.get('SELECT id FROM users WHERE email=?', [args.email]);
       if (ex) return JSON.stringify({ error: 'Email ya existe' });
       const isAdmin = typeof args.is_admin === 'string' ? (args.is_admin === 'true' || args.is_admin === '1') : !!args.is_admin;
       const isMP = typeof args.is_managing_partner === 'string' ? (args.is_managing_partner === 'true' || args.is_managing_partner === '1') : !!args.is_managing_partner;
       if (isMP) { const currentMPs = await db.all('SELECT id, name FROM users WHERE is_managing_partner = 1 AND is_super_user = 0'); if (currentMPs.length >= 1) return JSON.stringify({ error: `Solo puede haber 1 Socio Administrador. Actualmente es ${currentMPs[0].name}` }); }
       if (isAdmin && !isMP) { const maxAdmCfg = await db.get('SELECT max_admin_users FROM system_status WHERE id=1') as any; const maxAdm = maxAdmCfg?.max_admin_users || 3; const currentAdmins = await db.all('SELECT id FROM users WHERE is_admin = 1 AND is_super_user = 0'); if (currentAdmins.length >= maxAdm) return JSON.stringify({ error: `Máximo ${maxAdm} Usuario Administrador permitidos` }); }
-      const id = uuidv4(), hp = await hashPassword(args.password as string), now = new Date().toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, '');
+      const id = uuidv4(), now = new Date().toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, '');
+      // Generate activation token instead of password
+      const { token, tokenHash } = generateTokenPair();
+      const expiresAt = toMySQLDate(new Date(Date.now() + 48 * 60 * 60 * 1000));
       let derivedPosition = args.position as string;
       let derivedArea = (args.practice_area as string) || null;
       if (args.custom_position_id) {
         const posRow = await db.get('SELECT cp.base_position, cp.work_area_id, wa.level FROM custom_positions cp JOIN work_areas wa ON cp.work_area_id = wa.id WHERE cp.id = ?', [args.custom_position_id]);
         if (posRow) { derivedPosition = posRow.base_position; derivedArea = posRow.level === 'legal' ? posRow.work_area_id : null; }
       }
-      await db.run('INSERT INTO users (id,email,password_hash,security_question,security_answer,name,position,practice_area,custom_position_id,location_id,is_admin,is_super_user,is_managing_partner,is_active,must_change_password,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
-        [id, args.email, hp, '¿Email?', args.email, args.name, derivedPosition, derivedArea, (args.custom_position_id as string) || null, (args.location_id as string) || null, isAdmin ? 1 : 0, 0, isMP ? 1 : 0, 1, 1, now, now]);
-      return JSON.stringify({ ok: true, msg: `"${args.name}" creado`, id });
+      // Insert user WITHOUT password_hash (activation required)
+      await db.run('INSERT INTO users (id,email,password_hash,security_question,security_answer,name,position,practice_area,custom_position_id,location_id,is_admin,is_super_user,is_managing_partner,is_active,must_change_password,activation_token_hash,activation_expires_at,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
+        [id, args.email, null, '', '', args.name, derivedPosition, derivedArea, (args.custom_position_id as string) || null, (args.location_id as string) || null, isAdmin ? 1 : 0, 0, isMP ? 1 : 0, 1, 0, tokenHash, expiresAt, now, now]);
+      // Send activation email
+      const appUrl = process.env.APP_URL || 'https://smps.bowdot.online';
+      const activationLink = `${appUrl}/activate-account?token=${token}`;
+      const emailSent = await sendActivationEmail(args.email as string, args.name as string, token);
+      await auditLog({ action: 'activation_email_sent' as any, userId: id, ipAddress: null, userAgent: null, metadata: { source: 'copilot', emailSent } });
+      const msg = emailSent
+        ? `\"${args.name}\" creado. Se ha enviado un correo de activación a ${args.email}.`
+        : `\"${args.name}\" creado. No se pudo enviar el correo. Enlace de activación: ${activationLink}`;
+      return JSON.stringify({ ok: true, msg, id, activationLink: emailSent ? undefined : activationLink });
     }
     if (act === 'batch_create') {
       const us = args.users as Record<string, unknown>[];
       const r: Record<string, unknown>[] = [];
       for (const u of us) {
-        if (!u.name || !u.email || !u.position || !u.password) { r.push({ email: u.email, error: 'Faltan campos' }); continue; }
+        if (!u.name || !u.email || !u.position) { r.push({ email: u.email, error: 'Faltan campos (name, email, position)' }); continue; }
         const ex = await db.get('SELECT id FROM users WHERE email=?', [u.email]);
         if (ex) { r.push({ email: u.email, error: 'Ya existe' }); continue; }
-        const id = uuidv4(), hp = await hashPassword(u.password as string), now = new Date().toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, '');
+        const id = uuidv4(), now = new Date().toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, '');
+        // Generate activation token for batch user
+        const { token: bToken, tokenHash: bTokenHash } = generateTokenPair();
+        const bExpiresAt = toMySQLDate(new Date(Date.now() + 48 * 60 * 60 * 1000));
         let bPosition = u.position as string;
         let bArea = (u.practice_area as string) || null;
         if (u.custom_position_id) {
@@ -75,8 +94,8 @@ export const usersTool: Tool = {
           if (posRow) { bPosition = posRow.base_position; bArea = posRow.level === 'legal' ? posRow.work_area_id : null; }
         }
         const isAdmin = typeof u.is_admin === 'string' ? (u.is_admin === 'true' || u.is_admin === '1') : !!u.is_admin;
-        await db.run('INSERT INTO users (id,email,password_hash,security_question,security_answer,name,position,practice_area,custom_position_id,location_id,is_admin,is_super_user,is_managing_partner,is_active,must_change_password,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
-          [id, u.email, hp, '¿Email?', u.email, u.name, bPosition, bArea, (u.custom_position_id as string) || null, (u.location_id as string) || null, isAdmin ? 1 : 0, 0, 0, 1, 1, now, now]);
+        await db.run('INSERT INTO users (id,email,password_hash,security_question,security_answer,name,position,practice_area,custom_position_id,location_id,is_admin,is_super_user,is_managing_partner,is_active,must_change_password,activation_token_hash,activation_expires_at,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
+          [id, u.email, null, '', '', u.name, bPosition, bArea, (u.custom_position_id as string) || null, (u.location_id as string) || null, isAdmin ? 1 : 0, 0, 0, 1, 0, bTokenHash, bExpiresAt, now, now]);
         r.push({ email: u.email, ok: true, id });
       }
       return JSON.stringify({ msg: `${r.filter(x => x.ok).length}/${us.length} creados`, results: r });

@@ -30,7 +30,9 @@ export type AuditAction =
   | 'mfa_disabled'
   | 'mfa_challenge_success'
   | 'mfa_challenge_failed'
-  | 'authorization_denied';
+  | 'authorization_denied'
+  | 'copilot_blocked_query'
+  | 'security_violation';
 
 interface AuditLogParams {
   action: AuditAction;

@@ -26,6 +26,9 @@ import copilotRoutes from './copilot/index.js';
 import deployRoutes from './routes/deploy.js';
 import timelineRoutes from './routes/timeline.js';
 import { loginLimiter, resetPasswordLimiter, apiLimiter } from './middleware/rate-limit.js';
+import { authMiddleware } from './middleware/auth.js';
+import { hasRole } from './middleware/permissions.js';
+import { auditLog, getClientIp, getUserAgent } from './services/audit.js';
 
 // Rate limiter for new auth endpoints
 import rateLimit from 'express-rate-limit';
@@ -78,9 +81,13 @@ app.use('/api/', apiLimiter);
 
 // Health check (no rate limit)
 
-// Health stats (no rate limit) — diagnostic endpoint
-app.get('/api/health/stats', async (_req, res) => {
+// Health stats — restricted to admin/super_user only
+app.get('/api/health/stats', authMiddleware, async (req, res) => {
   try {
+    if (!hasRole(req.user!, ['super_user', 'admin'])) {
+      await auditLog({ action: 'authorization_denied', userId: req.user!.id, ipAddress: getClientIp(req), userAgent: getUserAgent(req), metadata: { resource: '/api/health/stats' } });
+      return res.status(403).json({ error: 'Admin access required' });
+    }
     const activeUsers = await pool.execute('SELECT COUNT(*) as cnt FROM users WHERE is_active = 1');
     const assignmentsByPeriod = await pool.execute('SELECT period, COUNT(*) as cnt FROM supervisor_assignments GROUP BY period');
     const evalsByPeriod = await pool.execute('SELECT period, type, COUNT(*) as cnt FROM evaluations GROUP BY period, type');

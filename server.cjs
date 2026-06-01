@@ -138360,6 +138360,49 @@ function todayISO() {
 }
 
 // server/copilot/tools/analyze.ts
+var BLOCKED_TABLES = [
+  "sessions",
+  "password_reset_tokens",
+  "authentication_audit"
+];
+var BLOCKED_COLUMNS = [
+  "password_hash",
+  "security_answer",
+  "token_hash",
+  "api_key",
+  "activation_token_hash",
+  "mfa_secret"
+];
+var BLOCKED_KEYWORDS = [
+  "SHOW",
+  "DESCRIBE",
+  "EXPLAIN",
+  "INFORMATION_SCHEMA",
+  "mysql",
+  "performance_schema",
+  "sys"
+];
+function checkSqlSecurity(sql) {
+  const upperSql = sql.toUpperCase();
+  for (const kw of BLOCKED_KEYWORDS) {
+    if (new RegExp("\\b" + kw + "\\b", "i").test(sql)) {
+      return { safe: false, reason: `Keyword "${kw}" is not allowed` };
+    }
+  }
+  for (const table of BLOCKED_TABLES) {
+    const tablePattern = new RegExp("\\b" + table + "\\b", "i");
+    if (tablePattern.test(sql)) {
+      return { safe: false, reason: `Table "${table}" is restricted` };
+    }
+  }
+  for (const col of BLOCKED_COLUMNS) {
+    const colPattern = new RegExp("\\b" + col + "\\b", "i");
+    if (colPattern.test(sql)) {
+      return { safe: false, reason: `Column "${col}" is restricted` };
+    }
+  }
+  return { safe: true };
+}
 var analyzeTool = {
   name: "analyze",
   description: `An\xE1lisis profundo de datos. Acciones:
@@ -138395,6 +138438,11 @@ var analyzeTool = {
         if (!sql) return JSON.stringify({ error: "SQL vac\xEDo" });
         if (!/^[\s(]*SELECT/i.test(sql)) return JSON.stringify({ error: "Solo SELECT permitido" });
         if (/\b(DROP|DELETE|INSERT|UPDATE|ALTER|CREATE|TRUNCATE|EXEC)\b/i.test(sql)) return JSON.stringify({ error: "Operaci\xF3n no permitida" });
+        const secCheck = checkSqlSecurity(sql);
+        if (!secCheck.safe) {
+          await auditLog({ action: "authorization_denied", userId: _uid, ipAddress: null, userAgent: null, metadata: { type: "copilot_blocked_query", reason: secCheck.reason, sql: sql.substring(0, 200) } });
+          return JSON.stringify({ error: `Acceso denegado: ${secCheck.reason}. Consulte al administrador para acceder a datos sensibles.` });
+        }
         const rows = await db.all(sql);
         return JSON.stringify(rows.slice(0, 100));
       }
@@ -138581,6 +138629,7 @@ function toolsToFunctions(tools) {
 var USER_FIELDS = "id,name,email,position,practice_area,custom_position_id,location_id,is_admin,is_super_user,is_managing_partner,is_active";
 
 // server/copilot/tools/users.ts
+init_tokens();
 var usersTool = {
   name: "users",
   description: "Gesti\xF3n de usuarios. Acciones: list, search, get, create, batch_create, update_role, deactivate, activate, assign_supervisor.",
@@ -138633,8 +138682,8 @@ var usersTool = {
       return u ? JSON.stringify(u) : JSON.stringify({ error: "No encontrado" });
     }
     if (act === "create") {
-      if (!args.name || !args.email || !args.position || !args.password) return JSON.stringify({ error: "Campos obligatorios: name, email, position, password" });
-      if (args.password.length < 6) return JSON.stringify({ error: "Contrase\xF1a min 6" });
+      if (!args.name || !args.email || !args.position) return JSON.stringify({ error: "Campos obligatorios: name, email, position" });
+      if (args.password) return JSON.stringify({ error: "Copilot no puede asignar contrase\xF1as. Se enviar\xE1 un enlace de activaci\xF3n al usuario." });
       const ex = await db.get("SELECT id FROM users WHERE email=?", [args.email]);
       if (ex) return JSON.stringify({ error: "Email ya existe" });
       const isAdmin = typeof args.is_admin === "string" ? args.is_admin === "true" || args.is_admin === "1" : !!args.is_admin;
@@ -138649,7 +138698,9 @@ var usersTool = {
         const currentAdmins = await db.all("SELECT id FROM users WHERE is_admin = 1 AND is_super_user = 0");
         if (currentAdmins.length >= maxAdm) return JSON.stringify({ error: `M\xE1ximo ${maxAdm} Usuario Administrador permitidos` });
       }
-      const id = v4_default(), hp = await hashPassword(args.password), now3 = (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "");
+      const id = v4_default(), now3 = (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "");
+      const { token, tokenHash } = generateTokenPair();
+      const expiresAt = toMySQLDate(new Date(Date.now() + 48 * 60 * 60 * 1e3));
       let derivedPosition = args.position;
       let derivedArea = args.practice_area || null;
       if (args.custom_position_id) {
@@ -138660,17 +138711,22 @@ var usersTool = {
         }
       }
       await db.run(
-        "INSERT INTO users (id,email,password_hash,security_question,security_answer,name,position,practice_area,custom_position_id,location_id,is_admin,is_super_user,is_managing_partner,is_active,must_change_password,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
-        [id, args.email, hp, "\xBFEmail?", args.email, args.name, derivedPosition, derivedArea, args.custom_position_id || null, args.location_id || null, isAdmin ? 1 : 0, 0, isMP ? 1 : 0, 1, 1, now3, now3]
+        "INSERT INTO users (id,email,password_hash,security_question,security_answer,name,position,practice_area,custom_position_id,location_id,is_admin,is_super_user,is_managing_partner,is_active,must_change_password,activation_token_hash,activation_expires_at,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+        [id, args.email, null, "", "", args.name, derivedPosition, derivedArea, args.custom_position_id || null, args.location_id || null, isAdmin ? 1 : 0, 0, isMP ? 1 : 0, 1, 0, tokenHash, expiresAt, now3, now3]
       );
-      return JSON.stringify({ ok: true, msg: `"${args.name}" creado`, id });
+      const appUrl = process.env.APP_URL || "https://smps.bowdot.online";
+      const activationLink = `${appUrl}/activate-account?token=${token}`;
+      const emailSent = await sendActivationEmail(args.email, args.name, token);
+      await auditLog({ action: "activation_email_sent", userId: id, ipAddress: null, userAgent: null, metadata: { source: "copilot", emailSent } });
+      const msg = emailSent ? `"${args.name}" creado. Se ha enviado un correo de activaci\xF3n a ${args.email}.` : `"${args.name}" creado. No se pudo enviar el correo. Enlace de activaci\xF3n: ${activationLink}`;
+      return JSON.stringify({ ok: true, msg, id, activationLink: emailSent ? void 0 : activationLink });
     }
     if (act === "batch_create") {
       const us = args.users;
       const r = [];
       for (const u of us) {
-        if (!u.name || !u.email || !u.position || !u.password) {
-          r.push({ email: u.email, error: "Faltan campos" });
+        if (!u.name || !u.email || !u.position) {
+          r.push({ email: u.email, error: "Faltan campos (name, email, position)" });
           continue;
         }
         const ex = await db.get("SELECT id FROM users WHERE email=?", [u.email]);
@@ -138678,7 +138734,9 @@ var usersTool = {
           r.push({ email: u.email, error: "Ya existe" });
           continue;
         }
-        const id = v4_default(), hp = await hashPassword(u.password), now3 = (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "");
+        const id = v4_default(), now3 = (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "");
+        const { token: bToken, tokenHash: bTokenHash } = generateTokenPair();
+        const bExpiresAt = toMySQLDate(new Date(Date.now() + 48 * 60 * 60 * 1e3));
         let bPosition = u.position;
         let bArea = u.practice_area || null;
         if (u.custom_position_id) {
@@ -138690,8 +138748,8 @@ var usersTool = {
         }
         const isAdmin = typeof u.is_admin === "string" ? u.is_admin === "true" || u.is_admin === "1" : !!u.is_admin;
         await db.run(
-          "INSERT INTO users (id,email,password_hash,security_question,security_answer,name,position,practice_area,custom_position_id,location_id,is_admin,is_super_user,is_managing_partner,is_active,must_change_password,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
-          [id, u.email, hp, "\xBFEmail?", u.email, u.name, bPosition, bArea, u.custom_position_id || null, u.location_id || null, isAdmin ? 1 : 0, 0, 0, 1, 1, now3, now3]
+          "INSERT INTO users (id,email,password_hash,security_question,security_answer,name,position,practice_area,custom_position_id,location_id,is_admin,is_super_user,is_managing_partner,is_active,must_change_password,activation_token_hash,activation_expires_at,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+          [id, u.email, null, "", "", u.name, bPosition, bArea, u.custom_position_id || null, u.location_id || null, isAdmin ? 1 : 0, 0, 0, 1, 0, bTokenHash, bExpiresAt, now3, now3]
         );
         r.push({ email: u.email, ok: true, id });
       }
@@ -142338,8 +142396,12 @@ app.use("/api/auth/request-password-reset", passwordResetRequestLimiter);
 app.use("/api/auth/verify-reset-token", passwordResetCompleteLimiter);
 app.use("/api/auth/complete-password-reset", passwordResetCompleteLimiter);
 app.use("/api/", apiLimiter);
-app.get("/api/health/stats", async (_req, res) => {
+app.get("/api/health/stats", authMiddleware, async (req, res) => {
   try {
+    if (!hasRole(req.user, ["super_user", "admin"])) {
+      await auditLog({ action: "authorization_denied", userId: req.user.id, ipAddress: getClientIp(req), userAgent: getUserAgent(req), metadata: { resource: "/api/health/stats" } });
+      return res.status(403).json({ error: "Admin access required" });
+    }
     const activeUsers = await pool.execute("SELECT COUNT(*) as cnt FROM users WHERE is_active = 1");
     const assignmentsByPeriod = await pool.execute("SELECT period, COUNT(*) as cnt FROM supervisor_assignments GROUP BY period");
     const evalsByPeriod = await pool.execute("SELECT period, type, COUNT(*) as cnt FROM evaluations GROUP BY period, type");

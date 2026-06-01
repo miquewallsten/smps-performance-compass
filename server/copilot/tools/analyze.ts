@@ -5,6 +5,52 @@
 import { db } from '../../db/connection.js';
 import { Tool } from '../types.js';
 import { getLatestPeriod } from './helpers.js';
+import { auditLog } from '../../services/audit.js';
+
+// ─── Security: Table and column restrictions for SQL queries ─────────────
+const BLOCKED_TABLES = [
+  'sessions', 'password_reset_tokens', 'authentication_audit',
+];
+
+const BLOCKED_COLUMNS = [
+  'password_hash', 'security_answer', 'token_hash', 'api_key',
+  'activation_token_hash', 'mfa_secret',
+];
+
+const BLOCKED_KEYWORDS = [
+  'SHOW', 'DESCRIBE', 'EXPLAIN', 'INFORMATION_SCHEMA',
+  'mysql', 'performance_schema', 'sys',
+];
+
+function checkSqlSecurity(sql: string): { safe: boolean; reason?: string } {
+  const upperSql = sql.toUpperCase();
+
+  // Check blocked keywords (SHOW, DESCRIBE, EXPLAIN, INFORMATION_SCHEMA, etc.)
+  for (const kw of BLOCKED_KEYWORDS) {
+    if (new RegExp('\\b' + kw + '\\b', 'i').test(sql)) {
+      return { safe: false, reason: `Keyword "${kw}" is not allowed` };
+    }
+  }
+
+  // Check blocked tables
+  for (const table of BLOCKED_TABLES) {
+    // Match table name in FROM, JOIN, INTO, or standalone reference
+    const tablePattern = new RegExp('\\b' + table + '\\b', 'i');
+    if (tablePattern.test(sql)) {
+      return { safe: false, reason: `Table "${table}" is restricted` };
+    }
+  }
+
+  // Check blocked columns
+  for (const col of BLOCKED_COLUMNS) {
+    const colPattern = new RegExp('\\b' + col + '\\b', 'i');
+    if (colPattern.test(sql)) {
+      return { safe: false, reason: `Column "${col}" is restricted` };
+    }
+  }
+
+  return { safe: true };
+}
 
 export const analyzeTool: Tool = {
   name: 'analyze',
@@ -41,6 +87,14 @@ export const analyzeTool: Tool = {
         if (!sql) return JSON.stringify({ error: 'SQL vacío' });
         if (!/^[\s(]*SELECT/i.test(sql)) return JSON.stringify({ error: 'Solo SELECT permitido' });
         if (/\b(DROP|DELETE|INSERT|UPDATE|ALTER|CREATE|TRUNCATE|EXEC)\b/i.test(sql)) return JSON.stringify({ error: 'Operación no permitida' });
+
+        // Security: check for restricted tables, columns, and keywords
+        const secCheck = checkSqlSecurity(sql);
+        if (!secCheck.safe) {
+          await auditLog({ action: 'authorization_denied' as any, userId: _uid, ipAddress: null, userAgent: null, metadata: { type: 'copilot_blocked_query', reason: secCheck.reason, sql: sql.substring(0, 200) } });
+          return JSON.stringify({ error: `Acceso denegado: ${secCheck.reason}. Consulte al administrador para acceder a datos sensibles.` });
+        }
+
         const rows = await db.all(sql);
         return JSON.stringify(rows.slice(0, 100));
       }
