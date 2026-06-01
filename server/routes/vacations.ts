@@ -3,16 +3,30 @@ import { v4 as uuidv4 } from 'uuid';
 import { db, tx } from '../db/connection.js';
 import { authMiddleware } from '../middleware/auth.js';
 import { requireAdmin } from '../middleware/rbac.js';
+import { isAdminOrSocio, isSupervisorOf, getSuperviseeIds } from '../middleware/permissions.js';
 
 const router = Router();
 
 // ─── GET /api/vacations/requests ───────────────────────────────────────────
+// AUTHZ: Employee sees own + supervisees'. Admin/socio sees all.
 router.get('/requests', authMiddleware, async (req: Request, res: Response) => {
   try {
     const { userId, status } = req.query as Record<string, string>;
     let sql = 'SELECT * FROM vacation_requests WHERE 1=1';
     const params: string[] = [];
-    if (userId) { sql += ' AND user_id = ?'; params.push(userId); }
+
+    if (isAdminOrSocio(req.user!)) {
+      // Admin/socio: see all, optionally filter
+      if (userId) { sql += ' AND user_id = ?'; params.push(userId); }
+    } else {
+      // Employee: see own + supervisees
+      const superviseeIds = await getSuperviseeIds(req.user!.id);
+      const visibleIds = [req.user!.id, ...superviseeIds];
+      const placeholders = visibleIds.map(() => '?').join(',');
+      sql += ` AND user_id IN (${placeholders})`;
+      params.push(...visibleIds);
+    }
+
     if (status) { sql += ' AND status = ?'; params.push(status); }
 
     const requests = await db.all(sql, params);
@@ -28,11 +42,22 @@ router.get('/requests', authMiddleware, async (req: Request, res: Response) => {
 });
 
 // ─── POST /api/vacations/requests ──────────────────────────────────────────
+// AUTHZ: Must be creating for self or supervisor of user, or admin/socio.
 router.post('/requests', authMiddleware, async (req: Request, res: Response) => {
   try {
     const { userId, startDate, endDate, days, reason, period } = req.body;
     if (!userId || !startDate || !endDate || !days) {
       return res.status(400).json({ error: 'userId, startDate, endDate, and days are required' });
+    }
+
+    // ─── Authorization check ───
+    if (!isAdminOrSocio(req.user!)) {
+      if (userId !== req.user!.id) {
+        const isSup = await isSupervisorOf(req.user!.id, userId);
+        if (!isSup) {
+          return res.status(403).json({ error: 'You can only create vacation requests for yourself or your direct reports' });
+        }
+      }
     }
 
     const id = uuidv4();
@@ -51,10 +76,20 @@ router.post('/requests', authMiddleware, async (req: Request, res: Response) => 
 });
 
 // ─── PATCH /api/vacations/requests/:id ──────────────────────────────────────
+// AUTHZ: Must be the request owner or supervisor of the owner, or admin/socio.
 router.patch('/requests/:id', authMiddleware, async (req: Request, res: Response) => {
   try {
-    const request = await db.get('SELECT * FROM vacation_requests WHERE id = ?', [req.params.id]);
+    const request = await db.get('SELECT * FROM vacation_requests WHERE id = ?', [req.params.id]) as any;
     if (!request) return res.status(404).json({ error: 'Request not found' });
+
+    // ─── Authorization check ───
+    if (!isAdminOrSocio(req.user!)) {
+      const isOwn = request.user_id === req.user!.id;
+      const isSup = !isOwn && await isSupervisorOf(req.user!.id, request.user_id);
+      if (!isOwn && !isSup) {
+        return res.status(403).json({ error: 'You can only modify your own requests or your direct reports\' requests' });
+      }
+    }
 
     const { status, reason } = req.body;
     const updates: string[] = [];
@@ -76,10 +111,19 @@ router.patch('/requests/:id', authMiddleware, async (req: Request, res: Response
 });
 
 // ─── POST /api/vacations/requests/:id/approve ───────────────────────────────
+// AUTHZ: Must be supervisor of the request owner, or admin/super_user. Socio cannot approve.
 router.post('/requests/:id/approve', authMiddleware, async (req: Request, res: Response) => {
   try {
-    const request = await db.get('SELECT * FROM vacation_requests WHERE id = ?', [req.params.id]);
+    const request = await db.get('SELECT * FROM vacation_requests WHERE id = ?', [req.params.id]) as any;
     if (!request) return res.status(404).json({ error: 'Request not found' });
+
+    // ─── Authorization check: supervisor or admin/super_user only ───
+    if (req.user!.role !== 'super_user' && req.user!.role !== 'admin') {
+      const isSup = await isSupervisorOf(req.user!.id, request.user_id);
+      if (!isSup) {
+        return res.status(403).json({ error: 'Only the supervisor or an administrator can approve vacation requests' });
+      }
+    }
 
     const { action, comment } = req.body;
     if (!['approved', 'rejected'].includes(action)) {
@@ -105,16 +149,22 @@ router.post('/requests/:id/approve', authMiddleware, async (req: Request, res: R
 });
 
 // ─── DELETE /api/vacations/requests/:id ──────────────────────────────────────
+// AUTHZ: Must be the request owner (and request is pending), or admin/super_user.
 router.delete('/requests/:id', authMiddleware, async (req: Request, res: Response) => {
   try {
     const request = await db.get('SELECT * FROM vacation_requests WHERE id = ?', [req.params.id]) as any;
     if (!request) return res.status(404).json({ error: 'Request not found' });
-    if (request.user_id !== req.user!.id && req.user!.role !== 'admin' && req.user!.role !== 'super_user') {
-      return res.status(403).json({ error: 'Can only delete your own requests' });
+
+    // ─── Authorization check ───
+    if (req.user!.role !== 'admin' && req.user!.role !== 'super_user') {
+      if (request.user_id !== req.user!.id) {
+        return res.status(403).json({ error: 'Can only delete your own requests' });
+      }
+      if (request.status !== 'pending') {
+        return res.status(400).json({ error: 'Can only delete pending requests' });
+      }
     }
-    if (request.status !== 'pending' && req.user!.role !== 'admin' && req.user!.role !== 'super_user') {
-      return res.status(400).json({ error: 'Can only delete pending requests' });
-    }
+
     await db.run('DELETE FROM vacation_requests WHERE id = ?', [req.params.id]);
     return res.json({ message: 'Request deleted' });
   } catch (err) {

@@ -2,25 +2,30 @@ import { Router, Request, Response } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import { db, tx } from '../db/connection.js';
 import { authMiddleware } from '../middleware/auth.js';
+import { isAdminOrSocio, isSupervisorOf, getSuperviseeIds } from '../middleware/permissions.js';
 
 const router = Router();
 
 // ─── GET /api/objectives ────────────────────────────────────────────────────
+// AUTHZ: Employee sees own + supervisees'. Admin/socio sees all.
 router.get('/', authMiddleware, async (req: Request, res: Response) => {
   try {
     const { userId, period } = req.query as Record<string, string>;
-    // Role-based access control: Admins and Socios see all objectives, others only their own
-    const isAdminOrSocio = req.user!.role === 'admin' || req.user!.role === 'super_user' || req.user!.position === 'socio' || req.user!.position === 'salary_partner';
     let sql = 'SELECT * FROM personal_objectives WHERE 1=1';
     const params: string[] = [];
-    if (!isAdminOrSocio) {
-      // Non-admin, non-socio: only see own objectives
-      sql += ' AND user_id = ?';
-      params.push(req.user!.id);
-    } else if (userId) {
-      sql += ' AND user_id = ?';
-      params.push(userId);
+
+    if (isAdminOrSocio(req.user!)) {
+      // Admin/socio: see all, optionally filter by userId
+      if (userId) { sql += ' AND user_id = ?'; params.push(userId); }
+    } else {
+      // Employee: see own + supervisees
+      const superviseeIds = await getSuperviseeIds(req.user!.id, period);
+      const visibleIds = [req.user!.id, ...superviseeIds];
+      const placeholders = visibleIds.map(() => '?').join(',');
+      sql += ` AND user_id IN (${placeholders})`;
+      params.push(...visibleIds);
     }
+
     if (period) { sql += ' AND period = ?'; params.push(period); }
 
     const objectives = await db.all(sql, params);
@@ -42,6 +47,7 @@ router.get('/', authMiddleware, async (req: Request, res: Response) => {
 });
 
 // ─── POST /api/objectives ──────────────────────────────────────────────────
+// AUTHZ: Must be creating for self or supervisor of the user, or admin/socio.
 router.post('/', authMiddleware, async (req: Request, res: Response) => {
   try {
     const { userId, period, type, adminObjectives, legalObjective } = req.body;
@@ -52,7 +58,15 @@ router.post('/', authMiddleware, async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Type must be admin or legal' });
     }
 
-    // Check if already exists
+    // ─── Authorization check ───
+    if (!isAdminOrSocio(req.user!)) {
+      const isOwn = userId === req.user!.id;
+      const isSup = !isOwn && await isSupervisorOf(req.user!.id, userId, period);
+      if (!isOwn && !isSup) {
+        return res.status(403).json({ error: 'You can only create objectives for yourself or your direct reports' });
+      }
+    }
+
     const existing = await db.get('SELECT * FROM personal_objectives WHERE user_id = ? AND period = ?', [userId, period]);
 
     const objId = await db.transaction(async (conn) => {
@@ -60,7 +74,6 @@ router.post('/', authMiddleware, async (req: Request, res: Response) => {
 
       if (existing) {
         objId = (existing as any).id;
-        // Delete old nested data
         if (type === 'admin') {
           await tx.run(conn, 'DELETE FROM admin_objectives WHERE personal_objectives_id = ?', [objId]);
         } else {
@@ -109,17 +122,28 @@ router.post('/', authMiddleware, async (req: Request, res: Response) => {
 });
 
 // ─── POST /api/objectives/:id/submit ───────────────────────────────────────
+// AUTHZ: Must be the owner of the objectives, or admin/socio.
 router.post('/:id/submit', authMiddleware, async (req: Request, res: Response) => {
   try {
-    const obj = await db.get('SELECT * FROM personal_objectives WHERE id = ?', [req.params.id]);
+    const obj = await db.get('SELECT * FROM personal_objectives WHERE id = ?', [req.params.id]) as any;
     if (!obj) return res.status(404).json({ error: 'Objectives not found' });
+
+    // ─── Authorization check ───
+    if (!isAdminOrSocio(req.user!)) {
+      if (obj.user_id !== req.user!.id) {
+        const isSup = await isSupervisorOf(req.user!.id, obj.user_id, obj.period);
+        if (!isSup) {
+          return res.status(403).json({ error: 'You can only submit your own objectives' });
+        }
+      }
+    }
 
     const now = new Date().toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, '');
     await db.run("UPDATE admin_objectives SET status = 'pending', submitted_at = ? WHERE personal_objectives_id = ? AND status = 'draft'",
       [now, req.params.id]);
 
     const adminObjs = await db.all('SELECT * FROM admin_objectives WHERE personal_objectives_id = ?', [req.params.id]);
-    return res.json({ ...(obj as any), adminObjectives: adminObjs, legalObjective: null });
+    return res.json({ ...obj, adminObjectives: adminObjs, legalObjective: null });
   } catch (err) {
     console.error('Submit objectives error:', err);
     return res.status(500).json({ error: 'Internal server error' });
@@ -127,10 +151,19 @@ router.post('/:id/submit', authMiddleware, async (req: Request, res: Response) =
 });
 
 // ─── POST /api/objectives/:id/review ───────────────────────────────────────
+// AUTHZ: Must be supervisor of the user, or admin/super_user. Socio cannot review (read-only).
 router.post('/:id/review', authMiddleware, async (req: Request, res: Response) => {
   try {
-    const obj = await db.get('SELECT * FROM personal_objectives WHERE id = ?', [req.params.id]);
+    const obj = await db.get('SELECT * FROM personal_objectives WHERE id = ?', [req.params.id]) as any;
     if (!obj) return res.status(404).json({ error: 'Objectives not found' });
+
+    // ─── Authorization check: supervisor or admin only (not socio for write actions) ───
+    if (req.user!.role !== 'super_user' && req.user!.role !== 'admin') {
+      const isSup = await isSupervisorOf(req.user!.id, obj.user_id, obj.period);
+      if (!isSup) {
+        return res.status(403).json({ error: 'Only the supervisor or an administrator can review objectives' });
+      }
+    }
 
     const { objectiveId, status, comment } = req.body;
     if (!objectiveId || !['approved', 'rejected'].includes(status)) {
@@ -142,10 +175,10 @@ router.post('/:id/review', authMiddleware, async (req: Request, res: Response) =
       [status, req.user!.id, now, comment || null, objectiveId]);
 
     const adminObjs = await db.all('SELECT * FROM admin_objectives WHERE personal_objectives_id = ?', [req.params.id]);
-    return res.json({ ...(obj as any), adminObjectives: adminObjs, legalObjective: null });
+    return res.json({ ...obj, adminObjectives: adminObjs, legalObjective: null });
   } catch (err) {
     console.error('Review objectives error:', err);
-    return res.status(500).json({ error: 'Internal server server' });
+    return res.status(500).json({ error: 'Internal server error' });
   }
 });
 

@@ -1197,11 +1197,11 @@ var require_statuses = __commonJS({
   "node_modules/statuses/index.js"(exports2, module2) {
     "use strict";
     var codes = require_codes();
-    module2.exports = status2;
-    status2.message = codes;
-    status2.code = createMessageToStatusCodeMap(codes);
-    status2.codes = createStatusCodeList(codes);
-    status2.redirect = {
+    module2.exports = status;
+    status.message = codes;
+    status.code = createMessageToStatusCodeMap(codes);
+    status.codes = createStatusCodeList(codes);
+    status.redirect = {
       300: true,
       301: true,
       302: true,
@@ -1210,12 +1210,12 @@ var require_statuses = __commonJS({
       307: true,
       308: true
     };
-    status2.empty = {
+    status.empty = {
       204: true,
       205: true,
       304: true
     };
-    status2.retry = {
+    status.retry = {
       502: true,
       503: true,
       504: true
@@ -1224,8 +1224,8 @@ var require_statuses = __commonJS({
       var map = {};
       Object.keys(codes2).forEach(function forEachCode(code) {
         var message = codes2[code];
-        var status3 = Number(code);
-        map[message.toLowerCase()] = status3;
+        var status2 = Number(code);
+        map[message.toLowerCase()] = status2;
       });
       return map;
     }
@@ -1236,18 +1236,18 @@ var require_statuses = __commonJS({
     }
     function getStatusCode(message) {
       var msg = message.toLowerCase();
-      if (!Object.prototype.hasOwnProperty.call(status2.code, msg)) {
+      if (!Object.prototype.hasOwnProperty.call(status.code, msg)) {
         throw new Error('invalid status message: "' + message + '"');
       }
-      return status2.code[msg];
+      return status.code[msg];
     }
     function getStatusMessage(code) {
-      if (!Object.prototype.hasOwnProperty.call(status2.message, code)) {
+      if (!Object.prototype.hasOwnProperty.call(status.message, code)) {
         throw new Error("invalid status code: " + code);
       }
-      return status2.message[code];
+      return status.message[code];
     }
-    function status2(code) {
+    function status(code) {
       if (typeof code === "number") {
         return getStatusMessage(code);
       }
@@ -1335,22 +1335,22 @@ var require_http_errors = __commonJS({
     module2.exports.HttpError = createHttpErrorConstructor();
     module2.exports.isHttpError = createIsHttpErrorFunction(module2.exports.HttpError);
     populateConstructorExports(module2.exports, statuses.codes, module2.exports.HttpError);
-    function codeClass(status2) {
-      return Number(String(status2).charAt(0) + "00");
+    function codeClass(status) {
+      return Number(String(status).charAt(0) + "00");
     }
     function createError() {
       var err;
       var msg;
-      var status2 = 500;
+      var status = 500;
       var props = {};
       for (var i = 0; i < arguments.length; i++) {
         var arg = arguments[i];
         var type = typeof arg;
         if (type === "object" && arg instanceof Error) {
           err = arg;
-          status2 = err.status || err.statusCode || status2;
+          status = err.status || err.statusCode || status;
         } else if (type === "number" && i === 0) {
-          status2 = arg;
+          status = arg;
         } else if (type === "string") {
           msg = arg;
         } else if (type === "object") {
@@ -1359,20 +1359,20 @@ var require_http_errors = __commonJS({
           throw new TypeError("argument #" + (i + 1) + " unsupported type " + type);
         }
       }
-      if (typeof status2 === "number" && (status2 < 400 || status2 >= 600)) {
+      if (typeof status === "number" && (status < 400 || status >= 600)) {
         deprecate("non-error status code; use only 4xx or 5xx status codes");
       }
-      if (typeof status2 !== "number" || !statuses.message[status2] && (status2 < 400 || status2 >= 600)) {
-        status2 = 500;
+      if (typeof status !== "number" || !statuses.message[status] && (status < 400 || status >= 600)) {
+        status = 500;
       }
-      var HttpError = createError[status2] || createError[codeClass(status2)];
+      var HttpError = createError[status] || createError[codeClass(status)];
       if (!err) {
-        err = HttpError ? new HttpError(msg) : new Error(msg || statuses.message[status2]);
+        err = HttpError ? new HttpError(msg) : new Error(msg || statuses.message[status]);
         Error.captureStackTrace(err, createError);
       }
-      if (!HttpError || !(err instanceof HttpError) || err.status !== status2) {
-        err.expose = status2 < 500;
-        err.status = err.statusCode = status2;
+      if (!HttpError || !(err instanceof HttpError) || err.status !== status) {
+        err.expose = status < 500;
+        err.status = err.statusCode = status;
       }
       for (var key in props) {
         if (key !== "status" && key !== "statusCode") {
@@ -22536,35 +22536,35 @@ var require_finalhandler = __commonJS({
       return function(err) {
         var headers;
         var msg;
-        var status2;
+        var status;
         if (!err && res.headersSent) {
           debug("cannot 404 after headers sent");
           return;
         }
         if (err) {
-          status2 = getErrorStatusCode(err);
-          if (status2 === void 0) {
-            status2 = getResponseStatusCode(res);
+          status = getErrorStatusCode(err);
+          if (status === void 0) {
+            status = getResponseStatusCode(res);
           } else {
             headers = getErrorHeaders(err);
           }
-          msg = getErrorMessage(err, status2, env);
+          msg = getErrorMessage(err, status, env);
         } else {
-          status2 = 404;
+          status = 404;
           msg = "Cannot " + req.method + " " + encodeUrl(getResourceName(req));
         }
-        debug("default %s", status2);
+        debug("default %s", status);
         if (err && onerror) {
           setImmediate(onerror, err, req, res);
         }
         if (res.headersSent) {
-          debug("cannot %d after headers sent", status2);
+          debug("cannot %d after headers sent", status);
           if (req.socket) {
             req.socket.destroy();
           }
           return;
         }
-        send(req, res, status2, headers, msg);
+        send(req, res, status, headers, msg);
       };
     }
     function getErrorHeaders(err) {
@@ -22573,7 +22573,7 @@ var require_finalhandler = __commonJS({
       }
       return { ...err.headers };
     }
-    function getErrorMessage(err, status2, env) {
+    function getErrorMessage(err, status, env) {
       var msg;
       if (env !== "production") {
         msg = err.stack;
@@ -22581,7 +22581,7 @@ var require_finalhandler = __commonJS({
           msg = err.toString();
         }
       }
-      return msg || statuses.message[status2];
+      return msg || statuses.message[status];
     }
     function getErrorStatusCode(err) {
       if (typeof err.status === "number" && err.status >= 400 && err.status < 600) {
@@ -22600,18 +22600,18 @@ var require_finalhandler = __commonJS({
       }
     }
     function getResponseStatusCode(res) {
-      var status2 = res.statusCode;
-      if (typeof status2 !== "number" || status2 < 400 || status2 > 599) {
-        status2 = 500;
+      var status = res.statusCode;
+      if (typeof status !== "number" || status < 400 || status > 599) {
+        status = 500;
       }
-      return status2;
+      return status;
     }
-    function send(req, res, status2, headers, message) {
+    function send(req, res, status, headers, message) {
       function write() {
         var body = createHtmlDocument(message);
-        res.statusCode = status2;
+        res.statusCode = status;
         if (req.httpVersionMajor < 2) {
-          res.statusMessage = statuses.message[status2];
+          res.statusMessage = statuses.message[status];
         }
         res.removeHeader("Content-Encoding");
         res.removeHeader("Content-Language");
@@ -44992,9 +44992,9 @@ var require_request = __commonJS({
     defineGetter(req, "fresh", function() {
       var method = this.method;
       var res = this.res;
-      var status2 = res.statusCode;
+      var status = res.statusCode;
       if ("GET" !== method && "HEAD" !== method) return false;
-      if (status2 >= 200 && status2 < 300 || 304 === status2) {
+      if (status >= 200 && status < 300 || 304 === status) {
         return fresh(this.headers, {
           "etag": res.get("ETag"),
           "last-modified": res.get("Last-Modified")
@@ -54971,18 +54971,18 @@ var require_send = __commonJS({
       this._root = opts.root ? resolve(opts.root) : null;
     }
     util2.inherits(SendStream, Stream);
-    SendStream.prototype.error = function error(status2, err) {
+    SendStream.prototype.error = function error(status, err) {
       if (hasListeners(this, "error")) {
-        return this.emit("error", createHttpError(status2, err));
+        return this.emit("error", createHttpError(status, err));
       }
       var res = this.res;
-      var msg = statuses.message[status2] || String(status2);
+      var msg = statuses.message[status] || String(status);
       var doc = createHtmlDocument("Error", escapeHtml(msg));
       clearHeaders(res);
       if (err && err.headers) {
         setHeaders(res, err.headers);
       }
-      res.statusCode = status2;
+      res.statusCode = status;
       res.setHeader("Content-Type", "text/html; charset=UTF-8");
       res.setHeader("Content-Length", Buffer.byteLength(doc));
       res.setHeader("Content-Security-Policy", "default-src 'none'");
@@ -55333,11 +55333,11 @@ var require_send = __commonJS({
     function createHtmlDocument(title, body) {
       return '<!DOCTYPE html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n<title>' + title + "</title>\n</head>\n<body>\n<pre>" + body + "</pre>\n</body>\n</html>\n";
     }
-    function createHttpError(status2, err) {
+    function createHttpError(status, err) {
       if (!err) {
-        return createError(status2);
+        return createError(status);
       }
-      return err instanceof Error ? createError(status2, err, { expose: false }) : createError(status2, err);
+      return err instanceof Error ? createError(status, err, { expose: false }) : createError(status, err);
     }
     function decode(path3) {
       try {
@@ -55500,7 +55500,7 @@ var require_response = __commonJS({
     var { Buffer: Buffer3 } = require("node:buffer");
     var res = Object.create(http.ServerResponse.prototype);
     module2.exports = res;
-    res.status = function status2(code) {
+    res.status = function status(code) {
       if (!Number.isInteger(code)) {
         throw new TypeError(`Invalid status code: ${JSON.stringify(code)}. Status code must be an integer.`);
       }
@@ -55800,9 +55800,9 @@ var require_response = __commonJS({
     res.redirect = function redirect(url) {
       var address = url;
       var body;
-      var status2 = 302;
+      var status = 302;
       if (arguments.length === 2) {
-        status2 = arguments[0];
+        status = arguments[0];
         address = arguments[1];
       }
       if (!address) {
@@ -55811,23 +55811,23 @@ var require_response = __commonJS({
       if (typeof address !== "string") {
         deprecate("Url must be a string");
       }
-      if (typeof status2 !== "number") {
+      if (typeof status !== "number") {
         deprecate("Status must be a number");
       }
       address = this.location(address).get("Location");
       this.format({
         text: function() {
-          body = statuses.message[status2] + ". Redirecting to " + address;
+          body = statuses.message[status] + ". Redirecting to " + address;
         },
         html: function() {
           var u = escapeHtml(address);
-          body = "<p>" + statuses.message[status2] + ". Redirecting to " + u + "</p>";
+          body = "<p>" + statuses.message[status] + ". Redirecting to " + u + "</p>";
         },
         default: function() {
           body = "";
         }
       });
-      this.status(status2);
+      this.status(status);
       this.set("Content-Length", Buffer3.byteLength(body));
       if (this.req.method === "HEAD") {
         this.end();
@@ -71593,8 +71593,8 @@ var require_query2 = __commonJS({
       }
       row(packet, _connection) {
         if (packet.isEOF()) {
-          const status2 = packet.eofStatusFlags();
-          const moreResults = status2 & ServerStatus.SERVER_MORE_RESULTS_EXISTS;
+          const status = packet.eofStatusFlags();
+          const moreResults = status & ServerStatus.SERVER_MORE_RESULTS_EXISTS;
           if (moreResults) {
             this._resultIndex++;
             return _Query.prototype.resultsetHeader;
@@ -130872,18 +130872,18 @@ var ParseStatus = class _ParseStatus {
     if (this.value !== "aborted")
       this.value = "aborted";
   }
-  static mergeArray(status2, results) {
+  static mergeArray(status, results) {
     const arrayValue = [];
     for (const s of results) {
       if (s.status === "aborted")
         return INVALID;
       if (s.status === "dirty")
-        status2.dirty();
+        status.dirty();
       arrayValue.push(s.value);
     }
-    return { status: status2.value, value: arrayValue };
+    return { status: status.value, value: arrayValue };
   }
-  static async mergeObjectAsync(status2, pairs) {
+  static async mergeObjectAsync(status, pairs) {
     const syncPairs = [];
     for (const pair of pairs) {
       const key = await pair.key;
@@ -130893,9 +130893,9 @@ var ParseStatus = class _ParseStatus {
         value
       });
     }
-    return _ParseStatus.mergeObjectSync(status2, syncPairs);
+    return _ParseStatus.mergeObjectSync(status, syncPairs);
   }
-  static mergeObjectSync(status2, pairs) {
+  static mergeObjectSync(status, pairs) {
     const finalObject = {};
     for (const pair of pairs) {
       const { key, value } = pair;
@@ -130904,14 +130904,14 @@ var ParseStatus = class _ParseStatus {
       if (value.status === "aborted")
         return INVALID;
       if (key.status === "dirty")
-        status2.dirty();
+        status.dirty();
       if (value.status === "dirty")
-        status2.dirty();
+        status.dirty();
       if (key.value !== "__proto__" && (typeof value.value !== "undefined" || pair.alwaysSet)) {
         finalObject[key.value] = value.value;
       }
     }
-    return { status: status2.value, value: finalObject };
+    return { status: status.value, value: finalObject };
   }
 };
 var INVALID = Object.freeze({
@@ -131371,7 +131371,7 @@ var ZodString = class _ZodString extends ZodType {
       });
       return INVALID;
     }
-    const status2 = new ParseStatus();
+    const status = new ParseStatus();
     let ctx = void 0;
     for (const check of this._def.checks) {
       if (check.kind === "min") {
@@ -131385,7 +131385,7 @@ var ZodString = class _ZodString extends ZodType {
             exact: false,
             message: check.message
           });
-          status2.dirty();
+          status.dirty();
         }
       } else if (check.kind === "max") {
         if (input.data.length > check.value) {
@@ -131398,7 +131398,7 @@ var ZodString = class _ZodString extends ZodType {
             exact: false,
             message: check.message
           });
-          status2.dirty();
+          status.dirty();
         }
       } else if (check.kind === "length") {
         const tooBig = input.data.length > check.value;
@@ -131424,7 +131424,7 @@ var ZodString = class _ZodString extends ZodType {
               message: check.message
             });
           }
-          status2.dirty();
+          status.dirty();
         }
       } else if (check.kind === "email") {
         if (!emailRegex.test(input.data)) {
@@ -131434,7 +131434,7 @@ var ZodString = class _ZodString extends ZodType {
             code: ZodIssueCode.invalid_string,
             message: check.message
           });
-          status2.dirty();
+          status.dirty();
         }
       } else if (check.kind === "emoji") {
         if (!emojiRegex) {
@@ -131447,7 +131447,7 @@ var ZodString = class _ZodString extends ZodType {
             code: ZodIssueCode.invalid_string,
             message: check.message
           });
-          status2.dirty();
+          status.dirty();
         }
       } else if (check.kind === "uuid") {
         if (!uuidRegex.test(input.data)) {
@@ -131457,7 +131457,7 @@ var ZodString = class _ZodString extends ZodType {
             code: ZodIssueCode.invalid_string,
             message: check.message
           });
-          status2.dirty();
+          status.dirty();
         }
       } else if (check.kind === "nanoid") {
         if (!nanoidRegex.test(input.data)) {
@@ -131467,7 +131467,7 @@ var ZodString = class _ZodString extends ZodType {
             code: ZodIssueCode.invalid_string,
             message: check.message
           });
-          status2.dirty();
+          status.dirty();
         }
       } else if (check.kind === "cuid") {
         if (!cuidRegex.test(input.data)) {
@@ -131477,7 +131477,7 @@ var ZodString = class _ZodString extends ZodType {
             code: ZodIssueCode.invalid_string,
             message: check.message
           });
-          status2.dirty();
+          status.dirty();
         }
       } else if (check.kind === "cuid2") {
         if (!cuid2Regex.test(input.data)) {
@@ -131487,7 +131487,7 @@ var ZodString = class _ZodString extends ZodType {
             code: ZodIssueCode.invalid_string,
             message: check.message
           });
-          status2.dirty();
+          status.dirty();
         }
       } else if (check.kind === "ulid") {
         if (!ulidRegex.test(input.data)) {
@@ -131497,7 +131497,7 @@ var ZodString = class _ZodString extends ZodType {
             code: ZodIssueCode.invalid_string,
             message: check.message
           });
-          status2.dirty();
+          status.dirty();
         }
       } else if (check.kind === "url") {
         try {
@@ -131509,7 +131509,7 @@ var ZodString = class _ZodString extends ZodType {
             code: ZodIssueCode.invalid_string,
             message: check.message
           });
-          status2.dirty();
+          status.dirty();
         }
       } else if (check.kind === "regex") {
         check.regex.lastIndex = 0;
@@ -131521,7 +131521,7 @@ var ZodString = class _ZodString extends ZodType {
             code: ZodIssueCode.invalid_string,
             message: check.message
           });
-          status2.dirty();
+          status.dirty();
         }
       } else if (check.kind === "trim") {
         input.data = input.data.trim();
@@ -131533,7 +131533,7 @@ var ZodString = class _ZodString extends ZodType {
             validation: { includes: check.value, position: check.position },
             message: check.message
           });
-          status2.dirty();
+          status.dirty();
         }
       } else if (check.kind === "toLowerCase") {
         input.data = input.data.toLowerCase();
@@ -131547,7 +131547,7 @@ var ZodString = class _ZodString extends ZodType {
             validation: { startsWith: check.value },
             message: check.message
           });
-          status2.dirty();
+          status.dirty();
         }
       } else if (check.kind === "endsWith") {
         if (!input.data.endsWith(check.value)) {
@@ -131557,7 +131557,7 @@ var ZodString = class _ZodString extends ZodType {
             validation: { endsWith: check.value },
             message: check.message
           });
-          status2.dirty();
+          status.dirty();
         }
       } else if (check.kind === "datetime") {
         const regex = datetimeRegex(check);
@@ -131568,7 +131568,7 @@ var ZodString = class _ZodString extends ZodType {
             validation: "datetime",
             message: check.message
           });
-          status2.dirty();
+          status.dirty();
         }
       } else if (check.kind === "date") {
         const regex = dateRegex;
@@ -131579,7 +131579,7 @@ var ZodString = class _ZodString extends ZodType {
             validation: "date",
             message: check.message
           });
-          status2.dirty();
+          status.dirty();
         }
       } else if (check.kind === "time") {
         const regex = timeRegex(check);
@@ -131590,7 +131590,7 @@ var ZodString = class _ZodString extends ZodType {
             validation: "time",
             message: check.message
           });
-          status2.dirty();
+          status.dirty();
         }
       } else if (check.kind === "duration") {
         if (!durationRegex.test(input.data)) {
@@ -131600,7 +131600,7 @@ var ZodString = class _ZodString extends ZodType {
             code: ZodIssueCode.invalid_string,
             message: check.message
           });
-          status2.dirty();
+          status.dirty();
         }
       } else if (check.kind === "ip") {
         if (!isValidIP(input.data, check.version)) {
@@ -131610,7 +131610,7 @@ var ZodString = class _ZodString extends ZodType {
             code: ZodIssueCode.invalid_string,
             message: check.message
           });
-          status2.dirty();
+          status.dirty();
         }
       } else if (check.kind === "jwt") {
         if (!isValidJWT(input.data, check.alg)) {
@@ -131620,7 +131620,7 @@ var ZodString = class _ZodString extends ZodType {
             code: ZodIssueCode.invalid_string,
             message: check.message
           });
-          status2.dirty();
+          status.dirty();
         }
       } else if (check.kind === "cidr") {
         if (!isValidCidr(input.data, check.version)) {
@@ -131630,7 +131630,7 @@ var ZodString = class _ZodString extends ZodType {
             code: ZodIssueCode.invalid_string,
             message: check.message
           });
-          status2.dirty();
+          status.dirty();
         }
       } else if (check.kind === "base64") {
         if (!base64Regex.test(input.data)) {
@@ -131640,7 +131640,7 @@ var ZodString = class _ZodString extends ZodType {
             code: ZodIssueCode.invalid_string,
             message: check.message
           });
-          status2.dirty();
+          status.dirty();
         }
       } else if (check.kind === "base64url") {
         if (!base64urlRegex.test(input.data)) {
@@ -131650,13 +131650,13 @@ var ZodString = class _ZodString extends ZodType {
             code: ZodIssueCode.invalid_string,
             message: check.message
           });
-          status2.dirty();
+          status.dirty();
         }
       } else {
         util.assertNever(check);
       }
     }
-    return { status: status2.value, value: input.data };
+    return { status: status.value, value: input.data };
   }
   _regex(regex, validation, message) {
     return this.refinement((data) => regex.test(data), {
@@ -131932,7 +131932,7 @@ var ZodNumber = class _ZodNumber extends ZodType {
       return INVALID;
     }
     let ctx = void 0;
-    const status2 = new ParseStatus();
+    const status = new ParseStatus();
     for (const check of this._def.checks) {
       if (check.kind === "int") {
         if (!util.isInteger(input.data)) {
@@ -131943,7 +131943,7 @@ var ZodNumber = class _ZodNumber extends ZodType {
             received: "float",
             message: check.message
           });
-          status2.dirty();
+          status.dirty();
         }
       } else if (check.kind === "min") {
         const tooSmall = check.inclusive ? input.data < check.value : input.data <= check.value;
@@ -131957,7 +131957,7 @@ var ZodNumber = class _ZodNumber extends ZodType {
             exact: false,
             message: check.message
           });
-          status2.dirty();
+          status.dirty();
         }
       } else if (check.kind === "max") {
         const tooBig = check.inclusive ? input.data > check.value : input.data >= check.value;
@@ -131971,7 +131971,7 @@ var ZodNumber = class _ZodNumber extends ZodType {
             exact: false,
             message: check.message
           });
-          status2.dirty();
+          status.dirty();
         }
       } else if (check.kind === "multipleOf") {
         if (floatSafeRemainder(input.data, check.value) !== 0) {
@@ -131981,7 +131981,7 @@ var ZodNumber = class _ZodNumber extends ZodType {
             multipleOf: check.value,
             message: check.message
           });
-          status2.dirty();
+          status.dirty();
         }
       } else if (check.kind === "finite") {
         if (!Number.isFinite(input.data)) {
@@ -131990,13 +131990,13 @@ var ZodNumber = class _ZodNumber extends ZodType {
             code: ZodIssueCode.not_finite,
             message: check.message
           });
-          status2.dirty();
+          status.dirty();
         }
       } else {
         util.assertNever(check);
       }
     }
-    return { status: status2.value, value: input.data };
+    return { status: status.value, value: input.data };
   }
   gte(value, message) {
     return this.setLimit("min", value, true, errorUtil.toString(message));
@@ -132161,7 +132161,7 @@ var ZodBigInt = class _ZodBigInt extends ZodType {
       return this._getInvalidInput(input);
     }
     let ctx = void 0;
-    const status2 = new ParseStatus();
+    const status = new ParseStatus();
     for (const check of this._def.checks) {
       if (check.kind === "min") {
         const tooSmall = check.inclusive ? input.data < check.value : input.data <= check.value;
@@ -132174,7 +132174,7 @@ var ZodBigInt = class _ZodBigInt extends ZodType {
             inclusive: check.inclusive,
             message: check.message
           });
-          status2.dirty();
+          status.dirty();
         }
       } else if (check.kind === "max") {
         const tooBig = check.inclusive ? input.data > check.value : input.data >= check.value;
@@ -132187,7 +132187,7 @@ var ZodBigInt = class _ZodBigInt extends ZodType {
             inclusive: check.inclusive,
             message: check.message
           });
-          status2.dirty();
+          status.dirty();
         }
       } else if (check.kind === "multipleOf") {
         if (input.data % check.value !== BigInt(0)) {
@@ -132197,13 +132197,13 @@ var ZodBigInt = class _ZodBigInt extends ZodType {
             multipleOf: check.value,
             message: check.message
           });
-          status2.dirty();
+          status.dirty();
         }
       } else {
         util.assertNever(check);
       }
     }
-    return { status: status2.value, value: input.data };
+    return { status: status.value, value: input.data };
   }
   _getInvalidInput(input) {
     const ctx = this._getOrReturnCtx(input);
@@ -132361,7 +132361,7 @@ var ZodDate = class _ZodDate extends ZodType {
       });
       return INVALID;
     }
-    const status2 = new ParseStatus();
+    const status = new ParseStatus();
     let ctx = void 0;
     for (const check of this._def.checks) {
       if (check.kind === "min") {
@@ -132375,7 +132375,7 @@ var ZodDate = class _ZodDate extends ZodType {
             minimum: check.value,
             type: "date"
           });
-          status2.dirty();
+          status.dirty();
         }
       } else if (check.kind === "max") {
         if (input.data.getTime() > check.value) {
@@ -132388,14 +132388,14 @@ var ZodDate = class _ZodDate extends ZodType {
             maximum: check.value,
             type: "date"
           });
-          status2.dirty();
+          status.dirty();
         }
       } else {
         util.assertNever(check);
       }
     }
     return {
-      status: status2.value,
+      status: status.value,
       value: new Date(input.data.getTime())
     };
   }
@@ -132581,7 +132581,7 @@ ZodVoid.create = (params) => {
 };
 var ZodArray = class _ZodArray extends ZodType {
   _parse(input) {
-    const { ctx, status: status2 } = this._processInputParams(input);
+    const { ctx, status } = this._processInputParams(input);
     const def = this._def;
     if (ctx.parsedType !== ZodParsedType.array) {
       addIssueToContext(ctx, {
@@ -132604,7 +132604,7 @@ var ZodArray = class _ZodArray extends ZodType {
           exact: true,
           message: def.exactLength.message
         });
-        status2.dirty();
+        status.dirty();
       }
     }
     if (def.minLength !== null) {
@@ -132617,7 +132617,7 @@ var ZodArray = class _ZodArray extends ZodType {
           exact: false,
           message: def.minLength.message
         });
-        status2.dirty();
+        status.dirty();
       }
     }
     if (def.maxLength !== null) {
@@ -132630,20 +132630,20 @@ var ZodArray = class _ZodArray extends ZodType {
           exact: false,
           message: def.maxLength.message
         });
-        status2.dirty();
+        status.dirty();
       }
     }
     if (ctx.common.async) {
       return Promise.all([...ctx.data].map((item, i) => {
         return def.type._parseAsync(new ParseInputLazyPath(ctx, item, ctx.path, i));
       })).then((result2) => {
-        return ParseStatus.mergeArray(status2, result2);
+        return ParseStatus.mergeArray(status, result2);
       });
     }
     const result = [...ctx.data].map((item, i) => {
       return def.type._parseSync(new ParseInputLazyPath(ctx, item, ctx.path, i));
     });
-    return ParseStatus.mergeArray(status2, result);
+    return ParseStatus.mergeArray(status, result);
   }
   get element() {
     return this._def.type;
@@ -132732,7 +132732,7 @@ var ZodObject = class _ZodObject extends ZodType {
       });
       return INVALID;
     }
-    const { status: status2, ctx } = this._processInputParams(input);
+    const { status, ctx } = this._processInputParams(input);
     const { shape, keys: shapeKeys } = this._getCached();
     const extraKeys = [];
     if (!(this._def.catchall instanceof ZodNever && this._def.unknownKeys === "strip")) {
@@ -132767,7 +132767,7 @@ var ZodObject = class _ZodObject extends ZodType {
             code: ZodIssueCode.unrecognized_keys,
             keys: extraKeys
           });
-          status2.dirty();
+          status.dirty();
         }
       } else if (unknownKeys === "strip") {
       } else {
@@ -132801,10 +132801,10 @@ var ZodObject = class _ZodObject extends ZodType {
         }
         return syncPairs;
       }).then((syncPairs) => {
-        return ParseStatus.mergeObjectSync(status2, syncPairs);
+        return ParseStatus.mergeObjectSync(status, syncPairs);
       });
     } else {
-      return ParseStatus.mergeObjectSync(status2, pairs);
+      return ParseStatus.mergeObjectSync(status, pairs);
     }
   }
   get shape() {
@@ -133282,7 +133282,7 @@ function mergeValues(a, b) {
 }
 var ZodIntersection = class extends ZodType {
   _parse(input) {
-    const { status: status2, ctx } = this._processInputParams(input);
+    const { status, ctx } = this._processInputParams(input);
     const handleParsed = (parsedLeft, parsedRight) => {
       if (isAborted(parsedLeft) || isAborted(parsedRight)) {
         return INVALID;
@@ -133295,9 +133295,9 @@ var ZodIntersection = class extends ZodType {
         return INVALID;
       }
       if (isDirty(parsedLeft) || isDirty(parsedRight)) {
-        status2.dirty();
+        status.dirty();
       }
-      return { status: status2.value, value: merged.data };
+      return { status: status.value, value: merged.data };
     };
     if (ctx.common.async) {
       return Promise.all([
@@ -133335,7 +133335,7 @@ ZodIntersection.create = (left, right, params) => {
 };
 var ZodTuple = class _ZodTuple extends ZodType {
   _parse(input) {
-    const { status: status2, ctx } = this._processInputParams(input);
+    const { status, ctx } = this._processInputParams(input);
     if (ctx.parsedType !== ZodParsedType.array) {
       addIssueToContext(ctx, {
         code: ZodIssueCode.invalid_type,
@@ -133363,7 +133363,7 @@ var ZodTuple = class _ZodTuple extends ZodType {
         exact: false,
         type: "array"
       });
-      status2.dirty();
+      status.dirty();
     }
     const items = [...ctx.data].map((item, itemIndex) => {
       const schema = this._def.items[itemIndex] || this._def.rest;
@@ -133373,10 +133373,10 @@ var ZodTuple = class _ZodTuple extends ZodType {
     }).filter((x) => !!x);
     if (ctx.common.async) {
       return Promise.all(items).then((results) => {
-        return ParseStatus.mergeArray(status2, results);
+        return ParseStatus.mergeArray(status, results);
       });
     } else {
-      return ParseStatus.mergeArray(status2, items);
+      return ParseStatus.mergeArray(status, items);
     }
   }
   get items() {
@@ -133408,7 +133408,7 @@ var ZodRecord = class _ZodRecord extends ZodType {
     return this._def.valueType;
   }
   _parse(input) {
-    const { status: status2, ctx } = this._processInputParams(input);
+    const { status, ctx } = this._processInputParams(input);
     if (ctx.parsedType !== ZodParsedType.object) {
       addIssueToContext(ctx, {
         code: ZodIssueCode.invalid_type,
@@ -133428,9 +133428,9 @@ var ZodRecord = class _ZodRecord extends ZodType {
       });
     }
     if (ctx.common.async) {
-      return ParseStatus.mergeObjectAsync(status2, pairs);
+      return ParseStatus.mergeObjectAsync(status, pairs);
     } else {
-      return ParseStatus.mergeObjectSync(status2, pairs);
+      return ParseStatus.mergeObjectSync(status, pairs);
     }
   }
   get element() {
@@ -133461,7 +133461,7 @@ var ZodMap = class extends ZodType {
     return this._def.valueType;
   }
   _parse(input) {
-    const { status: status2, ctx } = this._processInputParams(input);
+    const { status, ctx } = this._processInputParams(input);
     if (ctx.parsedType !== ZodParsedType.map) {
       addIssueToContext(ctx, {
         code: ZodIssueCode.invalid_type,
@@ -133488,11 +133488,11 @@ var ZodMap = class extends ZodType {
             return INVALID;
           }
           if (key.status === "dirty" || value.status === "dirty") {
-            status2.dirty();
+            status.dirty();
           }
           finalMap.set(key.value, value.value);
         }
-        return { status: status2.value, value: finalMap };
+        return { status: status.value, value: finalMap };
       });
     } else {
       const finalMap = /* @__PURE__ */ new Map();
@@ -133503,11 +133503,11 @@ var ZodMap = class extends ZodType {
           return INVALID;
         }
         if (key.status === "dirty" || value.status === "dirty") {
-          status2.dirty();
+          status.dirty();
         }
         finalMap.set(key.value, value.value);
       }
-      return { status: status2.value, value: finalMap };
+      return { status: status.value, value: finalMap };
     }
   }
 };
@@ -133521,7 +133521,7 @@ ZodMap.create = (keyType, valueType, params) => {
 };
 var ZodSet = class _ZodSet extends ZodType {
   _parse(input) {
-    const { status: status2, ctx } = this._processInputParams(input);
+    const { status, ctx } = this._processInputParams(input);
     if (ctx.parsedType !== ZodParsedType.set) {
       addIssueToContext(ctx, {
         code: ZodIssueCode.invalid_type,
@@ -133541,7 +133541,7 @@ var ZodSet = class _ZodSet extends ZodType {
           exact: false,
           message: def.minSize.message
         });
-        status2.dirty();
+        status.dirty();
       }
     }
     if (def.maxSize !== null) {
@@ -133554,7 +133554,7 @@ var ZodSet = class _ZodSet extends ZodType {
           exact: false,
           message: def.maxSize.message
         });
-        status2.dirty();
+        status.dirty();
       }
     }
     const valueType = this._def.valueType;
@@ -133564,10 +133564,10 @@ var ZodSet = class _ZodSet extends ZodType {
         if (element.status === "aborted")
           return INVALID;
         if (element.status === "dirty")
-          status2.dirty();
+          status.dirty();
         parsedSet.add(element.value);
       }
-      return { status: status2.value, value: parsedSet };
+      return { status: status.value, value: parsedSet };
     }
     const elements = [...ctx.data.values()].map((item, i) => valueType._parse(new ParseInputLazyPath(ctx, item, ctx.path, i)));
     if (ctx.common.async) {
@@ -133898,15 +133898,15 @@ var ZodEffects = class extends ZodType {
     return this._def.schema._def.typeName === ZodFirstPartyTypeKind.ZodEffects ? this._def.schema.sourceType() : this._def.schema;
   }
   _parse(input) {
-    const { status: status2, ctx } = this._processInputParams(input);
+    const { status, ctx } = this._processInputParams(input);
     const effect = this._def.effect || null;
     const checkCtx = {
       addIssue: (arg) => {
         addIssueToContext(ctx, arg);
         if (arg.fatal) {
-          status2.abort();
+          status.abort();
         } else {
-          status2.dirty();
+          status.dirty();
         }
       },
       get path() {
@@ -133918,7 +133918,7 @@ var ZodEffects = class extends ZodType {
       const processed = effect.transform(ctx.data, checkCtx);
       if (ctx.common.async) {
         return Promise.resolve(processed).then(async (processed2) => {
-          if (status2.value === "aborted")
+          if (status.value === "aborted")
             return INVALID;
           const result = await this._def.schema._parseAsync({
             data: processed2,
@@ -133929,12 +133929,12 @@ var ZodEffects = class extends ZodType {
             return INVALID;
           if (result.status === "dirty")
             return DIRTY(result.value);
-          if (status2.value === "dirty")
+          if (status.value === "dirty")
             return DIRTY(result.value);
           return result;
         });
       } else {
-        if (status2.value === "aborted")
+        if (status.value === "aborted")
           return INVALID;
         const result = this._def.schema._parseSync({
           data: processed,
@@ -133945,7 +133945,7 @@ var ZodEffects = class extends ZodType {
           return INVALID;
         if (result.status === "dirty")
           return DIRTY(result.value);
-        if (status2.value === "dirty")
+        if (status.value === "dirty")
           return DIRTY(result.value);
         return result;
       }
@@ -133970,17 +133970,17 @@ var ZodEffects = class extends ZodType {
         if (inner.status === "aborted")
           return INVALID;
         if (inner.status === "dirty")
-          status2.dirty();
+          status.dirty();
         executeRefinement(inner.value);
-        return { status: status2.value, value: inner.value };
+        return { status: status.value, value: inner.value };
       } else {
         return this._def.schema._parseAsync({ data: ctx.data, path: ctx.path, parent: ctx }).then((inner) => {
           if (inner.status === "aborted")
             return INVALID;
           if (inner.status === "dirty")
-            status2.dirty();
+            status.dirty();
           return executeRefinement(inner.value).then(() => {
-            return { status: status2.value, value: inner.value };
+            return { status: status.value, value: inner.value };
           });
         });
       }
@@ -133998,13 +133998,13 @@ var ZodEffects = class extends ZodType {
         if (result instanceof Promise) {
           throw new Error(`Asynchronous transform encountered during synchronous parse operation. Use .parseAsync instead.`);
         }
-        return { status: status2.value, value: result };
+        return { status: status.value, value: result };
       } else {
         return this._def.schema._parseAsync({ data: ctx.data, path: ctx.path, parent: ctx }).then((base) => {
           if (!isValid(base))
             return INVALID;
           return Promise.resolve(effect.transform(base.value, checkCtx)).then((result) => ({
-            status: status2.value,
+            status: status.value,
             value: result
           }));
         });
@@ -134183,7 +134183,7 @@ var ZodBranded = class extends ZodType {
 };
 var ZodPipeline = class _ZodPipeline extends ZodType {
   _parse(input) {
-    const { status: status2, ctx } = this._processInputParams(input);
+    const { status, ctx } = this._processInputParams(input);
     if (ctx.common.async) {
       const handleAsync = async () => {
         const inResult = await this._def.in._parseAsync({
@@ -134194,7 +134194,7 @@ var ZodPipeline = class _ZodPipeline extends ZodType {
         if (inResult.status === "aborted")
           return INVALID;
         if (inResult.status === "dirty") {
-          status2.dirty();
+          status.dirty();
           return DIRTY(inResult.value);
         } else {
           return this._def.out._parseAsync({
@@ -134214,7 +134214,7 @@ var ZodPipeline = class _ZodPipeline extends ZodType {
       if (inResult.status === "aborted")
         return INVALID;
       if (inResult.status === "dirty") {
-        status2.dirty();
+        status.dirty();
         return {
           status: "dirty",
           value: inResult.value
@@ -135816,17 +135816,17 @@ router5.get("/status", authMiddleware, async (req, res) => {
 });
 router5.patch("/status", authMiddleware, requireSuperUser, async (req, res) => {
   try {
-    const { status: status2, activationDate, paymentPlan, maxUsers, tickets, maxAdminUsers } = req.body;
+    const { status, activationDate, paymentPlan, maxUsers, tickets, maxAdminUsers } = req.body;
     const updates = [];
     const values = [];
-    if (status2 !== void 0) {
-      if (!["active", "inactive"].includes(status2)) {
+    if (status !== void 0) {
+      if (!["active", "inactive"].includes(status)) {
         return res.status(400).json({ error: 'Status must be "active" or "inactive"' });
       }
       updates.push("status = ?");
-      values.push(status2);
+      values.push(status);
       const now3 = (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "");
-      const action = status2 === "active" ? "activated" : "deactivated";
+      const action = status === "active" ? "activated" : "deactivated";
       await db.run(
         `INSERT INTO activation_history (id, action, date, by_user_id) VALUES (?, ?, ?, ?)`,
         [v4_default(), action, now3, req.user.id]
@@ -135988,6 +135988,130 @@ router5.post("/backfill-timeline", authMiddleware, requireSuperUser, async (req,
 // server/routes/evaluations.ts
 var import_express6 = __toESM(require_express2(), 1);
 init_dist_node();
+
+// server/middleware/permissions.ts
+function normalizeRole(user) {
+  if (user.role === "super_user") return "super_user";
+  if (user.role === "admin") return "admin";
+  if (user.position === "socio" || user.position === "salary_partner") return "socio";
+  return "employee";
+}
+function hasRole(user, roles) {
+  const role = normalizeRole(user);
+  if (role === "super_user") return true;
+  if (role === "admin") return roles.some((r) => r === "admin" || r === "managing_partner");
+  if (role === "socio") return roles.includes("socio") || roles.includes("admin");
+  return roles.includes(role);
+}
+function isAdminOrSocio(user) {
+  return hasRole(user, ["super_user", "admin", "socio"]);
+}
+async function isSupervisorOf(supervisorId, employeeId, period) {
+  try {
+    const periodClause = period ? " AND period = ?" : "";
+    const params = period ? [supervisorId, employeeId, period] : [supervisorId, employeeId];
+    const assignment = await db.get(
+      `SELECT id FROM supervisor_assignments WHERE supervisor_id = ? AND employee_id = ?${periodClause} LIMIT 1`,
+      params
+    );
+    return !!assignment;
+  } catch {
+    return false;
+  }
+}
+async function getSuperviseeIds(supervisorId, period) {
+  try {
+    const periodClause = period ? " AND period = ?" : "";
+    const params = period ? [supervisorId, period] : [supervisorId];
+    const rows = await db.all(
+      `SELECT DISTINCT employee_id FROM supervisor_assignments WHERE supervisor_id = ?${periodClause}`,
+      params
+    );
+    return rows.map((r) => r.employee_id);
+  } catch {
+    return [];
+  }
+}
+async function logDenial(req, resource, reason) {
+  try {
+    await auditLog({
+      action: "authorization_denied",
+      // reuse — we'll add proper type later
+      userId: req.user?.id || null,
+      ipAddress: getClientIp(req),
+      userAgent: getUserAgent(req),
+      metadata: { type: "authorization_denied", resource, reason }
+    });
+  } catch {
+  }
+}
+function requireEntityAccess(opts) {
+  return async (req, res, next) => {
+    if (!req.user) return res.status(401).json({ error: "Not authenticated" });
+    const bypassRoles = opts.bypassRoles || ["super_user", "admin", "socio"];
+    if (hasRole(req.user, bypassRoles)) return next();
+    try {
+      const entityId = req.params.id;
+      if (!entityId) return res.status(400).json({ error: "Resource ID required" });
+      const entity = await db.get(opts.query, [...opts.queryParams || [], entityId]);
+      if (!entity) return res.status(404).json({ error: "Resource not found" });
+      const employeeId = entity.employee_id || entity.evaluated_id || entity.user_id;
+      if (employeeId && req.user.id === employeeId) {
+        req._entity = entity;
+        return next();
+      }
+      const supervisorId = entity.supervisor_id || entity.evaluator_id;
+      if (supervisorId && req.user.id === supervisorId) {
+        req._entity = entity;
+        return next();
+      }
+      if (opts.allowSupervisor !== false && employeeId) {
+        const period = entity.period || req.query.period;
+        if (await isSupervisorOf(req.user.id, employeeId, period)) {
+          req._entity = entity;
+          return next();
+        }
+      }
+      logDenial(req, req.path, `no entity access: not owner/supervisor of ${entityId}`);
+      return res.status(403).json({ error: "Access denied" });
+    } catch (err) {
+      console.error("Entity access check error:", err);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  };
+}
+function requireSupervisorAction(opts) {
+  return async (req, res, next) => {
+    if (!req.user) return res.status(401).json({ error: "Not authenticated" });
+    if (hasRole(req.user, ["super_user", "admin"])) return next();
+    try {
+      const entityId = req.params.id;
+      if (!entityId) return res.status(400).json({ error: "Resource ID required" });
+      const entity = await db.get(opts.query, [...opts.queryParams || [], entityId]);
+      if (!entity) return res.status(404).json({ error: "Resource not found" });
+      const supervisorId = entity.supervisor_id || entity.evaluator_id;
+      if (supervisorId && req.user.id === supervisorId) {
+        req._entity = entity;
+        return next();
+      }
+      const employeeId = entity.employee_id || entity.evaluated_id || entity.user_id;
+      if (employeeId) {
+        const period = entity.period || req.query.period;
+        if (await isSupervisorOf(req.user.id, employeeId, period)) {
+          req._entity = entity;
+          return next();
+        }
+      }
+      logDenial(req, req.path, `supervisor action denied for ${entityId}`);
+      return res.status(403).json({ error: "Only the supervisor or an administrator can perform this action" });
+    } catch (err) {
+      console.error("Supervisor action check error:", err);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  };
+}
+
+// server/routes/evaluations.ts
 var router6 = (0, import_express6.Router)();
 async function fetchResponses(evaluationIds) {
   if (evaluationIds.length === 0) return /* @__PURE__ */ new Map();
@@ -136016,7 +136140,7 @@ router6.get("/export/csv", authMiddleware, async (req, res) => {
     const { period } = req.query;
     if (!period) return res.status(400).json({ error: "period query parameter is required" });
     const user = req.user;
-    const canExport = user.role === "admin" || user.role === "super_user" || user.isManagingPartner || user.position === "socio";
+    const canExport = isAdminOrSocio(user);
     if (!canExport) {
       return res.status(403).json({ error: "Admin, partner, or socio access required" });
     }
@@ -136078,50 +136202,39 @@ router6.get("/export/csv", authMiddleware, async (req, res) => {
     for (const [k, v] of Object.entries(FALLBACK)) {
       if (!POSITION_LABELS_CSV[k]) POSITION_LABELS_CSV[k] = v;
     }
-    const rows = [];
-    rows.push("Evaluado,Posici\xF3n,\xC1rea de Pr\xE1ctica,Tipo de Evaluaci\xF3n,Evaluador,Pregunta ID,Puntuaci\xF3n (1-5),No Aplica,Sin Elementos,Peso (%),Calificaci\xF3n Total (%)");
-    for (const evaluation of evaluations) {
-      const evalResponses = responses.filter((r) => r.evaluation_id === evaluation.id);
-      for (const r of evalResponses) {
-        const isNA = r.not_applicable === 1;
-        const isNE = r.no_elements === 1;
-        const naApproved = naMap.get(`${r.evaluation_id}::${r.question_id}`);
-        const weight = r.weight || 1;
-        const naStatus = isNA ? naApproved === true ? "Aprobado" : naApproved === false ? "Rechazado" : "Pendiente" : "";
-        rows.push([
-          `"${evaluation.evaluated_name}"`,
-          POSITION_LABELS_CSV[evaluation.evaluated_position] || evaluation.evaluated_position,
-          evaluation.practice_area || "",
-          evaluation.type === "self" ? "Autoevaluaci\xF3n" : "Evaluador",
-          `"${evaluation.evaluator_name || ""}"`,
-          r.question_id,
-          isNA || isNE ? "" : r.score,
-          isNA ? "S\xED" : "",
-          isNE ? "S\xED" : "",
-          Math.round(weight),
-          Math.round(evaluation.total_score)
-        ].join(","));
-      }
+    const headers = ["Empleado", "Posici\xF3n", "\xC1rea", "Tipo", "Calificaci\xF3n (%)", "Comentarios empleado", "Comentarios supervisor"];
+    const questionIds = [...new Set(responses.map((r) => r.question_id))];
+    for (const qId of questionIds) {
+      headers.push(`Pregunta ${qId}`);
     }
-    rows.push("");
-    rows.push("--- RESUMEN POR EVALUACI\xD3N ---");
-    rows.push("Evaluado,Posici\xF3n,Tipo,Evaluador,Calificaci\xF3n Total (%),Feedback Completado");
+    const csvRows = [headers.join(",")];
     for (const evaluation of evaluations) {
-      rows.push([
+      const row = [
         `"${evaluation.evaluated_name}"`,
-        POSITION_LABELS_CSV[evaluation.evaluated_position] || evaluation.evaluated_position,
-        evaluation.type === "self" ? "Autoevaluaci\xF3n" : "Evaluador",
-        `"${evaluation.evaluator_name || ""}"`,
-        Math.round(evaluation.total_score),
-        evaluation.feedback_completed ? "S\xED" : "No"
-      ].join(","));
+        `"${POSITION_LABELS_CSV[evaluation.evaluated_position] || evaluation.evaluated_position}"`,
+        `"${evaluation.practice_area || ""}"`,
+        evaluation.type === "self" ? "Autoevaluaci\xF3n" : "Supervisor",
+        evaluation.total_score,
+        `"${(evaluation.comments || "").replace(/"/g, '""')}"`,
+        `"${(evaluation.supervisor_comments || "").replace(/"/g, '""')}"`
+      ];
+      const evalResps = responses.filter((r) => r.evaluation_id === evaluation.id);
+      for (const qId of questionIds) {
+        const resp = evalResps.find((r) => r.question_id === qId);
+        if (resp) {
+          const isNA = resp.not_applicable && naMap.get(`${evaluation.id}::${qId}`);
+          row.push(isNA ? "N/A" : resp.score !== null ? resp.score : "");
+        } else {
+          row.push("");
+        }
+      }
+      csvRows.push(row.join(","));
     }
-    const csv = "\uFEFF" + rows.join("\n");
     res.setHeader("Content-Type", "text/csv; charset=utf-8");
-    res.setHeader("Content-Disposition", `attachment; filename="evaluaciones-${period}-${(/* @__PURE__ */ new Date()).toISOString().split("T")[0]}.csv"`);
-    return res.send(csv);
+    res.setHeader("Content-Disposition", `attachment; filename="evaluations-${period}.csv"`);
+    return res.send("\uFEFF" + csvRows.join("\n"));
   } catch (err) {
-    console.error("Export evaluations CSV error:", err);
+    console.error("CSV export error:", err);
     return res.status(500).json({ error: "Internal server error" });
   }
 });
@@ -136146,7 +136259,15 @@ router6.get("/", authMiddleware, async (req, res) => {
       sql += " AND type = ?";
       params.push(type);
     }
-    const evaluations = await db.all(sql, params);
+    let evaluations = await db.all(sql, params);
+    if (!isAdminOrSocio(req.user)) {
+      const superviseeIds = await getSuperviseeIds(req.user.id, period);
+      evaluations = evaluations.filter((e) => {
+        if (e.evaluator_id === req.user.id || e.evaluated_id === req.user.id) return true;
+        if (superviseeIds.includes(e.evaluated_id)) return true;
+        return false;
+      });
+    }
     const ids = evaluations.map((e) => e.id);
     const responsesMap = await fetchResponses(ids);
     const approvalsMap = await fetchNaApprovals(ids);
@@ -136161,23 +136282,38 @@ router6.get("/", authMiddleware, async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router6.get("/:id", authMiddleware, async (req, res) => {
-  try {
-    const evaluation = await db.get("SELECT * FROM evaluations WHERE id = ?", [req.params.id]);
-    if (!evaluation) return res.status(404).json({ error: "Evaluation not found" });
-    const responses = await db.all("SELECT * FROM evaluation_responses WHERE evaluation_id = ?", [req.params.id]);
-    const naApprovals = await db.all("SELECT * FROM evaluation_na_approvals WHERE evaluation_id = ?", [req.params.id]);
-    return res.json({ ...evaluation, responses, naApprovals });
-  } catch (err) {
-    console.error("Get evaluation error:", err);
-    return res.status(500).json({ error: "Internal server error" });
+router6.get(
+  "/:id",
+  authMiddleware,
+  requireEntityAccess({
+    query: "SELECT * FROM evaluations WHERE id = ?",
+    allowSupervisor: true
+  }),
+  async (req, res) => {
+    try {
+      const evaluation = req._entity || await db.get("SELECT * FROM evaluations WHERE id = ?", [req.params.id]);
+      if (!evaluation) return res.status(404).json({ error: "Evaluation not found" });
+      const responses = await db.all("SELECT * FROM evaluation_responses WHERE evaluation_id = ?", [req.params.id]);
+      const naApprovals = await db.all("SELECT * FROM evaluation_na_approvals WHERE evaluation_id = ?", [req.params.id]);
+      return res.json({ ...evaluation, responses, naApprovals });
+    } catch (err) {
+      console.error("Get evaluation error:", err);
+      return res.status(500).json({ error: "Internal server error" });
+    }
   }
-});
+);
 router6.post("/", authMiddleware, async (req, res) => {
   try {
     const { evaluatorId, evaluatedId, period, type, comments, supervisorComments, responses } = req.body;
     if (!evaluatorId || !evaluatedId || !period || !type) {
       return res.status(400).json({ error: "evaluatorId, evaluatedId, period, and type are required" });
+    }
+    if (!isAdminOrSocio(req.user)) {
+      const isOwner = evaluatorId === req.user.id || evaluatedId === req.user.id;
+      const isSup = !isOwner && await isSupervisorOf(req.user.id, evaluatedId, period);
+      if (!isOwner && !isSup) {
+        return res.status(403).json({ error: "You can only create evaluations for yourself or your direct reports" });
+      }
     }
     const id = v4_default();
     const now3 = (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "");
@@ -136210,108 +136346,130 @@ router6.post("/", authMiddleware, async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router6.put("/:id", authMiddleware, async (req, res) => {
-  try {
-    const evaluation = await db.get("SELECT * FROM evaluations WHERE id = ?", [req.params.id]);
-    if (!evaluation) return res.status(404).json({ error: "Evaluation not found" });
-    const { comments, supervisorComments, totalScore, responses } = req.body;
-    const now3 = (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "");
-    const updates = [];
-    const params = [];
-    if (comments !== void 0) {
-      updates.push("comments = ?");
-      params.push(comments);
+router6.put(
+  "/:id",
+  authMiddleware,
+  requireEntityAccess({
+    query: "SELECT * FROM evaluations WHERE id = ?",
+    allowSupervisor: true
+  }),
+  async (req, res) => {
+    try {
+      const evaluation = req._entity || await db.get("SELECT * FROM evaluations WHERE id = ?", [req.params.id]);
+      if (!evaluation) return res.status(404).json({ error: "Evaluation not found" });
+      const { comments, supervisorComments, totalScore, responses } = req.body;
+      const now3 = (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "");
+      const updates = [];
+      const params = [];
+      if (comments !== void 0) {
+        updates.push("comments = ?");
+        params.push(comments);
+      }
+      if (supervisorComments !== void 0) {
+        updates.push("supervisor_comments = ?");
+        params.push(supervisorComments);
+      }
+      if (totalScore !== void 0) {
+        updates.push("total_score = ?");
+        params.push(Math.round(totalScore));
+      }
+      updates.push("completed_at = ?");
+      params.push(now3);
+      if (responses && Array.isArray(responses)) {
+        await db.transaction(async (conn) => {
+          if (updates.length > 0) {
+            await tx.run(conn, `UPDATE evaluations SET ${updates.join(", ")} WHERE id = ?`, [...params, req.params.id]);
+          }
+          await tx.run(conn, "DELETE FROM evaluation_responses WHERE evaluation_id = ?", [req.params.id]);
+          for (const r of responses) {
+            await tx.run(
+              conn,
+              `INSERT INTO evaluation_responses (id, evaluation_id, question_id, score, not_applicable, no_elements, weight) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+              [v4_default(), req.params.id, r.questionId, r.score, r.notApplicable ? 1 : 0, r.noElements ? 1 : 0, Math.round(r.weight || 1)]
+            );
+          }
+        });
+      } else if (updates.length > 0) {
+        await db.run(`UPDATE evaluations SET ${updates.join(", ")} WHERE id = ?`, [...params, req.params.id]);
+      }
+      const updated = await db.get("SELECT * FROM evaluations WHERE id = ?", [req.params.id]);
+      const evalResponses = await db.all("SELECT * FROM evaluation_responses WHERE evaluation_id = ?", [req.params.id]);
+      if (updated && updated.completed_at) {
+        const evalType = updated.type === "self" ? "self" : "supervisor";
+        await logTimelineEvent(updated.evaluated_id, "evaluation_completed", {
+          metadata: { period: updated.period, evalType, score: updated.total_score, evaluatorId: updated.evaluator_id },
+          note: `${evalType === "self" ? "Autoevaluaci\xF3n" : "Evaluaci\xF3n de supervisor"} completada \u2014 Periodo: ${updated.period}, Calificaci\xF3n: ${updated.total_score}%`,
+          createdBy: req.user.id
+        });
+      }
+      const evalNaApprovals = await db.all("SELECT * FROM evaluation_na_approvals WHERE evaluation_id = ?", [req.params.id]);
+      return res.json({ ...updated, responses: evalResponses, naApprovals: evalNaApprovals });
+    } catch (err) {
+      console.error("Update evaluation error:", err);
+      return res.status(500).json({ error: "Internal server error" });
     }
-    if (supervisorComments !== void 0) {
-      updates.push("supervisor_comments = ?");
-      params.push(supervisorComments);
-    }
-    if (totalScore !== void 0) {
-      updates.push("total_score = ?");
-      params.push(Math.round(totalScore));
-    }
-    updates.push("completed_at = ?");
-    params.push(now3);
-    if (responses && Array.isArray(responses)) {
-      await db.transaction(async (conn) => {
-        if (updates.length > 0) {
-          await tx.run(conn, `UPDATE evaluations SET ${updates.join(", ")} WHERE id = ?`, [...params, req.params.id]);
-        }
-        await tx.run(conn, "DELETE FROM evaluation_responses WHERE evaluation_id = ?", [req.params.id]);
-        for (const r of responses) {
-          await tx.run(
-            conn,
-            `INSERT INTO evaluation_responses (id, evaluation_id, question_id, score, not_applicable, no_elements, weight) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-            [v4_default(), req.params.id, r.questionId, r.score, r.notApplicable ? 1 : 0, r.noElements ? 1 : 0, Math.round(r.weight || 1)]
-          );
-        }
-      });
-    } else if (updates.length > 0) {
-      await db.run(`UPDATE evaluations SET ${updates.join(", ")} WHERE id = ?`, [...params, req.params.id]);
-    }
-    const updated = await db.get("SELECT * FROM evaluations WHERE id = ?", [req.params.id]);
-    const evalResponses = await db.all("SELECT * FROM evaluation_responses WHERE evaluation_id = ?", [req.params.id]);
-    if (updated && updated.completed_at) {
-      const evalType = updated.type === "self" ? "self" : "supervisor";
-      await logTimelineEvent(updated.evaluated_id, "evaluation_completed", {
-        metadata: { period: updated.period, evalType, score: updated.total_score, evaluatorId: updated.evaluator_id },
-        note: `${evalType === "self" ? "Autoevaluaci\xF3n" : "Evaluaci\xF3n de supervisor"} completada \u2014 Periodo: ${updated.period}, Calificaci\xF3n: ${updated.total_score}%`,
-        createdBy: req.user.id
-      });
-    }
-    const evalNaApprovals = await db.all("SELECT * FROM evaluation_na_approvals WHERE evaluation_id = ?", [req.params.id]);
-    return res.json({ ...updated, responses: evalResponses, naApprovals: evalNaApprovals });
-  } catch (err) {
-    console.error("Update evaluation error:", err);
-    return res.status(500).json({ error: "Internal server error" });
   }
-});
-router6.patch("/:id/feedback", authMiddleware, async (req, res) => {
-  try {
-    const evaluation = await db.get("SELECT * FROM evaluations WHERE id = ?", [req.params.id]);
-    if (!evaluation) return res.status(404).json({ error: "Evaluation not found" });
-    const now3 = (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "");
-    await db.run(
-      "UPDATE evaluations SET feedback_completed = 1, feedback_completed_at = ?, feedback_completed_by = ? WHERE id = ?",
-      [now3, req.user.id, req.params.id]
-    );
-    const updated = await db.get("SELECT * FROM evaluations WHERE id = ?", [req.params.id]);
-    const evalResponses = await db.all("SELECT * FROM evaluation_responses WHERE evaluation_id = ?", [req.params.id]);
-    const evalNaApprovals = await db.all("SELECT * FROM evaluation_na_approvals WHERE evaluation_id = ?", [req.params.id]);
-    if (updated) {
-      await logTimelineEvent(updated.evaluated_id, "evaluation_completed", {
-        metadata: { period: updated.period, evalType: "feedback", score: updated.total_score },
-        note: `Sesi\xF3n de feedback completada \u2014 Periodo: ${updated.period}`,
-        createdBy: req.user.id
-      });
+);
+router6.patch(
+  "/:id/feedback",
+  authMiddleware,
+  requireSupervisorAction({
+    query: "SELECT * FROM evaluations WHERE id = ?"
+  }),
+  async (req, res) => {
+    try {
+      const evaluation = req._entity || await db.get("SELECT * FROM evaluations WHERE id = ?", [req.params.id]);
+      if (!evaluation) return res.status(404).json({ error: "Evaluation not found" });
+      const now3 = (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "");
+      await db.run(
+        "UPDATE evaluations SET feedback_completed = 1, feedback_completed_at = ?, feedback_completed_by = ? WHERE id = ?",
+        [now3, req.user.id, req.params.id]
+      );
+      const updated = await db.get("SELECT * FROM evaluations WHERE id = ?", [req.params.id]);
+      const evalResponses = await db.all("SELECT * FROM evaluation_responses WHERE evaluation_id = ?", [req.params.id]);
+      const evalNaApprovals = await db.all("SELECT * FROM evaluation_na_approvals WHERE evaluation_id = ?", [req.params.id]);
+      if (updated) {
+        await logTimelineEvent(updated.evaluated_id, "evaluation_completed", {
+          metadata: { period: updated.period, evalType: "feedback", score: updated.total_score },
+          note: `Sesi\xF3n de feedback completada \u2014 Periodo: ${updated.period}`,
+          createdBy: req.user.id
+        });
+      }
+      return res.json({ ...updated, responses: evalResponses, naApprovals: evalNaApprovals });
+    } catch (err) {
+      console.error("Feedback error:", err);
+      return res.status(500).json({ error: "Internal server error" });
     }
-    return res.json({ ...updated, responses: evalResponses, naApprovals: evalNaApprovals });
-  } catch (err) {
-    console.error("Feedback error:", err);
-    return res.status(500).json({ error: "Internal server error" });
   }
-});
-router6.patch("/:id/na-approval", authMiddleware, async (req, res) => {
-  try {
-    const evaluation = await db.get("SELECT * FROM evaluations WHERE id = ?", [req.params.id]);
-    if (!evaluation) return res.status(404).json({ error: "Evaluation not found" });
-    const { questionId, approved } = req.body;
-    if (!questionId) return res.status(400).json({ error: "questionId is required" });
-    await db.run(
-      `INSERT INTO evaluation_na_approvals (id, evaluation_id, question_id, approved, approved_by, approved_at)
+);
+router6.patch(
+  "/:id/na-approval",
+  authMiddleware,
+  requireSupervisorAction({
+    query: "SELECT * FROM evaluations WHERE id = ?"
+  }),
+  async (req, res) => {
+    try {
+      const evaluation = req._entity || await db.get("SELECT * FROM evaluations WHERE id = ?", [req.params.id]);
+      if (!evaluation) return res.status(404).json({ error: "Evaluation not found" });
+      const { questionId, approved } = req.body;
+      if (!questionId) return res.status(400).json({ error: "questionId is required" });
+      await db.run(
+        `INSERT INTO evaluation_na_approvals (id, evaluation_id, question_id, approved, approved_by, approved_at)
        VALUES (?, ?, ?, ?, ?, ?)
        ON DUPLICATE KEY UPDATE approved = VALUES(approved), approved_by = VALUES(approved_by), approved_at = VALUES(approved_at)`,
-      [v4_default(), req.params.id, questionId, approved ? 1 : 0, req.user.id, (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "")]
-    );
-    const evalResponses = await db.all("SELECT * FROM evaluation_responses WHERE evaluation_id = ?", [req.params.id]);
-    const allApprovals = await db.all("SELECT * FROM evaluation_na_approvals WHERE evaluation_id = ?", [req.params.id]);
-    const updated = await db.get("SELECT * FROM evaluations WHERE id = ?", [req.params.id]);
-    return res.json({ ...updated, responses: evalResponses, naApprovals: allApprovals });
-  } catch (err) {
-    console.error("NA approval error:", err);
-    return res.status(500).json({ error: "Internal server error" });
+        [v4_default(), req.params.id, questionId, approved ? 1 : 0, req.user.id, (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "")]
+      );
+      const evalResponses = await db.all("SELECT * FROM evaluation_responses WHERE evaluation_id = ?", [req.params.id]);
+      const allApprovals = await db.all("SELECT * FROM evaluation_na_approvals WHERE evaluation_id = ?", [req.params.id]);
+      const updated = await db.get("SELECT * FROM evaluations WHERE id = ?", [req.params.id]);
+      return res.json({ ...updated, responses: evalResponses, naApprovals: allApprovals });
+    } catch (err) {
+      console.error("NA approval error:", err);
+      return res.status(500).json({ error: "Internal server error" });
+    }
   }
-});
+);
 var evaluations_default = router6;
 
 // server/routes/action-plans.ts
@@ -136331,7 +136489,15 @@ router7.get("/", authMiddleware, async (req, res) => {
       sql += " AND period = ?";
       params.push(period);
     }
-    const plans = await db.all(sql, params);
+    let plans = await db.all(sql, params);
+    if (!isAdminOrSocio(req.user)) {
+      const superviseeIds = await getSuperviseeIds(req.user.id, period);
+      plans = plans.filter((p) => {
+        if (p.employee_id === req.user.id || p.supervisor_id === req.user.id) return true;
+        if (superviseeIds.includes(p.employee_id)) return true;
+        return false;
+      });
+    }
     const result = [];
     for (const plan of plans) {
       const items = await db.all("SELECT * FROM smart_action_items WHERE action_plan_id = ?", [plan.id]);
@@ -136348,6 +136514,13 @@ router7.post("/", authMiddleware, async (req, res) => {
     const { employeeId, supervisorId, period, content, items } = req.body;
     if (!employeeId || !supervisorId || !period) {
       return res.status(400).json({ error: "employeeId, supervisorId, and period are required" });
+    }
+    if (!isAdminOrSocio(req.user)) {
+      const isOwnPlan = employeeId === req.user.id || supervisorId === req.user.id;
+      const isSup = !isOwnPlan && await isSupervisorOf(req.user.id, employeeId, period);
+      if (!isOwnPlan && !isSup) {
+        return res.status(403).json({ error: "You can only create action plans for yourself or your direct reports" });
+      }
     }
     const id = v4_default();
     const now3 = (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "");
@@ -136380,80 +136553,87 @@ router7.post("/", authMiddleware, async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router7.patch("/:id", authMiddleware, async (req, res) => {
-  try {
-    const plan = await db.get("SELECT * FROM action_plans WHERE id = ?", [req.params.id]);
-    if (!plan) return res.status(404).json({ error: "Action plan not found" });
-    const { content, items } = req.body;
-    const now3 = (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "");
-    const updates = [];
-    const params = [];
-    if (content !== void 0) {
-      updates.push("content = ?");
-      params.push(content);
+router7.patch(
+  "/:id",
+  authMiddleware,
+  requireEntityAccess({
+    query: "SELECT * FROM action_plans WHERE id = ?",
+    allowSupervisor: true
+  }),
+  async (req, res) => {
+    try {
+      const plan = req._entity || await db.get("SELECT * FROM action_plans WHERE id = ?", [req.params.id]);
+      if (!plan) return res.status(404).json({ error: "Action plan not found" });
+      const { content, items } = req.body;
+      const now3 = (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "");
+      const updates = [];
+      const params = [];
+      if (content !== void 0) {
+        updates.push("content = ?");
+        params.push(content);
+      }
+      updates.push("updated_at = ?");
+      params.push(now3);
+      if (items && Array.isArray(items)) {
+        await db.transaction(async (conn) => {
+          await tx.run(conn, `UPDATE action_plans SET ${updates.join(", ")} WHERE id = ?`, [...params, req.params.id]);
+          await tx.run(conn, "DELETE FROM smart_action_items WHERE action_plan_id = ?", [req.params.id]);
+          for (const item of items) {
+            await tx.run(
+              conn,
+              `INSERT INTO smart_action_items (id, action_plan_id, competencia, objetivo, acciones, que_evitar, fecha_revision, apoyos) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+              [v4_default(), req.params.id, item.competencia || "", item.objetivo || "", item.acciones || "", item.queEvitar || "", item.fechaRevision || "", item.apoyos || ""]
+            );
+          }
+        });
+      } else {
+        await db.run(`UPDATE action_plans SET ${updates.join(", ")} WHERE id = ?`, [...params, req.params.id]);
+      }
+      const updated = await db.get("SELECT * FROM action_plans WHERE id = ?", [req.params.id]);
+      const planItems = await db.all("SELECT * FROM smart_action_items WHERE action_plan_id = ?", [req.params.id]);
+      return res.json({ ...updated, items: planItems });
+    } catch (err) {
+      console.error("Update action plan error:", err);
+      return res.status(500).json({ error: "Internal server error" });
     }
-    updates.push("updated_at = ?");
-    params.push(now3);
-    if (items && Array.isArray(items)) {
-      await db.transaction(async (conn) => {
-        await tx.run(conn, `UPDATE action_plans SET ${updates.join(", ")} WHERE id = ?`, [...params, req.params.id]);
-        await tx.run(conn, "DELETE FROM smart_action_items WHERE action_plan_id = ?", [req.params.id]);
-        for (const item of items) {
-          await tx.run(
-            conn,
-            `INSERT INTO smart_action_items (id, action_plan_id, competencia, objetivo, acciones, que_evitar, fecha_revision, apoyos) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-            [v4_default(), req.params.id, item.competencia || "", item.objetivo || "", item.acciones || "", item.queEvitar || "", item.fechaRevision || "", item.apoyos || ""]
-          );
-        }
-      });
-    } else {
-      await db.run(`UPDATE action_plans SET ${updates.join(", ")} WHERE id = ?`, [...params, req.params.id]);
-    }
-    const updated = await db.get("SELECT * FROM action_plans WHERE id = ?", [req.params.id]);
-    const planItems = await db.all("SELECT * FROM smart_action_items WHERE action_plan_id = ?", [req.params.id]);
-    if (updated) {
-      const statusLabel = status === "approved" ? "aprobado" : "rechazado";
-      await logTimelineEvent(updated.employee_id, "action_plan_milestone", {
-        metadata: { planId: req.params.id, status, period: updated.period },
-        note: `Plan de acci\xF3n ${statusLabel} \u2014 Periodo: ${updated.period}`,
-        createdBy: req.user.id
-      });
-    }
-    return res.json({ ...updated, items: planItems });
-  } catch (err) {
-    console.error("Update action plan error:", err);
-    return res.status(500).json({ error: "Internal server error" });
   }
-});
-router7.post("/:id/approve", authMiddleware, async (req, res) => {
-  try {
-    const plan = await db.get("SELECT * FROM action_plans WHERE id = ?", [req.params.id]);
-    if (!plan) return res.status(404).json({ error: "Action plan not found" });
-    const { status: status2, comments } = req.body;
-    if (!["approved", "rejected"].includes(status2)) {
-      return res.status(400).json({ error: "Status must be approved or rejected" });
+);
+router7.post(
+  "/:id/approve",
+  authMiddleware,
+  requireSupervisorAction({
+    query: "SELECT * FROM action_plans WHERE id = ?"
+  }),
+  async (req, res) => {
+    try {
+      const plan = req._entity || await db.get("SELECT * FROM action_plans WHERE id = ?", [req.params.id]);
+      if (!plan) return res.status(404).json({ error: "Action plan not found" });
+      const { status, comments } = req.body;
+      if (!["approved", "rejected"].includes(status)) {
+        return res.status(400).json({ error: "Status must be approved or rejected" });
+      }
+      const now3 = (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "");
+      await db.run(
+        "UPDATE action_plans SET approval_status = ?, approval_comments = ?, approved_by = ?, approved_at = ?, updated_at = ? WHERE id = ?",
+        [status, comments || null, req.user.id, now3, now3, req.params.id]
+      );
+      const updated = await db.get("SELECT * FROM action_plans WHERE id = ?", [req.params.id]);
+      const planItems = await db.all("SELECT * FROM smart_action_items WHERE action_plan_id = ?", [req.params.id]);
+      if (updated) {
+        const statusLabel = status === "approved" ? "aprobado" : "rechazado";
+        await logTimelineEvent(updated.employee_id, "action_plan_milestone", {
+          metadata: { planId: req.params.id, status, period: updated.period },
+          note: `Plan de acci\xF3n ${statusLabel} \u2014 Periodo: ${updated.period}`,
+          createdBy: req.user.id
+        });
+      }
+      return res.json({ ...updated, items: planItems });
+    } catch (err) {
+      console.error("Approve action plan error:", err);
+      return res.status(500).json({ error: "Internal server error" });
     }
-    const now3 = (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "");
-    await db.run(
-      "UPDATE action_plans SET approval_status = ?, approval_comments = ?, approved_by = ?, approved_at = ?, updated_at = ? WHERE id = ?",
-      [status2, comments || null, req.user.id, now3, now3, req.params.id]
-    );
-    const updated = await db.get("SELECT * FROM action_plans WHERE id = ?", [req.params.id]);
-    const planItems = await db.all("SELECT * FROM smart_action_items WHERE action_plan_id = ?", [req.params.id]);
-    if (updated) {
-      const statusLabel = status2 === "approved" ? "aprobado" : "rechazado";
-      await logTimelineEvent(updated.employee_id, "action_plan_milestone", {
-        metadata: { planId: req.params.id, status: status2, period: updated.period },
-        note: `Plan de acci\xF3n ${statusLabel} \u2014 Periodo: ${updated.period}`,
-        createdBy: req.user.id
-      });
-    }
-    return res.json({ ...updated, items: planItems });
-  } catch (err) {
-    console.error("Approve action plan error:", err);
-    return res.status(500).json({ error: "Internal server error" });
   }
-});
+);
 var action_plans_default = router7;
 
 // server/routes/objectives.ts
@@ -136463,15 +136643,19 @@ var router8 = (0, import_express8.Router)();
 router8.get("/", authMiddleware, async (req, res) => {
   try {
     const { userId, period } = req.query;
-    const isAdminOrSocio = req.user.role === "admin" || req.user.role === "super_user" || req.user.position === "socio" || req.user.position === "salary_partner";
     let sql = "SELECT * FROM personal_objectives WHERE 1=1";
     const params = [];
-    if (!isAdminOrSocio) {
-      sql += " AND user_id = ?";
-      params.push(req.user.id);
-    } else if (userId) {
-      sql += " AND user_id = ?";
-      params.push(userId);
+    if (isAdminOrSocio(req.user)) {
+      if (userId) {
+        sql += " AND user_id = ?";
+        params.push(userId);
+      }
+    } else {
+      const superviseeIds = await getSuperviseeIds(req.user.id, period);
+      const visibleIds = [req.user.id, ...superviseeIds];
+      const placeholders = visibleIds.map(() => "?").join(",");
+      sql += ` AND user_id IN (${placeholders})`;
+      params.push(...visibleIds);
     }
     if (period) {
       sql += " AND period = ?";
@@ -136502,6 +136686,13 @@ router8.post("/", authMiddleware, async (req, res) => {
     }
     if (!["admin", "legal"].includes(type)) {
       return res.status(400).json({ error: "Type must be admin or legal" });
+    }
+    if (!isAdminOrSocio(req.user)) {
+      const isOwn = userId === req.user.id;
+      const isSup = !isOwn && await isSupervisorOf(req.user.id, userId, period);
+      if (!isOwn && !isSup) {
+        return res.status(403).json({ error: "You can only create objectives for yourself or your direct reports" });
+      }
     }
     const existing = await db.get("SELECT * FROM personal_objectives WHERE user_id = ? AND period = ?", [userId, period]);
     const objId = await db.transaction(async (conn) => {
@@ -136574,6 +136765,14 @@ router8.post("/:id/submit", authMiddleware, async (req, res) => {
   try {
     const obj = await db.get("SELECT * FROM personal_objectives WHERE id = ?", [req.params.id]);
     if (!obj) return res.status(404).json({ error: "Objectives not found" });
+    if (!isAdminOrSocio(req.user)) {
+      if (obj.user_id !== req.user.id) {
+        const isSup = await isSupervisorOf(req.user.id, obj.user_id, obj.period);
+        if (!isSup) {
+          return res.status(403).json({ error: "You can only submit your own objectives" });
+        }
+      }
+    }
     const now3 = (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "");
     await db.run(
       "UPDATE admin_objectives SET status = 'pending', submitted_at = ? WHERE personal_objectives_id = ? AND status = 'draft'",
@@ -136590,20 +136789,26 @@ router8.post("/:id/review", authMiddleware, async (req, res) => {
   try {
     const obj = await db.get("SELECT * FROM personal_objectives WHERE id = ?", [req.params.id]);
     if (!obj) return res.status(404).json({ error: "Objectives not found" });
-    const { objectiveId, status: status2, comment } = req.body;
-    if (!objectiveId || !["approved", "rejected"].includes(status2)) {
+    if (req.user.role !== "super_user" && req.user.role !== "admin") {
+      const isSup = await isSupervisorOf(req.user.id, obj.user_id, obj.period);
+      if (!isSup) {
+        return res.status(403).json({ error: "Only the supervisor or an administrator can review objectives" });
+      }
+    }
+    const { objectiveId, status, comment } = req.body;
+    if (!objectiveId || !["approved", "rejected"].includes(status)) {
       return res.status(400).json({ error: "objectiveId and valid status (approved/rejected) are required" });
     }
     const now3 = (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "");
     await db.run(
       "UPDATE admin_objectives SET status = ?, reviewed_by = ?, reviewed_at = ?, reviewer_comment = ? WHERE id = ?",
-      [status2, req.user.id, now3, comment || null, objectiveId]
+      [status, req.user.id, now3, comment || null, objectiveId]
     );
     const adminObjs = await db.all("SELECT * FROM admin_objectives WHERE personal_objectives_id = ?", [req.params.id]);
     return res.json({ ...obj, adminObjectives: adminObjs, legalObjective: null });
   } catch (err) {
     console.error("Review objectives error:", err);
-    return res.status(500).json({ error: "Internal server server" });
+    return res.status(500).json({ error: "Internal server error" });
   }
 });
 var objectives_default = router8;
@@ -136720,16 +136925,24 @@ init_dist_node();
 var router10 = (0, import_express10.Router)();
 router10.get("/requests", authMiddleware, async (req, res) => {
   try {
-    const { userId, status: status2 } = req.query;
+    const { userId, status } = req.query;
     let sql = "SELECT * FROM vacation_requests WHERE 1=1";
     const params = [];
-    if (userId) {
-      sql += " AND user_id = ?";
-      params.push(userId);
+    if (isAdminOrSocio(req.user)) {
+      if (userId) {
+        sql += " AND user_id = ?";
+        params.push(userId);
+      }
+    } else {
+      const superviseeIds = await getSuperviseeIds(req.user.id);
+      const visibleIds = [req.user.id, ...superviseeIds];
+      const placeholders = visibleIds.map(() => "?").join(",");
+      sql += ` AND user_id IN (${placeholders})`;
+      params.push(...visibleIds);
     }
-    if (status2) {
+    if (status) {
       sql += " AND status = ?";
-      params.push(status2);
+      params.push(status);
     }
     const requests = await db.all(sql, params);
     const result = await Promise.all(requests.map(async (r) => {
@@ -136748,6 +136961,14 @@ router10.post("/requests", authMiddleware, async (req, res) => {
     if (!userId || !startDate || !endDate || !days) {
       return res.status(400).json({ error: "userId, startDate, endDate, and days are required" });
     }
+    if (!isAdminOrSocio(req.user)) {
+      if (userId !== req.user.id) {
+        const isSup = await isSupervisorOf(req.user.id, userId);
+        if (!isSup) {
+          return res.status(403).json({ error: "You can only create vacation requests for yourself or your direct reports" });
+        }
+      }
+    }
     const id = v4_default();
     const now3 = (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "");
     await db.run(
@@ -136765,12 +136986,19 @@ router10.patch("/requests/:id", authMiddleware, async (req, res) => {
   try {
     const request = await db.get("SELECT * FROM vacation_requests WHERE id = ?", [req.params.id]);
     if (!request) return res.status(404).json({ error: "Request not found" });
-    const { status: status2, reason } = req.body;
+    if (!isAdminOrSocio(req.user)) {
+      const isOwn = request.user_id === req.user.id;
+      const isSup = !isOwn && await isSupervisorOf(req.user.id, request.user_id);
+      if (!isOwn && !isSup) {
+        return res.status(403).json({ error: "You can only modify your own requests or your direct reports' requests" });
+      }
+    }
+    const { status, reason } = req.body;
     const updates = [];
     const params = [];
-    if (status2) {
+    if (status) {
       updates.push("status = ?");
-      params.push(status2);
+      params.push(status);
     }
     if (reason !== void 0) {
       updates.push("reason = ?");
@@ -136791,6 +137019,12 @@ router10.post("/requests/:id/approve", authMiddleware, async (req, res) => {
   try {
     const request = await db.get("SELECT * FROM vacation_requests WHERE id = ?", [req.params.id]);
     if (!request) return res.status(404).json({ error: "Request not found" });
+    if (req.user.role !== "super_user" && req.user.role !== "admin") {
+      const isSup = await isSupervisorOf(req.user.id, request.user_id);
+      if (!isSup) {
+        return res.status(403).json({ error: "Only the supervisor or an administrator can approve vacation requests" });
+      }
+    }
     const { action, comment } = req.body;
     if (!["approved", "rejected"].includes(action)) {
       return res.status(400).json({ error: "Action must be approved or rejected" });
@@ -136814,11 +137048,13 @@ router10.delete("/requests/:id", authMiddleware, async (req, res) => {
   try {
     const request = await db.get("SELECT * FROM vacation_requests WHERE id = ?", [req.params.id]);
     if (!request) return res.status(404).json({ error: "Request not found" });
-    if (request.user_id !== req.user.id && req.user.role !== "admin" && req.user.role !== "super_user") {
-      return res.status(403).json({ error: "Can only delete your own requests" });
-    }
-    if (request.status !== "pending" && req.user.role !== "admin" && req.user.role !== "super_user") {
-      return res.status(400).json({ error: "Can only delete pending requests" });
+    if (req.user.role !== "admin" && req.user.role !== "super_user") {
+      if (request.user_id !== req.user.id) {
+        return res.status(403).json({ error: "Can only delete your own requests" });
+      }
+      if (request.status !== "pending") {
+        return res.status(400).json({ error: "Can only delete pending requests" });
+      }
     }
     await db.run("DELETE FROM vacation_requests WHERE id = ?", [req.params.id]);
     return res.json({ message: "Request deleted" });
@@ -138734,9 +138970,9 @@ var vacationsTool = {
     const act = args.action;
     try {
       if (act === "list") {
-        const status2 = args.status || "pending";
+        const status = args.status || "pending";
         let sql = "SELECT v.*, u.name as user_name, u.position FROM vacation_requests v JOIN users u ON v.user_id=u.id WHERE v.status=?";
-        const params = [status2];
+        const params = [status];
         if (args.user_id) {
           sql += " AND v.user_id=?";
           params.push(args.user_id);
@@ -140518,7 +140754,7 @@ var upload = (0, import_multer.default)({
   }
 });
 var LLM_TIMEOUT_MS = 12e4;
-function llmErrorMessage(status2, body) {
+function llmErrorMessage(status, body) {
   let detail = "";
   try {
     const parsed = JSON.parse(body);
@@ -140527,7 +140763,7 @@ function llmErrorMessage(status2, body) {
     else if (parsed?.message) detail = parsed.message;
   } catch {
   }
-  switch (status2) {
+  switch (status) {
     case 401:
       return "La API key no es v\xE1lida o est\xE1 ausente. Verifica la configuraci\xF3n del Copiloto (API Key).";
     case 403:
@@ -140541,7 +140777,7 @@ function llmErrorMessage(status2, body) {
     case 503:
       return detail ? `El servicio de IA no est\xE1 disponible (${detail}). Intenta de nuevo m\xE1s tarde.` : "El servicio de IA no est\xE1 disponible en este momento. Intenta de nuevo m\xE1s tarde.";
     default:
-      return detail ? `Error del servicio de IA (${status2}): ${detail}` : `Error del servicio de IA (c\xF3digo ${status2}). Intenta de nuevo.`;
+      return detail ? `Error del servicio de IA (${status}): ${detail}` : `Error del servicio de IA (c\xF3digo ${status}). Intenta de nuevo.`;
   }
 }
 router16.use(authMiddleware, requireSuperUser);

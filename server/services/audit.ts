@@ -29,7 +29,8 @@ export type AuditAction =
   | 'mfa_enabled'
   | 'mfa_disabled'
   | 'mfa_challenge_success'
-  | 'mfa_challenge_failed';
+  | 'mfa_challenge_failed'
+  | 'authorization_denied';
 
 interface AuditLogParams {
   action: AuditAction;
