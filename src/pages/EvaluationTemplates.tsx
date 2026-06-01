@@ -40,6 +40,13 @@ export default function EvaluationTemplates() {
   const [editQuestions, setEditQuestions] = useState<EvalQuestion[]>([]);
   const [showLibrary, setShowLibrary] = useState(false);
   const [librarySearch, setLibrarySearch] = useState('');
+  const [selectedPracticeArea, setSelectedPracticeArea] = useState<Record<string, string>>({});
+
+  const PRACTICE_AREAS = [
+    { key: 'corporativo', label: 'Corporativo' },
+    { key: 'consultoria_fiscal', label: 'Consultoría Fiscal' },
+    { key: 'litigio_fiscal', label: 'Litigio Fiscal' },
+  ];
 
   const canEdit = currentUser?.isAdmin || currentUser?.isSuperUser;
 
@@ -64,7 +71,10 @@ export default function EvaluationTemplates() {
     return map;
   }, [sectionWeightsData]);
 
-  // Group all questions by position and assemble full templates
+  // Legal positions (have técnico section with practice area variants)
+  const LEGAL_POSITIONS = new Set(['socio', 'salary_partner', 'counsel', 'asociado_sr', 'asociado_mid', 'asociado_jr', 'pasante_carrera', 'pasante', 'pasante_corporativo']);
+
+  // Group all questions by position, filtered by practice area for legal positions
   const templatesByPosition = useMemo(() => {
     const grouped: Record<string, EvalQuestion[]> = {};
     for (const q of allQuestions) {
@@ -80,14 +90,26 @@ export default function EvaluationTemplates() {
         practiceArea: q.practiceArea,
       });
     }
+    // For legal positions, filter técnico questions by selected practice area
+    const filtered: Record<string, EvalQuestion[]> = {};
+    for (const [pos, qs] of Object.entries(grouped)) {
+      if (LEGAL_POSITIONS.has(pos)) {
+        const pa = selectedPracticeArea[pos] || 'corporativo';
+        const tecnicoForArea = qs.filter(q => q.section === 'tecnico' && (q.practiceArea === pa || (!q.practiceArea && pa === 'corporativo')));
+        const nonTecnico = qs.filter(q => q.section !== 'tecnico');
+        filtered[pos] = [...tecnicoForArea, ...nonTecnico];
+      } else {
+        filtered[pos] = qs;
+      }
+    }
     // Rescale each position's questions using section weights
     const rescaled: Record<string, EvalQuestion[]> = {};
-    for (const [pos, qs] of Object.entries(grouped)) {
+    for (const [pos, qs] of Object.entries(filtered)) {
       const sw = sectionWeightsMap[pos] || { tecnico: 0, competencias: 80, blandas: 20 };
       rescaled[pos] = rescale(qs, sw);
     }
     return rescaled;
-  }, [allQuestions, sectionWeightsMap]);
+  }, [allQuestions, sectionWeightsMap, selectedPracticeArea]);
 
   // Filtered library questions for inline picker
   const filteredLibQuestions = useMemo(() => {
@@ -188,6 +210,24 @@ export default function EvaluationTemplates() {
 
         {isOpen && (
           <div className="px-5 pb-5 border-t">
+            {/* Practice area tabs for legal positions */}
+            {LEGAL_POSITIONS.has(pos) && !isEditing && (
+              <div className="flex gap-2 mb-4">
+                {PRACTICE_AREAS.map(pa => (
+                  <button
+                    key={pa.key}
+                    onClick={() => setSelectedPracticeArea(prev => ({ ...prev, [pos]: pa.key }))}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                      (selectedPracticeArea[pos] || 'corporativo') === pa.key
+                        ? 'bg-accent text-accent-foreground'
+                        : 'bg-muted/50 text-muted-foreground hover:bg-muted'
+                    }`}
+                  >
+                    {pa.label}
+                  </button>
+                ))}
+              </div>
+            )}
             {questions.length === 0 && !isEditing && (
               <p className="text-sm text-muted-foreground py-4 text-center">Sin preguntas configuradas</p>
             )}

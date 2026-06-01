@@ -130212,8 +130212,8 @@ async function seedEvaluationData() {
   console.log("  Checking if re-seeding is needed...");
   await cleanupOldCustomQuestions();
   const count = await db.getScalar("SELECT COUNT(*) as cnt FROM template_questions WHERE source = ?", ["seed"]);
-  if (count === 198) {
-    console.log("  Evaluation data already seeded (198 questions), skipping.");
+  if (count === 308) {
+    console.log("  Evaluation data already seeded (308 questions), skipping.");
     return;
   }
   console.log(`  Current seed questions: ${count}, expected 198. Re-seeding...`);
@@ -130602,7 +130602,118 @@ async function seedEvaluationData() {
       { libraryRef: "ql-010", position: "soporte", practiceArea: "corporativo", section: "blandas", category: "Habilidades Blandas", weight: 9, sortOrder: 197 },
       { libraryRef: "ql-018", position: "soporte", practiceArea: "corporativo", section: "blandas", category: "Actitud", weight: 9, sortOrder: 198 },
       { libraryRef: "ql-001", position: "pasante_carrera", practiceArea: "corporativo", section: "competencias", category: "Desempe\xF1o", weight: 10, sortOrder: 199 },
-      { libraryRef: "ql-011", position: "pasante_carrera", practiceArea: "corporativo", section: "competencias", category: "Desempe\xF1o", weight: 10, sortOrder: 200 }
+      { libraryRef: "ql-011", position: "pasante_carrera", practiceArea: "corporativo", section: "competencias", category: "Desempe\xF1o", weight: 10, sortOrder: 200 },
+      // ─── Fiscal Consultoría technical questions (legal positions) ──────────
+      { libraryRef: "ql-new-fiscal", position: "pasante", practiceArea: "consultoria_fiscal", section: "tecnico", category: "Normatividad fiscal", weight: 8, sortOrder: 301 },
+      { libraryRef: "ql-new-fiscal", position: "pasante_corporativo", practiceArea: "consultoria_fiscal", section: "tecnico", category: "Normatividad fiscal", weight: 8, sortOrder: 302 },
+      { libraryRef: "ql-new-fiscal", position: "pasante", practiceArea: "consultoria_fiscal", section: "tecnico", category: "Opiniones fiscales", weight: 8, sortOrder: 303 },
+      { libraryRef: "ql-new-fiscal", position: "pasante_corporativo", practiceArea: "consultoria_fiscal", section: "tecnico", category: "Opiniones fiscales", weight: 8, sortOrder: 304 },
+      { libraryRef: "ql-new-fiscal", position: "pasante", practiceArea: "consultoria_fiscal", section: "tecnico", category: "Planeaci\xF3n fiscal", weight: 8, sortOrder: 305 },
+      { libraryRef: "ql-new-fiscal", position: "pasante_corporativo", practiceArea: "consultoria_fiscal", section: "tecnico", category: "Planeaci\xF3n fiscal", weight: 8, sortOrder: 306 },
+      { libraryRef: "ql-new-fiscal", position: "pasante", practiceArea: "consultoria_fiscal", section: "tecnico", category: "Criterios y jurisprudencia", weight: 8, sortOrder: 307 },
+      { libraryRef: "ql-new-fiscal", position: "pasante_corporativo", practiceArea: "consultoria_fiscal", section: "tecnico", category: "Criterios y jurisprudencia", weight: 8, sortOrder: 308 },
+      { libraryRef: "ql-new-fiscal", position: "pasante", practiceArea: "consultoria_fiscal", section: "tecnico", category: "Impactos fiscales", weight: 8, sortOrder: 309 },
+      { libraryRef: "ql-new-fiscal", position: "pasante_corporativo", practiceArea: "consultoria_fiscal", section: "tecnico", category: "Impactos fiscales", weight: 8, sortOrder: 310 },
+      { libraryRef: "ql-new-fiscal", position: "pasante", practiceArea: "consultoria_fiscal", section: "tecnico", category: "Normatividad fiscal", weight: 8, sortOrder: 311 },
+      { libraryRef: "ql-new-fiscal", position: "pasante_corporativo", practiceArea: "consultoria_fiscal", section: "tecnico", category: "Normatividad fiscal", weight: 8, sortOrder: 312 },
+      { libraryRef: "ql-new-fiscal", position: "pasante", practiceArea: "consultoria_fiscal", section: "tecnico", category: "Opiniones fiscales", weight: 8, sortOrder: 313 },
+      { libraryRef: "ql-new-fiscal", position: "pasante_corporativo", practiceArea: "consultoria_fiscal", section: "tecnico", category: "Opiniones fiscales", weight: 8, sortOrder: 314 },
+      { libraryRef: "ql-new-fiscal", position: "pasante", practiceArea: "consultoria_fiscal", section: "tecnico", category: "Planeaci\xF3n fiscal", weight: 8, sortOrder: 315 },
+      { libraryRef: "ql-new-fiscal", position: "pasante_corporativo", practiceArea: "consultoria_fiscal", section: "tecnico", category: "Planeaci\xF3n fiscal", weight: 8, sortOrder: 316 },
+      { libraryRef: "ql-new-fiscal", position: "pasante", practiceArea: "consultoria_fiscal", section: "tecnico", category: "Criterios y jurisprudencia", weight: 8, sortOrder: 317 },
+      { libraryRef: "ql-new-fiscal", position: "pasante_corporativo", practiceArea: "consultoria_fiscal", section: "tecnico", category: "Criterios y jurisprudencia", weight: 8, sortOrder: 318 },
+      { libraryRef: "ql-new-fiscal", position: "pasante", practiceArea: "consultoria_fiscal", section: "tecnico", category: "Impactos fiscales", weight: 8, sortOrder: 319 },
+      { libraryRef: "ql-new-fiscal", position: "pasante_corporativo", practiceArea: "consultoria_fiscal", section: "tecnico", category: "Impactos fiscales", weight: 8, sortOrder: 320 },
+      { libraryRef: "ql-new-fiscal", position: "pasante_carrera", practiceArea: "consultoria_fiscal", section: "tecnico", category: "Normatividad fiscal", weight: 8, sortOrder: 321 },
+      { libraryRef: "ql-new-fiscal", position: "pasante_carrera", practiceArea: "consultoria_fiscal", section: "tecnico", category: "Opiniones fiscales", weight: 8, sortOrder: 322 },
+      { libraryRef: "ql-new-fiscal", position: "pasante_carrera", practiceArea: "consultoria_fiscal", section: "tecnico", category: "Planeaci\xF3n fiscal", weight: 8, sortOrder: 323 },
+      { libraryRef: "ql-new-fiscal", position: "pasante_carrera", practiceArea: "consultoria_fiscal", section: "tecnico", category: "Criterios y jurisprudencia", weight: 8, sortOrder: 324 },
+      { libraryRef: "ql-new-fiscal", position: "pasante_carrera", practiceArea: "consultoria_fiscal", section: "tecnico", category: "Impactos fiscales", weight: 8, sortOrder: 325 },
+      { libraryRef: "ql-new-fiscal", position: "asociado_jr", practiceArea: "consultoria_fiscal", section: "tecnico", category: "Normatividad fiscal", weight: 8, sortOrder: 326 },
+      { libraryRef: "ql-new-fiscal", position: "asociado_jr", practiceArea: "consultoria_fiscal", section: "tecnico", category: "Opiniones fiscales", weight: 8, sortOrder: 327 },
+      { libraryRef: "ql-new-fiscal", position: "asociado_jr", practiceArea: "consultoria_fiscal", section: "tecnico", category: "Planeaci\xF3n fiscal", weight: 8, sortOrder: 328 },
+      { libraryRef: "ql-new-fiscal", position: "asociado_jr", practiceArea: "consultoria_fiscal", section: "tecnico", category: "Criterios y jurisprudencia", weight: 8, sortOrder: 329 },
+      { libraryRef: "ql-new-fiscal", position: "asociado_jr", practiceArea: "consultoria_fiscal", section: "tecnico", category: "Impactos fiscales", weight: 8, sortOrder: 330 },
+      { libraryRef: "ql-new-fiscal", position: "asociado_mid", practiceArea: "consultoria_fiscal", section: "tecnico", category: "Normatividad fiscal", weight: 12, sortOrder: 331 },
+      { libraryRef: "ql-new-fiscal", position: "asociado_mid", practiceArea: "consultoria_fiscal", section: "tecnico", category: "Opiniones fiscales", weight: 12, sortOrder: 332 },
+      { libraryRef: "ql-new-fiscal", position: "asociado_mid", practiceArea: "consultoria_fiscal", section: "tecnico", category: "Planeaci\xF3n fiscal", weight: 12, sortOrder: 333 },
+      { libraryRef: "ql-new-fiscal", position: "asociado_mid", practiceArea: "consultoria_fiscal", section: "tecnico", category: "Criterios y jurisprudencia", weight: 12, sortOrder: 334 },
+      { libraryRef: "ql-new-fiscal", position: "asociado_mid", practiceArea: "consultoria_fiscal", section: "tecnico", category: "Impactos fiscales", weight: 12, sortOrder: 335 },
+      { libraryRef: "ql-new-fiscal", position: "asociado_sr", practiceArea: "consultoria_fiscal", section: "tecnico", category: "Normatividad fiscal", weight: 12, sortOrder: 336 },
+      { libraryRef: "ql-new-fiscal", position: "asociado_sr", practiceArea: "consultoria_fiscal", section: "tecnico", category: "Opiniones fiscales", weight: 12, sortOrder: 337 },
+      { libraryRef: "ql-new-fiscal", position: "asociado_sr", practiceArea: "consultoria_fiscal", section: "tecnico", category: "Planeaci\xF3n fiscal", weight: 12, sortOrder: 338 },
+      { libraryRef: "ql-new-fiscal", position: "asociado_sr", practiceArea: "consultoria_fiscal", section: "tecnico", category: "Criterios y jurisprudencia", weight: 12, sortOrder: 339 },
+      { libraryRef: "ql-new-fiscal", position: "asociado_sr", practiceArea: "consultoria_fiscal", section: "tecnico", category: "Impactos fiscales", weight: 12, sortOrder: 340 },
+      { libraryRef: "ql-new-fiscal", position: "counsel", practiceArea: "consultoria_fiscal", section: "tecnico", category: "Normatividad fiscal", weight: 12, sortOrder: 341 },
+      { libraryRef: "ql-new-fiscal", position: "counsel", practiceArea: "consultoria_fiscal", section: "tecnico", category: "Opiniones fiscales", weight: 12, sortOrder: 342 },
+      { libraryRef: "ql-new-fiscal", position: "counsel", practiceArea: "consultoria_fiscal", section: "tecnico", category: "Planeaci\xF3n fiscal", weight: 12, sortOrder: 343 },
+      { libraryRef: "ql-new-fiscal", position: "counsel", practiceArea: "consultoria_fiscal", section: "tecnico", category: "Criterios y jurisprudencia", weight: 12, sortOrder: 344 },
+      { libraryRef: "ql-new-fiscal", position: "counsel", practiceArea: "consultoria_fiscal", section: "tecnico", category: "Impactos fiscales", weight: 12, sortOrder: 345 },
+      { libraryRef: "ql-new-fiscal", position: "salary_partner", practiceArea: "consultoria_fiscal", section: "tecnico", category: "Normatividad fiscal", weight: 12, sortOrder: 346 },
+      { libraryRef: "ql-new-fiscal", position: "salary_partner", practiceArea: "consultoria_fiscal", section: "tecnico", category: "Opiniones fiscales", weight: 12, sortOrder: 347 },
+      { libraryRef: "ql-new-fiscal", position: "salary_partner", practiceArea: "consultoria_fiscal", section: "tecnico", category: "Planeaci\xF3n fiscal", weight: 12, sortOrder: 348 },
+      { libraryRef: "ql-new-fiscal", position: "salary_partner", practiceArea: "consultoria_fiscal", section: "tecnico", category: "Criterios y jurisprudencia", weight: 12, sortOrder: 349 },
+      { libraryRef: "ql-new-fiscal", position: "salary_partner", practiceArea: "consultoria_fiscal", section: "tecnico", category: "Impactos fiscales", weight: 12, sortOrder: 350 },
+      { libraryRef: "ql-new-fiscal", position: "socio", practiceArea: "consultoria_fiscal", section: "tecnico", category: "Normatividad fiscal", weight: 12, sortOrder: 351 },
+      { libraryRef: "ql-new-fiscal", position: "socio", practiceArea: "consultoria_fiscal", section: "tecnico", category: "Opiniones fiscales", weight: 12, sortOrder: 352 },
+      { libraryRef: "ql-new-fiscal", position: "socio", practiceArea: "consultoria_fiscal", section: "tecnico", category: "Planeaci\xF3n fiscal", weight: 12, sortOrder: 353 },
+      { libraryRef: "ql-new-fiscal", position: "socio", practiceArea: "consultoria_fiscal", section: "tecnico", category: "Criterios y jurisprudencia", weight: 12, sortOrder: 354 },
+      { libraryRef: "ql-new-fiscal", position: "socio", practiceArea: "consultoria_fiscal", section: "tecnico", category: "Impactos fiscales", weight: 12, sortOrder: 355 },
+      { libraryRef: "ql-new-litigio", position: "pasante", practiceArea: "litigio_fiscal", section: "tecnico", category: "Redacci\xF3n de escritos", weight: 8, sortOrder: 356 },
+      { libraryRef: "ql-new-litigio", position: "pasante_corporativo", practiceArea: "litigio_fiscal", section: "tecnico", category: "Redacci\xF3n de escritos", weight: 8, sortOrder: 357 },
+      { libraryRef: "ql-new-litigio", position: "pasante", practiceArea: "litigio_fiscal", section: "tecnico", category: "Estrategia procesal", weight: 8, sortOrder: 358 },
+      { libraryRef: "ql-new-litigio", position: "pasante_corporativo", practiceArea: "litigio_fiscal", section: "tecnico", category: "Estrategia procesal", weight: 8, sortOrder: 359 },
+      { libraryRef: "ql-new-litigio", position: "pasante", practiceArea: "litigio_fiscal", section: "tecnico", category: "Audiencias y diligencias", weight: 8, sortOrder: 360 },
+      { libraryRef: "ql-new-litigio", position: "pasante_corporativo", practiceArea: "litigio_fiscal", section: "tecnico", category: "Audiencias y diligencias", weight: 8, sortOrder: 361 },
+      { libraryRef: "ql-new-litigio", position: "pasante", practiceArea: "litigio_fiscal", section: "tecnico", category: "Conocimiento normativo", weight: 8, sortOrder: 362 },
+      { libraryRef: "ql-new-litigio", position: "pasante_corporativo", practiceArea: "litigio_fiscal", section: "tecnico", category: "Conocimiento normativo", weight: 8, sortOrder: 363 },
+      { libraryRef: "ql-new-litigio", position: "pasante", practiceArea: "litigio_fiscal", section: "tecnico", category: "Seguimiento de expedientes", weight: 8, sortOrder: 364 },
+      { libraryRef: "ql-new-litigio", position: "pasante_corporativo", practiceArea: "litigio_fiscal", section: "tecnico", category: "Seguimiento de expedientes", weight: 8, sortOrder: 365 },
+      { libraryRef: "ql-new-litigio", position: "pasante", practiceArea: "litigio_fiscal", section: "tecnico", category: "Redacci\xF3n de escritos", weight: 8, sortOrder: 366 },
+      { libraryRef: "ql-new-litigio", position: "pasante_corporativo", practiceArea: "litigio_fiscal", section: "tecnico", category: "Redacci\xF3n de escritos", weight: 8, sortOrder: 367 },
+      { libraryRef: "ql-new-litigio", position: "pasante", practiceArea: "litigio_fiscal", section: "tecnico", category: "Estrategia procesal", weight: 8, sortOrder: 368 },
+      { libraryRef: "ql-new-litigio", position: "pasante_corporativo", practiceArea: "litigio_fiscal", section: "tecnico", category: "Estrategia procesal", weight: 8, sortOrder: 369 },
+      { libraryRef: "ql-new-litigio", position: "pasante", practiceArea: "litigio_fiscal", section: "tecnico", category: "Audiencias y diligencias", weight: 8, sortOrder: 370 },
+      { libraryRef: "ql-new-litigio", position: "pasante_corporativo", practiceArea: "litigio_fiscal", section: "tecnico", category: "Audiencias y diligencias", weight: 8, sortOrder: 371 },
+      { libraryRef: "ql-new-litigio", position: "pasante", practiceArea: "litigio_fiscal", section: "tecnico", category: "Conocimiento normativo", weight: 8, sortOrder: 372 },
+      { libraryRef: "ql-new-litigio", position: "pasante_corporativo", practiceArea: "litigio_fiscal", section: "tecnico", category: "Conocimiento normativo", weight: 8, sortOrder: 373 },
+      { libraryRef: "ql-new-litigio", position: "pasante", practiceArea: "litigio_fiscal", section: "tecnico", category: "Seguimiento de expedientes", weight: 8, sortOrder: 374 },
+      { libraryRef: "ql-new-litigio", position: "pasante_corporativo", practiceArea: "litigio_fiscal", section: "tecnico", category: "Seguimiento de expedientes", weight: 8, sortOrder: 375 },
+      { libraryRef: "ql-new-litigio", position: "pasante_carrera", practiceArea: "litigio_fiscal", section: "tecnico", category: "Redacci\xF3n de escritos", weight: 8, sortOrder: 376 },
+      { libraryRef: "ql-new-litigio", position: "pasante_carrera", practiceArea: "litigio_fiscal", section: "tecnico", category: "Estrategia procesal", weight: 8, sortOrder: 377 },
+      { libraryRef: "ql-new-litigio", position: "pasante_carrera", practiceArea: "litigio_fiscal", section: "tecnico", category: "Audiencias y diligencias", weight: 8, sortOrder: 378 },
+      { libraryRef: "ql-new-litigio", position: "pasante_carrera", practiceArea: "litigio_fiscal", section: "tecnico", category: "Conocimiento normativo", weight: 8, sortOrder: 379 },
+      { libraryRef: "ql-new-litigio", position: "pasante_carrera", practiceArea: "litigio_fiscal", section: "tecnico", category: "Seguimiento de expedientes", weight: 8, sortOrder: 380 },
+      { libraryRef: "ql-new-litigio", position: "asociado_jr", practiceArea: "litigio_fiscal", section: "tecnico", category: "Redacci\xF3n de escritos", weight: 8, sortOrder: 381 },
+      { libraryRef: "ql-new-litigio", position: "asociado_jr", practiceArea: "litigio_fiscal", section: "tecnico", category: "Estrategia procesal", weight: 8, sortOrder: 382 },
+      { libraryRef: "ql-new-litigio", position: "asociado_jr", practiceArea: "litigio_fiscal", section: "tecnico", category: "Audiencias y diligencias", weight: 8, sortOrder: 383 },
+      { libraryRef: "ql-new-litigio", position: "asociado_jr", practiceArea: "litigio_fiscal", section: "tecnico", category: "Conocimiento normativo", weight: 8, sortOrder: 384 },
+      { libraryRef: "ql-new-litigio", position: "asociado_jr", practiceArea: "litigio_fiscal", section: "tecnico", category: "Seguimiento de expedientes", weight: 8, sortOrder: 385 },
+      { libraryRef: "ql-new-litigio", position: "asociado_mid", practiceArea: "litigio_fiscal", section: "tecnico", category: "Redacci\xF3n de escritos", weight: 12, sortOrder: 386 },
+      { libraryRef: "ql-new-litigio", position: "asociado_mid", practiceArea: "litigio_fiscal", section: "tecnico", category: "Estrategia procesal", weight: 12, sortOrder: 387 },
+      { libraryRef: "ql-new-litigio", position: "asociado_mid", practiceArea: "litigio_fiscal", section: "tecnico", category: "Audiencias y diligencias", weight: 12, sortOrder: 388 },
+      { libraryRef: "ql-new-litigio", position: "asociado_mid", practiceArea: "litigio_fiscal", section: "tecnico", category: "Conocimiento normativo", weight: 12, sortOrder: 389 },
+      { libraryRef: "ql-new-litigio", position: "asociado_mid", practiceArea: "litigio_fiscal", section: "tecnico", category: "Seguimiento de expedientes", weight: 12, sortOrder: 390 },
+      { libraryRef: "ql-new-litigio", position: "asociado_sr", practiceArea: "litigio_fiscal", section: "tecnico", category: "Redacci\xF3n de escritos", weight: 12, sortOrder: 391 },
+      { libraryRef: "ql-new-litigio", position: "asociado_sr", practiceArea: "litigio_fiscal", section: "tecnico", category: "Estrategia procesal", weight: 12, sortOrder: 392 },
+      { libraryRef: "ql-new-litigio", position: "asociado_sr", practiceArea: "litigio_fiscal", section: "tecnico", category: "Audiencias y diligencias", weight: 12, sortOrder: 393 },
+      { libraryRef: "ql-new-litigio", position: "asociado_sr", practiceArea: "litigio_fiscal", section: "tecnico", category: "Conocimiento normativo", weight: 12, sortOrder: 394 },
+      { libraryRef: "ql-new-litigio", position: "asociado_sr", practiceArea: "litigio_fiscal", section: "tecnico", category: "Seguimiento de expedientes", weight: 12, sortOrder: 395 },
+      { libraryRef: "ql-new-litigio", position: "counsel", practiceArea: "litigio_fiscal", section: "tecnico", category: "Redacci\xF3n de escritos", weight: 12, sortOrder: 396 },
+      { libraryRef: "ql-new-litigio", position: "counsel", practiceArea: "litigio_fiscal", section: "tecnico", category: "Estrategia procesal", weight: 12, sortOrder: 397 },
+      { libraryRef: "ql-new-litigio", position: "counsel", practiceArea: "litigio_fiscal", section: "tecnico", category: "Audiencias y diligencias", weight: 12, sortOrder: 398 },
+      { libraryRef: "ql-new-litigio", position: "counsel", practiceArea: "litigio_fiscal", section: "tecnico", category: "Conocimiento normativo", weight: 12, sortOrder: 399 },
+      { libraryRef: "ql-new-litigio", position: "counsel", practiceArea: "litigio_fiscal", section: "tecnico", category: "Seguimiento de expedientes", weight: 12, sortOrder: 400 },
+      { libraryRef: "ql-new-litigio", position: "salary_partner", practiceArea: "litigio_fiscal", section: "tecnico", category: "Redacci\xF3n de escritos", weight: 12, sortOrder: 401 },
+      { libraryRef: "ql-new-litigio", position: "salary_partner", practiceArea: "litigio_fiscal", section: "tecnico", category: "Estrategia procesal", weight: 12, sortOrder: 402 },
+      { libraryRef: "ql-new-litigio", position: "salary_partner", practiceArea: "litigio_fiscal", section: "tecnico", category: "Audiencias y diligencias", weight: 12, sortOrder: 403 },
+      { libraryRef: "ql-new-litigio", position: "salary_partner", practiceArea: "litigio_fiscal", section: "tecnico", category: "Conocimiento normativo", weight: 12, sortOrder: 404 },
+      { libraryRef: "ql-new-litigio", position: "salary_partner", practiceArea: "litigio_fiscal", section: "tecnico", category: "Seguimiento de expedientes", weight: 12, sortOrder: 405 },
+      { libraryRef: "ql-new-litigio", position: "socio", practiceArea: "litigio_fiscal", section: "tecnico", category: "Redacci\xF3n de escritos", weight: 12, sortOrder: 406 },
+      { libraryRef: "ql-new-litigio", position: "socio", practiceArea: "litigio_fiscal", section: "tecnico", category: "Estrategia procesal", weight: 12, sortOrder: 407 },
+      { libraryRef: "ql-new-litigio", position: "socio", practiceArea: "litigio_fiscal", section: "tecnico", category: "Audiencias y diligencias", weight: 12, sortOrder: 408 },
+      { libraryRef: "ql-new-litigio", position: "socio", practiceArea: "litigio_fiscal", section: "tecnico", category: "Conocimiento normativo", weight: 12, sortOrder: 409 },
+      { libraryRef: "ql-new-litigio", position: "socio", practiceArea: "litigio_fiscal", section: "tecnico", category: "Seguimiento de expedientes", weight: 12, sortOrder: 410 }
     ];
     let questionCount = 0;
     for (const tq of templateQuestions) {
@@ -139602,7 +139713,10 @@ router13.get("/full-template/:position", authMiddleware, async (req, res) => {
     const tecnicas = questions.filter((q) => q.section === "tecnico");
     const competencias = questions.filter((q) => q.section === "competencias");
     const blandas = questions.filter((q) => q.section === "blandas");
-    const filteredTecnicas = tecnicas.filter((q) => q.practice_area === practiceArea || q.practice_area === "corporativo");
+    let filteredTecnicas = tecnicas.filter((q) => q.practice_area === practiceArea);
+    if (filteredTecnicas.length === 0) {
+      filteredTecnicas = tecnicas.filter((q) => q.practice_area === "corporativo");
+    }
     const rescale = (qs, target) => {
       if (qs.length === 0 || target <= 0) return [];
       const sum = qs.reduce((s, q) => s + (q.weight || 1), 0) || qs.length;

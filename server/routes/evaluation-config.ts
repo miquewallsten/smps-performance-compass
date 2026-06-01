@@ -225,7 +225,12 @@ router.get('/full-template/:position', authMiddleware, async (req: Request, res:
     const blandas = questions.filter(q => q.section === 'blandas');
 
     // 5. Filter técnicas by practice area
-    const filteredTecnicas = tecnicas.filter(q => q.practice_area === practiceArea || q.practice_area === 'corporativo');
+    // Match original behavior: return questions for the requested practice area only.
+    // If no questions exist for the requested area, fall back to corporativo.
+    let filteredTecnicas = tecnicas.filter(q => q.practice_area === practiceArea);
+    if (filteredTecnicas.length === 0) {
+      filteredTecnicas = tecnicas.filter(q => q.practice_area === 'corporativo');
+    }
 
     // 6. Rescale weights within each section
     const rescale = (qs: any[], target: number) => {
