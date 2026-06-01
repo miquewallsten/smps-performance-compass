@@ -253,11 +253,23 @@ router.post('/', authMiddleware, async (req: Request, res: Response) => {
         [id, evaluatorId, evaluatedId, period, type, comments || '', supervisorComments || null, Math.round(totalScore), now, now]
       );
 
+      // Snapshot question data at evaluation creation time
+      const questionIds = [...new Set(respArr.map((r: any) => r.questionId))];
+      const questionSnapshots = new Map<string, { text: string; category: string; section: string }>();
+      if (questionIds.length > 0) {
+        const placeholders = questionIds.map(() => '?').join(',');
+        const qRows = await tx.all(conn, `SELECT question_id, question_text, category, section FROM template_questions WHERE question_id IN (${placeholders})`, questionIds);
+        for (const q of qRows as any[]) {
+          questionSnapshots.set(q.question_id, { text: q.question_text, category: q.category, section: q.section });
+        }
+      }
+
       for (const r of respArr) {
+        const snapshot = questionSnapshots.get(r.questionId) || { text: null, category: null, section: null };
         await tx.run(
           conn,
-          `INSERT INTO evaluation_responses (id, evaluation_id, question_id, score, not_applicable, no_elements, weight) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-          [uuidv4(), id, r.questionId, r.score, r.notApplicable ? 1 : 0, r.noElements ? 1 : 0, Math.round(r.weight || 1)]
+          `INSERT INTO evaluation_responses (id, evaluation_id, question_id, question_text, category, section, question_type, score, not_applicable, no_elements, weight) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [uuidv4(), id, r.questionId, snapshot.text, snapshot.category, snapshot.section, snapshot.text ? 'seed' : null, r.score, r.notApplicable ? 1 : 0, r.noElements ? 1 : 0, Math.round(r.weight || 1)]
         );
       }
     });
@@ -306,8 +318,8 @@ router.put('/:id', authMiddleware,
         for (const r of responses) {
           await tx.run(
             conn,
-            `INSERT INTO evaluation_responses (id, evaluation_id, question_id, score, not_applicable, no_elements, weight) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-            [uuidv4(), req.params.id, r.questionId, r.score, r.notApplicable ? 1 : 0, r.noElements ? 1 : 0, Math.round(r.weight || 1)]
+            `INSERT INTO evaluation_responses (id, evaluation_id, question_id, question_text, category, section, question_type, score, not_applicable, no_elements, weight) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [uuidv4(), req.params.id, r.questionId, null, null, null, null, r.score, r.notApplicable ? 1 : 0, r.noElements ? 1 : 0, Math.round(r.weight || 1)]
           );
         }
       });

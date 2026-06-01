@@ -130229,6 +130229,311 @@ async function migrateAuth() {
   console.log("Auth migration complete.");
 }
 
+// server/db/migrate-snapshots.ts
+async function migrateSnapshots() {
+  console.log("Running evaluation snapshot migration...");
+  const snapshotColumns = [
+    { name: "question_text", def: "TEXT DEFAULT NULL AFTER question_id" },
+    { name: "category", def: "VARCHAR(100) DEFAULT NULL AFTER question_text" },
+    { name: "section", def: "VARCHAR(50) DEFAULT NULL AFTER category" },
+    { name: "question_type", def: "VARCHAR(50) DEFAULT NULL AFTER section" }
+  ];
+  for (const col of snapshotColumns) {
+    try {
+      await db.run(`ALTER TABLE evaluation_responses ADD COLUMN ${col.name} ${col.def}`);
+      console.log(`  \u2713 Added column evaluation_responses.${col.name}`);
+    } catch (err) {
+      if (err.message?.includes("Duplicate column")) {
+        console.log(`  \u2713 Column evaluation_responses.${col.name} already exists`);
+      } else {
+        console.error(`  \u2717 Failed to add column ${col.name}:`, err.message);
+      }
+    }
+  }
+  try {
+    const result = await db.run(`
+      UPDATE evaluation_responses er
+      INNER JOIN template_questions tq ON er.question_id = tq.question_id
+      SET er.question_text = tq.question_text,
+          er.category = tq.category,
+          er.section = tq.section,
+          er.question_type = 'seed'
+    `);
+    console.log(`  \u2713 Backfilled ${result.affectedRows || 0} evaluation_responses from template_questions`);
+  } catch (err) {
+    console.error("  \u2717 Backfill error:", err.message);
+  }
+  try {
+    await db.run(`
+      UPDATE evaluation_responses
+      SET category = 'Competencias Corporativas', section = 'competencias', question_type = 'legacy'
+      WHERE question_id LIKE 'tc-corp-%' AND category IS NULL
+    `);
+    await db.run(`
+      UPDATE evaluation_responses
+      SET category = 'Competencias Funcionales', section = 'competencias', question_type = 'legacy'
+      WHERE question_id LIKE 'tc-cf-%' AND category IS NULL
+    `);
+    await db.run(`
+      UPDATE evaluation_responses
+      SET category = 'Aspectos de Resultado', section = 'tecnico', question_type = 'legacy'
+      WHERE question_id LIKE 'asr%' AND category IS NULL
+    `);
+    await db.run(`
+      UPDATE evaluation_responses
+      SET category = 'Desarrollo Individual', section = 'blandas', question_type = 'legacy'
+      WHERE question_id LIKE 'di%' AND category IS NULL
+    `);
+    await db.run(`
+      UPDATE evaluation_responses
+      SET category = 'Comunicaci\xF3n', section = 'blandas', question_type = 'legacy'
+      WHERE question_id LIKE 'co%' AND category IS NULL
+    `);
+    await db.run(`
+      UPDATE evaluation_responses
+      SET category = 'An\xE1lisis', section = 'tecnico', question_type = 'legacy'
+      WHERE question_id LIKE 'an%' AND category IS NULL
+    `);
+    await db.run(`
+      UPDATE evaluation_responses
+      SET category = 'Pensamiento Cr\xEDtico', section = 'competencias', question_type = 'legacy'
+      WHERE question_id LIKE 'pc%' AND category IS NULL
+    `);
+    await db.run(`
+      UPDATE evaluation_responses
+      SET category = 'Sin Clasificar', section = 'competencias', question_type = 'legacy'
+      WHERE category IS NULL
+    `);
+    console.log("  \u2713 Best-effort backfill completed for orphaned question_ids");
+  } catch (err) {
+    console.error("  \u2717 Best-effort backfill error:", err.message);
+  }
+  try {
+    await db.run("CREATE INDEX idx_er_question ON evaluation_responses (question_id)");
+    console.log("  \u2713 Added index idx_er_question on evaluation_responses.question_id");
+  } catch (err) {
+    if (err.message?.includes("Duplicate")) {
+      console.log("  \u2713 Index idx_er_question already exists");
+    } else {
+      console.error("  \u2717 Index error:", err.message);
+    }
+  }
+  try {
+    const testUserId = "62a06f95-11b8-4010-9b9d-1de28a3cf1e9";
+    const testEvalId = "2780b6d3-ed52-44f4-aa3e-292db8e6f1e5";
+    const del1 = await db.run("DELETE FROM evaluation_responses WHERE evaluation_id = ?", [testEvalId]);
+    console.log(`  \u2713 Deleted ${del1.affectedRows || 0} orphaned evaluation_responses`);
+    const del2 = await db.run("DELETE FROM evaluations WHERE evaluated_id = ?", [testUserId]);
+    console.log(`  \u2713 Deleted ${del2.affectedRows || 0} orphaned evaluations`);
+    const del3 = await db.run("DELETE FROM supervisor_assignments WHERE employee_id = ? OR supervisor_id = ?", [testUserId, testUserId]);
+    console.log(`  \u2713 Deleted ${del3.affectedRows || 0} orphaned supervisor_assignments`);
+    const del4a = await db.run("DELETE FROM smart_action_items WHERE action_plan_id IN (SELECT id FROM action_plans WHERE employee_id = ?)", [testUserId]);
+    console.log(`  \u2713 Deleted ${del4a.affectedRows || 0} orphaned smart_action_items`);
+    const del4b = await db.run("DELETE FROM action_plans WHERE employee_id = ?", [testUserId]);
+    console.log(`  \u2713 Deleted ${del4b.affectedRows || 0} orphaned action_plans`);
+  } catch (err) {
+    console.error("  \u2717 Orphan cleanup error:", err.message);
+  }
+  console.log("Evaluation snapshot migration complete.");
+}
+
+// server/db/migrate-fks.ts
+async function migrateFKs() {
+  console.log("Running foreign key migration...");
+  const foreignKeys = [
+    // CRITICAL: evaluations → users
+    {
+      name: "fk_eval_evaluator",
+      table: "evaluations",
+      column: "evaluator_id",
+      refTable: "users",
+      refColumn: "id",
+      risk: "CRITICAL"
+    },
+    {
+      name: "fk_eval_evaluated",
+      table: "evaluations",
+      column: "evaluated_id",
+      refTable: "users",
+      refColumn: "id",
+      risk: "CRITICAL"
+    },
+    // CRITICAL: evaluation_responses → evaluations
+    {
+      name: "fk_er_evaluation",
+      table: "evaluation_responses",
+      column: "evaluation_id",
+      refTable: "evaluations",
+      refColumn: "id",
+      risk: "CRITICAL"
+    },
+    // HIGH: supervisor_assignments → users
+    {
+      name: "fk_sa_employee",
+      table: "supervisor_assignments",
+      column: "employee_id",
+      refTable: "users",
+      refColumn: "id",
+      risk: "HIGH"
+    },
+    {
+      name: "fk_sa_supervisor",
+      table: "supervisor_assignments",
+      column: "supervisor_id",
+      refTable: "users",
+      refColumn: "id",
+      risk: "HIGH"
+    },
+    // HIGH: action_plans → users
+    {
+      name: "fk_ap_employee",
+      table: "action_plans",
+      column: "employee_id",
+      refTable: "users",
+      refColumn: "id",
+      risk: "HIGH"
+    },
+    // HIGH: personal_objectives → users
+    {
+      name: "fk_po_user",
+      table: "personal_objectives",
+      column: "user_id",
+      refTable: "users",
+      refColumn: "id",
+      risk: "HIGH"
+    },
+    // HIGH: vacation_requests → users
+    {
+      name: "fk_vr_user",
+      table: "vacation_requests",
+      column: "user_id",
+      refTable: "users",
+      refColumn: "id",
+      risk: "HIGH"
+    },
+    // MEDIUM: copilot_conversations → users
+    {
+      name: "fk_cc_user",
+      table: "copilot_conversations",
+      column: "user_id",
+      refTable: "users",
+      refColumn: "id",
+      risk: "MEDIUM"
+    },
+    // MEDIUM: copilot_messages → copilot_conversations
+    {
+      name: "fk_cm_conversation",
+      table: "copilot_messages",
+      column: "conversation_id",
+      refTable: "copilot_conversations",
+      refColumn: "id",
+      risk: "MEDIUM"
+    },
+    // MEDIUM: smart_action_items → action_plans
+    {
+      name: "fk_sai_plan",
+      table: "smart_action_items",
+      column: "action_plan_id",
+      refTable: "action_plans",
+      refColumn: "id",
+      risk: "MEDIUM"
+    },
+    // MEDIUM: evaluation_na_approvals → evaluations
+    {
+      name: "fk_ena_evaluation",
+      table: "evaluation_na_approvals",
+      column: "evaluation_id",
+      refTable: "evaluations",
+      refColumn: "id",
+      risk: "MEDIUM"
+    }
+  ];
+  for (const fk of foreignKeys) {
+    try {
+      const orphanCheck = await db.get(
+        `SELECT COUNT(*) as cnt FROM ${fk.table} t LEFT JOIN ${fk.refTable} r ON t.${fk.column} = r.${fk.refColumn} WHERE r.${fk.refColumn} IS NULL`
+      );
+      const orphanCount = orphanCheck?.cnt || 0;
+      if (orphanCount > 0) {
+        console.log(`  \u2717 REJECTED: ${fk.name} \u2014 ${orphanCount} orphaned records in ${fk.table}.${fk.column}`);
+        continue;
+      }
+      await db.run(
+        `ALTER TABLE ${fk.table} ADD CONSTRAINT ${fk.name} FOREIGN KEY (${fk.column}) REFERENCES ${fk.refTable}(${fk.refColumn}) ON DELETE RESTRICT ON UPDATE CASCADE`
+      );
+      console.log(`  \u2713 Added FK: ${fk.name} (${fk.table}.${fk.column} \u2192 ${fk.refTable}.${fk.refColumn})`);
+    } catch (err) {
+      if (err.message?.includes("Duplicate") || err.message?.includes("already exists")) {
+        console.log(`  \u2713 FK ${fk.name} already exists`);
+      } else {
+        console.error(`  \u2717 FAILED: ${fk.name}:`, err.message?.slice(0, 100));
+      }
+    }
+  }
+  console.log("");
+  console.log("Rejected FKs:");
+  console.log("  - sessions.user_id \u2192 users.id: Sessions are ephemeral, FK would block user deletion");
+  console.log("  - authentication_audit.user_id \u2192 users.id: Audit records must survive user deletion");
+  console.log("  - evaluation_responses.question_id \u2192 template_questions.question_id: question_id format changed between seed versions; use snapshot columns instead");
+  console.log("  - user_timeline.user_id \u2192 users.id: Already exists (user_timeline_ibfk_1)");
+  console.log("  - user_timeline.created_by \u2192 users.id: Already exists (user_timeline_ibfk_2)");
+  console.log("  - password_reset_tokens.user_id \u2192 users.id: Already exists (fk_prt_user)");
+  console.log("Foreign key migration complete.");
+}
+
+// server/db/migrate-indexes.ts
+async function migrateIndexes() {
+  console.log("Running index migration...");
+  const indexes = [
+    // evaluation_responses: question_id (for orphan detection and template joins)
+    { name: "idx_er_question", table: "evaluation_responses", column: "question_id", note: "Critical for template question lookups" },
+    // evaluations: composite for dashboard queries (evaluated + period)
+    { name: "idx_eval_evaluated_period", table: "evaluations", columns: ["evaluated_id", "period"], note: "Dashboard: my evaluations by period" },
+    // evaluations: type filter
+    { name: "idx_eval_type", table: "evaluations", column: "type", note: "Filter evaluations by type (self/supervisor/feedback)" },
+    // evaluations: completed_at for completion rate queries
+    { name: "idx_eval_completed", table: "evaluations", column: "completed_at", note: "Completion rate queries" },
+    // supervisor_assignments: period filter (common query param)
+    { name: "idx_sa_period", table: "supervisor_assignments", column: "period", note: "Filter assignments by period" },
+    // action_plans: supervisor_id lookups
+    { name: "idx_ap_supervisor", table: "action_plans", column: "supervisor_id", note: "Supervisor action plan visibility" },
+    // action_plans: period filter
+    { name: "idx_ap_period", table: "action_plans", column: "period", note: "Filter action plans by period" },
+    // personal_objectives: period filter
+    { name: "idx_po_period", table: "personal_objectives", column: "period", note: "Filter objectives by period" },
+    // sessions: expires_at for cleanup
+    { name: "idx_sessions_expires", table: "sessions", column: "expires_at", note: "Session cleanup queries" },
+    // password_reset_tokens: expires_at for cleanup (already exists, verify)
+    // idx_prt_expires already exists
+    // users: is_active for filtered queries
+    { name: "idx_users_active", table: "users", column: "is_active", note: "Filter active users" },
+    // copilot_messages: created_at for chronological ordering
+    { name: "idx_cm_created", table: "copilot_messages", column: "created_at", note: "Message ordering" },
+    // vacation_requests: status filter
+    { name: "idx_vr_status", table: "vacation_requests", column: "status", note: "Filter vacation requests by status" },
+    // vacation_approvals: vacation_request_id (already has idx_va_request)
+    // vacation_approvals: approver lookups
+    { name: "idx_va_approver", table: "vacation_approvals", columns: ["vacation_request_id", "approver_id"], note: "Approver lookup" },
+    // authentication_audit: composite user+action for per-user audit queries
+    { name: "idx_audit_user_action", table: "authentication_audit", columns: ["user_id", "action"], note: "Per-user audit trail" }
+  ];
+  for (const idx of indexes) {
+    try {
+      const columns = idx.columns || [idx.column];
+      const colList = columns.join(", ");
+      await db.run(`CREATE INDEX ${idx.name} ON ${idx.table} (${colList})`);
+      console.log(`  \u2713 Added index: ${idx.name} on ${idx.table}(${colList})`);
+    } catch (err) {
+      if (err.message?.includes("Duplicate") || err.message?.includes("already exists")) {
+        console.log(`  \u2713 Index ${idx.name} already exists`);
+      } else {
+        console.error(`  \u2717 FAILED: ${idx.name}:`, err.message?.slice(0, 100));
+      }
+    }
+  }
+  console.log("Index migration complete.");
+}
+
 // server/routes/auth.ts
 var import_express = __toESM(require_express2(), 1);
 init_dist_node();
@@ -136320,11 +136625,21 @@ router6.post("/", authMiddleware, async (req, res) => {
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?)`,
         [id, evaluatorId, evaluatedId, period, type, comments || "", supervisorComments || null, Math.round(totalScore), now3, now3]
       );
+      const questionIds = [...new Set(respArr.map((r) => r.questionId))];
+      const questionSnapshots = /* @__PURE__ */ new Map();
+      if (questionIds.length > 0) {
+        const placeholders = questionIds.map(() => "?").join(",");
+        const qRows = await tx.all(conn, `SELECT question_id, question_text, category, section FROM template_questions WHERE question_id IN (${placeholders})`, questionIds);
+        for (const q of qRows) {
+          questionSnapshots.set(q.question_id, { text: q.question_text, category: q.category, section: q.section });
+        }
+      }
       for (const r of respArr) {
+        const snapshot = questionSnapshots.get(r.questionId) || { text: null, category: null, section: null };
         await tx.run(
           conn,
-          `INSERT INTO evaluation_responses (id, evaluation_id, question_id, score, not_applicable, no_elements, weight) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-          [v4_default(), id, r.questionId, r.score, r.notApplicable ? 1 : 0, r.noElements ? 1 : 0, Math.round(r.weight || 1)]
+          `INSERT INTO evaluation_responses (id, evaluation_id, question_id, question_text, category, section, question_type, score, not_applicable, no_elements, weight) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [v4_default(), id, r.questionId, snapshot.text, snapshot.category, snapshot.section, snapshot.text ? "seed" : null, r.score, r.notApplicable ? 1 : 0, r.noElements ? 1 : 0, Math.round(r.weight || 1)]
         );
       }
     });
@@ -136378,8 +136693,8 @@ router6.put(
           for (const r of responses) {
             await tx.run(
               conn,
-              `INSERT INTO evaluation_responses (id, evaluation_id, question_id, score, not_applicable, no_elements, weight) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-              [v4_default(), req.params.id, r.questionId, r.score, r.notApplicable ? 1 : 0, r.noElements ? 1 : 0, Math.round(r.weight || 1)]
+              `INSERT INTO evaluation_responses (id, evaluation_id, question_id, question_text, category, section, question_type, score, not_applicable, no_elements, weight) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+              [v4_default(), req.params.id, r.questionId, null, null, null, null, r.score, r.notApplicable ? 1 : 0, r.noElements ? 1 : 0, Math.round(r.weight || 1)]
             );
           }
         });
@@ -142572,6 +142887,12 @@ async function startServer() {
     await migrate();
     console.log("Running auth migration...");
     await migrateAuth();
+    console.log("Running snapshot migration...");
+    await migrateSnapshots();
+    console.log("Running FK migration...");
+    await migrateFKs();
+    console.log("Running index migration...");
+    await migrateIndexes();
     console.log("Seeding database...");
     await seed();
     console.log("Seeding evaluation data...");
