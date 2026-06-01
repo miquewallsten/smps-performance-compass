@@ -15,6 +15,7 @@ import { NavLink } from '@/components/NavLink';
 import PeriodEndAlert from '@/components/PeriodEndAlert';
 import { getPositionLevel } from '@/lib/evaluationConfig';
 import { useEvalConfigInit } from '@/hooks/useEvalConfigInit';
+import NotificationBell from '@/components/NotificationBell';
 import { useCurrentPeriod } from '@/hooks/useCurrentPeriod';
 
 /** Spinner shown inside content area while lazy page chunk loads */

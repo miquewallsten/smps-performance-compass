@@ -1,150 +1,101 @@
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useUsers, useEvaluations, useAssignments, useActionPlans } from '@/api/queries';
-import { getPositionLabel, getPositionLevel } from '@/lib/evaluationConfig';
-import { getPositionHierarchy, getLegalHierarchy, getAdminHierarchy } from '@/lib/evaluationConfig';
+import { useAnalyticsEvaluations, useAnalyticsObjectives, useAnalyticsVacations, useAnalyticsActionPlans, useAnalyticsTrends } from '@/api/queries';
 import { useCurrentPeriod } from '@/hooks/useCurrentPeriod';
-import { canViewUserEvaluations } from '@/lib/visibility';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend, LineChart, Line } from 'recharts';
 import { ReportsSkeleton } from '@/components/shared/SkeletonPage';
+import { Download } from 'lucide-react';
 
-type AreaFilter = 'all' | 'legal' | 'administrativo';
+const PIE_COLORS = ['hsl(145, 60%, 40%)', 'hsl(210, 15%, 85%)'];
 
 export default function Reports() {
   const currentPeriod = useCurrentPeriod();
   const { user: currentUser } = useAuth();
-  const { data: users = [] } = useUsers();
-  const { data: evaluations = [] } = useEvaluations();
-  const { data: assignments = [] } = useAssignments();
-  const { data: actionPlans = [] } = useActionPlans();
-  const [areaFilter, setAreaFilter] = useState<AreaFilter>('all');
+  const { data: evalAnalytics, isLoading: evalLoading } = useAnalyticsEvaluations(currentPeriod);
+  const { data: objectives, isLoading: objLoading } = useAnalyticsObjectives(currentPeriod);
+  const { data: vacations, isLoading: vacLoading } = useAnalyticsVacations();
+  const { data: actionPlans, isLoading: apLoading } = useAnalyticsActionPlans(currentPeriod);
+  const { data: trends } = useAnalyticsTrends();
 
   if (!currentUser) return null;
 
-  const isReportsLoading = !users || !evaluations || !assignments || !actionPlans;
-  if (isReportsLoading) return <ReportsSkeleton />;
+  const isLoading = evalLoading || objLoading || vacLoading || apLoading;
+  if (isLoading) return <ReportsSkeleton />;
 
   const isAdmin = currentUser.isAdmin;
   const isSocio = currentUser.position === 'socio';
   const isAdminOrSocio = isAdmin || isSocio || !!currentUser.isManagingPartner;
 
-  const periodAssignments = (Array.isArray(assignments) ? assignments : []).filter(a => a.period === currentPeriod);
-
-  const relevantUserIds = isAdminOrSocio
-    ? (Array.isArray(users) ? users : []).filter(u => u.isActive).map(u => u.id)
-    : periodAssignments.filter(a => a.supervisorId === currentUser.id).map(a => a.employeeId);
-
-  const baseUsers = users
-    .filter(u => u.isActive && !u.isSuperUser && !u.isDummy && relevantUserIds.includes(u.id))
-    .filter(u => canViewUserEvaluations(currentUser as any, u));
-
-  // Apply area filter
-  const activeUsers = baseUsers.filter(u => {
-    if (areaFilter === 'all') return true;
-    return getPositionLevel(u.position) === areaFilter;
-  });
-
-  // Hierarchy to use based on filter
-  let hierarchy = areaFilter === 'legal' ? getLegalHierarchy()
-    : areaFilter === 'administrativo' ? getAdminHierarchy()
-    : getPositionHierarchy();
-  // Ensure hierarchy is always an array (defensive)
-  if (!Array.isArray(hierarchy)) hierarchy = [];
-
-  // Stage completion data
-  const selfEvalsDone = activeUsers.filter(u => evaluations.some(e => e.type === 'self' && e.evaluatorId === u.id && e.period === currentPeriod)).length;
-  const supervisorEvalsDone = activeUsers.filter(u => {
-    const userAssigns = periodAssignments.filter(a => a.employeeId === u.id);
-    const supEvals = evaluations.filter(e => e.type === 'supervisor' && e.evaluatedId === u.id && e.period === currentPeriod);
-    return userAssigns.length > 0 && supEvals.length >= userAssigns.length;
-  }).length;
-  const feedbackDone = activeUsers.filter(u => {
-    const supEvals = evaluations.filter(e => e.type === 'supervisor' && e.evaluatedId === u.id && e.period === currentPeriod);
-    return supEvals.some(e => e.feedbackCompleted);
-  }).length;
-  const actionPlansDone = activeUsers.filter(u => actionPlans.some(p => p.employeeId === u.id && p.period === currentPeriod)).length;
-
-  const fullyCompleted = activeUsers.filter(u => {
-    const hasSelf = evaluations.some(e => e.type === 'self' && e.evaluatorId === u.id && e.period === currentPeriod);
-    const userAssigns = periodAssignments.filter(a => a.employeeId === u.id);
-    const supEvals = evaluations.filter(e => e.type === 'supervisor' && e.evaluatedId === u.id && e.period === currentPeriod);
-    const allSupDone = userAssigns.length > 0 && supEvals.length >= userAssigns.length;
-    const hasFeedback = supEvals.some(e => e.feedbackCompleted);
-    const hasActionPlan = actionPlans.some(p => p.employeeId === u.id && p.period === currentPeriod);
-    return hasSelf && allSupDone && hasFeedback && hasActionPlan;
-  }).length;
-
-  const totalUsers = activeUsers.length;
+  // Evaluation data from analytics
+  const evalData = evalAnalytics || { total: 0, completed: 0, byType: {}, byPosition: {} };
+  const fullyCompleted = evalData.completed || 0;
+  const totalEvals = evalData.total || 0;
+  const inProgress = totalEvals - fullyCompleted;
 
   const generalPieData = [
     { name: 'Completado', value: fullyCompleted },
-    { name: 'En Proceso', value: totalUsers - fullyCompleted },
+    { name: 'En Proceso', value: inProgress },
   ];
 
+  // Stage completion from analytics
   const stageData = [
-    { name: 'Autoevaluación', completado: selfEvalsDone, pendiente: totalUsers - selfEvalsDone },
-    { name: 'Eval. Supervisor', completado: supervisorEvalsDone, pendiente: totalUsers - supervisorEvalsDone },
-    { name: 'Sesión Feedback', completado: feedbackDone, pendiente: totalUsers - feedbackDone },
-    { name: 'Plan de Acción', completado: actionPlansDone, pendiente: totalUsers - actionPlansDone },
+    { 
+      name: 'Autoevaluación', 
+      completado: (evalData.byType?.self?.completed || 0),
+      pendiente: (evalData.byType?.self?.total || 0) - (evalData.byType?.self?.completed || 0)
+    },
+    { 
+      name: 'Eval. Supervisor', 
+      completado: (evalData.byType?.supervisor?.completed || 0),
+      pendiente: (evalData.byType?.supervisor?.total || 0) - (evalData.byType?.supervisor?.completed || 0)
+    },
   ];
 
-  const PIE_COLORS = ['hsl(145, 60%, 40%)', 'hsl(210, 15%, 85%)'];
+  // Score by position
+  const positionData = Object.entries(evalData.byPosition || {}).map(([pos, data]: [string, any]) => ({
+    name: getPositionLabel(pos),
+    promedio: data.avgScore ? Math.round(data.avgScore) : 0,
+    total: data.total || 0,
+  }));
 
-  // Self-evaluations by level
-  const selfByPosition = hierarchy.map(pos => {
-    const posUsers = activeUsers.filter(u => u.position === pos);
-    const done = posUsers.filter(u => evaluations.some(e => e.type === 'self' && e.evaluatorId === u.id && e.period === currentPeriod)).length;
-    return { name: getPositionLabel(pos), total: posUsers.length, completado: done, pendiente: posUsers.length - done };
-  }).filter(d => d.total > 0);
+  // Trend data
+  const trendData = (trends?.evaluationTrends || []).map((t: any) => ({
+    period: t.period,
+    avgScore: t.avg_score ? Math.round(t.avg_score * 10) / 10 : null,
+    type: t.type,
+  }));
 
-  // Supervisor-evaluations by level (those evaluations performed for users at that level)
-  const supervisorByPosition = hierarchy.map(pos => {
-    const posUsers = activeUsers.filter(u => u.position === pos);
-    let totalExpected = 0;
-    let done = 0;
-    posUsers.forEach(u => {
-      const userAssigns = periodAssignments.filter(a => a.employeeId === u.id);
-      totalExpected += userAssigns.length;
-      done += evaluations.filter(e => e.type === 'supervisor' && e.evaluatedId === u.id && e.period === currentPeriod).length;
-    });
-    return { name: getPositionLabel(pos), total: totalExpected, completado: done, pendiente: Math.max(0, totalExpected - done) };
-  }).filter(d => d.total > 0);
+  // Objectives summary
+  const objByStatus = objectives?.byStatus || {};
 
-  const avgByPosition = hierarchy.map(pos => {
-    const posUsers = activeUsers.filter(u => u.position === pos);
-    const posEvals = (Array.isArray(evaluations) ? evaluations : []).filter(e => e.period === currentPeriod && posUsers.some(u => u.id === e.evaluatedId));
-    const avg = posEvals.length > 0 ? Math.round(posEvals.reduce((s, e) => s + e.totalScore, 0) / posEvals.length) : 0;
-    return { name: getPositionLabel(pos), promedio: avg };
-  }).filter(d => d.promedio > 0);
+  // Vacations summary
+  const vacByStatus = vacations?.byStatus || {};
+
+  // Action plans summary
+  const apByStatus = actionPlans?.byStatus || {};
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between flex-wrap gap-3">
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
         <div>
-          <h1 className="font-display text-2xl font-bold">Reportes</h1>
-          <p className="text-muted-foreground text-sm mt-1">
+          <h1 className="font-display text-lg font-bold">Reportes</h1>
+          <p className="text-xs text-muted-foreground">
             Periodo: {currentPeriod} {!isAdminOrSocio && '· Mi Equipo'}
           </p>
         </div>
-        <div className="flex items-center gap-1 bg-card rounded-lg border p-1">
-          {([
-            { value: 'all', label: 'Todas las áreas' },
-            { value: 'legal', label: 'Legal' },
-            { value: 'administrativo', label: 'Administrativo' },
-          ] as const).map(opt => (
-            <button key={opt.value} onClick={() => setAreaFilter(opt.value)}
-              className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
-                areaFilter === opt.value ? 'bg-accent text-accent-foreground' : 'text-muted-foreground hover:text-foreground'
-              }`}>
-              {opt.label}
-            </button>
-          ))}
-        </div>
+        <a
+          href={`/api/evaluations/export/csv?period=${currentPeriod}`}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium bg-muted text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <Download className="h-3.5 w-3.5" />
+          Exportar CSV
+        </a>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Completion Overview */}
         <div className="smps-surface-card">
-          <h3 className="smps-section-title font-display text-base font-semibold mb-3">Evaluaciones Completadas (Todas las Etapas)</h3>
+          <h3 className="smps-section-title font-display text-base font-semibold mb-3">Evaluaciones Completadas</h3>
           <ResponsiveContainer width="100%" height={250}>
             <PieChart>
               <Pie data={generalPieData} cx="50%" cy="50%" innerRadius={60} outerRadius={90} dataKey="value" label={({ name, value }) => `${name}: ${value}`}>
@@ -154,9 +105,10 @@ export default function Reports() {
               <Tooltip />
             </PieChart>
           </ResponsiveContainer>
-          <p className="text-center text-sm text-muted-foreground mt-2">{fullyCompleted} de {totalUsers} empleados han completado todas las etapas</p>
+          <p className="text-center text-sm text-muted-foreground mt-2">{fullyCompleted} de {totalEvals} evaluaciones completadas</p>
         </div>
 
+        {/* Stage Completion */}
         <div className="smps-surface-card">
           <h3 className="smps-section-title font-display text-base font-semibold mb-3">Realización por Etapa</h3>
           <ResponsiveContainer width="100%" height={250}>
@@ -171,39 +123,12 @@ export default function Reports() {
           </ResponsiveContainer>
         </div>
 
-        <div className="smps-surface-card">
-          <h3 className="smps-section-title font-display text-base font-semibold mb-3">Autoevaluaciones por Nivel</h3>
-          <ResponsiveContainer width="100%" height={250}>
-            <BarChart data={selfByPosition}>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(214, 20%, 88%)" />
-              <XAxis dataKey="name" tick={{ fontSize: 10 }} angle={-20} textAnchor="end" height={60} />
-              <YAxis tick={{ fontSize: 12 }} />
-              <Tooltip />
-              <Bar dataKey="completado" fill="hsl(145, 60%, 40%)" name="Completado" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="pendiente" fill="hsl(210, 15%, 85%)" name="Pendiente" radius={[4, 4, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-
-        <div className="smps-surface-card">
-          <h3 className="smps-section-title font-display text-base font-semibold mb-3">Eval. Supervisor por Nivel</h3>
-          <ResponsiveContainer width="100%" height={250}>
-            <BarChart data={supervisorByPosition}>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(214, 20%, 88%)" />
-              <XAxis dataKey="name" tick={{ fontSize: 10 }} angle={-20} textAnchor="end" height={60} />
-              <YAxis tick={{ fontSize: 12 }} />
-              <Tooltip />
-              <Bar dataKey="completado" fill="hsl(210, 60%, 50%)" name="Realizadas" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="pendiente" fill="hsl(210, 15%, 85%)" name="Pendientes" radius={[4, 4, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-
-        {avgByPosition.length > 0 && (
-          <div className="smps-surface-card lg:col-span-2">
+        {/* Score by Position */}
+        {positionData.length > 0 && (
+          <div className="smps-surface-card">
             <h3 className="smps-section-title font-display text-base font-semibold mb-3">Promedio por Posición</h3>
             <ResponsiveContainer width="100%" height={250}>
-              <BarChart data={avgByPosition}>
+              <BarChart data={positionData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(214, 20%, 88%)" />
                 <XAxis dataKey="name" tick={{ fontSize: 10 }} angle={-20} textAnchor="end" height={60} />
                 <YAxis domain={[0, 100]} tick={{ fontSize: 12 }} />
@@ -213,7 +138,86 @@ export default function Reports() {
             </ResponsiveContainer>
           </div>
         )}
+
+        {/* Trend Chart (if data available) */}
+        {trendData.length > 0 && (
+          <div className="smps-surface-card">
+            <h3 className="smps-section-title font-display text-base font-semibold mb-3">Tendencia de Calificaciones</h3>
+            <ResponsiveContainer width="100%" height={250}>
+              <LineChart data={trendData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(214, 20%, 88%)" />
+                <XAxis dataKey="period" tick={{ fontSize: 10 }} />
+                <YAxis domain={[0, 100]} tick={{ fontSize: 12 }} />
+                <Tooltip />
+                <Line type="monotone" dataKey="avgScore" stroke="hsl(210, 60%, 50%)" name="Promedio" strokeWidth={2} dot={{ r: 4 }} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        )}
+
+        {/* Objectives Summary */}
+        {Object.keys(objByStatus).length > 0 && (
+          <div className="smps-surface-card">
+            <h3 className="smps-section-title font-display text-base font-semibold mb-3">Objetivos</h3>
+            <div className="space-y-2">
+              {Object.entries(objByStatus).map(([status, count]) => (
+                <div key={status} className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground capitalize">{status}</span>
+                  <span className="text-sm font-bold tabular-nums">{count as number}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Vacation Summary */}
+        {Object.keys(vacByStatus).length > 0 && (
+          <div className="smps-surface-card">
+            <h3 className="smps-section-title font-display text-base font-semibold mb-3">Vacaciones</h3>
+            <div className="space-y-2">
+              {Object.entries(vacByStatus).map(([status, count]) => (
+                <div key={status} className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground capitalize">{status}</span>
+                  <span className="text-sm font-bold tabular-nums">{count as number}</span>
+                </div>
+              ))}
+              {vacations?.totalDays > 0 && (
+                <div className="pt-2 border-t flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Total días</span>
+                  <span className="text-sm font-bold tabular-nums">{vacations.totalDays}</span>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Action Plans Summary */}
+        {Object.keys(apByStatus).length > 0 && (
+          <div className="smps-surface-card">
+            <h3 className="smps-section-title font-display text-base font-semibold mb-3">Planes de Acción</h3>
+            <div className="space-y-2">
+              {Object.entries(apByStatus).map(([status, count]) => (
+                <div key={status} className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground capitalize">{status}</span>
+                  <span className="text-sm font-bold tabular-nums">{count as number}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
+}
+
+function getPositionLabel(pos: string): string {
+  const LABELS: Record<string, string> = {
+    socio: 'Socio', salary_partner: 'Salary Partner', counsel: 'Counsel',
+    asociado_sr: 'Asociado Sr', asociado_mid: 'Asociado Mid', asociado_jr: 'Asociado Jr',
+    pasante_carrera: 'Pasante Carrera', pasante: 'Pasante',
+    director: 'Director', gerente: 'Gerente', coordinador: 'Coordinador',
+    analista: 'Analista', asistente: 'Asistente', soporte: 'Soporte',
+    archivo_soporte: 'Archivo/Soporte',
+  };
+  return LABELS[pos] || pos;
 }

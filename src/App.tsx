@@ -36,6 +36,8 @@ const ChangePassword = lazy(() => import("./pages/ChangePassword"));
 const ActivateAccount = lazy(() => import("./pages/ActivateAccount"));
 const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
+const Notifications = lazy(() => import("./pages/Notifications"));
+const NotificationPreferences = lazy(() => import("./pages/NotificationPreferences"));
 
 import Layout from "./components/Layout";
 
@@ -128,6 +130,8 @@ function AppRoutes() {
         <Route path="my-profile" element={<MyProfile />} />
         <Route path="users/:id/timeline" element={<UserTimeline />} />
         <Route path="copilot" element={moduleConfig?.copilot && isSuperUser ? <CopilotChat /> : <Navigate to="/dashboard" replace />} />
+        <Route path="notifications" element={<Notifications />} />
+        <Route path="notification-preferences" element={<NotificationPreferences />} />
       </Route>
       <Route path="/help" element={<Help />} />
       <Route path="/activate-account" element={<ActivateAccount />} />
