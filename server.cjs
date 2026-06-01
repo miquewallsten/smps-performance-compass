@@ -136648,6 +136648,9 @@ router6.post("/", authMiddleware, async (req, res) => {
     const evalNaApprovals = await db.all("SELECT * FROM evaluation_na_approvals WHERE evaluation_id = ?", [id]);
     return res.json({ ...evaluation, responses: evalResponses, naApprovals: evalNaApprovals });
   } catch (err) {
+    if (err.code === "ER_NO_REFERENCED_ROW_2" || err.message?.includes("foreign key constraint")) {
+      return res.status(400).json({ error: "Referenced entity not found. Ensure evaluated_id and evaluator_id reference valid users." });
+    }
     if (err.code === "ER_DUP_ENTRY") {
       return res.status(409).json({ error: "Evaluation already exists for this evaluator, evaluated, period, and type" });
     }
