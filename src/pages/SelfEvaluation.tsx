@@ -165,6 +165,21 @@ export default function SelfEvaluation() {
     });
   };
 
+  // ─── Questions by section ──────────────────────────────────────────────
+  const sectionedQuestions = useMemo(() => {
+    const sections: Record<string, EvalQuestion[]> = {};
+    questions.forEach(q => {
+      const section = q.section || q.category || 'General';
+      if (!sections[section]) sections[section] = [];
+      sections[section].push(q);
+    });
+    return sections;
+  }, [questions]);
+
+  const sectionOrder = SECTION_ORDER.length > 0
+    ? SECTION_ORDER
+    : Object.keys(sectionedQuestions);
+
   // ─── If already submitted, show status ─────────────────────────────────
   if (selfDone && !showSuccess) {
     const score = existing ? Math.round(existing.totalScore) : Math.round(totalScore);
@@ -205,21 +220,6 @@ export default function SelfEvaluation() {
       </div>
     );
   }
-
-  // ─── Questions by section ──────────────────────────────────────────────
-  const sectionedQuestions = useMemo(() => {
-    const sections: Record<string, EvalQuestion[]> = {};
-    questions.forEach(q => {
-      const section = q.section || q.category || 'General';
-      if (!sections[section]) sections[section] = [];
-      sections[section].push(q);
-    });
-    return sections;
-  }, [questions]);
-
-  const sectionOrder = SECTION_ORDER.length > 0
-    ? SECTION_ORDER
-    : Object.keys(sectionedQuestions);
 
   // ─── Render ────────────────────────────────────────────────────────────
   return (

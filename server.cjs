@@ -127748,6 +127748,18 @@ async function migrate() {
       vacations TINYINT(1) NOT NULL DEFAULT 1,
       copilot TINYINT(1) NOT NULL DEFAULT 1
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+    `CREATE TABLE IF NOT EXISTS system_integrity_audit (
+      id VARCHAR(36) PRIMARY KEY,
+      check_name VARCHAR(100) NOT NULL,
+      run_id VARCHAR(36) NOT NULL,
+      status VARCHAR(20) NOT NULL DEFAULT 'pass',
+      row_count INT DEFAULT 0,
+      details TEXT,
+      run_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      INDEX idx_sia_check (check_name),
+      INDEX idx_sia_run (run_id),
+      INDEX idx_sia_run_at (run_at)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
     `CREATE TABLE IF NOT EXISTS system_status (
       id INT PRIMARY KEY DEFAULT 1,
       status VARCHAR(50) NOT NULL DEFAULT 'active',
@@ -128152,8 +128164,8 @@ async function migrate() {
     console.log("  \u26A0 Could not round evaluation_responses weight values:", e.message);
   }
   const positionMigrations = [
-    ["pasante_corporativo", "pasante"],
-    ["archivo_soporte", "soporte"],
+    ["pasante", "pasante_corporativo"],
+    ["soporte", "archivo_soporte"],
     ["abogado", "asociado_jr"]
     // Legacy position, not a valid SMPS position
   ];
@@ -128181,6 +128193,62 @@ async function migrate() {
     } catch (e) {
       console.log(`  \u26A0 Could not migrate practice_area '${oldVal}':`, e.message);
     }
+  }
+  try {
+    const tqResult = await run(
+      `UPDATE template_questions SET position = 'pasante_corporativo' WHERE position = 'pasante'`
+    );
+    if (tqResult.affectedRows > 0) {
+      console.log(`  \u2713 Migrated ${tqResult.affectedRows} template_questions from 'pasante' to 'pasante_corporativo'`);
+    }
+  } catch (e) {
+    console.log("  \u26A0 Could not migrate pasante template_questions:", e.message);
+  }
+  try {
+    const tqResult2 = await run(
+      `UPDATE template_questions SET position = 'archivo_soporte' WHERE position = 'soporte'`
+    );
+    if (tqResult2.affectedRows > 0) {
+      console.log(`  \u2713 Migrated ${tqResult2.affectedRows} template_questions from 'soporte' to 'archivo_soporte'`);
+    }
+  } catch (e) {
+    console.log("  \u26A0 Could not migrate soporte template_questions:", e.message);
+  }
+  try {
+    const swResult = await run(`DELETE FROM section_weights WHERE position IN ('pasante', 'soporte')`);
+    if (swResult.affectedRows > 0) {
+      console.log(`  \u2713 Removed ${swResult.affectedRows} duplicate section_weights for 'pasante'/'soporte'`);
+    }
+  } catch (e) {
+    console.log("  \u26A0 Could not remove duplicate section_weights:", e.message);
+  }
+  try {
+    const pcResult = await run(`DELETE FROM position_config WHERE position IN ('pasante', 'soporte')`);
+    if (pcResult.affectedRows > 0) {
+      console.log(`  \u2713 Removed ${pcResult.affectedRows} duplicate position_config for 'pasante'/'soporte'`);
+    }
+  } catch (e) {
+    console.log("  \u26A0 Could not remove duplicate position_config:", e.message);
+  }
+  try {
+    const inactiveResult = await run(
+      `DELETE sa FROM supervisor_assignments sa
+       INNER JOIN users u ON sa.employee_id = u.id
+       WHERE u.is_active = 0`
+    );
+    if (inactiveResult.affectedRows > 0) {
+      console.log(`  \u2713 Removed ${inactiveResult.affectedRows} assignments for inactive users`);
+    }
+    const inactiveSupResult = await run(
+      `DELETE sa FROM supervisor_assignments sa
+       INNER JOIN users u ON sa.supervisor_id = u.id
+       WHERE u.is_active = 0`
+    );
+    if (inactiveSupResult.affectedRows > 0) {
+      console.log(`  \u2713 Removed ${inactiveSupResult.affectedRows} assignments with inactive supervisors`);
+    }
+  } catch (e) {
+    console.log("  \u26A0 Could not clean up inactive user assignments:", e.message);
   }
   const categories = [
     { id: "Desempe\xF1o", label: "Desempe\xF1o", section: "competencias", is_tech: 0, sort: 1 },
@@ -130212,11 +130280,11 @@ async function seedEvaluationData() {
   console.log("  Checking if re-seeding is needed...");
   await cleanupOldCustomQuestions();
   const count = await db.getScalar("SELECT COUNT(*) as cnt FROM template_questions WHERE source = ?", ["seed"]);
-  if (count === 290) {
-    console.log("  Evaluation data already seeded (308 questions), skipping.");
+  if (count === 256) {
+    console.log("  Evaluation data already seeded (256 questions), skipping.");
     return;
   }
-  console.log(`  Current seed questions: ${count}, expected 290. Re-seeding...`);
+  console.log(`  Current seed questions: ${count}, expected 256. Re-seeding...`);
   await db.run("DELETE FROM template_questions WHERE source = 'seed'");
   console.log("  \u2713 Deleted existing seed template_questions");
   await db.run("DELETE FROM section_weights");
@@ -130258,14 +130326,12 @@ async function seedEvaluationData() {
       { position: "asociado_jr", tecnico: 40, competencias: 40, blandas: 20 },
       { position: "pasante_carrera", tecnico: 40, competencias: 40, blandas: 20 },
       { position: "pasante_corporativo", tecnico: 40, competencias: 40, blandas: 20 },
-      { position: "pasante", tecnico: 40, competencias: 40, blandas: 20 },
       { position: "director", tecnico: 0, competencias: 80, blandas: 20 },
       { position: "gerente", tecnico: 0, competencias: 80, blandas: 20 },
       { position: "coordinador", tecnico: 0, competencias: 80, blandas: 20 },
       { position: "analista", tecnico: 0, competencias: 80, blandas: 20 },
       { position: "asistente", tecnico: 0, competencias: 50, blandas: 50 },
       { position: "archivo_soporte", tecnico: 0, competencias: 50, blandas: 50 },
-      { position: "soporte", tecnico: 0, competencias: 50, blandas: 50 },
       { position: "archivista", tecnico: 0, competencias: 50, blandas: 50 }
     ];
     const posCount = await db.getScalar("SELECT COUNT(*) as cnt FROM position_config");
@@ -130279,14 +130345,12 @@ async function seedEvaluationData() {
         { position: "asociado_jr", label: "Asociado Junior", level: "legal", rank: 6, sort: 6 },
         { position: "pasante_carrera", label: "Pasante de Carrera", level: "legal", rank: 7, sort: 7 },
         { position: "pasante_corporativo", label: "Pasante Corporativo", level: "legal", rank: 8, sort: 8 },
-        { position: "pasante", label: "Pasante", level: "legal", rank: 9, sort: 9 },
         { position: "director", label: "Director", level: "administrativo", rank: 1, sort: 10 },
         { position: "gerente", label: "Gerente", level: "administrativo", rank: 2, sort: 11 },
         { position: "coordinador", label: "Coordinador", level: "administrativo", rank: 3, sort: 12 },
         { position: "analista", label: "Analista", level: "administrativo", rank: 4, sort: 13 },
         { position: "asistente", label: "Asistente", level: "administrativo", rank: 5, sort: 14 },
         { position: "archivo_soporte", label: "Archivo/Soporte", level: "administrativo", rank: 6, sort: 15 },
-        { position: "soporte", label: "Soporte", level: "administrativo", rank: 7, sort: 16 },
         { position: "archivista", label: "Archivista", level: "administrativo", rank: 8, sort: 17 }
       ];
       for (const pos of positions) {
@@ -130526,18 +130590,6 @@ async function seedEvaluationData() {
       { libraryRef: "ql-008", position: "gerente", practiceArea: "corporativo", section: "blandas", category: "Actitud", weight: 5, sortOrder: 121 },
       { libraryRef: "ql-009", position: "gerente", practiceArea: "corporativo", section: "blandas", category: "Disponibilidad", weight: 5, sortOrder: 122 },
       { libraryRef: "ql-074", position: "gerente", practiceArea: "corporativo", section: "blandas", category: "Habilidades Blandas", weight: 5, sortOrder: 123 },
-      { libraryRef: "ql-075", position: "pasante", practiceArea: "corporativo", section: "tecnico", category: "Conocimiento normativo", weight: 8, sortOrder: 124 },
-      { libraryRef: "ql-076", position: "pasante", practiceArea: "corporativo", section: "tecnico", category: "Redacci\xF3n legal", weight: 8, sortOrder: 125 },
-      { libraryRef: "ql-077", position: "pasante", practiceArea: "corporativo", section: "tecnico", category: "Due diligence", weight: 8, sortOrder: 126 },
-      { libraryRef: "ql-078", position: "pasante", practiceArea: "corporativo", section: "tecnico", category: "Constituci\xF3n y modificaciones", weight: 8, sortOrder: 127 },
-      { libraryRef: "ql-079", position: "pasante", practiceArea: "corporativo", section: "tecnico", category: "Atenci\xF3n a clientes", weight: 8, sortOrder: 128 },
-      { libraryRef: "ql-019", position: "pasante", practiceArea: "corporativo", section: "competencias", category: "Trabajo en Equipo", weight: 15, sortOrder: 129 },
-      { libraryRef: "ql-072", position: "pasante", practiceArea: "corporativo", section: "competencias", category: "Trabajo en Equipo", weight: 15, sortOrder: 130 },
-      { libraryRef: "ql-012", position: "pasante", practiceArea: "corporativo", section: "competencias", category: "Cumplimiento", weight: 10, sortOrder: 131 },
-      { libraryRef: "ql-007", position: "pasante", practiceArea: "corporativo", section: "blandas", category: "Habilidades Blandas", weight: 5, sortOrder: 132 },
-      { libraryRef: "ql-028", position: "pasante", practiceArea: "corporativo", section: "blandas", category: "Actitud", weight: 5, sortOrder: 133 },
-      { libraryRef: "ql-009", position: "pasante", practiceArea: "corporativo", section: "blandas", category: "Disponibilidad", weight: 5, sortOrder: 134 },
-      { libraryRef: "ql-010", position: "pasante", practiceArea: "corporativo", section: "blandas", category: "Habilidades Blandas", weight: 5, sortOrder: 135 },
       { libraryRef: "ql-080", position: "pasante_carrera", practiceArea: "corporativo", section: "tecnico", category: "Conocimiento normativo", weight: 8, sortOrder: 136 },
       { libraryRef: "ql-081", position: "pasante_carrera", practiceArea: "corporativo", section: "tecnico", category: "Redacci\xF3n legal", weight: 8, sortOrder: 137 },
       { libraryRef: "ql-082", position: "pasante_carrera", practiceArea: "corporativo", section: "tecnico", category: "Due diligence", weight: 8, sortOrder: 138 },
@@ -130589,26 +130641,9 @@ async function seedEvaluationData() {
       { libraryRef: "ql-061", position: "socio", practiceArea: "corporativo", section: "blandas", category: "Actitud", weight: 4, sortOrder: 184 },
       { libraryRef: "ql-062", position: "socio", practiceArea: "corporativo", section: "blandas", category: "Disponibilidad", weight: 4, sortOrder: 185 },
       { libraryRef: "ql-063", position: "socio", practiceArea: "corporativo", section: "blandas", category: "Habilidades Blandas", weight: 4, sortOrder: 186 },
-      { libraryRef: "ql-001", position: "soporte", practiceArea: "corporativo", section: "competencias", category: "Desempe\xF1o", weight: 9, sortOrder: 187 },
-      { libraryRef: "ql-011", position: "soporte", practiceArea: "corporativo", section: "competencias", category: "Desempe\xF1o", weight: 9, sortOrder: 188 },
-      { libraryRef: "ql-012", position: "soporte", practiceArea: "corporativo", section: "competencias", category: "Cumplimiento", weight: 7, sortOrder: 189 },
-      { libraryRef: "ql-013", position: "soporte", practiceArea: "corporativo", section: "competencias", category: "Desempe\xF1o", weight: 7, sortOrder: 190 },
-      { libraryRef: "ql-014", position: "soporte", practiceArea: "corporativo", section: "competencias", category: "Trabajo en Equipo", weight: 6, sortOrder: 191 },
-      { libraryRef: "ql-015", position: "soporte", practiceArea: "corporativo", section: "competencias", category: "Cumplimiento", weight: 6, sortOrder: 192 },
-      { libraryRef: "ql-005", position: "soporte", practiceArea: "corporativo", section: "competencias", category: "Desempe\xF1o", weight: 6, sortOrder: 193 },
-      { libraryRef: "ql-016", position: "soporte", practiceArea: "corporativo", section: "blandas", category: "Comunicaci\xF3n", weight: 10, sortOrder: 194 },
-      { libraryRef: "ql-017", position: "soporte", practiceArea: "corporativo", section: "blandas", category: "Actitud", weight: 12, sortOrder: 195 },
-      { libraryRef: "ql-009", position: "soporte", practiceArea: "corporativo", section: "blandas", category: "Disponibilidad", weight: 10, sortOrder: 196 },
-      { libraryRef: "ql-010", position: "soporte", practiceArea: "corporativo", section: "blandas", category: "Habilidades Blandas", weight: 9, sortOrder: 197 },
-      { libraryRef: "ql-018", position: "soporte", practiceArea: "corporativo", section: "blandas", category: "Actitud", weight: 9, sortOrder: 198 },
       { libraryRef: "ql-001", position: "pasante_carrera", practiceArea: "corporativo", section: "competencias", category: "Desempe\xF1o", weight: 10, sortOrder: 199 },
       { libraryRef: "ql-011", position: "pasante_carrera", practiceArea: "corporativo", section: "competencias", category: "Desempe\xF1o", weight: 10, sortOrder: 200 },
       // ─── Fiscal Consultoría technical questions (legal positions) ──────────
-      { libraryRef: "ql-new-fiscal", questionText: "\xBFIdentifica las disposiciones fiscales b\xE1sicas aplicables a los clientes?", position: "pasante", practiceArea: "consultoria_fiscal", section: "tecnico", category: "Normatividad fiscal", weight: 8, sortOrder: 301 },
-      { libraryRef: "ql-new-fiscal", questionText: "\xBFApoya en la elaboraci\xF3n de opiniones fiscales sencillas bajo supervisi\xF3n?", position: "pasante", practiceArea: "consultoria_fiscal", section: "tecnico", category: "Opiniones fiscales", weight: 8, sortOrder: 302 },
-      { libraryRef: "ql-new-fiscal", questionText: "\xBFRecopila informaci\xF3n y documentos necesarios para los casos de consultor\xEDa fiscal?", position: "pasante", practiceArea: "consultoria_fiscal", section: "tecnico", category: "Planeaci\xF3n fiscal", weight: 8, sortOrder: 303 },
-      { libraryRef: "ql-new-fiscal", questionText: "\xBFRealiza b\xFAsquedas b\xE1sicas de criterios y jurisprudencia relevantes?", position: "pasante", practiceArea: "consultoria_fiscal", section: "tecnico", category: "Criterios y jurisprudencia", weight: 8, sortOrder: 304 },
-      { libraryRef: "ql-new-fiscal", questionText: "\xBFOrganiza archivos y documentos fiscales de forma ordenada?", position: "pasante", practiceArea: "consultoria_fiscal", section: "tecnico", category: "Impactos fiscales", weight: 8, sortOrder: 305 },
       { libraryRef: "ql-new-fiscal", questionText: "\xBFIdentifica las disposiciones fiscales b\xE1sicas aplicables a los clientes?", position: "pasante_corporativo", practiceArea: "consultoria_fiscal", section: "tecnico", category: "Normatividad fiscal", weight: 8, sortOrder: 306 },
       { libraryRef: "ql-new-fiscal", questionText: "\xBFApoya en la elaboraci\xF3n de opiniones fiscales sencillas bajo supervisi\xF3n?", position: "pasante_corporativo", practiceArea: "consultoria_fiscal", section: "tecnico", category: "Opiniones fiscales", weight: 8, sortOrder: 307 },
       { libraryRef: "ql-new-fiscal", questionText: "\xBFRecopila informaci\xF3n y documentos necesarios para los casos de consultor\xEDa fiscal?", position: "pasante_corporativo", practiceArea: "consultoria_fiscal", section: "tecnico", category: "Planeaci\xF3n fiscal", weight: 8, sortOrder: 308 },
@@ -130649,11 +130684,6 @@ async function seedEvaluationData() {
       { libraryRef: "ql-new-fiscal", questionText: "\xBFLidera estrategias de planeaci\xF3n fiscal para los clientes m\xE1s importantes?", position: "socio", practiceArea: "consultoria_fiscal", section: "tecnico", category: "Planeaci\xF3n fiscal", weight: 12, sortOrder: 343 },
       { libraryRef: "ql-new-fiscal", questionText: "\xBFInterpreta criterios y jurisprudencia para establecer la posici\xF3n institucional?", position: "socio", practiceArea: "consultoria_fiscal", section: "tecnico", category: "Criterios y jurisprudencia", weight: 12, sortOrder: 344 },
       { libraryRef: "ql-new-fiscal", questionText: "\xBFEval\xFAa impactos fiscales estrat\xE9gicos y dirige la respuesta institucional?", position: "socio", practiceArea: "consultoria_fiscal", section: "tecnico", category: "Impactos fiscales", weight: 12, sortOrder: 345 },
-      { libraryRef: "ql-new-fiscal", questionText: "\xBFIdentifica de manera correcta documentos b\xE1sicos como actas y contratos?", position: "pasante", practiceArea: "litigio_fiscal", section: "tecnico", category: "Redacci\xF3n de escritos", weight: 8, sortOrder: 346 },
-      { libraryRef: "ql-new-fiscal", questionText: "\xBFLlena de forma adecuada y precisa los formatos predefinidos?", position: "pasante", practiceArea: "litigio_fiscal", section: "tecnico", category: "Estrategia procesal", weight: 8, sortOrder: 347 },
-      { libraryRef: "ql-new-fiscal", questionText: "\xBFApoya de manera eficiente en la recopilaci\xF3n de documentos solicitados?", position: "pasante", practiceArea: "litigio_fiscal", section: "tecnico", category: "Audiencias y diligencias", weight: 8, sortOrder: 348 },
-      { libraryRef: "ql-new-fiscal", questionText: "\xBFRealiza b\xFAsquedas en el registro p\xFAblico de la propiedad y del comercio o gu\xEDa tr\xE1mites de forma correcta?", position: "pasante", practiceArea: "litigio_fiscal", section: "tecnico", category: "Conocimiento normativo", weight: 8, sortOrder: 349 },
-      { libraryRef: "ql-new-fiscal", questionText: "\xBFEscucha atentamente las reuniones internas y toma notas completas y ordenadas?", position: "pasante", practiceArea: "litigio_fiscal", section: "tecnico", category: "Seguimiento de expedientes", weight: 8, sortOrder: 350 },
       { libraryRef: "ql-new-fiscal", questionText: "\xBFIdentifica de manera correcta documentos b\xE1sicos como actas y contratos?", position: "pasante_corporativo", practiceArea: "litigio_fiscal", section: "tecnico", category: "Redacci\xF3n de escritos", weight: 8, sortOrder: 351 },
       { libraryRef: "ql-new-fiscal", questionText: "\xBFLlena de forma adecuada y precisa los formatos predefinidos?", position: "pasante_corporativo", practiceArea: "litigio_fiscal", section: "tecnico", category: "Estrategia procesal", weight: 8, sortOrder: 352 },
       { libraryRef: "ql-new-fiscal", questionText: "\xBFApoya de manera eficiente en la recopilaci\xF3n de documentos solicitados?", position: "pasante_corporativo", practiceArea: "litigio_fiscal", section: "tecnico", category: "Audiencias y diligencias", weight: 8, sortOrder: 353 },
@@ -131532,6 +131562,9 @@ function requireSupervisorAction(opts) {
 
 // server/routes/analytics.ts
 var router = (0, import_express.Router)();
+function validatePeriod(period) {
+  return /^\d{4}-H[12]$/.test(period);
+}
 router.use(authMiddleware);
 async function getVisibleUserIds(user) {
   const role = normalizeRole(user);
@@ -131543,12 +131576,16 @@ router.get("/overview", async (req, res) => {
   try {
     const period = req.query.period;
     if (!period) return res.status(400).json({ error: "period query parameter required" });
+    if (!validatePeriod(period)) return res.status(400).json({ error: "Invalid period format. Expected YYYY-H1 or YYYY-H2." });
     const summary = await db.get(
       "SELECT * FROM analytics_period_summary WHERE period = ?",
       [period]
     );
     if (!summary) {
-      const totalUsers = await db.get("SELECT COUNT(*) as cnt FROM users WHERE is_active = 1 AND is_super_user = 0");
+      const totalUsers = await db.get(
+        "SELECT COUNT(DISTINCT u.id) as cnt FROM users u INNER JOIN supervisor_assignments sa ON sa.employee_id = u.id WHERE u.is_active = 1 AND u.is_super_user = 0 AND sa.period = ?",
+        [period]
+      );
       const selfCompleted = await db.get(
         'SELECT COUNT(DISTINCT evaluator_id) as cnt FROM evaluations WHERE period = ? AND type = "self" AND completed_at IS NOT NULL',
         [period]
@@ -131593,6 +131630,7 @@ router.get("/evaluations", async (req, res) => {
   try {
     const period = req.query.period;
     if (!period) return res.status(400).json({ error: "period query parameter required" });
+    if (!validatePeriod(period)) return res.status(400).json({ error: "Invalid period format. Expected YYYY-H1 or YYYY-H2." });
     const visibleIds = await getVisibleUserIds(req.user);
     let query = "SELECT * FROM analytics_evaluation_summary WHERE period = ?";
     const params = [period];
@@ -131818,7 +131856,7 @@ async function refreshPeriodSummary() {
     const periods = await db.all("SELECT DISTINCT period FROM evaluations ORDER BY period");
     for (const p of periods) {
       const period = p.period;
-      const totalUsers = await db.get("SELECT COUNT(*) as cnt FROM users WHERE is_active = 1 AND is_super_user = 0");
+      const totalUsers = await db.get("SELECT COUNT(DISTINCT sa.employee_id) as cnt FROM supervisor_assignments sa JOIN users u ON u.id = sa.employee_id WHERE sa.period = ? AND u.is_active = 1 AND u.is_super_user = 0", [period]);
       const totalEvaluated = await db.get(
         'SELECT COUNT(DISTINCT evaluated_id) as cnt FROM evaluations WHERE period = ? AND type = "supervisor" AND completed_at IS NOT NULL',
         [period]
@@ -137970,6 +138008,14 @@ router6.post("/", authMiddleware, requireAdmin, async (req, res) => {
     if (!employeeId || !supervisorId || !period) {
       return res.status(400).json({ error: "employeeId, supervisorId, and period are required" });
     }
+    const employeeCheck = await db.get("SELECT is_active FROM users WHERE id = ?", [employeeId]);
+    if (!employeeCheck || !employeeCheck.is_active) {
+      return res.status(400).json({ error: "No se puede asignar a un empleado inactivo" });
+    }
+    const supervisorCheck = await db.get("SELECT is_active FROM users WHERE id = ?", [supervisorId]);
+    if (!supervisorCheck || !supervisorCheck.is_active) {
+      return res.status(400).json({ error: "No se puede asignar a un supervisor inactivo" });
+    }
     const id = v4_default();
     await db.run(
       `INSERT INTO supervisor_assignments (id, employee_id, supervisor_id, period)
@@ -138117,7 +138163,7 @@ router7.post("/init", validate2(SystemInitSchema), async (req, res) => {
     if (existingUser) {
       return res.status(409).json({ error: "Email is already registered" });
     }
-    const now3 = (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "").replace("T", " ").replace(/\.\d{3}Z$/, "");
+    const now3 = (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "");
     const userId = v4_default();
     const hashedPassword = await hashPassword(password);
     const hashedAnswer = await hashSecurityAnswer2(securityAnswer);
@@ -138309,10 +138355,8 @@ router7.get("/activation-history", authMiddleware, requireSuperUser, async (_req
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-var system_default = router7;
 router7.post("/backfill-timeline", authMiddleware, requireSuperUser, async (req, res) => {
   try {
-    const { v4: uuidv4 } = await Promise.resolve().then(() => (init_dist_node(), dist_node_exports));
     let totalCreated = 0;
     const users = await db.all("SELECT id, name, position, is_super_user, created_at FROM users ORDER BY created_at ASC");
     for (const user of users) {
@@ -138321,7 +138365,7 @@ router7.post("/backfill-timeline", authMiddleware, requireSuperUser, async (req,
       const note = user.is_super_user ? "SuperAdmin del sistema" : user.position === "socio" ? "Socio fundador" : "Usuario registrado en el sistema";
       await db.run(
         `INSERT INTO user_timeline (id, user_id, event_type, event_date, metadata, note, created_by, created_at, updated_at) VALUES (?, ?, 'hire', ?, ?, ?, null, ?, ?)`,
-        [uuidv4(), user.id, user.created_at, JSON.stringify({ position: user.position }), note, user.created_at, user.created_at]
+        [v4_default(), user.id, user.created_at, JSON.stringify({ position: user.position }), note, user.created_at, user.created_at]
       );
       totalCreated++;
     }
@@ -138338,7 +138382,7 @@ router7.post("/backfill-timeline", authMiddleware, requireSuperUser, async (req,
       const metadata = { evalId: ev.id, evalType: ev.type, score: Math.round(ev.total_score), period: ev.period, evaluatorName: ev.evaluator_name };
       await db.run(
         `INSERT INTO user_timeline (id, user_id, event_type, event_date, metadata, note, created_by, created_at, updated_at) VALUES (?, ?, 'evaluation_completed', ?, ?, ?, null, ?, ?)`,
-        [uuidv4(), ev.evaluated_id, ev.completed_at, JSON.stringify(metadata), `${evalLabels[ev.type] || ev.type} completada \u2014 ${Math.round(ev.total_score)}% \u2014 Periodo ${ev.period}`, ev.completed_at, ev.completed_at]
+        [v4_default(), ev.evaluated_id, ev.completed_at, JSON.stringify(metadata), `${evalLabels[ev.type] || ev.type} completada \u2014 ${Math.round(ev.total_score)}% \u2014 Periodo ${ev.period}`, ev.completed_at, ev.completed_at]
       );
       totalCreated++;
     }
@@ -138355,7 +138399,7 @@ router7.post("/backfill-timeline", authMiddleware, requireSuperUser, async (req,
       const metadata = { supervisorId: asgn.supervisor_id, supervisorName: asgn.supervisor_name, period: asgn.period };
       await db.run(
         `INSERT INTO user_timeline (id, user_id, event_type, event_date, metadata, note, created_by, created_at, updated_at) VALUES (?, ?, 'supervisor_assigned', ?, ?, ?, null, ?, ?)`,
-        [uuidv4(), asgn.employee_id, periodDate, JSON.stringify(metadata), `${asgn.supervisor_name} asignado como supervisor \u2014 ${asgn.period}`, periodDate, periodDate]
+        [v4_default(), asgn.employee_id, periodDate, JSON.stringify(metadata), `${asgn.supervisor_name} asignado como supervisor \u2014 ${asgn.period}`, periodDate, periodDate]
       );
       totalCreated++;
     }
@@ -138365,6 +138409,114 @@ router7.post("/backfill-timeline", authMiddleware, requireSuperUser, async (req,
     return res.status(500).json({ error: "Backfill failed" });
   }
 });
+router7.get("/integrity", authMiddleware, async (req, res) => {
+  try {
+    const user = req.user;
+    if (!user.isAdmin && !user.isSuperUser) {
+      return res.status(403).json({ error: "Admin or super_user access required" });
+    }
+    const totalUsers = await db.getScalar("SELECT COUNT(*) FROM users");
+    const activeUsers = await db.getScalar("SELECT COUNT(*) FROM users WHERE is_active = 1");
+    const totalEvaluations = await db.getScalar("SELECT COUNT(*) FROM evaluations");
+    const completedEvaluations = await db.getScalar("SELECT COUNT(*) FROM evaluations WHERE completed_at IS NOT NULL");
+    const totalResponses = await db.getScalar("SELECT COUNT(*) FROM evaluation_responses");
+    const totalAssignments = await db.getScalar("SELECT COUNT(*) FROM supervisor_assignments");
+    const totalActionPlans = await db.getScalar("SELECT COUNT(*) FROM action_plans");
+    const periods = await db.all("SELECT period, self_start, self_end, action_plan_end FROM period_configs ORDER BY period");
+    const now3 = (/* @__PURE__ */ new Date()).toISOString();
+    const currentPeriod = await db.get(
+      "SELECT period FROM period_configs WHERE self_start <= ? AND action_plan_end >= ? ORDER BY period DESC LIMIT 1",
+      [now3, now3]
+    );
+    const currentPeriodName = currentPeriod?.period || "unknown";
+    const bestPeriod = await db.get(
+      "SELECT period, COUNT(*) as cnt FROM evaluations WHERE completed_at IS NOT NULL GROUP BY period ORDER BY cnt DESC LIMIT 1"
+    );
+    let scoreMismatches = 0;
+    let emptyCompleted = 0;
+    const completed = await db.all("SELECT e.id, e.total_score FROM evaluations e WHERE e.completed_at IS NOT NULL");
+    for (const e of completed) {
+      const responses = await db.all("SELECT * FROM evaluation_responses WHERE evaluation_id = ?", [e.id]);
+      if (responses.length === 0) {
+        emptyCompleted++;
+        continue;
+      }
+      let totalW = 0, wSum = 0;
+      for (const r of responses) {
+        if (r.not_applicable && r.score === 0) continue;
+        if (r.no_elements) continue;
+        totalW += r.weight || 1;
+        wSum += r.score / 5 * (r.weight || 1);
+      }
+      const calc = totalW > 0 ? Math.round(wSum / totalW * 100) : 0;
+      if (calc !== Math.round(e.total_score)) scoreMismatches++;
+    }
+    const orphanedAssignments = await db.getScalar(
+      `SELECT COUNT(*) FROM supervisor_assignments sa
+       LEFT JOIN users u ON u.id = sa.employee_id
+       WHERE u.id IS NULL OR u.is_active = 0`
+    );
+    const invalidSupervisors = await db.getScalar(
+      `SELECT COUNT(*) FROM supervisor_assignments sa
+       LEFT JOIN users u ON u.id = sa.supervisor_id
+       WHERE u.id IS NULL OR u.is_active = 0`
+    );
+    let analyticsDrift = 0;
+    const allPeriods = await db.all("SELECT DISTINCT period FROM evaluations");
+    for (const p of allPeriods) {
+      const srcSup = await db.getScalar(
+        'SELECT COUNT(DISTINCT evaluated_id) FROM evaluations WHERE period = ? AND type = "supervisor" AND completed_at IS NOT NULL',
+        [p.period]
+      );
+      const analytics = await db.get("SELECT supervisor_eval_completed FROM analytics_period_summary WHERE period = ?", [p.period]);
+      if (analytics && srcSup !== analytics.supervisor_eval_completed) {
+        analyticsDrift++;
+      }
+    }
+    const activeSessions = await db.getScalar(
+      "SELECT COUNT(*) FROM sessions WHERE expires_at > ?",
+      [now3]
+    );
+    const templateCount = await db.getScalar("SELECT COUNT(*) FROM template_questions WHERE is_active = 1");
+    const libraryCount = await db.getScalar("SELECT COUNT(*) FROM question_library");
+    const weightCount = await db.getScalar("SELECT COUNT(*) FROM section_weights");
+    const templateOK = templateCount === 290 && libraryCount === 84 && weightCount === 17;
+    return res.json({
+      timestamp: now3,
+      status: scoreMismatches === 0 && emptyCompleted === 0 ? "healthy" : "degraded",
+      counts: {
+        users: totalUsers,
+        activeUsers,
+        evaluations: totalEvaluations,
+        completedEvaluations,
+        responses: totalResponses,
+        assignments: totalAssignments,
+        actionPlans: totalActionPlans,
+        activeSessions
+      },
+      periods: {
+        current: currentPeriodName,
+        bestData: bestPeriod ? { period: bestPeriod.period, evaluations: bestPeriod.cnt } : null,
+        available: periods.map((p) => p.period)
+      },
+      integrity: {
+        scoreMismatches,
+        emptyCompleted,
+        orphanedAssignments,
+        invalidSupervisors,
+        analyticsDrift,
+        templateIntegrity: templateOK ? "OK" : "DEGRADED",
+        templateCount,
+        libraryCount,
+        weightCount
+      }
+    });
+  } catch (err) {
+    console.error("System integrity check error:", err);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+});
+var system_default = router7;
 
 // server/routes/evaluations.ts
 var import_express8 = __toESM(require_express2(), 1);
@@ -138575,7 +138727,15 @@ router8.post("/", authMiddleware, async (req, res) => {
     const id = v4_default();
     const now3 = (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "");
     const respArr = responses || [];
-    const totalScore = req.body.totalScore !== void 0 ? Number(req.body.totalScore) : respArr.length > 0 ? respArr.reduce((sum, r) => sum + (r.score || 0), 0) / respArr.length : 0;
+    let totalScore = req.body.totalScore !== void 0 ? Number(req.body.totalScore) : respArr.length > 0 ? respArr.reduce((sum, r) => sum + (r.score || 0), 0) / respArr.length : 0;
+    if (respArr.length > 0) {
+      const activeResponses = respArr.filter((r) => !r.notApplicable && !r.noElements && r.score > 0);
+      const totalWeight = activeResponses.reduce((sum, r) => sum + (r.weight || 1), 0);
+      if (totalWeight > 0) {
+        const weightedSum = activeResponses.reduce((sum, r) => sum + r.score / 5 * (r.weight || 1), 0);
+        totalScore = Math.round(weightedSum / totalWeight * 100);
+      }
+    }
     await db.transaction(async (conn) => {
       await tx.run(
         conn,
@@ -138642,6 +138802,21 @@ router8.put(
       if (totalScore !== void 0) {
         updates.push("total_score = ?");
         params.push(Math.round(totalScore));
+      }
+      if (responses && Array.isArray(responses) && responses.length > 0) {
+        const activeResponses = responses.filter((r) => !r.notApplicable && !r.noElements && r.score > 0);
+        const totalWeight = activeResponses.reduce((sum, r) => sum + (r.weight || 1), 0);
+        if (totalWeight > 0) {
+          const weightedSum = activeResponses.reduce((sum, r) => sum + r.score / 5 * (r.weight || 1), 0);
+          const recalculatedScore = Math.round(weightedSum / totalWeight * 100);
+          const tsIdx = updates.findIndex((u) => u === "total_score = ?");
+          if (tsIdx >= 0) {
+            params[tsIdx] = recalculatedScore;
+          } else {
+            updates.push("total_score = ?");
+            params.push(recalculatedScore);
+          }
+        }
       }
       updates.push("completed_at = ?");
       params.push(now3);
@@ -139717,11 +139892,16 @@ router13.patch("/template-questions/:id", authMiddleware, requireAdmin, async (r
 });
 router13.get("/full-template/:position", authMiddleware, async (req, res) => {
   try {
-    const { position } = req.params;
+    let { position } = req.params;
     const practiceArea = req.query.practiceArea || "corporativo";
+    if (position === "pasante") position = "pasante_corporativo";
+    if (position === "soporte") position = "archivo_soporte";
+    const posConfig = await db.get("SELECT * FROM position_config WHERE position = ? AND is_active = 1", [position]);
+    if (!posConfig) {
+      return res.status(400).json({ error: `Invalid position: "${position}". Position not found in system.` });
+    }
     const swRow = await db.get("SELECT * FROM section_weights WHERE position = ?", [position]);
     const sectionWeights = swRow ? { tecnico: swRow.tecnico, competencias: swRow.competencias, blandas: swRow.blandas } : { tecnico: 0, competencias: 80, blandas: 20 };
-    const posConfig = await db.get("SELECT * FROM position_config WHERE position = ?", [position]);
     const questions = await db.all(
       `SELECT tq.*, ql.question_id as library_question_id_ref, ql.category as library_category, ql.text as library_text, ql.default_section, ql.default_weight
        FROM template_questions tq LEFT JOIN question_library ql ON tq.library_question_id = ql.id
@@ -144874,6 +145054,153 @@ function startBackupScheduler() {
   console.log("[Backup] Scheduler started (daily DB at 3AM CST, weekly source Sun 4AM CST)");
 }
 
+// server/services/integrity-scheduler.ts
+init_dist_node();
+var CHECKS = [
+  {
+    name: "score_mismatch",
+    query: `
+      SELECT e.id FROM evaluations e 
+      WHERE e.completed_at IS NOT NULL
+    `,
+    process: async () => {
+      const evals = await db.all("SELECT e.id, e.total_score FROM evaluations e WHERE e.completed_at IS NOT NULL");
+      let mismatches = 0;
+      for (const e of evals) {
+        const responses = await db.all("SELECT * FROM evaluation_responses WHERE evaluation_id = ?", [e.id]);
+        if (responses.length === 0) continue;
+        let totalW = 0, wSum = 0;
+        for (const r of responses) {
+          if (r.not_applicable && r.score === 0) continue;
+          if (r.no_elements) continue;
+          totalW += r.weight || 1;
+          wSum += r.score / 5 * (r.weight || 1);
+        }
+        const calc = totalW > 0 ? Math.round(wSum / totalW * 100) : 0;
+        if (calc !== Math.round(e.total_score)) mismatches++;
+      }
+      return { checkName: "score_mismatch", status: mismatches === 0 ? "pass" : "fail", rowCount: mismatches, details: `${mismatches} evaluations with wrong scores` };
+    }
+  },
+  {
+    name: "empty_completed",
+    query: `
+      SELECT e.id FROM evaluations e 
+      LEFT JOIN evaluation_responses er ON er.evaluation_id = e.id
+      WHERE e.completed_at IS NOT NULL
+      GROUP BY e.id HAVING COUNT(er.id) = 0
+    `,
+    process: async () => {
+      const count = await db.getScalar(`
+        SELECT COUNT(*) FROM evaluations e 
+        LEFT JOIN evaluation_responses er ON er.evaluation_id = e.id
+        WHERE e.completed_at IS NOT NULL
+        GROUP BY e.id HAVING COUNT(er.id) = 0
+      `) || 0;
+      return { checkName: "empty_completed", status: count === 0 ? "pass" : "fail", rowCount: count, details: `${count} completed evals with 0 responses` };
+    }
+  },
+  {
+    name: "orphaned_assignments",
+    query: `
+      SELECT sa.id FROM supervisor_assignments sa 
+      LEFT JOIN users u ON u.id = sa.employee_id 
+      WHERE u.id IS NULL OR u.is_active = 0
+    `,
+    process: async () => {
+      const count = await db.getScalar(`
+        SELECT COUNT(*) FROM supervisor_assignments sa 
+        LEFT JOIN users u ON u.id = sa.employee_id 
+        WHERE u.id IS NULL OR u.is_active = 0
+      `) || 0;
+      return { checkName: "orphaned_assignments", status: count === 0 ? "pass" : "fail", rowCount: count, details: `${count} orphaned assignments` };
+    }
+  },
+  {
+    name: "invalid_supervisors",
+    query: `
+      SELECT sa.id FROM supervisor_assignments sa 
+      LEFT JOIN users u ON u.id = sa.supervisor_id 
+      WHERE u.id IS NULL OR u.is_active = 0
+    `,
+    process: async () => {
+      const count = await db.getScalar(`
+        SELECT COUNT(*) FROM supervisor_assignments sa 
+        LEFT JOIN users u ON u.id = sa.supervisor_id 
+        WHERE u.id IS NULL OR u.is_active = 0
+      `) || 0;
+      return { checkName: "invalid_supervisors", status: count === 0 ? "pass" : "fail", rowCount: count, details: `${count} invalid supervisors` };
+    }
+  },
+  {
+    name: "analytics_drift",
+    query: `SELECT period, supervisor_eval_completed FROM analytics_period_summary`,
+    process: async () => {
+      const summaries = await db.all("SELECT * FROM analytics_period_summary");
+      let drift = 0;
+      for (const s of summaries) {
+        const srcSup = await db.getScalar(
+          'SELECT COUNT(DISTINCT evaluated_id) FROM evaluations WHERE period = ? AND type = "supervisor" AND completed_at IS NOT NULL',
+          [s.period]
+        ) || 0;
+        if (srcSup !== s.supervisor_eval_completed) drift++;
+      }
+      return { checkName: "analytics_drift", status: drift === 0 ? "pass" : "fail", rowCount: drift, details: `${drift} periods with analytics mismatches` };
+    }
+  },
+  {
+    name: "template_integrity",
+    query: `SELECT COUNT(*) FROM template_questions WHERE is_active = 1`,
+    process: async () => {
+      const tq = await db.getScalar("SELECT COUNT(*) FROM template_questions WHERE is_active = 1") || 0;
+      const sw = await db.getScalar("SELECT COUNT(*) FROM section_weights") || 0;
+      const ql = await db.getScalar("SELECT COUNT(*) FROM question_library") || 0;
+      const ok = tq === 290 && sw === 17 && ql === 84;
+      return { checkName: "template_integrity", status: ok ? "pass" : "fail", rowCount: ok ? 0 : 1, details: `templates=${tq}/290 weights=${sw}/17 library=${ql}/84` };
+    }
+  }
+];
+async function runAllChecks() {
+  const runId = v4_default();
+  const now3 = (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "");
+  console.log(`[Integrity] Starting nightly check run ${runId}`);
+  for (const check of CHECKS) {
+    try {
+      const result = await check.process();
+      await db.run(
+        `INSERT INTO system_integrity_audit (id, check_name, run_id, status, row_count, details, run_at) 
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [v4_default(), check.name, runId, result.status, result.rowCount, result.details, now3]
+      );
+      console.log(`[Integrity] ${result.status === "pass" ? "\u2705" : "\u274C"} ${check.name}: ${result.details}`);
+    } catch (err) {
+      console.error(`[Integrity] Error in ${check.name}:`, err.message);
+      await db.run(
+        `INSERT INTO system_integrity_audit (id, check_name, run_id, status, row_count, details, run_at) 
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [v4_default(), check.name, runId, "error", 0, err.message, now3]
+      );
+    }
+  }
+  await db.run("DELETE FROM system_integrity_audit WHERE run_at < DATE_SUB(NOW(), INTERVAL 90 DAY)");
+  console.log(`[Integrity] Run ${runId} complete`);
+}
+function startIntegrityScheduler() {
+  const enabled = process.env.NODE_ENV === "production" || process.env.INTEGRITY_CHECKS_ENABLED === "true";
+  if (!enabled) {
+    console.log("[Integrity] Scheduler disabled (not production)");
+    return;
+  }
+  console.log("[Integrity] Scheduler started \u2014 running checks nightly at 02:00 UTC");
+  runAllChecks().catch((err) => console.error("[Integrity] Startup check failed:", err));
+  setInterval(() => {
+    const now3 = /* @__PURE__ */ new Date();
+    if (now3.getUTCHours() === 2 && now3.getUTCMinutes() === 0) {
+      runAllChecks().catch((err) => console.error("[Integrity] Nightly check failed:", err));
+    }
+  }, 6e4);
+}
+
 // server/services/session-cleanup.ts
 function toMySQLDate2(d) {
   return d.toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "");
@@ -145080,6 +145407,7 @@ async function startServer() {
     app.listen(PORT, () => {
       console.log(`Server running on port ${PORT} in ${process.env.NODE_ENV || "development"} mode`);
       startBackupScheduler();
+      startIntegrityScheduler();
       startSessionCleanupScheduler();
       startNotificationScheduler();
       refreshAnalytics();
