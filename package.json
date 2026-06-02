@@ -19,7 +19,12 @@
     "start": "node server.js",
     "build:all": "npm run build",
     "start:tsx": "npx tsx server/index.ts",
-    "db:seed-users": "tsx server/db/seed-users.ts"
+    "db:seed-users": "tsx server/db/seed-users.ts",
+    "audit:scores": "npx tsx server/scripts/audit.ts scores",
+    "audit:analytics": "npx tsx server/scripts/audit.ts analytics",
+    "audit:hierarchy": "npx tsx server/scripts/audit.ts hierarchy",
+    "audit:periods": "npx tsx server/scripts/audit.ts periods",
+    "audit:all": "npx tsx server/scripts/audit.ts all"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

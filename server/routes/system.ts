@@ -79,7 +79,7 @@ router.post('/init', validate(SystemInitSchema), async (req: Request, res: Respo
       return res.status(409).json({ error: 'Email is already registered' });
     }
 
-    const now = new Date().toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, '').replace('T', ' ').replace(/\.\d{3}Z$/, '');
+    const now = new Date().toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, '');
     const userId = uuidv4();
 
     // Hash password and security answer
@@ -322,13 +322,10 @@ router.get('/activation-history', authMiddleware, requireSuperUser, async (_req:
   }
 });
 
-export default router;
-
 // ─── POST /api/system/backfill-timeline ───────────────────────────────
 // Backfill timeline events from historical data (SuperUser only)
 router.post('/backfill-timeline', authMiddleware, requireSuperUser, async (req: Request, res: Response) => {
   try {
-    const { v4: uuidv4 } = await import('uuid');
     let totalCreated = 0;
 
     // 1. User hire events
@@ -388,3 +385,137 @@ router.post('/backfill-timeline', authMiddleware, requireSuperUser, async (req: 
     return res.status(500).json({ error: 'Backfill failed' });
   }
 });
+
+// ─── GET /api/system/integrity ───────────────────────────────────────────────
+// Admin-only system health dashboard. Returns live integrity metrics
+// sourced directly from the database.
+router.get('/integrity', authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const user = req.user!;
+    if (!user.isAdmin && !user.isSuperUser) {
+      return res.status(403).json({ error: 'Admin or super_user access required' });
+    }
+
+    // ── Core Counts ──
+    const totalUsers = await db.getScalar<number>('SELECT COUNT(*) FROM users');
+    const activeUsers = await db.getScalar<number>('SELECT COUNT(*) FROM users WHERE is_active = 1');
+    const totalEvaluations = await db.getScalar<number>('SELECT COUNT(*) FROM evaluations');
+    const completedEvaluations = await db.getScalar<number>('SELECT COUNT(*) FROM evaluations WHERE completed_at IS NOT NULL');
+    const totalResponses = await db.getScalar<number>('SELECT COUNT(*) FROM evaluation_responses');
+    const totalAssignments = await db.getScalar<number>('SELECT COUNT(*) FROM supervisor_assignments');
+    const totalActionPlans = await db.getScalar<number>('SELECT COUNT(*) FROM action_plans');
+
+    // ── Period Info ──
+    const periods = await db.all('SELECT period, self_start, self_end, action_plan_end FROM period_configs ORDER BY period');
+
+    // Current calendar period
+    const now = new Date().toISOString();
+    const currentPeriod = await db.get(
+      'SELECT period FROM period_configs WHERE self_start <= ? AND action_plan_end >= ? ORDER BY period DESC LIMIT 1',
+      [now, now]
+    ) as any;
+    const currentPeriodName = currentPeriod?.period || 'unknown';
+
+    // Period with most completed evaluations
+    const bestPeriod = await db.get(
+      'SELECT period, COUNT(*) as cnt FROM evaluations WHERE completed_at IS NOT NULL GROUP BY period ORDER BY cnt DESC LIMIT 1'
+    ) as any;
+
+    // ── Score Integrity ──
+    let scoreMismatches = 0;
+    let emptyCompleted = 0;
+    const completed = await db.all('SELECT e.id, e.total_score FROM evaluations e WHERE e.completed_at IS NOT NULL');
+
+    for (const e of completed as any[]) {
+      const responses = await db.all('SELECT * FROM evaluation_responses WHERE evaluation_id = ?', [e.id]);
+      if (responses.length === 0) {
+        emptyCompleted++;
+        continue;
+      }
+      let totalW = 0, wSum = 0;
+      for (const r of responses as any[]) {
+        if (r.not_applicable && r.score === 0) continue;
+        if (r.no_elements) continue;
+        totalW += r.weight || 1;
+        wSum += (r.score / 5) * (r.weight || 1);
+      }
+      const calc = totalW > 0 ? Math.round((wSum / totalW) * 100) : 0;
+      if (calc !== Math.round(e.total_score)) scoreMismatches++;
+    }
+
+    // ── Orphans ──
+    const orphanedAssignments = await db.getScalar<number>(
+      `SELECT COUNT(*) FROM supervisor_assignments sa
+       LEFT JOIN users u ON u.id = sa.employee_id
+       WHERE u.id IS NULL OR u.is_active = 0`
+    );
+    const invalidSupervisors = await db.getScalar<number>(
+      `SELECT COUNT(*) FROM supervisor_assignments sa
+       LEFT JOIN users u ON u.id = sa.supervisor_id
+       WHERE u.id IS NULL OR u.is_active = 0`
+    );
+
+    // ── Analytics Drift ──
+    let analyticsDrift = 0;
+    const allPeriods = await db.all('SELECT DISTINCT period FROM evaluations');
+    for (const p of allPeriods as any[]) {
+      const srcSup = await db.getScalar<number>(
+        'SELECT COUNT(DISTINCT evaluated_id) FROM evaluations WHERE period = ? AND type = "supervisor" AND completed_at IS NOT NULL', [p.period]
+      );
+      const analytics = await db.get('SELECT supervisor_eval_completed FROM analytics_period_summary WHERE period = ?', [p.period]) as any;
+      if (analytics && srcSup !== analytics.supervisor_eval_completed) {
+        analyticsDrift++;
+      }
+    }
+
+    // ── Session Count ──
+    const activeSessions = await db.getScalar<number>(
+      'SELECT COUNT(*) FROM sessions WHERE expires_at > ?', [now]
+    );
+
+    // ── Template Integrity ──
+    const templateCount = await db.getScalar<number>('SELECT COUNT(*) FROM template_questions WHERE is_active = 1');
+    const libraryCount = await db.getScalar<number>('SELECT COUNT(*) FROM question_library');
+    const weightCount = await db.getScalar<number>('SELECT COUNT(*) FROM section_weights');
+    const templateOK = templateCount === 290 && libraryCount === 84 && weightCount === 17;
+
+    return res.json({
+      timestamp: now,
+      status: scoreMismatches === 0 && emptyCompleted === 0 ? 'healthy' : 'degraded',
+
+      counts: {
+        users: totalUsers,
+        activeUsers,
+        evaluations: totalEvaluations,
+        completedEvaluations,
+        responses: totalResponses,
+        assignments: totalAssignments,
+        actionPlans: totalActionPlans,
+        activeSessions,
+      },
+
+      periods: {
+        current: currentPeriodName,
+        bestData: bestPeriod ? { period: bestPeriod.period, evaluations: bestPeriod.cnt } : null,
+        available: (periods as any[]).map(p => p.period),
+      },
+
+      integrity: {
+        scoreMismatches,
+        emptyCompleted,
+        orphanedAssignments,
+        invalidSupervisors,
+        analyticsDrift,
+        templateIntegrity: templateOK ? 'OK' : 'DEGRADED',
+        templateCount,
+        libraryCount,
+        weightCount,
+      },
+    });
+  } catch (err) {
+    console.error('System integrity check error:', err);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+export default router;

@@ -74,7 +74,7 @@ async function refreshPeriodSummary(): Promise<void> {
     for (const p of periods as any[]) {
       const period = p.period;
       
-      const totalUsers = await db.get('SELECT COUNT(*) as cnt FROM users WHERE is_active = 1 AND is_super_user = 0');
+            const totalUsers = await db.get('SELECT COUNT(DISTINCT sa.employee_id) as cnt FROM supervisor_assignments sa JOIN users u ON u.id = sa.employee_id WHERE sa.period = ? AND u.is_active = 1 AND u.is_super_user = 0', [period]);
       const totalEvaluated = await db.get(
         'SELECT COUNT(DISTINCT evaluated_id) as cnt FROM evaluations WHERE period = ? AND type = "supervisor" AND completed_at IS NOT NULL', [period]
       );

@@ -54,7 +54,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const result = await api.get<{ user: AuthUser }>('/api/auth/me');
       setUser(result.user);
-    } catch {
+    } catch (err) {
+      console.error('[Auth] Failed to refresh user session:', err);
       setUser(null);
       setToken(null);
     }
@@ -65,7 +66,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         const result = await api.get<{ initialized: boolean }>('/api/system/initialized');
         setSystemInitialized(result.initialized);
-      } catch {
+      } catch (err) {
+        console.error('[Auth] Failed to check system initialization:', err);
         setSystemInitialized(false);
       }
       if (getToken()) {
@@ -73,7 +75,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         try {
           const modCfg = await api.get<ModuleConfig>('/api/system/modules');
           setModuleConfig(modCfg);
-        } catch {
+        } catch (err) {
+          console.error('[Auth] Failed to load module config:', err);
           setModuleConfig(null);
         }
       }
@@ -89,13 +92,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const modCfg = await api.get<ModuleConfig>('/api/system/modules');
       setModuleConfig(modCfg);
-    } catch {
+    } catch (err) {
+      console.error('[Auth] Failed to load module config after login:', err);
       setModuleConfig(null);
     }
   }, []);
 
   const logout = useCallback(async () => {
-    try { await api.post('/api/auth/logout', {}); } catch {}
+    try { await api.post('/api/auth/logout', {}); } catch (err) { console.error('[Auth] Logout API call failed:', err); }
     setToken(null);
     setUser(null);
   }, []);

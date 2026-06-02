@@ -7,6 +7,7 @@ import { calculateScore, getSectionForQuestion, SECTION_LABELS, SECTION_ORDER } 
 import { User, EvalQuestion, ActionPlan } from '@/types';
 import { getSectionWeights, getPositionLabel, getScoreLabels, getLegalHierarchy, getAdminHierarchy } from '@/lib/evaluationConfig';
 import { useCurrentPeriod } from '@/hooks/useCurrentPeriod';
+import { useDisplayPeriod } from '@/hooks/useDisplayPeriod';
 import { useFullTemplate, usePositionConfig, useTemplateQuestions } from '@/hooks/useEvaluationConfig';
 import { Download } from 'lucide-react';
 import { toast } from 'sonner';
@@ -64,9 +65,10 @@ export default function Evaluations() {
   const [showConfirm, setShowConfirm] = useState(false);
   const [viewingEval, setViewingEval] = useState<string | null>(null);
   const currentPeriod = useCurrentPeriod();
+  const displayPeriod = useDisplayPeriod();
   const { data: periodsData = [] } = usePeriods();
   const periods = periodsData.map((p: any) => p.period).sort();
-  const [viewPeriod, setViewPeriod] = useState(currentPeriod);
+  const [viewPeriod, setViewPeriod] = useState(displayPeriod);
   const [actionPlanEmployee, setActionPlanEmployee] = useState<string | null>(null);
   const [actionPlanContent, setActionPlanContent] = useState('');
 

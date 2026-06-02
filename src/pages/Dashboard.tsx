@@ -2,6 +2,7 @@ import * as React from "react";
 import { useAuth } from '@/contexts/AuthContext';
 import { useUsers, useEvaluations, useAssignments, useAnalyticsOverview, useAnalyticsEvaluations, usePendingActions, useUnreadNotificationCount, usePeriods } from '@/api/queries';
 import { useCurrentPeriod } from '@/hooks/useCurrentPeriod';
+import { useDisplayPeriod } from '@/hooks/useDisplayPeriod';
 import { getPositionLabel, getPositionLevel, getPositionRank, getLegalHierarchy, getAdminHierarchy, getPositionHierarchy } from '@/lib/evaluationConfig';
 import { canViewUserEvaluations } from '@/lib/visibility';
 import { ScoreBadge } from '@/components/shared/ScoreBadge';
@@ -32,17 +33,13 @@ export default function Dashboard() {
   const { user: currentUser } = useAuth();
   const currentPeriod = useCurrentPeriod();
   const { data: periodsData = [] } = usePeriods();
+  const displayPeriod = useDisplayPeriod();
 
-  // Determine which period to use for analytics display
-  const previousPeriod = (() => {
-    const sorted = [...periodsData].sort((a: any, b: any) => b.period.localeCompare(a.period));
-    const prev = sorted.find((p: any) => p.period < currentPeriod);
-    return prev ? prev.period : currentPeriod;
-  })();
-  const { data: overview, isLoading: overviewLoading } = useAnalyticsOverview(currentPeriod);
-  const hasCurrentData = overview && (overview.totalEmployees > 0 || overview.selfEvalCompleted > 0);
-  const analyticsPeriod = hasCurrentData ? currentPeriod : previousPeriod;
-  const isPeriodTransition = !hasCurrentData && analyticsPeriod !== currentPeriod;
+  // Analytics: use display period (most recent with data)
+  const { data: overview, isLoading: overviewLoading } = useAnalyticsOverview(displayPeriod);
+  const hasCurrentData = overview && (overview.selfEvalCompleted > 0 || overview.supervisorEvalCompleted > 0);
+  const analyticsPeriod = displayPeriod;
+  const isPeriodTransition = displayPeriod !== currentPeriod;
   const { data: evalAnalytics, isLoading: evalLoading } = useAnalyticsEvaluations(analyticsPeriod);
   const { data: pendingActions, isLoading: actionsLoading } = usePendingActions(currentPeriod);
   const { data: notifCount } = useUnreadNotificationCount();

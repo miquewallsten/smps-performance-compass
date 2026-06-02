@@ -101,7 +101,7 @@ export function useCreateEvaluation() {
       qc.setQueryData(['evaluations'], (old: any[]) => old ? [...old, { ...newEval, id: 'temp-' + Date.now(), totalScore: 0 }] : [{ ...newEval, id: 'temp-' + Date.now(), totalScore: 0 }]);
       return { prev };
     },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['evaluations'] }); toast.success('Evaluación enviada'); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['evaluations'] }); qc.invalidateQueries({ queryKey: ['analyticsOverview'] }); qc.invalidateQueries({ queryKey: ['analyticsEvaluations'] }); toast.success('Evaluación enviada'); },
     onError: (err: Error, _vars, context: any) => { if (context?.prev) qc.setQueryData(['evaluations'], context.prev); toast.error(err.message || 'Error al enviar evaluación'); },
   });
 }
@@ -112,7 +112,7 @@ export function useUpdateEvaluation() {
       const result = await api.patch(`/api/evaluations/${id}`, data);
       return normalizeEvaluation(result);
     },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['evaluations'] }); toast.success('Evaluación actualizada'); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['evaluations'] }); qc.invalidateQueries({ queryKey: ['analyticsOverview'] }); qc.invalidateQueries({ queryKey: ['analyticsEvaluations'] }); toast.success('Evaluación actualizada'); },
     onError: (err: Error) => toast.error(err.message || 'Error al actualizar evaluación'),
   });
 }
@@ -120,7 +120,7 @@ export function useCompleteFeedback() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => api.patch(`/api/evaluations/${id}/feedback`, {}),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['evaluations'] }); toast.success('Feedback marcado como completado'); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['evaluations'] }); qc.invalidateQueries({ queryKey: ['analyticsOverview'] }); qc.invalidateQueries({ queryKey: ['analyticsEvaluations'] }); toast.success('Feedback marcado como completado'); },
     onError: (err: Error) => toast.error(err.message || 'Error al completar feedback'),
   });
 }
@@ -128,7 +128,7 @@ export function useApproveNA() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ id, questionId, approved }: any) => api.patch(`/api/evaluations/${id}/na-approval`, { questionId, approved }),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['evaluations'] }); toast.success('Decisión N/A guardada'); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['evaluations'] }); qc.invalidateQueries({ queryKey: ['analyticsOverview'] }); qc.invalidateQueries({ queryKey: ['analyticsEvaluations'] }); toast.success('Decisión N/A guardada'); },
     onError: (err: Error) => toast.error(err.message || 'Error al procesar N/A'),
   });
 }
@@ -169,7 +169,7 @@ export function useCreateActionPlan() {
       qc.setQueryData(['actionPlans'], (old: any[]) => old ? [...old, { ...newPlan, id: 'temp-' + Date.now() }] : [{ ...newPlan, id: 'temp-' + Date.now() }]);
       return { prev };
     },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['actionPlans'] }); toast.success('Plan de acción guardado'); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['actionPlans'] }); qc.invalidateQueries({ queryKey: ['analyticsOverview'] }); qc.invalidateQueries({ queryKey: ['analyticsEvaluations'] }); toast.success('Plan de acción guardado'); },
     onError: (err: Error, _vars, context: any) => { if (context?.prev) qc.setQueryData(['actionPlans'], context.prev); toast.error(err.message || 'Error al guardar plan'); },
   });
 }
@@ -177,7 +177,7 @@ export function useApproveActionPlan() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ id, status, comments }: any) => api.post(`/api/action-plans/${id}/approve`, { status, comments }),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['actionPlans'] }); toast.success('Plan de acción procesado'); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['actionPlans'] }); qc.invalidateQueries({ queryKey: ['analyticsOverview'] }); qc.invalidateQueries({ queryKey: ['analyticsEvaluations'] }); toast.success('Plan de acción procesado'); },
     onError: (err: Error) => toast.error(err.message || 'Error al procesar plan'),
   });
 }

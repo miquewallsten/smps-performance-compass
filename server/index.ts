@@ -41,6 +41,7 @@ import { authMiddleware } from './middleware/auth.js';
 import { hasRole } from './middleware/permissions.js';
 import { auditLog, getClientIp, getUserAgent } from './services/audit.js';
 import { startBackupScheduler } from './services/backup-scheduler.js';
+import { startIntegrityScheduler } from './services/integrity-scheduler.js';
 import { startSessionCleanupScheduler } from './services/session-cleanup.js';
 
 // Rate limiter for new auth endpoints
@@ -214,6 +215,7 @@ async function startServer() {
     app.listen(PORT, () => {
       console.log(`Server running on port ${PORT} in ${process.env.NODE_ENV || 'development'} mode`);
       startBackupScheduler();
+      startIntegrityScheduler();
       startSessionCleanupScheduler();
       startNotificationScheduler();
       // Refresh analytics tables on startup, then every 30 minutes
