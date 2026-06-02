@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useEffect, useRef } from 'react';
 import { usePeriods } from '@/api/queries';
 import { setPeriods, setCurrentPeriod } from '@/lib/evaluationConfig';
 
@@ -18,7 +18,7 @@ import { setPeriods, setCurrentPeriod } from '@/lib/evaluationConfig';
 export function useCurrentPeriod(): string {
   const { data: periodsData = [] } = usePeriods();
 
-  return useMemo(() => {
+  const currentPeriod = useMemo(() => {
     if (periodsData.length === 0) {
       return '2026-H1';
     }
@@ -33,8 +33,6 @@ export function useCurrentPeriod(): string {
     });
 
     if (current) {
-      setPeriods(periodsData.map((p: any) => p.period).sort());
-      setCurrentPeriod(current.period);
       return current.period;
     }
 
@@ -47,8 +45,16 @@ export function useCurrentPeriod(): string {
       ? started[started.length - 1].period
       : sorted[sorted.length - 1].period;
 
-    setPeriods(periodsData.map((p: any) => p.period).sort());
-    setCurrentPeriod(resolved);
     return resolved;
   }, [periodsData]);
+
+  // Keep module-level state in sync via useEffect (side effects, not during render)
+  useEffect(() => {
+    if (periodsData.length > 0) {
+      setPeriods(periodsData.map((p: any) => p.period).sort());
+      setCurrentPeriod(currentPeriod);
+    }
+  }, [periodsData, currentPeriod]);
+
+  return currentPeriod;
 }
