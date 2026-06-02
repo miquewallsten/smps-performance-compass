@@ -364,7 +364,7 @@ export default function SelfEvaluation() {
           <div className="flex items-center justify-between mt-1">
             <p className={`text-[11px] ${wordCount > 300 ? 'text-accent' : 'text-muted-foreground'}`}>{wordCount}/300 palabras máximo</p>
             {(Object.keys(responses).length > 0 || comments.length > 0) && !submitted && (
-              <button onClick={handleClearDraft} className="text-[11px] text-muted-foreground hover:text-accent flex items-center gap-1 transition-colors">
+              <button onClick={clearDraft} className="text-[11px] text-muted-foreground hover:text-accent flex items-center gap-1 transition-colors">
                 <RotateCcw className="h-3 w-3" /> Limpiar borrador
               </button>
             )}
