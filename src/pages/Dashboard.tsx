@@ -1,10 +1,13 @@
 import * as React from "react";
 import { useAuth } from '@/contexts/AuthContext';
-import { useAnalyticsOverview, useAnalyticsEvaluations, usePendingActions, useUnreadNotificationCount, usePeriods } from '@/api/queries';
+import { useUsers, useEvaluations, useAssignments, useAnalyticsOverview, useAnalyticsEvaluations, usePendingActions, useUnreadNotificationCount, usePeriods } from '@/api/queries';
 import { useCurrentPeriod } from '@/hooks/useCurrentPeriod';
+import { getPositionLabel, getPositionLevel, getPositionRank, getLegalHierarchy, getAdminHierarchy, getPositionHierarchy } from '@/lib/evaluationConfig';
+import { canViewUserEvaluations } from '@/lib/visibility';
 import { ScoreBadge } from '@/components/shared/ScoreBadge';
-import { CheckCircle, Clock, ArrowRight, PenLine, UserCheck, Bell, Megaphone, CalendarOff, AlertTriangle, FileCheck, Target } from 'lucide-react';
+import { CheckCircle, Clock, ArrowRight, PenLine, UserCheck, Bell, Megaphone, CalendarOff, AlertTriangle, FileCheck, Target, ChevronDown, TrendingUp, Users } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useState } from 'react';
 import { DashboardSkeleton } from '@/components/shared/SkeletonPage';
 
 type PhaseKey = 'self' | 'supervisor' | 'feedback' | 'action_plan';
@@ -25,24 +28,17 @@ function phaseStatus(phase: PhaseKey, selfDone: boolean, supDone: boolean, fbDon
   }
 }
 
-function daysUntil(dateStr: string): number | null {
-  if (!dateStr) return null;
-  const end = new Date(dateStr + 'T23:59:59');
-  return Math.ceil((end.getTime() - Date.now()) / 86400000);
-}
-
 export default function Dashboard() {
   const { user: currentUser } = useAuth();
   const currentPeriod = useCurrentPeriod();
   const { data: periodsData = [] } = usePeriods();
+
   // Determine which period to use for analytics display
-  // If the current period just started and has no data, fall back to the previous period
   const previousPeriod = (() => {
     const sorted = [...periodsData].sort((a: any, b: any) => b.period.localeCompare(a.period));
     const prev = sorted.find((p: any) => p.period < currentPeriod);
     return prev ? prev.period : currentPeriod;
   })();
-  // Use previous period for analytics if current has no data
   const { data: overview, isLoading: overviewLoading } = useAnalyticsOverview(currentPeriod);
   const hasCurrentData = overview && (overview.totalEmployees > 0 || overview.selfEvalCompleted > 0);
   const analyticsPeriod = hasCurrentData ? currentPeriod : previousPeriod;
@@ -50,11 +46,19 @@ export default function Dashboard() {
   const { data: evalAnalytics, isLoading: evalLoading } = useAnalyticsEvaluations(analyticsPeriod);
   const { data: pendingActions, isLoading: actionsLoading } = usePendingActions(currentPeriod);
   const { data: notifCount } = useUnreadNotificationCount();
+
+  // Raw data for per-employee table (original behavior)
+  const { data: allUsers = [], isLoading: usersLoading } = useUsers();
+  const { data: allEvaluations = [], isLoading: evalsLoading } = useEvaluations({ period: currentPeriod });
+  const { data: allAssignments = [], isLoading: assignLoading } = useAssignments(currentPeriod);
+
   const navigate = useNavigate();
+  const [expandedCard, setExpandedCard] = useState<string | null>(null);
+  const [selectedLevel, setSelectedLevel] = useState<string>('all');
 
   if (!currentUser) return null;
 
-  const isLoading = overviewLoading || evalLoading;
+  const isLoading = overviewLoading || evalLoading || usersLoading || evalsLoading || assignLoading;
   if (isLoading) return <DashboardSkeleton />;
 
   const isAdmin = currentUser.isAdmin;
@@ -62,25 +66,121 @@ export default function Dashboard() {
   const isAdminOrMore = isAdmin || isSocio || !!currentUser.isManagingPartner;
   const isSuperUser = currentUser.isSuperUser;
 
-  // Derive metrics from analytics API
-  const totalEmployees = overview?.totalEmployees || 0;
+  // ── Period data for per-employee table ──
+  const periodAssignments = allAssignments.filter((a: any) => a.period === currentPeriod);
+  const periodEvals = allEvaluations.filter((e: any) => e.period === currentPeriod);
+
+  // Visibility filtering
+  const myTeamIds = isAdminOrMore
+    ? null
+    : periodAssignments.filter((a: any) => a.supervisorId === currentUser.id).map((a: any) => a.employeeId);
+
+  const getRelevantUsers = () => {
+    let base = allUsers.filter((u: any) => u.isActive && !u.isSuperUser);
+    // Apply visibility rules
+    base = base.filter((u: any) => canViewUserEvaluations(currentUser, u));
+    if (myTeamIds) {
+      base = base.filter((u: any) => myTeamIds.includes(u.id) || u.id === currentUser.id);
+    }
+    if (selectedLevel !== 'all' && isAdminOrMore) {
+      const legal = getLegalHierarchy();
+      const admin = getAdminHierarchy();
+      if (selectedLevel === 'legal') base = base.filter((u: any) => legal.includes(u.position));
+      else if (selectedLevel === 'administrativo') base = base.filter((u: any) => admin.includes(u.position));
+      else base = base.filter((u: any) => u.position === selectedLevel);
+    }
+    return base;
+  };
+
+  const relevantUsers = getRelevantUsers();
+  const relevantEvals = periodEvals.filter((e: any) => relevantUsers.some((u: any) => u.id === e.evaluatedId));
+  const selfEvals = relevantEvals.filter((e: any) => e.type === 'self');
+  const supervisorEvals = relevantEvals.filter((e: any) => e.type === 'supervisor');
+
+  // My evaluation status
+  const mySelfEval = periodEvals.find((e: any) => e.type === 'self' && e.evaluatorId === currentUser.id);
+  const myAssignments = periodAssignments.filter((a: any) => a.supervisorId === currentUser.id);
+  const myCompletedEvals = periodEvals.filter((e: any) => e.type === 'supervisor' && e.evaluatorId === currentUser.id);
+  const myPendingEvals = myAssignments.filter((a: any) => !myCompletedEvals.find((e: any) => e.evaluatedId === a.employeeId));
+
+  // Group users by LEGAL / ADMINISTRATIVO
+  const legalHierarchy = getLegalHierarchy();
+  const adminHierarchy = getAdminHierarchy();
+  const legalUsers = relevantUsers.filter((u: any) => legalHierarchy.includes(u.position)).sort((a: any, b: any) => {
+    const pi = legalHierarchy.indexOf(a.position) - legalHierarchy.indexOf(b.position);
+    return pi !== 0 ? pi : a.name.localeCompare(b.name, 'es');
+  });
+  const adminUsersGroup = relevantUsers.filter((u: any) => adminHierarchy.includes(u.position)).sort((a: any, b: any) => {
+    const pi = adminHierarchy.indexOf(a.position) - adminHierarchy.indexOf(b.position);
+    return pi !== 0 ? pi : a.name.localeCompare(b.name, 'es');
+  });
+
+  const totalEmployees = relevantUsers.length;
+  const evaluatedCount = new Set(supervisorEvals.map((e: any) => e.evaluatedId)).size;
+  const selfEvalCount = selfEvals.length;
+  const avgScore = relevantEvals.length > 0
+    ? Math.round(relevantEvals.reduce((s: number, e: any) => s + e.totalScore, 0) / relevantEvals.length)
+    : null;
+
+  const toggleCard = (card: string) => setExpandedCard(expandedCard === card ? null : card);
+
+  const renderUserGroup = (groupUsers: any[], groupLabel: string) => {
+    if (groupUsers.length === 0) return null;
+    const hierarchy = groupLabel === 'LEGAL' ? legalHierarchy : adminHierarchy;
+    const positions = [...new Set(groupUsers.map((u: any) => u.position))];
+    // Sort positions by hierarchy rank
+    positions.sort((a, b) => hierarchy.indexOf(a) - hierarchy.indexOf(b));
+    return (
+      <div className="mb-4">
+        <h4 className="text-sm font-bold text-accent uppercase tracking-wide mb-2">{groupLabel}</h4>
+        {positions.map(pos => {
+          const posUsers = groupUsers.filter((u: any) => u.position === pos);
+          return (
+            <div key={pos} className="mb-3">
+              <h5 className="text-xs font-semibold text-muted-foreground mb-1 px-2">{getPositionLabel(pos)} ({posUsers.length})</h5>
+              <div className="space-y-1">
+                {posUsers.map((u: any) => {
+                  const hasSelfEval = periodEvals.some((e: any) => e.type === 'self' && e.evaluatorId === u.id);
+                  const userAssigns = periodAssignments.filter((a: any) => a.employeeId === u.id);
+                  const completedSup = periodEvals.filter((e: any) => e.type === 'supervisor' && e.evaluatedId === u.id);
+                  return (
+                    <div key={u.id} className="flex items-center justify-between py-2 px-3 rounded-lg bg-muted/50 text-sm">
+                      <span className="font-medium">{u.name}</span>
+                      <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                        <span>{hasSelfEval ? '✓ Auto' : '— Auto'}</span>
+                        <span>{completedSup.length > 0 ? '✓ Eval' : '— Eval'}</span>
+                        {completedSup.length > 0 && (
+                          <span className="font-semibold text-foreground">
+                            {Math.round(completedSup.reduce((s: number, e: any) => s + e.totalScore, 0) / completedSup.length)}%
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
+  // ── Analytics data ──
+  const totalFromAnalytics = overview?.totalEmployees || 0;
   const completionRate = overview?.completionRate || 0;
-  const avgScore = overview?.avgOverallScore != null ? Math.round(overview.avgOverallScore) : null;
+  const avgFromAnalytics = overview?.avgOverallScore != null ? Math.round(overview.avgOverallScore) : null;
   const selfCompleted = overview?.selfEvalCompleted || 0;
   const supCompleted = overview?.supervisorEvalCompleted || 0;
   const feedbackCompleted = overview?.feedbackCompleted || 0;
-
-  // Determine current phase
   const selfEnd = overview?.selfEnd;
   const supervisorEnd = overview?.supervisorEnd;
   const feedbackEnd = overview?.feedbackEnd;
   const actionPlanEnd = overview?.actionPlanEnd;
-
   const selfDone = selfCompleted > 0;
   const supDone = supCompleted > 0;
   const fbDone = feedbackCompleted > 0;
   const planDone = (overview?.actionPlansCreated || 0) > 0;
-
   const actions = pendingActions?.actions || [];
 
   return (
@@ -98,177 +198,246 @@ export default function Dashboard() {
         )}
       </div>
 
-      {/* ─── Phase Progress ──────────────────────────────────────────────── */}
-      <section className="rounded-lg border bg-card p-4">
-        <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-3">Progreso del Periodo</p>
-        <div className="flex items-center gap-2">
-          {PHASES.map((phase, i) => {
-            const status = phaseStatus(phase.key, selfDone, supDone, fbDone, planDone);
-            const deadline = phase.key === 'self' ? selfEnd : phase.key === 'supervisor' ? supervisorEnd : phase.key === 'feedback' ? feedbackEnd : actionPlanEnd;
-            const days = deadline ? daysUntil(deadline.split('T')[0]) : null;
+      {/* ─── Level Filter ─────────────────────────────────────────── */}
+      {isAdminOrMore && (
+        <div className="flex items-center gap-1 bg-card rounded-lg border p-1">
+          {([
+            { value: 'all', label: 'Todos' },
+            { value: 'legal', label: 'Legal' },
+            { value: 'administrativo', label: 'Administrativo' },
+          ] as const).map(opt => (
+            <button key={opt.value} onClick={() => setSelectedLevel(opt.value)}
+              className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                selectedLevel === opt.value ? 'bg-accent text-accent-foreground' : 'text-muted-foreground hover:text-foreground'
+              }`}>
+              {opt.label}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* ─── Stat Cards ────────────────────────────────────────────── */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="smps-stat-card">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-muted-foreground text-xs font-medium uppercase tracking-wide">Empleados</p>
+              <p className="text-3xl font-bold font-display text-foreground mt-1">{totalEmployees}</p>
+            </div>
+            <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center">
+              <Users className="h-5 w-5 text-blue-500" />
+            </div>
+          </div>
+        </div>
+
+        <div className="smps-stat-card">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-muted-foreground text-xs font-medium uppercase tracking-wide">Autoevaluaciones</p>
+              <p className="text-3xl font-bold font-display text-foreground mt-1">{selfEvalCount}</p>
+            </div>
+            <div className="w-10 h-10 rounded-lg bg-green-500/10 flex items-center justify-center">
+              <CheckCircle className="h-5 w-5 text-green-500" />
+            </div>
+          </div>
+        </div>
+
+        <div className="smps-stat-card">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-muted-foreground text-xs font-medium uppercase tracking-wide">Evaluados</p>
+              <p className="text-3xl font-bold font-display text-foreground mt-1">{evaluatedCount}</p>
+            </div>
+            <div className="w-10 h-10 rounded-lg bg-purple-500/10 flex items-center justify-center">
+              <UserCheck className="h-5 w-5 text-purple-500" />
+            </div>
+          </div>
+        </div>
+
+        <div className="smps-stat-card" onClick={() => toggleCard('avg')} style={{ cursor: 'pointer' }}>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-muted-foreground text-xs font-medium uppercase tracking-wide">Promedio General</p>
+              <p className="text-3xl font-bold font-display text-foreground mt-1">{avgScore !== null ? `${avgScore}%` : '—'}</p>
+            </div>
+            <div className="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center">
+              <TrendingUp className="h-5 w-5 text-accent" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ─── Expandable Cards ─────────────────────────────────────── */}
+      <div className="flex flex-wrap gap-2">
+        <button onClick={() => toggleCard('employees')} className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm font-medium transition-colors ${expandedCard === 'employees' ? 'bg-accent text-accent-foreground' : 'bg-card hover:bg-muted/50'}`}>
+          <Users className="h-4 w-4" />
+          Empleados ({totalEmployees})
+          <ChevronDown className={`h-4 w-4 transition-transform ${expandedCard === 'employees' ? 'rotate-180' : ''}`} />
+        </button>
+        <button onClick={() => toggleCard('evaluated')} className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm font-medium transition-colors ${expandedCard === 'evaluated' ? 'bg-accent text-accent-foreground' : 'bg-card hover:bg-muted/50'}`}>
+          <CheckCircle className="h-4 w-4" />
+          Evaluados ({evaluatedCount})
+          <ChevronDown className={`h-4 w-4 transition-transform ${expandedCard === 'evaluated' ? 'rotate-180' : ''}`} />
+        </button>
+        <button onClick={() => toggleCard('progress')} className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm font-medium transition-colors ${expandedCard === 'progress' ? 'bg-accent text-accent-foreground' : 'bg-card hover:bg-muted/50'}`}>
+          <Target className="h-4 w-4" />
+          Progreso
+          <ChevronDown className={`h-4 w-4 transition-transform ${expandedCard === 'progress' ? 'rotate-180' : ''}`} />
+        </button>
+      </div>
+
+      {/* ─── Employee List ─────────────────────────────────────────── */}
+      {expandedCard === 'employees' && (
+        <div className="bg-card rounded-xl border p-6 animate-fade-in">
+          <h3 className="font-display text-lg font-semibold mb-4">Listado por Nivel ({totalEmployees})</h3>
+          {renderUserGroup(legalUsers, 'LEGAL')}
+          {renderUserGroup(adminUsersGroup, 'ADMINISTRATIVO')}
+        </div>
+      )}
+
+      {expandedCard === 'evaluated' && (
+        <div className="bg-card rounded-xl border p-6 animate-fade-in">
+          <h3 className="font-display text-lg font-semibold mb-2">Evaluados - {currentPeriod}</h3>
+          {relevantEvals.length === 0 ? (
+            <p className="text-muted-foreground text-sm">No hay evaluaciones completadas.</p>
+          ) : (
+            <p className="text-sm text-muted-foreground mb-4">Promedio total: {avgScore}%</p>
+          )}
+        </div>
+      )}
+
+      {expandedCard === 'progress' && (
+        <div className="bg-card rounded-xl border p-6 animate-fade-in">
+          <h3 className="font-display text-lg font-semibold mb-4">Progreso por Posición</h3>
+          {getPositionHierarchy().map(pos => {
+            const posUsers = relevantUsers.filter((u: any) => u.position === pos);
+            if (posUsers.length === 0) return null;
+            const selfDone = posUsers.filter((u: any) => periodEvals.some((e: any) => e.type === 'self' && e.evaluatorId === u.id)).length;
+            const selfPct = Math.round((selfDone / posUsers.length) * 100);
             return (
-              <React.Fragment key={phase.key}>
-                {i > 0 && <ArrowRight className="h-3 w-3 text-muted-foreground/30 shrink-0" />}
-                <div className={`flex-1 rounded-md px-2.5 py-2 text-center transition-colors ${
-                  status === 'done' ? 'bg-smps-success/10 border border-smps-success/20' :
-                  status === 'current' ? 'bg-accent/10 border border-accent/30' :
-                  'bg-muted border border-muted'
-                }`}>
-                  <p className={`text-[11px] font-semibold ${status === 'done' ? 'text-smps-success' : status === 'current' ? 'text-accent' : 'text-muted-foreground/50'}`}>
-                    {phase.short}
-                  </p>
-                  {status === 'current' && days !== null && (
-                    <p className={`text-[10px] mt-0.5 ${days <= 3 ? 'text-destructive font-bold' : 'text-muted-foreground'}`}>
-                      {days <= 0 ? '¡Vencido!' : `${days}d`}
-                    </p>
-                  )}
-                  {status === 'done' && <CheckCircle className="h-3 w-3 mx-auto mt-0.5 text-smps-success" />}
+              <div key={pos} className="mb-3">
+                <h4 className="text-sm font-semibold mb-1">{getPositionLabel(pos)} ({posUsers.length})</h4>
+                <p className="text-xs text-muted-foreground mb-1">Autoevaluaciones: {selfDone}/{posUsers.length}</p>
+                <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                  <div className="h-full rounded-full bg-green-500 transition-[width] duration-700 ease-out" style={{ width: `${selfPct}%` }} />
                 </div>
-              </React.Fragment>
+              </div>
             );
           })}
         </div>
-      </section>
+      )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-        {/* ─── Left: Metrics ─────────────────────────────────────────────── */}
-        <div className="lg:col-span-5 space-y-3">
-          <section className="rounded-lg border bg-card p-4 space-y-3">
-            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">Métricas</p>
+      {/* ─── My Autoevaluación + Pending Evals ─────────────────────── */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="bg-card rounded-xl border p-6">
+          <h3 className="font-display text-lg font-semibold mb-3">Mi Autoevaluación</h3>
+          {mySelfEval ? (
+            <div className="flex items-center gap-3">
+              <CheckCircle className="h-5 w-5 text-green-500" />
+              <div>
+                <p className="text-sm font-medium">Completada</p>
+                <p className="text-xs text-muted-foreground">Calificación: {mySelfEval.totalScore}%</p>
+              </div>
+            </div>
+          ) : (
+            <div>
+              <p className="text-sm text-muted-foreground mb-3">No has completado tu autoevaluación para este periodo.</p>
+              <button onClick={() => navigate('/self-evaluation')}
+                className="px-4 py-2 rounded-lg bg-accent text-accent-foreground text-sm font-medium hover:opacity-90 transition-opacity">
+                Iniciar Autoevaluación
+              </button>
+            </div>
+          )}
+        </div>
+
+        <div className="bg-card rounded-xl border p-6">
+          <h3 className="font-display text-lg font-semibold mb-3">Evaluaciones Pendientes</h3>
+          {myPendingEvals.length === 0 ? (
+            <div className="flex items-center gap-3">
+              <CheckCircle className="h-5 w-5 text-green-500" />
+              <p className="text-sm">No tienes evaluaciones pendientes</p>
+            </div>
+          ) : (
             <div className="space-y-2">
-              <MetricRow label="Autoevaluación" done={selfCompleted} total={totalEmployees} colorClass="bg-blue-500" />
-              <MetricRow label="Eval. Supervisor" done={supCompleted} total={totalEmployees} colorClass="bg-emerald-500" />
-              <MetricRow label="Feedback" done={feedbackCompleted} total={totalEmployees} colorClass="bg-amber-500" />
-              <MetricRow label="Planes de Acción" done={overview?.actionPlansCreated || 0} total={totalEmployees} colorClass="bg-purple-500" />
+              {myPendingEvals.map((a: any) => {
+                const emp = allUsers.find((u: any) => u.id === a.employeeId);
+                return (
+                  <div key={a.id} className="flex items-center justify-between py-2 px-3 rounded-lg bg-muted/50">
+                    <p className="text-sm font-medium">{emp?.name} <span className="text-xs font-normal text-muted-foreground">— {emp ? getPositionLabel(emp.position) : ''}</span></p>
+                    <button onClick={() => navigate(`/evaluations?evaluate=${a.employeeId}`)}
+                      className="px-3 py-1.5 rounded-lg bg-accent text-accent-foreground text-xs font-medium hover:opacity-90 transition-opacity">
+                      Evaluar
+                    </button>
+                  </div>
+                );
+              })}
             </div>
-            <div className="pt-2 border-t flex items-center justify-between">
-              <div>
-                <span className="text-xs text-muted-foreground">Tasa de completado</span>
-                <span className="text-sm font-display font-bold tabular-nums ml-2">{completionRate}%</span>
-              </div>
-              <div>
-                <span className="text-xs text-muted-foreground">Promedio general</span>
-                <span className="text-sm font-display font-bold tabular-nums ml-2">{avgScore !== null ? `${avgScore}%` : '—'}</span>
-              </div>
-            </div>
-          </section>
-
-          {/* Pending Actions */}
-          {actions.length > 0 && (
-            <section className="rounded-lg border bg-card overflow-hidden">
-              <div className="flex items-center justify-between px-4 py-2.5 border-b bg-muted/30">
-                <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">Acciones Pendientes</p>
-                <span className="text-[10px] text-accent font-bold">{actions.length}</span>
-              </div>
-              <div className="divide-y">
-                {actions.map((action: any, i: number) => (
-                  <button key={i} onClick={() => navigate(action.url)} className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-muted/30 transition-colors text-left">
-                    {action.type === 'evaluation' ? <PenLine className="h-4 w-4 text-blue-500 shrink-0" /> :
-                     action.type === 'action_plan' ? <FileCheck className="h-4 w-4 text-purple-500 shrink-0" /> :
-                     action.type === 'vacation' ? <CalendarOff className="h-4 w-4 text-amber-500 shrink-0" /> :
-                     <AlertTriangle className="h-4 w-4 text-destructive shrink-0" />}
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium truncate">{action.title}</p>
-                      {action.deadline && (
-                        <p className="text-[10px] text-muted-foreground">
-                          {daysUntil(action.deadline.split('T')[0]) ?? 0 <= 0 ? '¡Vencido!' : `Vence en ${daysUntil(action.deadline.split('T')[0])} días`}
-                        </p>
-                      )}
-                    </div>
-                    <ArrowRight className="h-3.5 w-3.5 text-muted-foreground/50 shrink-0" />
-                  </button>
-                ))}
-              </div>
-            </section>
-          )}
-
-          {/* Evaluation Score Breakdown (from analytics) */}
-          {evalAnalytics && evalAnalytics.byType && (
-            <section className="rounded-lg border bg-card p-4 space-y-2">
-              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">Calificaciones</p>
-              {evalAnalytics.byType.self && (
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-muted-foreground">Autoevaluación</span>
-                  <ScoreBadge value={evalAnalytics.byType.self.avgScore ? Math.round(evalAnalytics.byType.self.avgScore) : 0} size="md" />
-                </div>
-              )}
-              {evalAnalytics.byType.supervisor && (
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-muted-foreground">Supervisor</span>
-                  <ScoreBadge value={evalAnalytics.byType.supervisor.avgScore ? Math.round(evalAnalytics.byType.supervisor.avgScore) : 0} size="md" />
-                </div>
-              )}
-            </section>
           )}
         </div>
+      </div>
 
-        {/* ─── Right: Evaluation Details ──────────────────────────────────── */}
-        <div className="lg:col-span-7">
-          <section className="rounded-lg border bg-card overflow-hidden">
-            <div className="flex items-center justify-between px-4 py-2.5 border-b bg-muted/30">
-              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">
-                {isAdminOrMore ? 'Resumen General' : 'Mi Equipo'}
-              </p>
-              <span className="text-[10px] text-muted-foreground tabular-nums">{totalEmployees} empleados</span>
-            </div>
-            <div className="p-4 space-y-3">
-              {/* Overview stats grid */}
-              <div className="grid grid-cols-2 gap-3">
-                <StatCard label="Total Empleados" value={totalEmployees} />
-                <StatCard label="Evaluados" value={supCompleted} />
-                <StatCard label="Autoevaluaciones" value={selfCompleted} />
-                <StatCard label="Feedback" value={feedbackCompleted} />
-              </div>
-
-              {/* Quick action links */}
-              <div className="pt-2 border-t">
-                <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-2">Acciones Rápidas</p>
-                <div className="grid grid-cols-2 gap-2">
-                  <QuickAction icon={<PenLine className="h-3.5 w-3.5" />} label="Autoevaluación" onClick={() => navigate('/self-evaluation')} />
-                  <QuickAction icon={<Target className="h-3.5 w-3.5" />} label="Objetivos" onClick={() => navigate('/personal-objectives')} />
-                  <QuickAction icon={<FileCheck className="h-3.5 w-3.5" />} label="Plan de Acción" onClick={() => navigate('/my-action-plan')} />
-                  <QuickAction icon={<CalendarOff className="h-3.5 w-3.5" />} label="Vacaciones" onClick={() => navigate('/vacations')} />
+      {/* ─── Phase Progress ────────────────────────────────────────── */}
+      <div className="rounded-lg border bg-card p-4">
+        <div className="flex items-center justify-between mb-3">
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Fases del Periodo</p>
+          <span className="text-[10px] text-muted-foreground">{currentPeriod}</span>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+          {PHASES.map(p => {
+            const status = phaseStatus(p.key, selfDone, supDone, fbDone, planDone);
+            const config = {
+              done: { bg: 'bg-green-500/10', text: 'text-green-600', label: '✓' },
+              current: { bg: 'bg-amber-500/10', text: 'text-amber-600', label: '→' },
+              upcoming: { bg: 'bg-muted/30', text: 'text-muted-foreground', label: '—' },
+            }[status];
+            return (
+              <div key={p.key} className={`rounded-md p-3 ${config.bg}`}>
+                <div className="flex items-center gap-2">
+                  <span className={`text-sm font-bold ${config.text}`}>{config.label}</span>
+                  <span className="text-xs font-medium">{p.short}</span>
                 </div>
               </div>
-            </div>
-          </section>
+            );
+          })}
         </div>
       </div>
+
+      {/* ─── Pending Actions ───────────────────────────────────────── */}
+      {actions.length > 0 && (
+        <section className="rounded-lg border bg-card p-4">
+          <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-3">Acciones Pendientes</p>
+          <div className="space-y-2">
+            {actions.slice(0, 5).map((action: any, idx: number) => (
+              <button key={idx} onClick={() => navigate(action.path || '#')} className="w-full flex items-center justify-between py-2 px-3 rounded-md hover:bg-muted/50 transition-colors text-left">
+                <div className="flex items-center gap-2">
+                  <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />
+                  <span className="text-xs">{action.label}</span>
+                </div>
+                <ArrowRight className="h-3.5 w-3.5 text-muted-foreground" />
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* ─── Evaluation Score Breakdown ─────────────────────────────── */}
+      {evalAnalytics && evalAnalytics.byType && (evalAnalytics.byType.self || evalAnalytics.byType.supervisor) && (
+        <section className="rounded-lg border bg-card p-4 space-y-2">
+          <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">Calificaciones</p>
+          {evalAnalytics.byType.self && (
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-muted-foreground">Autoevaluación</span>
+              <ScoreBadge value={evalAnalytics.byType.self.avgScore ? Math.round(evalAnalytics.byType.self.avgScore) : 0} size="md" />
+            </div>
+          )}
+          {evalAnalytics.byType.supervisor && (
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-muted-foreground">Supervisor</span>
+              <ScoreBadge value={evalAnalytics.byType.supervisor.avgScore ? Math.round(evalAnalytics.byType.supervisor.avgScore) : 0} size="md" />
+            </div>
+          )}
+        </section>
+      )}
     </div>
-  );
-}
-
-/* ─── Sub-components ──────────────────────────────────────────────────── */
-
-function MetricRow({ label, done, total, colorClass }: { label: string; done: number; total: number; colorClass: string }) {
-  const pct = total > 0 ? Math.round((done / total) * 100) : 0;
-  return (
-    <div>
-      <div className="flex items-center justify-between mb-1">
-        <span className="text-xs text-foreground">{label}</span>
-        <span className="text-xs tabular-nums text-muted-foreground">{done}<span className="text-muted-foreground/50">/{total}</span></span>
-      </div>
-      <div className="h-1.5 rounded-full bg-muted overflow-hidden">
-        <div className={`h-full rounded-full ${colorClass} transition-[width] duration-700 ease-out`} style={{ width: `${pct}%` }} />
-      </div>
-    </div>
-  );
-}
-
-function StatCard({ label, value }: { label: string; value: number }) {
-  return (
-    <div className="rounded-md bg-muted/30 px-3 py-2">
-      <p className="text-[10px] text-muted-foreground">{label}</p>
-      <p className="text-lg font-display font-bold tabular-nums">{value}</p>
-    </div>
-  );
-}
-
-function QuickAction({ icon, label, onClick }: { icon: React.ReactNode; label: string; onClick: () => void }) {
-  return (
-    <button onClick={onClick} className="flex items-center gap-2 px-3 py-2 rounded-md border hover:bg-muted/30 transition-colors text-left active:scale-[0.98]">
-      <span className="text-muted-foreground">{icon}</span>
-      <span className="text-xs font-medium">{label}</span>
-    </button>
   );
 }
