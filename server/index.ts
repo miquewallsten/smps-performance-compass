@@ -1,4 +1,5 @@
 import express from 'express';
+import compression from 'compression';
 import helmet from 'helmet';
 import cors from 'cors';
 import path from 'path';
@@ -61,6 +62,9 @@ if (process.env.NODE_ENV === 'production' && !process.env.JWT_SECRET) {
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// Enable gzip compression for all responses (static assets + API)
+app.use(compression());
 
 // CORS: In production, only allow requests from the SMPS domain.
 // In development, allow localhost for convenience.
