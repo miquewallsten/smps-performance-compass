@@ -133,11 +133,15 @@ export default function SelfEvaluation() {
 
   const handleSubmit = () => {
     if (!canSubmit) return;
-    const formattedResponses = Object.entries(responses).map(([questionId, score]) => ({
-      questionId,
-      score,
-      notApplicable: !!naQuestions[questionId],
-    }));
+    const formattedResponses = Object.entries(responses).map(([questionId, score]) => {
+      const q = questions.find((q: any) => q.id === questionId);
+      return {
+        questionId,
+        score,
+        notApplicable: !!naQuestions[questionId],
+        weight: q?.weight || 1,
+      };
+    });
 
     createEvaluationMut.mutate({
       evaluatedId: currentUser.id,
@@ -293,7 +297,7 @@ export default function SelfEvaluation() {
                     <div className="min-w-0">
                       <span className="text-sm font-medium truncate block">{sectionLabel}</span>
                       {sectionWeight > 0 && (
-                        <span className="text-[10px] text-muted-foreground">Peso: {(sectionWeight * 100).toFixed(0)}%</span>
+                        <span className="text-[10px] text-muted-foreground">Peso: {sectionWeight.toFixed(0)}%</span>
                       )}
                     </div>
                   </div>

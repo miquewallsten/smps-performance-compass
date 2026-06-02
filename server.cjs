@@ -138597,7 +138597,7 @@ router8.post("/", authMiddleware, async (req, res) => {
         await tx.run(
           conn,
           `INSERT INTO evaluation_responses (id, evaluation_id, question_id, question_text, category, section, question_type, score, not_applicable, no_elements, weight) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-          [v4_default(), id, r.questionId, snapshot.text, snapshot.category, snapshot.section, snapshot.text ? "seed" : null, r.score, r.notApplicable ? 1 : 0, r.noElements ? 1 : 0, Math.round(r.weight || 1)]
+          [v4_default(), id, r.questionId, snapshot.text, snapshot.category, snapshot.section, snapshot.text ? "seed" : null, r.score, r.notApplicable ? 1 : 0, r.noElements ? 1 : 0, r.weight || 1]
         );
       }
     });
@@ -138655,7 +138655,7 @@ router8.put(
             await tx.run(
               conn,
               `INSERT INTO evaluation_responses (id, evaluation_id, question_id, question_text, category, section, question_type, score, not_applicable, no_elements, weight) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-              [v4_default(), req.params.id, r.questionId, null, null, null, null, r.score, r.notApplicable ? 1 : 0, r.noElements ? 1 : 0, Math.round(r.weight || 1)]
+              [v4_default(), req.params.id, r.questionId, null, null, null, null, r.score, r.notApplicable ? 1 : 0, r.noElements ? 1 : 0, r.weight || 1]
             );
           }
         });
