@@ -43,11 +43,6 @@ export interface LibraryQuestion {
  */
 export { normalizePracticeArea } from '@/lib/evaluationConfig';
 
-/**
- * Normalize a position to its canonical form.
- */
-export { normalizePosition } from '@/lib/evaluationConfig';
-
 /** Posición (CVE Puesto) dada de alta por el admin. */
 export interface CustomPosition {
   id: string;              // CVE code, e.g. "SMPS12"

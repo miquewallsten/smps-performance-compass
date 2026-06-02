@@ -25,12 +25,12 @@ export async function seedEvaluationData(): Promise<void> {
   // Check if we need to re-seed by counting template_questions
   const count = await db.getScalar<number>('SELECT COUNT(*) as cnt FROM template_questions WHERE source = ?', ['seed']);
   
-  if (count === 290) {
-    console.log('  Evaluation data already seeded (308 questions), skipping.');
+  if (count === 256) {
+    console.log('  Evaluation data already seeded (256 questions), skipping.');
     return;
   }
   
-  console.log(`  Current seed questions: ${count}, expected 290. Re-seeding...`);
+  console.log(`  Current seed questions: ${count}, expected 256. Re-seeding...`);
   
   // Delete all seed data to re-seed fresh
   await db.run("DELETE FROM template_questions WHERE source = 'seed'");
@@ -82,14 +82,12 @@ export async function seedEvaluationData(): Promise<void> {
       { position: 'asociado_jr', tecnico: 40, competencias: 40, blandas: 20 },
       { position: 'pasante_carrera', tecnico: 40, competencias: 40, blandas: 20 },
       { position: 'pasante_corporativo', tecnico: 40, competencias: 40, blandas: 20 },
-      { position: 'pasante', tecnico: 40, competencias: 40, blandas: 20 },
       { position: 'director', tecnico: 0, competencias: 80, blandas: 20 },
       { position: 'gerente', tecnico: 0, competencias: 80, blandas: 20 },
       { position: 'coordinador', tecnico: 0, competencias: 80, blandas: 20 },
       { position: 'analista', tecnico: 0, competencias: 80, blandas: 20 },
       { position: 'asistente', tecnico: 0, competencias: 50, blandas: 50 },
       { position: 'archivo_soporte', tecnico: 0, competencias: 50, blandas: 50 },
-      { position: 'soporte', tecnico: 0, competencias: 50, blandas: 50 },
       { position: 'archivista', tecnico: 0, competencias: 50, blandas: 50 },
     ];
     
@@ -105,14 +103,12 @@ export async function seedEvaluationData(): Promise<void> {
         { position: 'asociado_jr', label: 'Asociado Junior', level: 'legal', rank: 6, sort: 6 },
         { position: 'pasante_carrera', label: 'Pasante de Carrera', level: 'legal', rank: 7, sort: 7 },
         { position: 'pasante_corporativo', label: 'Pasante Corporativo', level: 'legal', rank: 8, sort: 8 },
-        { position: 'pasante', label: 'Pasante', level: 'legal', rank: 9, sort: 9 },
         { position: 'director', label: 'Director', level: 'administrativo', rank: 1, sort: 10 },
         { position: 'gerente', label: 'Gerente', level: 'administrativo', rank: 2, sort: 11 },
         { position: 'coordinador', label: 'Coordinador', level: 'administrativo', rank: 3, sort: 12 },
         { position: 'analista', label: 'Analista', level: 'administrativo', rank: 4, sort: 13 },
         { position: 'asistente', label: 'Asistente', level: 'administrativo', rank: 5, sort: 14 },
         { position: 'archivo_soporte', label: 'Archivo/Soporte', level: 'administrativo', rank: 6, sort: 15 },
-        { position: 'soporte', label: 'Soporte', level: 'administrativo', rank: 7, sort: 16 },
         { position: 'archivista', label: 'Archivista', level: 'administrativo', rank: 8, sort: 17 },
       ];
       for (const pos of positions) {
@@ -361,18 +357,6 @@ export async function seedEvaluationData(): Promise<void> {
       { libraryRef: 'ql-008', position: 'gerente', practiceArea: 'corporativo', section: 'blandas', category: 'Actitud', weight: 5, sortOrder: 121 },
       { libraryRef: 'ql-009', position: 'gerente', practiceArea: 'corporativo', section: 'blandas', category: 'Disponibilidad', weight: 5, sortOrder: 122 },
       { libraryRef: 'ql-074', position: 'gerente', practiceArea: 'corporativo', section: 'blandas', category: 'Habilidades Blandas', weight: 5, sortOrder: 123 },
-      { libraryRef: 'ql-075', position: 'pasante', practiceArea: 'corporativo', section: 'tecnico', category: 'Conocimiento normativo', weight: 8, sortOrder: 124 },
-      { libraryRef: 'ql-076', position: 'pasante', practiceArea: 'corporativo', section: 'tecnico', category: 'Redacción legal', weight: 8, sortOrder: 125 },
-      { libraryRef: 'ql-077', position: 'pasante', practiceArea: 'corporativo', section: 'tecnico', category: 'Due diligence', weight: 8, sortOrder: 126 },
-      { libraryRef: 'ql-078', position: 'pasante', practiceArea: 'corporativo', section: 'tecnico', category: 'Constitución y modificaciones', weight: 8, sortOrder: 127 },
-      { libraryRef: 'ql-079', position: 'pasante', practiceArea: 'corporativo', section: 'tecnico', category: 'Atención a clientes', weight: 8, sortOrder: 128 },
-      { libraryRef: 'ql-019', position: 'pasante', practiceArea: 'corporativo', section: 'competencias', category: 'Trabajo en Equipo', weight: 15, sortOrder: 129 },
-      { libraryRef: 'ql-072', position: 'pasante', practiceArea: 'corporativo', section: 'competencias', category: 'Trabajo en Equipo', weight: 15, sortOrder: 130 },
-      { libraryRef: 'ql-012', position: 'pasante', practiceArea: 'corporativo', section: 'competencias', category: 'Cumplimiento', weight: 10, sortOrder: 131 },
-      { libraryRef: 'ql-007', position: 'pasante', practiceArea: 'corporativo', section: 'blandas', category: 'Habilidades Blandas', weight: 5, sortOrder: 132 },
-      { libraryRef: 'ql-028', position: 'pasante', practiceArea: 'corporativo', section: 'blandas', category: 'Actitud', weight: 5, sortOrder: 133 },
-      { libraryRef: 'ql-009', position: 'pasante', practiceArea: 'corporativo', section: 'blandas', category: 'Disponibilidad', weight: 5, sortOrder: 134 },
-      { libraryRef: 'ql-010', position: 'pasante', practiceArea: 'corporativo', section: 'blandas', category: 'Habilidades Blandas', weight: 5, sortOrder: 135 },
       { libraryRef: 'ql-080', position: 'pasante_carrera', practiceArea: 'corporativo', section: 'tecnico', category: 'Conocimiento normativo', weight: 8, sortOrder: 136 },
       { libraryRef: 'ql-081', position: 'pasante_carrera', practiceArea: 'corporativo', section: 'tecnico', category: 'Redacción legal', weight: 8, sortOrder: 137 },
       { libraryRef: 'ql-082', position: 'pasante_carrera', practiceArea: 'corporativo', section: 'tecnico', category: 'Due diligence', weight: 8, sortOrder: 138 },
@@ -424,26 +408,9 @@ export async function seedEvaluationData(): Promise<void> {
       { libraryRef: 'ql-061', position: 'socio', practiceArea: 'corporativo', section: 'blandas', category: 'Actitud', weight: 4, sortOrder: 184 },
       { libraryRef: 'ql-062', position: 'socio', practiceArea: 'corporativo', section: 'blandas', category: 'Disponibilidad', weight: 4, sortOrder: 185 },
       { libraryRef: 'ql-063', position: 'socio', practiceArea: 'corporativo', section: 'blandas', category: 'Habilidades Blandas', weight: 4, sortOrder: 186 },
-      { libraryRef: 'ql-001', position: 'soporte', practiceArea: 'corporativo', section: 'competencias', category: 'Desempeño', weight: 9, sortOrder: 187 },
-      { libraryRef: 'ql-011', position: 'soporte', practiceArea: 'corporativo', section: 'competencias', category: 'Desempeño', weight: 9, sortOrder: 188 },
-      { libraryRef: 'ql-012', position: 'soporte', practiceArea: 'corporativo', section: 'competencias', category: 'Cumplimiento', weight: 7, sortOrder: 189 },
-      { libraryRef: 'ql-013', position: 'soporte', practiceArea: 'corporativo', section: 'competencias', category: 'Desempeño', weight: 7, sortOrder: 190 },
-      { libraryRef: 'ql-014', position: 'soporte', practiceArea: 'corporativo', section: 'competencias', category: 'Trabajo en Equipo', weight: 6, sortOrder: 191 },
-      { libraryRef: 'ql-015', position: 'soporte', practiceArea: 'corporativo', section: 'competencias', category: 'Cumplimiento', weight: 6, sortOrder: 192 },
-      { libraryRef: 'ql-005', position: 'soporte', practiceArea: 'corporativo', section: 'competencias', category: 'Desempeño', weight: 6, sortOrder: 193 },
-      { libraryRef: 'ql-016', position: 'soporte', practiceArea: 'corporativo', section: 'blandas', category: 'Comunicación', weight: 10, sortOrder: 194 },
-      { libraryRef: 'ql-017', position: 'soporte', practiceArea: 'corporativo', section: 'blandas', category: 'Actitud', weight: 12, sortOrder: 195 },
-      { libraryRef: 'ql-009', position: 'soporte', practiceArea: 'corporativo', section: 'blandas', category: 'Disponibilidad', weight: 10, sortOrder: 196 },
-      { libraryRef: 'ql-010', position: 'soporte', practiceArea: 'corporativo', section: 'blandas', category: 'Habilidades Blandas', weight: 9, sortOrder: 197 },
-      { libraryRef: 'ql-018', position: 'soporte', practiceArea: 'corporativo', section: 'blandas', category: 'Actitud', weight: 9, sortOrder: 198 },
       { libraryRef: 'ql-001', position: 'pasante_carrera', practiceArea: 'corporativo', section: 'competencias', category: 'Desempeño', weight: 10, sortOrder: 199 },
       { libraryRef: 'ql-011', position: 'pasante_carrera', practiceArea: 'corporativo', section: 'competencias', category: 'Desempeño', weight: 10, sortOrder: 200 },
     // ─── Fiscal Consultoría technical questions (legal positions) ──────────
-      { libraryRef: 'ql-new-fiscal', questionText: '¿Identifica las disposiciones fiscales básicas aplicables a los clientes?', position: 'pasante', practiceArea: 'consultoria_fiscal', section: 'tecnico', category: 'Normatividad fiscal', weight: 8, sortOrder: 301 },
-      { libraryRef: 'ql-new-fiscal', questionText: '¿Apoya en la elaboración de opiniones fiscales sencillas bajo supervisión?', position: 'pasante', practiceArea: 'consultoria_fiscal', section: 'tecnico', category: 'Opiniones fiscales', weight: 8, sortOrder: 302 },
-      { libraryRef: 'ql-new-fiscal', questionText: '¿Recopila información y documentos necesarios para los casos de consultoría fiscal?', position: 'pasante', practiceArea: 'consultoria_fiscal', section: 'tecnico', category: 'Planeación fiscal', weight: 8, sortOrder: 303 },
-      { libraryRef: 'ql-new-fiscal', questionText: '¿Realiza búsquedas básicas de criterios y jurisprudencia relevantes?', position: 'pasante', practiceArea: 'consultoria_fiscal', section: 'tecnico', category: 'Criterios y jurisprudencia', weight: 8, sortOrder: 304 },
-      { libraryRef: 'ql-new-fiscal', questionText: '¿Organiza archivos y documentos fiscales de forma ordenada?', position: 'pasante', practiceArea: 'consultoria_fiscal', section: 'tecnico', category: 'Impactos fiscales', weight: 8, sortOrder: 305 },
       { libraryRef: 'ql-new-fiscal', questionText: '¿Identifica las disposiciones fiscales básicas aplicables a los clientes?', position: 'pasante_corporativo', practiceArea: 'consultoria_fiscal', section: 'tecnico', category: 'Normatividad fiscal', weight: 8, sortOrder: 306 },
       { libraryRef: 'ql-new-fiscal', questionText: '¿Apoya en la elaboración de opiniones fiscales sencillas bajo supervisión?', position: 'pasante_corporativo', practiceArea: 'consultoria_fiscal', section: 'tecnico', category: 'Opiniones fiscales', weight: 8, sortOrder: 307 },
       { libraryRef: 'ql-new-fiscal', questionText: '¿Recopila información y documentos necesarios para los casos de consultoría fiscal?', position: 'pasante_corporativo', practiceArea: 'consultoria_fiscal', section: 'tecnico', category: 'Planeación fiscal', weight: 8, sortOrder: 308 },
@@ -484,11 +451,6 @@ export async function seedEvaluationData(): Promise<void> {
       { libraryRef: 'ql-new-fiscal', questionText: '¿Lidera estrategias de planeación fiscal para los clientes más importantes?', position: 'socio', practiceArea: 'consultoria_fiscal', section: 'tecnico', category: 'Planeación fiscal', weight: 12, sortOrder: 343 },
       { libraryRef: 'ql-new-fiscal', questionText: '¿Interpreta criterios y jurisprudencia para establecer la posición institucional?', position: 'socio', practiceArea: 'consultoria_fiscal', section: 'tecnico', category: 'Criterios y jurisprudencia', weight: 12, sortOrder: 344 },
       { libraryRef: 'ql-new-fiscal', questionText: '¿Evalúa impactos fiscales estratégicos y dirige la respuesta institucional?', position: 'socio', practiceArea: 'consultoria_fiscal', section: 'tecnico', category: 'Impactos fiscales', weight: 12, sortOrder: 345 },
-      { libraryRef: 'ql-new-fiscal', questionText: '¿Identifica de manera correcta documentos básicos como actas y contratos?', position: 'pasante', practiceArea: 'litigio_fiscal', section: 'tecnico', category: 'Redacción de escritos', weight: 8, sortOrder: 346 },
-      { libraryRef: 'ql-new-fiscal', questionText: '¿Llena de forma adecuada y precisa los formatos predefinidos?', position: 'pasante', practiceArea: 'litigio_fiscal', section: 'tecnico', category: 'Estrategia procesal', weight: 8, sortOrder: 347 },
-      { libraryRef: 'ql-new-fiscal', questionText: '¿Apoya de manera eficiente en la recopilación de documentos solicitados?', position: 'pasante', practiceArea: 'litigio_fiscal', section: 'tecnico', category: 'Audiencias y diligencias', weight: 8, sortOrder: 348 },
-      { libraryRef: 'ql-new-fiscal', questionText: '¿Realiza búsquedas en el registro público de la propiedad y del comercio o guía trámites de forma correcta?', position: 'pasante', practiceArea: 'litigio_fiscal', section: 'tecnico', category: 'Conocimiento normativo', weight: 8, sortOrder: 349 },
-      { libraryRef: 'ql-new-fiscal', questionText: '¿Escucha atentamente las reuniones internas y toma notas completas y ordenadas?', position: 'pasante', practiceArea: 'litigio_fiscal', section: 'tecnico', category: 'Seguimiento de expedientes', weight: 8, sortOrder: 350 },
       { libraryRef: 'ql-new-fiscal', questionText: '¿Identifica de manera correcta documentos básicos como actas y contratos?', position: 'pasante_corporativo', practiceArea: 'litigio_fiscal', section: 'tecnico', category: 'Redacción de escritos', weight: 8, sortOrder: 351 },
       { libraryRef: 'ql-new-fiscal', questionText: '¿Llena de forma adecuada y precisa los formatos predefinidos?', position: 'pasante_corporativo', practiceArea: 'litigio_fiscal', section: 'tecnico', category: 'Estrategia procesal', weight: 8, sortOrder: 352 },
       { libraryRef: 'ql-new-fiscal', questionText: '¿Apoya de manera eficiente en la recopilación de documentos solicitados?', position: 'pasante_corporativo', practiceArea: 'litigio_fiscal', section: 'tecnico', category: 'Audiencias y diligencias', weight: 8, sortOrder: 353 },

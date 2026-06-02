@@ -242,9 +242,19 @@ router.post('/', authMiddleware, async (req: Request, res: Response) => {
     const id = uuidv4();
     const now = new Date().toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, '');
     const respArr = responses || [];
-    const totalScore = req.body.totalScore !== undefined
+    let totalScore = req.body.totalScore !== undefined
       ? Number(req.body.totalScore)
       : (respArr.length > 0 ? respArr.reduce((sum: number, r: any) => sum + (r.score || 0), 0) / respArr.length : 0);
+
+    // Recalculate total_score from responses server-side to prevent score drift
+    if (respArr.length > 0) {
+      const activeResponses = respArr.filter((r: any) => !r.notApplicable && !r.noElements && r.score > 0);
+      const totalWeight = activeResponses.reduce((sum: number, r: any) => sum + (r.weight || 1), 0);
+      if (totalWeight > 0) {
+        const weightedSum = activeResponses.reduce((sum: number, r: any) => sum + (r.score / 5) * (r.weight || 1), 0);
+        totalScore = Math.round((weightedSum / totalWeight) * 100);
+      }
+    }
 
     await db.transaction(async (conn) => {
       await tx.run(
@@ -311,6 +321,23 @@ router.put('/:id', authMiddleware,
     if (comments !== undefined) { updates.push('comments = ?'); params.push(comments); }
     if (supervisorComments !== undefined) { updates.push('supervisor_comments = ?'); params.push(supervisorComments); }
     if (totalScore !== undefined) { updates.push('total_score = ?'); params.push(Math.round(totalScore)); }
+
+    // Recalculate total_score from responses server-side to prevent score drift
+    if (responses && Array.isArray(responses) && responses.length > 0) {
+      const activeResponses = responses.filter((r: any) => !r.notApplicable && !r.noElements && r.score > 0);
+      const totalWeight = activeResponses.reduce((sum: number, r: any) => sum + (r.weight || 1), 0);
+      if (totalWeight > 0) {
+        const weightedSum = activeResponses.reduce((sum: number, r: any) => sum + (r.score / 5) * (r.weight || 1), 0);
+        const recalculatedScore = Math.round((weightedSum / totalWeight) * 100);
+        const tsIdx = updates.findIndex(u => u === 'total_score = ?');
+        if (tsIdx >= 0) {
+          params[tsIdx] = recalculatedScore;
+        } else {
+          updates.push('total_score = ?');
+          params.push(recalculatedScore);
+        }
+      }
+    }
     updates.push('completed_at = ?'); params.push(now);
 
     if (responses && Array.isArray(responses)) {

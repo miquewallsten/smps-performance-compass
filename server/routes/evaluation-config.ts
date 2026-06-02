@@ -200,16 +200,25 @@ router.patch('/template-questions/:id', authMiddleware, requireAdmin, async (req
 // ─── GET /api/evaluation-config/full-template/:position ────────────────────
 router.get('/full-template/:position', authMiddleware, async (req: Request, res: Response) => {
   try {
-    const { position } = req.params;
+    let { position } = req.params;
     const practiceArea = (req.query.practiceArea as string) || 'corporativo';
+
+    // Accept both old and new position names during transition
+    if (position === 'pasante') position = 'pasante_corporativo';
+    if (position === 'soporte') position = 'archivo_soporte';
+
+    // 0. Validate position exists
+    const posConfig = await db.get('SELECT * FROM position_config WHERE position = ? AND is_active = 1', [position]);
+    if (!posConfig) {
+      return res.status(400).json({ error: `Invalid position: "${position}". Position not found in system.` });
+    }
 
     // 1. Get section weights
     const swRow = await db.get('SELECT * FROM section_weights WHERE position = ?', [position]);
     const sectionWeights = swRow ? { tecnico: swRow.tecnico, competencias: swRow.competencias, blandas: swRow.blandas }
       : { tecnico: 0, competencias: 80, blandas: 20 };
 
-    // 2. Get position config
-    const posConfig = await db.get('SELECT * FROM position_config WHERE position = ?', [position]);
+    // 2. Position config already validated above
 
     // 3. Get all active template questions for this position, JOINed with question_library
     const questions = await db.all(

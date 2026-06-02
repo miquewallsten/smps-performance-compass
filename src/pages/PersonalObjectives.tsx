@@ -259,7 +259,10 @@ export default function PersonalObjectivesPage() {
         {isOpen && (
           <div className="border-t px-5 py-4 space-y-4">
             {objs.length === 0 && !isEditing && (
-              <p className="text-sm text-muted-foreground text-center py-4">Sin objetivos configurados</p>
+              <div className="text-center py-6">
+                <Target className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
+                <p className="text-sm text-muted-foreground">Sin objetivos configurados para este periodo</p>
+              </div>
             )}
             {objs.map((obj, idx) => (
               <div key={obj.id} className="bg-muted/30 rounded-lg p-4 space-y-3">

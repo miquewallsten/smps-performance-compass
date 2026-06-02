@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useUsers, useEvaluations, useAssignments, useActionPlans } from '@/api/queries';
-import { useCurrentPeriod } from '@/hooks/useCurrentPeriod';
+import { useUsers, useEvaluations, useAssignments, useActionPlans, usePeriods } from '@/api/queries';
+import { useDisplayPeriod } from '@/hooks/useDisplayPeriod';
 import { getPositionLabel, getPositionLevel, getLegalHierarchy, getAdminHierarchy, getPositionHierarchy } from '@/lib/evaluationConfig';
 import { canViewUserEvaluations } from '@/lib/visibility';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
@@ -13,7 +13,11 @@ type AreaFilter = 'all' | 'legal' | 'administrativo';
 const PIE_COLORS = ['hsl(145, 60%, 40%)', 'hsl(210, 15%, 85%)'];
 
 export default function Reports() {
-  const currentPeriod = useCurrentPeriod();
+  const displayPeriod = useDisplayPeriod();
+  const { data: periodsData = [] } = usePeriods();
+  const sortedPeriods = [...periodsData].sort((a: any, b: any) => b.period.localeCompare(a.period));
+  const [selectedPeriod, setSelectedPeriod] = useState(displayPeriod);
+  const currentPeriod = selectedPeriod || displayPeriod;
   const { user: currentUser } = useAuth();
   const { data: allUsers = [], isLoading: usersLoading } = useUsers();
   const { data: allEvaluations = [], isLoading: evalsLoading } = useEvaluations();
@@ -148,6 +152,15 @@ export default function Reports() {
               </button>
             ))}
           </div>
+          <select
+            value={selectedPeriod}
+            onChange={(e) => setSelectedPeriod(e.target.value)}
+            className="px-3 py-1.5 rounded-md text-xs font-medium bg-card border border-border"
+          >
+            {sortedPeriods.map((p: any) => (
+              <option key={p.period} value={p.period}>{p.period}</option>
+            ))}
+          </select>
           <a
             href={`/api/evaluations/export/csv?period=${currentPeriod}`}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium bg-muted text-muted-foreground hover:text-foreground transition-colors"

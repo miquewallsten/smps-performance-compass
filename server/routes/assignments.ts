@@ -82,6 +82,16 @@ router.post('/', authMiddleware, requireAdmin, async (req: Request, res: Respons
       return res.status(400).json({ error: 'employeeId, supervisorId, and period are required' });
     }
 
+    // Guard: prevent assigning inactive users
+    const employeeCheck = await db.get('SELECT is_active FROM users WHERE id = ?', [employeeId]) as Record<string, unknown> | undefined;
+    if (!employeeCheck || !employeeCheck.is_active) {
+      return res.status(400).json({ error: 'No se puede asignar a un empleado inactivo' });
+    }
+    const supervisorCheck = await db.get('SELECT is_active FROM users WHERE id = ?', [supervisorId]) as Record<string, unknown> | undefined;
+    if (!supervisorCheck || !supervisorCheck.is_active) {
+      return res.status(400).json({ error: 'No se puede asignar a un supervisor inactivo' });
+    }
+
     const id = uuidv4();
 
     await db.run(

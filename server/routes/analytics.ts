@@ -12,6 +12,12 @@ import { auditLog, getClientIp, getUserAgent } from '../services/audit.js';
 
 const router = Router();
 
+
+// Period validation: only accept known period formats (YYYY-H1 or YYYY-H2)
+function validatePeriod(period: string): boolean {
+  return /^\d{4}-H[12]$/.test(period);
+}
+
 // All analytics routes require authentication
 router.use(authMiddleware);
 
@@ -31,6 +37,7 @@ router.get('/overview', async (req: Request, res: Response) => {
   try {
     const period = req.query.period as string;
     if (!period) return res.status(400).json({ error: 'period query parameter required' });
+    if (!validatePeriod(period)) return res.status(400).json({ error: 'Invalid period format. Expected YYYY-H1 or YYYY-H2.' });
     
     const summary = await db.get(
       'SELECT * FROM analytics_period_summary WHERE period = ?', [period]
@@ -38,7 +45,10 @@ router.get('/overview', async (req: Request, res: Response) => {
     
     // If no pre-computed summary, compute on the fly
     if (!summary) {
-      const totalUsers = await db.get('SELECT COUNT(*) as cnt FROM users WHERE is_active = 1 AND is_super_user = 0');
+      const totalUsers = await db.get(
+        'SELECT COUNT(DISTINCT u.id) as cnt FROM users u INNER JOIN supervisor_assignments sa ON sa.employee_id = u.id WHERE u.is_active = 1 AND u.is_super_user = 0 AND sa.period = ?',
+        [period]
+      );
       const selfCompleted = await db.get(
         'SELECT COUNT(DISTINCT evaluator_id) as cnt FROM evaluations WHERE period = ? AND type = "self" AND completed_at IS NOT NULL', [period]
       );
@@ -84,6 +94,7 @@ router.get('/evaluations', async (req: Request, res: Response) => {
   try {
     const period = req.query.period as string;
     if (!period) return res.status(400).json({ error: 'period query parameter required' });
+    if (!validatePeriod(period)) return res.status(400).json({ error: 'Invalid period format. Expected YYYY-H1 or YYYY-H2.' });
     
     const visibleIds = await getVisibleUserIds(req.user!);
     

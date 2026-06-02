@@ -4,7 +4,7 @@
  * ALL data comes from the database via the evaluation-config API.
  * No hardcoded position labels, hierarchies, weights, or categories.
  * The only static things here are UI labels (SECTION_LABELS, SECTION_ORDER)
- * and pure client-side functions (calculateScore, normalizePosition).
+ * and pure client-side functions (calculateScore, normalizePracticeArea).
  */
 
 // ─── SECTION CONFIG (static — these are UI labels, not DB data) ───────────
@@ -158,12 +158,6 @@ export function getSectionForQuestion(category: string, position: string): strin
 }
 
 // ─── NORMALIZATION ─────────────────────────────────────────────────────────
-
-export function normalizePosition(pos: string): string {
-  if (pos === 'pasante_corporativo') return 'pasante';
-  if (pos === 'archivo_soporte') return 'soporte';
-  return pos;
-}
 
 export function normalizePracticeArea(area: string): string {
   if (area === 'consultoria_fiscal') return 'fiscal_consultoria';

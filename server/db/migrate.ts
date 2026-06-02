@@ -288,6 +288,20 @@ export async function migrate(): Promise<void> {
       copilot TINYINT(1) NOT NULL DEFAULT 1
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
 
+
+    `CREATE TABLE IF NOT EXISTS system_integrity_audit (
+      id VARCHAR(36) PRIMARY KEY,
+      check_name VARCHAR(100) NOT NULL,
+      run_id VARCHAR(36) NOT NULL,
+      status VARCHAR(20) NOT NULL DEFAULT 'pass',
+      row_count INT DEFAULT 0,
+      details TEXT,
+      run_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      INDEX idx_sia_check (check_name),
+      INDEX idx_sia_run (run_id),
+      INDEX idx_sia_run_at (run_at)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+
     `CREATE TABLE IF NOT EXISTS system_status (
       id INT PRIMARY KEY DEFAULT 1,
       status VARCHAR(50) NOT NULL DEFAULT 'active',
@@ -756,10 +770,11 @@ export async function migrate(): Promise<void> {
 
 
   // ─── Migration: Normalize legacy position and practice_area values ──────
-  // Convert old position keys to new canonical keys
+  // REVERSE previous incorrect renames (pasante_corporativo→pasante, archivo_soporte→soporte)
+  // Canonical names are the original full names: pasante_corporativo, archivo_soporte
   const positionMigrations: [string, string][] = [
-    ['pasante_corporativo', 'pasante'],
-    ['archivo_soporte', 'soporte'],
+    ['pasante', 'pasante_corporativo'],
+    ['soporte', 'archivo_soporte'],
     ['abogado', 'asociado_jr'],  // Legacy position, not a valid SMPS position
   ];
   for (const [oldVal, newVal] of positionMigrations) {
@@ -790,6 +805,74 @@ export async function migrate(): Promise<void> {
     }
   }
 
+
+  // ─── Migration: Fix duplicate position names in template_questions ──────
+  // template_questions may have been seeded with 'pasante' and 'soporte'.
+  // Canonical names are 'pasante_corporativo' and 'archivo_soporte'.
+  try {
+    const tqResult = await run(
+      `UPDATE template_questions SET position = 'pasante_corporativo' WHERE position = 'pasante'`
+    );
+    if (tqResult.affectedRows > 0) {
+      console.log(`  ✓ Migrated ${tqResult.affectedRows} template_questions from 'pasante' to 'pasante_corporativo'`);
+    }
+  } catch (e) {
+    console.log('  ⚠ Could not migrate pasante template_questions:', (e as Error).message);
+  }
+  try {
+    const tqResult2 = await run(
+      `UPDATE template_questions SET position = 'archivo_soporte' WHERE position = 'soporte'`
+    );
+    if (tqResult2.affectedRows > 0) {
+      console.log(`  ✓ Migrated ${tqResult2.affectedRows} template_questions from 'soporte' to 'archivo_soporte'`);
+    }
+  } catch (e) {
+    console.log('  ⚠ Could not migrate soporte template_questions:', (e as Error).message);
+  }
+
+  // ─── Migration: Remove duplicate section_weights for short position names ──────
+  try {
+    const swResult = await run(`DELETE FROM section_weights WHERE position IN ('pasante', 'soporte')`);
+    if (swResult.affectedRows > 0) {
+      console.log(`  ✓ Removed ${swResult.affectedRows} duplicate section_weights for 'pasante'/'soporte'`);
+    }
+  } catch (e) {
+    console.log('  ⚠ Could not remove duplicate section_weights:', (e as Error).message);
+  }
+
+  // ─── Migration: Remove duplicate position_config for short position names ──────
+  try {
+    const pcResult = await run(`DELETE FROM position_config WHERE position IN ('pasante', 'soporte')`);
+    if (pcResult.affectedRows > 0) {
+      console.log(`  ✓ Removed ${pcResult.affectedRows} duplicate position_config for 'pasante'/'soporte'`);
+    }
+  } catch (e) {
+    console.log('  ⚠ Could not remove duplicate position_config:', (e as Error).message);
+  }
+
+
+  // ─── Migration: Clean up assignments for inactive users ──────────────────
+  try {
+    const inactiveResult = await run(
+      `DELETE sa FROM supervisor_assignments sa
+       INNER JOIN users u ON sa.employee_id = u.id
+       WHERE u.is_active = 0`
+    );
+    if (inactiveResult.affectedRows > 0) {
+      console.log(`  ✓ Removed ${inactiveResult.affectedRows} assignments for inactive users`);
+    }
+    // Also remove assignments where supervisor is inactive
+    const inactiveSupResult = await run(
+      `DELETE sa FROM supervisor_assignments sa
+       INNER JOIN users u ON sa.supervisor_id = u.id
+       WHERE u.is_active = 0`
+    );
+    if (inactiveSupResult.affectedRows > 0) {
+      console.log(`  ✓ Removed ${inactiveSupResult.affectedRows} assignments with inactive supervisors`);
+    }
+  } catch (e) {
+    console.log('  ⚠ Could not clean up inactive user assignments:', (e as Error).message);
+  }
 
 
   // ─── Migration: Ensure all evaluation categories exist ────────────────────
