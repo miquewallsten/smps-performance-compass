@@ -65,6 +65,7 @@ jobs:
 
       - name: Deploy via SSH
         run: |
+          set -e
           mkdir -p ~/.ssh
           echo "${{ secrets.HOSTINGER_SSH_KEY }}" > ~/.ssh/deploy_key
           sed -i 's/\r$//' ~/.ssh/deploy_key
@@ -87,24 +88,31 @@ jobs:
 
           echo "🔄 Deploying to Hostinger..."
 
+          # Debug: verify local files
+          echo "📁 Local dist/ contents:"
+          ls -la dist/ | head -10
+          echo "📁 Local dist/assets/ count:"
+          ls dist/assets/ | wc -l
+          echo "📄 Local dist/index.html:"
+          ls -la dist/index.html
+          echo "📦 Local server.cjs:"
+          ls -la server.cjs
+
           # 1. Pull latest source code on server
           $SSH_CMD "cd $REMOTE && git checkout -- . && git pull origin main" || true
 
-          # 2. Upload new build artifacts to a temp directory first (atomic deploy)
-          $SSH_CMD "mkdir -p $REMOTE/dist-new/assets"
-          $SCP_CMD dist/index.html $SSH_HOST:$REMOTE/dist-new/index.html
-          $SCP_CMD dist/favicon.ico $SSH_HOST:$REMOTE/dist-new/favicon.ico 2>/dev/null || true
-          $SCP_CMD dist/robots.txt $SSH_HOST:$REMOTE/dist-new/robots.txt 2>/dev/null || true
-          # Use tar+scp for assets to avoid glob issues with many files
-          tar -czf /tmp/assets.tar.gz -C dist/assets . 2>/dev/null
-          if [ -f /tmp/assets.tar.gz ]; then
-            $SCP_CMD /tmp/assets.tar.gz $SSH_HOST:$REMOTE/dist-new/assets/assets.tar.gz
-            $SSH_CMD "cd $REMOTE/dist-new/assets && tar -xzf assets.tar.gz && rm assets.tar.gz"
-          fi
+          # 2. Upload entire dist/ as a tar archive (most reliable)
+          echo "📦 Creating dist.tar.gz..."
+          tar -czf /tmp/dist.tar.gz -C dist .
+          ls -la /tmp/dist.tar.gz
+          $SSH_CMD "mkdir -p $REMOTE/dist-new"
+          $SCP_CMD /tmp/dist.tar.gz $SSH_HOST:$REMOTE/dist-new/dist.tar.gz
+          $SSH_CMD "cd $REMOTE/dist-new && tar -xzf dist.tar.gz && rm dist.tar.gz && ls -la assets/ | head -5"
           $SCP_CMD server.cjs $SSH_HOST:$REMOTE/server.cjs
 
           # 3. Atomically swap old dist for new dist
-          $SSH_CMD "cd $REMOTE && rm -rf dist-old 2>/dev/null; mv dist dist-old 2>/dev/null; mv dist-new dist"
+          echo "🔄 Swapping dist directories..."
+          $SSH_CMD "cd $REMOTE && rm -rf dist-old 2>/dev/null; mv dist dist-old 2>/dev/null || true; mv dist-new dist"
           # Remove any .htaccess that may cause 500 errors
           $SSH_CMD "rm -f $REMOTE/.htaccess" || true
 
