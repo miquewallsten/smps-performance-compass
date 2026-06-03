@@ -100,6 +100,7 @@ jobs:
           $SCP_CMD dist/robots.txt $SSH_HOST:$REMOTE/dist/robots.txt 2>/dev/null || true
           $SCP_CMD dist/assets/* $SSH_HOST:$REMOTE/dist/assets/
           $SCP_CMD server.cjs $SSH_HOST:$REMOTE/server.cjs
+          $SCP_CMD .htaccess $SSH_HOST:$REMOTE/.htaccess 2>/dev/null || true
 
           # 4. Install production deps and restart Passenger
           $SSH_CMD "cd $REMOTE && $HOSTINGER_ENV && npm install --omit=dev --ignore-scripts 2>&1 | tail -5; mkdir -p tmp; touch tmp/restart.txt; echo '✅ Passenger restart triggered'"

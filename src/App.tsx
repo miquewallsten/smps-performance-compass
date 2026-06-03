@@ -5,6 +5,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { lazy, Component, ReactNode, Suspense } from "react";
 import { Loader2 } from "lucide-react";
+import { AppSkeleton } from "@/components/AppSkeleton";
 
 // ── Code-split all page routes ──────────────────────────────────────────
 const Dashboard = lazy(() => import("./pages/Dashboard"));
@@ -75,7 +76,7 @@ function AppRoutes() {
   const { user, loading, systemInitialized, moduleConfig, isSuperUser } = useAuth();
 
   if (loading) {
-    return <div className="flex items-center justify-center min-h-screen">Cargando...</div>;
+    return <AppSkeleton />;
   }
 
   if (systemInitialized === false) {
