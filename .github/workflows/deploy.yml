@@ -24,7 +24,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 24
           cache: npm
 
       - name: Install dependencies
@@ -65,6 +65,7 @@ jobs:
 
       - name: Deploy via SSH
         run: |
+          set -e
           mkdir -p ~/.ssh
           echo "${{ secrets.HOSTINGER_SSH_KEY }}" > ~/.ssh/deploy_key
           sed -i 's/\r$//' ~/.ssh/deploy_key
@@ -77,39 +78,43 @@ jobs:
 
           ssh-keyscan -p ${{ secrets.HOSTINGER_PORT }} ${{ secrets.HOSTINGER_HOST }} >> ~/.ssh/known_hosts 2>/dev/null
 
-          SSH_KEY="~/.ssh/deploy_key"
+          SSH_KEY="$HOME/.ssh/deploy_key"
           SSH_HOST="${{ secrets.HOSTINGER_USER }}@${{ secrets.HOSTINGER_HOST }}"
           SSH_PORT="${{ secrets.HOSTINGER_PORT }}"
           REMOTE="${{ secrets.HOSTINGER_PATH }}"
           SSH_CMD="ssh -i $SSH_KEY -p $SSH_PORT -o StrictHostKeyChecking=no -o ConnectTimeout=30 -o ServerAliveInterval=15 $SSH_HOST"
           SCP_CMD="scp -i $SSH_KEY -P $SSH_PORT -o StrictHostKeyChecking=no -o ConnectTimeout=30"
-          HOSTINGER_ENV='export PATH="/opt/alt/alt-nodejs22/root/usr/bin:/usr/local/bin:/usr/bin:/bin:$PATH"'
+          HOSTINGER_ENV='export PATH="/opt/alt/alt-nodejs24/root/usr/bin:/usr/local/bin:/usr/bin:/bin:$PATH"'
 
           echo "🔄 Deploying to Hostinger..."
+          echo "Testing SSH connection..."
+          $SSH_CMD "echo 'SSH connection successful'"
 
           # 1. Pull latest source code on server
-          $SSH_CMD "cd $REMOTE && git checkout -- . && git pull origin main" || true
+          echo "📦 Pulling latest code..."
+          $SSH_CMD "cd $REMOTE && git checkout -- . && git pull origin main" || echo "⚠️ Git pull failed, continuing with upload"
 
           # 2. Clean old build artifacts on server
+          echo "🧹 Cleaning old artifacts..."
           $SSH_CMD "rm -rf $REMOTE/dist/assets $REMOTE/dist/index.html $REMOTE/dist/favicon.ico $REMOTE/dist/robots.txt"
-          # Remove any .htaccess that may cause 500 errors
           $SSH_CMD "rm -f $REMOTE/.htaccess" || true
 
           # 3. Upload new build artifacts
+          echo "📤 Uploading build artifacts..."
           $SSH_CMD "mkdir -p $REMOTE/dist/assets"
           $SCP_CMD dist/index.html $SSH_HOST:$REMOTE/dist/index.html
-          $SCP_CMD dist/favicon.ico $SSH_HOST:$REMOTE/dist/favicon.ico 2>/dev/null || true
-          $SCP_CMD dist/robots.txt $SSH_HOST:$REMOTE/dist/robots.txt 2>/dev/null || true
-          # Use tar for reliable asset upload (avoids glob issues)
+          $SCP_CMD dist/favicon.ico $SSH_HOST:$REMOTE/dist/favicon.ico 2>/dev/null || echo "⚠️ favicon.ico not found"
+          $SCP_CMD dist/robots.txt $SSH_HOST:$REMOTE/dist/robots.txt 2>/dev/null || echo "⚠️ robots.txt not found"
           tar -czf /tmp/assets.tar.gz -C dist/assets .
           $SCP_CMD /tmp/assets.tar.gz $SSH_HOST:$REMOTE/dist/assets/assets.tar.gz
           $SSH_CMD "cd $REMOTE/dist/assets && tar -xzf assets.tar.gz && rm assets.tar.gz"
           $SCP_CMD server.cjs $SSH_HOST:$REMOTE/server.cjs
 
           # 4. Install production deps and restart Passenger
-          $SSH_CMD "cd $REMOTE && $HOSTINGER_ENV && npm install --omit=dev --ignore-scripts 2>&1 | tail -5; mkdir -p tmp; touch tmp/restart.txt; echo '✅ Passenger restart triggered'"
+          echo "📦 Installing dependencies and restarting..."
+          $SSH_CMD "cd $REMOTE && $HOSTINGER_ENV && npm install --omit=dev --ignore-scripts 2>&1 | tail -5"
+          $SSH_CMD "cd $REMOTE && mkdir -p tmp && touch tmp/restart.txt"
+          echo "✅ Passenger restart triggered"
 
           echo "✅ Deploy complete!"
 
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
