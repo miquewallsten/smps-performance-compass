@@ -92,6 +92,8 @@ jobs:
 
           # 2. Clean old build artifacts on server
           $SSH_CMD "rm -rf $REMOTE/dist/assets $REMOTE/dist/index.html $REMOTE/dist/favicon.ico $REMOTE/dist/robots.txt"
+          # Remove any .htaccess that may cause 500 errors
+          $SSH_CMD "rm -f $REMOTE/.htaccess" || true
 
           # 3. Upload new build artifacts
           $SSH_CMD "mkdir -p $REMOTE/dist/assets"
