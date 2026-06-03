@@ -44,9 +44,9 @@ function PlanItemsView({ items, content }: { items?: SmartActionItem[]; content?
 export default function MyActionPlan() {
   const { user: currentUser } = useAuth();
   const { data: users = [] } = useUsers();
-  const { data: evaluations = [] } = useEvaluations();
-  const { data: assignments = [] } = useAssignments();
-  const { data: actionPlans = [] } = useActionPlans();
+  const { data: evaluations = [] } = useEvaluations({ period });
+  const { data: assignments = [] } = useAssignments(period);
+  const { data: actionPlans = [] } = useActionPlans({ period });
   const addOrUpdateActionPlan = useCreateActionPlan().mutate;
   const approveActionPlan = useApproveActionPlan().mutate;
   const currentPeriod = useCurrentPeriod();
