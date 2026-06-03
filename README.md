@@ -1,5 +1,7 @@
 # Welcome to your Lovable project
 
+**🤖 AGENTS**: Before starting work, read `AGENT_INSTRUCTIONS.md` for environment setup and cleanup procedures!
+
 ## Project info
 
 **URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
