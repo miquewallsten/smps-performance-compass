@@ -1,7 +1,7 @@
 /**
  * Email service for SMPS Performance Compass.
  *
- * Supports multiple transport modes via MAIL_TRANSPORT env var:
+ * Supports multiple transport modes via MAIL_TRANSPORT env var or database config:
  *   - "auto" (default): Uses sendmail in production, SMTP if configured, stub otherwise
  *   - "sendmail": Uses Hostinger's /usr/sbin/sendmail binary (no credentials needed)
  *   - "smtp": Uses SMTP with credentials from SMTP_HOST, SMTP_USER, SMTP_PASS
@@ -10,6 +10,8 @@
  * On Hostinger shared hosting, sendmail is the recommended transport.
  * It routes through Hostinger's mail infrastructure with proper DKIM signing.
  *
+ * Configuration priority: Database (smtp_config table) > Environment variables
+ *
  * Configuration via environment variables:
  *   MAIL_TRANSPORT: auto|sendmail|smtp|stub (default: auto)
  *   SMTP_HOST, SMTP_PORT, SMTP_SECURE, SMTP_USER, SMTP_PASS (for SMTP mode)
@@ -17,21 +19,81 @@
  *   APP_URL: Base URL for generating links
  */
 import nodemailer from 'nodemailer';
+import { db } from '../db/connection.js';
 
 let transporter: nodemailer.Transporter | null = null;
+let lastConfigCheck: number | null = null;
+let cachedSmtpConfig: any = null;
 
-function getTransporter(): nodemailer.Transporter {
+/**
+ * Get SMTP configuration from database or environment variables.
+ * Database config is cached for 5 seconds to avoid excessive queries.
+ */
+async function getSmtpConfig(): Promise<{
+  smtp_host: string | null;
+  smtp_port: number;
+  smtp_secure: boolean;
+  smtp_user: string | null;
+  smtp_pass: string | null;
+  smtp_from: string;
+  mail_transport: string;
+}> {
+  const now = Date.now();
+  // Cache for 5 seconds
+  if (cachedSmtpConfig && lastConfigCheck && now - lastConfigCheck < 5000) {
+    return cachedSmtpConfig;
+  }
+
+  try {
+    const dbConfig = await db.get('SELECT * FROM smtp_config WHERE id = 1') as any;
+
+    if (dbConfig) {
+      cachedSmtpConfig = {
+        smtp_host: dbConfig.smtp_host,
+        smtp_port: dbConfig.smtp_port || 587,
+        smtp_secure: !!dbConfig.smtp_secure,
+        smtp_user: dbConfig.smtp_user,
+        smtp_pass: dbConfig.smtp_pass,
+        smtp_from: dbConfig.smtp_from || 'SMPS Performance <noreply@smps.bowdot.online>',
+        mail_transport: dbConfig.mail_transport || 'auto',
+      };
+    } else {
+      // Fall back to environment variables
+      cachedSmtpConfig = {
+        smtp_host: process.env.SMTP_HOST || null,
+        smtp_port: parseInt(process.env.SMTP_PORT || '587'),
+        smtp_secure: process.env.SMTP_SECURE === 'true',
+        smtp_user: process.env.SMTP_USER || null,
+        smtp_pass: process.env.SMTP_PASS || null,
+        smtp_from: process.env.SMTP_FROM || 'SMPS Performance <noreply@smps.bowdot.online>',
+        mail_transport: process.env.MAIL_TRANSPORT || 'auto',
+      };
+    }
+  } catch (err) {
+    console.warn('Failed to load SMTP config from DB, using env vars:', err);
+    cachedSmtpConfig = {
+      smtp_host: process.env.SMTP_HOST || null,
+      smtp_port: parseInt(process.env.SMTP_PORT || '587'),
+      smtp_secure: process.env.SMTP_SECURE === 'true',
+      smtp_user: process.env.SMTP_USER || null,
+      smtp_pass: process.env.SMTP_PASS || null,
+      smtp_from: process.env.SMTP_FROM || 'SMPS Performance <noreply@smps.bowdot.online>',
+      mail_transport: process.env.MAIL_TRANSPORT || 'auto',
+    };
+  }
+
+  lastConfigCheck = now;
+  return cachedSmtpConfig;
+}
+
+async function getTransporter(): Promise<nodemailer.Transporter> {
   if (transporter) return transporter;
 
-  const host = process.env.SMTP_HOST;
-  const port = parseInt(process.env.SMTP_PORT || '587');
-  const secure = process.env.SMTP_SECURE === 'true';
-  const user = process.env.SMTP_USER;
-  const pass = process.env.SMTP_PASS;
-  const mailTransport = process.env.MAIL_TRANSPORT || 'auto'; // 'auto' | 'smtp' | 'sendmail' | 'stub'
+  const config = await getSmtpConfig();
+  const { smtp_host, smtp_port, smtp_secure, smtp_user, smtp_pass, smtp_from, mail_transport } = config;
 
   // AUTO mode: prefer sendmail in production (Hostinger), fall back to SMTP, then stub
-  if (mailTransport === 'auto') {
+  if (mail_transport === 'auto') {
     if (process.env.NODE_ENV === 'production') {
       // In production on Hostinger, use sendmail transport (always available)
       console.info('📧 Using sendmail transport (Hostinger production)');
@@ -43,8 +105,13 @@ function getTransporter(): nodemailer.Transporter {
       return transporter;
     }
     // In development, try SMTP if configured
-    if (host && user && pass) {
-      transporter = nodemailer.createTransport({ host, port, secure, auth: { user, pass } });
+    if (smtp_host && smtp_user && smtp_pass) {
+      transporter = nodemailer.createTransport({
+        host: smtp_host,
+        port: smtp_port,
+        secure: smtp_secure,
+        auth: { user: smtp_user, pass: smtp_pass },
+      });
       return transporter;
     }
     // No SMTP in development → stub
@@ -62,7 +129,7 @@ function getTransporter(): nodemailer.Transporter {
   }
 
   // Explicit SENDMAIL mode
-  if (mailTransport === 'sendmail') {
+  if (mail_transport === 'sendmail') {
     console.info('📧 Using sendmail transport');
     transporter = nodemailer.createTransport({
       sendmail: true,
@@ -73,8 +140,13 @@ function getTransporter(): nodemailer.Transporter {
   }
 
   // Explicit SMTP mode
-  if (mailTransport === 'smtp' && host && user && pass) {
-    transporter = nodemailer.createTransport({ host, port, secure, auth: { user, pass } });
+  if (mail_transport === 'smtp' && smtp_host && smtp_user && smtp_pass) {
+    transporter = nodemailer.createTransport({
+      host: smtp_host,
+      port: smtp_port,
+      secure: smtp_secure,
+      auth: { user: smtp_user, pass: smtp_pass },
+    });
     return transporter;
   }
 
@@ -92,8 +164,9 @@ function getTransporter(): nodemailer.Transporter {
   return transporter;
 }
 
-function getFromAddress(): string {
-  return process.env.SMTP_FROM || 'SMPS Performance <noreply@smps.bowdot.online>';
+async function getFromAddress(): Promise<string> {
+  const config = await getSmtpConfig();
+  return config.smtp_from || 'SMPS Performance <noreply@smps.bowdot.online>';
 }
 
 function getAppUrl(): string {
@@ -149,7 +222,7 @@ export async function sendActivationEmail(
 
   try {
     const result = await getTransporter().sendMail({
-      from: getFromAddress(),
+      from: await getFromAddress(),
       to,
       subject: 'SMPS — Activar Cuenta',
       html,
@@ -217,7 +290,7 @@ export async function sendPasswordResetEmail(
 
   try {
     const result = await getTransporter().sendMail({
-      from: getFromAddress(),
+      from: await getFromAddress(),
       to,
       subject: 'SMPS — Restablecer Contraseña',
       html,
@@ -284,7 +357,7 @@ export async function sendTemplateEmail(params: {
 }): Promise<boolean> {
   try {
     const result = await getTransporter().sendMail({
-      from: getFromAddress(),
+      from: await getFromAddress(),
       to: params.to,
       subject: params.subject,
       html: params.html,

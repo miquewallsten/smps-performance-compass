@@ -467,6 +467,19 @@ export function useDeleteCopilotConversation() {
   const qc = useQueryClient();
   return useMutation({ mutationFn: (id: string) => api.delete(`/api/copilot/conversations/${id}`), onSuccess: () => qc.invalidateQueries({ queryKey: ['copilotConversations'] }) });
 }
+
+// ── SMTP Config ──
+export function useSmtpConfig() {
+  return useQuery({ queryKey: ['smtpConfig'], queryFn: () => api.get<any>('/api/system/smtp-config') });
+}
+export function useUpdateSmtpConfig() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: any) => api.patch('/api/system/smtp-config', data),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['smtpConfig'] }); toast.success('Configuración de correo guardada'); },
+    onError: (err: Error) => toast.error(err.message || 'Error al guardar configuración'),
+  });
+}
 export function useClearAllCopilotConversations() {
   const qc = useQueryClient();
   return useMutation({ mutationFn: () => api.delete<any>('/api/copilot/conversations'), onSuccess: () => { qc.invalidateQueries({ queryKey: ['copilotConversations'] }); qc.invalidateQueries({ queryKey: ['copilotConversation'] }); } });

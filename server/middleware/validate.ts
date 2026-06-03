@@ -30,8 +30,13 @@ export const LoginSchema = z.object({
 });
 
 export const ChangePasswordSchema = z.object({
-  currentPassword: z.string().min(1).max(255).optional(),
-  newPassword: z.string().min(6, 'Mínimo 6 caracteres').max(255),
+  currentPassword: z.string().max(255).optional().or(z.literal('')),
+  newPassword: z.string()
+    .min(8, 'La contraseña debe tener al menos 8 caracteres')
+    .regex(/[A-Z]/, 'Debe contener al menos una letra mayúscula')
+    .regex(/[a-z]/, 'Debe contener al menos una letra minúscula')
+    .regex(/[0-9]/, 'Debe contener al menos un número')
+    .max(255),
   securityQuestion: z.string().max(500).optional(),
   securityAnswer: z.string().max(500).optional(),
 });

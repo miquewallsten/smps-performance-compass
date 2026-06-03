@@ -137587,6 +137587,17 @@ async function migrate() {
       max_tokens INT NOT NULL DEFAULT 2048,
       temperature DOUBLE NOT NULL DEFAULT 0.3
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+    `CREATE TABLE IF NOT EXISTS smtp_config (
+      id INT PRIMARY KEY DEFAULT 1,
+      smtp_host VARCHAR(255) DEFAULT NULL,
+      smtp_port INT DEFAULT 587,
+      smtp_secure TINYINT(1) DEFAULT 0,
+      smtp_user VARCHAR(255) DEFAULT NULL,
+      smtp_pass TEXT DEFAULT NULL,
+      smtp_from VARCHAR(255) DEFAULT 'SMPS Performance <noreply@smps.bowdot.online>',
+      mail_transport VARCHAR(50) DEFAULT 'auto',
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
     // ─── New tables for full DB migration (replacing hardcoded .ts data files) ────
     `CREATE TABLE IF NOT EXISTS evaluation_categories (
       id VARCHAR(50) PRIMARY KEY,
@@ -141918,15 +141929,56 @@ var import_express2 = __toESM(require_express2(), 1);
 // server/services/email.ts
 var import_nodemailer = __toESM(require_nodemailer(), 1);
 var transporter = null;
-function getTransporter() {
+var lastConfigCheck = null;
+var cachedSmtpConfig = null;
+async function getSmtpConfig() {
+  const now3 = Date.now();
+  if (cachedSmtpConfig && lastConfigCheck && now3 - lastConfigCheck < 5e3) {
+    return cachedSmtpConfig;
+  }
+  try {
+    const dbConfig = await db.get("SELECT * FROM smtp_config WHERE id = 1");
+    if (dbConfig) {
+      cachedSmtpConfig = {
+        smtp_host: dbConfig.smtp_host,
+        smtp_port: dbConfig.smtp_port || 587,
+        smtp_secure: !!dbConfig.smtp_secure,
+        smtp_user: dbConfig.smtp_user,
+        smtp_pass: dbConfig.smtp_pass,
+        smtp_from: dbConfig.smtp_from || "SMPS Performance <noreply@smps.bowdot.online>",
+        mail_transport: dbConfig.mail_transport || "auto"
+      };
+    } else {
+      cachedSmtpConfig = {
+        smtp_host: process.env.SMTP_HOST || null,
+        smtp_port: parseInt(process.env.SMTP_PORT || "587"),
+        smtp_secure: process.env.SMTP_SECURE === "true",
+        smtp_user: process.env.SMTP_USER || null,
+        smtp_pass: process.env.SMTP_PASS || null,
+        smtp_from: process.env.SMTP_FROM || "SMPS Performance <noreply@smps.bowdot.online>",
+        mail_transport: process.env.MAIL_TRANSPORT || "auto"
+      };
+    }
+  } catch (err) {
+    console.warn("Failed to load SMTP config from DB, using env vars:", err);
+    cachedSmtpConfig = {
+      smtp_host: process.env.SMTP_HOST || null,
+      smtp_port: parseInt(process.env.SMTP_PORT || "587"),
+      smtp_secure: process.env.SMTP_SECURE === "true",
+      smtp_user: process.env.SMTP_USER || null,
+      smtp_pass: process.env.SMTP_PASS || null,
+      smtp_from: process.env.SMTP_FROM || "SMPS Performance <noreply@smps.bowdot.online>",
+      mail_transport: process.env.MAIL_TRANSPORT || "auto"
+    };
+  }
+  lastConfigCheck = now3;
+  return cachedSmtpConfig;
+}
+async function getTransporter() {
   if (transporter) return transporter;
-  const host = process.env.SMTP_HOST;
-  const port = parseInt(process.env.SMTP_PORT || "587");
-  const secure = process.env.SMTP_SECURE === "true";
-  const user = process.env.SMTP_USER;
-  const pass = process.env.SMTP_PASS;
-  const mailTransport = process.env.MAIL_TRANSPORT || "auto";
-  if (mailTransport === "auto") {
+  const config = await getSmtpConfig();
+  const { smtp_host, smtp_port, smtp_secure, smtp_user, smtp_pass, smtp_from, mail_transport } = config;
+  if (mail_transport === "auto") {
     if (process.env.NODE_ENV === "production") {
       console.info("\u{1F4E7} Using sendmail transport (Hostinger production)");
       transporter = import_nodemailer.default.createTransport({
@@ -141936,8 +141988,13 @@ function getTransporter() {
       });
       return transporter;
     }
-    if (host && user && pass) {
-      transporter = import_nodemailer.default.createTransport({ host, port, secure, auth: { user, pass } });
+    if (smtp_host && smtp_user && smtp_pass) {
+      transporter = import_nodemailer.default.createTransport({
+        host: smtp_host,
+        port: smtp_port,
+        secure: smtp_secure,
+        auth: { user: smtp_user, pass: smtp_pass }
+      });
       return transporter;
     }
     console.warn("\u26A0\uFE0F  SMTP not configured and not in production. Emails will not be sent.");
@@ -141952,7 +142009,7 @@ function getTransporter() {
     };
     return transporter;
   }
-  if (mailTransport === "sendmail") {
+  if (mail_transport === "sendmail") {
     console.info("\u{1F4E7} Using sendmail transport");
     transporter = import_nodemailer.default.createTransport({
       sendmail: true,
@@ -141961,8 +142018,13 @@ function getTransporter() {
     });
     return transporter;
   }
-  if (mailTransport === "smtp" && host && user && pass) {
-    transporter = import_nodemailer.default.createTransport({ host, port, secure, auth: { user, pass } });
+  if (mail_transport === "smtp" && smtp_host && smtp_user && smtp_pass) {
+    transporter = import_nodemailer.default.createTransport({
+      host: smtp_host,
+      port: smtp_port,
+      secure: smtp_secure,
+      auth: { user: smtp_user, pass: smtp_pass }
+    });
     return transporter;
   }
   console.warn("\u26A0\uFE0F  Email transport set to stub mode. Emails will not be sent.");
@@ -141977,8 +142039,9 @@ function getTransporter() {
   };
   return transporter;
 }
-function getFromAddress() {
-  return process.env.SMTP_FROM || "SMPS Performance <noreply@smps.bowdot.online>";
+async function getFromAddress() {
+  const config = await getSmtpConfig();
+  return config.smtp_from || "SMPS Performance <noreply@smps.bowdot.online>";
 }
 function getAppUrl() {
   return process.env.APP_URL || "https://smps.bowdot.online";
@@ -142022,7 +142085,7 @@ async function sendActivationEmail(to, name, token) {
   `;
   try {
     const result = await getTransporter().sendMail({
-      from: getFromAddress(),
+      from: await getFromAddress(),
       to,
       subject: "SMPS \u2014 Activar Cuenta",
       html
@@ -142076,7 +142139,7 @@ async function sendPasswordResetEmail(to, name, token, expiresInHours = 1) {
   `;
   try {
     const result = await getTransporter().sendMail({
-      from: getFromAddress(),
+      from: await getFromAddress(),
       to,
       subject: "SMPS \u2014 Restablecer Contrase\xF1a",
       html
@@ -142096,7 +142159,7 @@ async function sendAdminPasswordResetEmail(to, name, token) {
 async function sendTemplateEmail(params) {
   try {
     const result = await getTransporter().sendMail({
-      from: getFromAddress(),
+      from: await getFromAddress(),
       to: params.to,
       subject: params.subject,
       html: params.html
@@ -146866,8 +146929,8 @@ var LoginSchema = external_exports.object({
   password: external_exports.string().min(1, "Contrase\xF1a requerida").max(255)
 });
 var ChangePasswordSchema = external_exports.object({
-  currentPassword: external_exports.string().min(1).max(255).optional(),
-  newPassword: external_exports.string().min(6, "M\xEDnimo 6 caracteres").max(255),
+  currentPassword: external_exports.string().max(255).optional().or(external_exports.literal("")),
+  newPassword: external_exports.string().min(8, "La contrase\xF1a debe tener al menos 8 caracteres").regex(/[A-Z]/, "Debe contener al menos una letra may\xFAscula").regex(/[a-z]/, "Debe contener al menos una letra min\xFAscula").regex(/[0-9]/, "Debe contener al menos un n\xFAmero").max(255),
   securityQuestion: external_exports.string().max(500).optional(),
   securityAnswer: external_exports.string().max(500).optional()
 });
@@ -147003,8 +147066,17 @@ router3.post("/change-password", validate2(ChangePasswordSchema), authMiddleware
         return res.status(401).json({ error: "Current password is incorrect" });
       }
     }
-    if (!newPassword || newPassword.length < 6) {
-      return res.status(400).json({ error: "New password must be at least 6 characters" });
+    if (!newPassword || newPassword.length < 8) {
+      return res.status(400).json({ error: "La contrase\xF1a debe tener al menos 8 caracteres" });
+    }
+    if (!/[A-Z]/.test(newPassword)) {
+      return res.status(400).json({ error: "La contrase\xF1a debe contener al menos una letra may\xFAscula" });
+    }
+    if (!/[a-z]/.test(newPassword)) {
+      return res.status(400).json({ error: "La contrase\xF1a debe contener al menos una letra min\xFAscula" });
+    }
+    if (!/[0-9]/.test(newPassword)) {
+      return res.status(400).json({ error: "La contrase\xF1a debe contener al menos un n\xFAmero" });
     }
     const hashedPassword = await hashPassword(newPassword);
     const now3 = (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "");
@@ -148183,6 +148255,112 @@ router7.get("/activation-history", authMiddleware, requireSuperUser, async (_req
   } catch (err) {
     console.error("Get activation history error:", err);
     return res.status(500).json({ error: "Internal server error" });
+  }
+});
+router7.get("/smtp-config", authMiddleware, requireSuperUser, async (_req, res) => {
+  try {
+    const config = await db.get("SELECT * FROM smtp_config WHERE id = 1");
+    if (!config) {
+      return res.json({
+        smtp_host: process.env.SMTP_HOST || "",
+        smtp_port: parseInt(process.env.SMTP_PORT || "587"),
+        smtp_secure: process.env.SMTP_SECURE === "true",
+        smtp_user: process.env.SMTP_USER || "",
+        smtp_from: process.env.SMTP_FROM || "SMPS Performance <noreply@smps.bowdot.online>",
+        mail_transport: process.env.MAIL_TRANSPORT || "auto",
+        is_configured: false
+      });
+    }
+    const maskedPass = config.smtp_pass && config.smtp_pass.length > 4 ? "\u2022\u2022\u2022\u2022" + config.smtp_pass.slice(-4) : "";
+    return res.json({
+      ...config,
+      smtp_pass: maskedPass,
+      is_configured: true
+    });
+  } catch (err) {
+    console.error("Get SMTP config error:", err);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+});
+router7.patch("/smtp-config", authMiddleware, requireSuperUser, async (req, res) => {
+  try {
+    const { smtp_host, smtp_port, smtp_secure, smtp_user, smtp_pass, smtp_from, mail_transport } = req.body;
+    const existing = await db.get("SELECT id FROM smtp_config WHERE id = 1");
+    if (!existing) {
+      await db.run(
+        `INSERT INTO smtp_config (id, smtp_host, smtp_port, smtp_secure, smtp_user, smtp_pass, smtp_from, mail_transport)
+         VALUES (1, ?, ?, ?, ?, ?, ?, ?)`,
+        [smtp_host || null, smtp_port || 587, smtp_secure ? 1 : 0, smtp_user || null, smtp_pass || null, smtp_from || "SMPS Performance <noreply@smps.bowdot.online>", mail_transport || "auto"]
+      );
+    } else {
+      const updates = [];
+      const values = [];
+      if (smtp_host !== void 0) {
+        updates.push("smtp_host = ?");
+        values.push(smtp_host || null);
+      }
+      if (smtp_port !== void 0) {
+        updates.push("smtp_port = ?");
+        values.push(smtp_port);
+      }
+      if (smtp_secure !== void 0) {
+        updates.push("smtp_secure = ?");
+        values.push(smtp_secure ? 1 : 0);
+      }
+      if (smtp_user !== void 0) {
+        updates.push("smtp_user = ?");
+        values.push(smtp_user || null);
+      }
+      if (smtp_pass !== void 0 && smtp_pass !== "") {
+        updates.push("smtp_pass = ?");
+        values.push(smtp_pass);
+      }
+      if (smtp_from !== void 0) {
+        updates.push("smtp_from = ?");
+        values.push(smtp_from);
+      }
+      if (mail_transport !== void 0) {
+        updates.push("mail_transport = ?");
+        values.push(mail_transport);
+      }
+      if (updates.length > 0) {
+        values.push(1);
+        await db.run(`UPDATE smtp_config SET ${updates.join(", ")} WHERE id = ?`, values);
+      }
+    }
+    const config = await db.get("SELECT * FROM smtp_config WHERE id = 1");
+    return res.json({
+      ...config,
+      smtp_pass: config.smtp_pass && config.smtp_pass.length > 4 ? "\u2022\u2022\u2022\u2022" + config.smtp_pass.slice(-4) : "",
+      is_configured: true
+    });
+  } catch (err) {
+    console.error("Update SMTP config error:", err);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+});
+router7.post("/smtp-test", authMiddleware, requireSuperUser, async (req, res) => {
+  try {
+    const { smtp_host, smtp_port, smtp_secure, smtp_user, smtp_pass } = req.body;
+    const nodemailer2 = (await Promise.resolve().then(() => __toESM(require_nodemailer(), 1))).default;
+    const transporter2 = nodemailer2.createTransport({
+      host: smtp_host || process.env.SMTP_HOST,
+      port: smtp_port || parseInt(process.env.SMTP_PORT || "587"),
+      secure: smtp_secure !== void 0 ? smtp_secure : process.env.SMTP_SECURE === "true",
+      auth: smtp_user && smtp_pass ? { user: smtp_user, pass: smtp_pass } : process.env.SMTP_USER && process.env.SMTP_PASS ? { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS } : void 0
+    });
+    try {
+      await transporter2.verify();
+      return res.json({ ok: true, message: "Conexi\xF3n SMTP exitosa" });
+    } catch (verifyErr) {
+      return res.status(400).json({
+        ok: false,
+        message: `Error de conexi\xF3n: ${verifyErr.message || "Verifica las credenciales"}`
+      });
+    }
+  } catch (err) {
+    console.error("SMTP test error:", err);
+    return res.status(500).json({ error: `Error interno: ${err.message}` });
   }
 });
 router7.post("/backfill-timeline", authMiddleware, requireSuperUser, async (req, res) => {

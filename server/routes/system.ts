@@ -322,6 +322,153 @@ router.get('/activation-history', authMiddleware, requireSuperUser, async (_req:
   }
 });
 
+// ─── GET /api/system/smtp-config ──────────────────────────────────────────────
+router.get('/smtp-config', authMiddleware, requireSuperUser, async (_req: Request, res: Response) => {
+  try {
+    const config = await db.get('SELECT * FROM smtp_config WHERE id = 1');
+    if (!config) {
+      // Return defaults if not configured
+      return res.json({
+        smtp_host: process.env.SMTP_HOST || '',
+        smtp_port: parseInt(process.env.SMTP_PORT || '587'),
+        smtp_secure: process.env.SMTP_SECURE === 'true',
+        smtp_user: process.env.SMTP_USER || '',
+        smtp_from: process.env.SMTP_FROM || 'SMPS Performance <noreply@smps.bowdot.online>',
+        mail_transport: process.env.MAIL_TRANSPORT || 'auto',
+        is_configured: false,
+      });
+    }
+    // Mask password for security
+    const maskedPass = config.smtp_pass && config.smtp_pass.length > 4
+      ? '••••' + config.smtp_pass.slice(-4)
+      : '';
+    return res.json({
+      ...config,
+      smtp_pass: maskedPass,
+      is_configured: true,
+    });
+  } catch (err) {
+    console.error('Get SMTP config error:', err);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// ─── PATCH /api/system/smtp-config ───────────────────────────────────────────
+router.patch('/smtp-config', authMiddleware, requireSuperUser, async (req: Request, res: Response) => {
+  try {
+    const { smtp_host, smtp_port, smtp_secure, smtp_user, smtp_pass, smtp_from, mail_transport } = req.body as {
+      smtp_host?: string;
+      smtp_port?: number;
+      smtp_secure?: boolean;
+      smtp_user?: string;
+      smtp_pass?: string;
+      smtp_from?: string;
+      mail_transport?: string;
+    };
+
+    const existing = await db.get('SELECT id FROM smtp_config WHERE id = 1');
+
+    if (!existing) {
+      // Insert new config
+      await db.run(
+        `INSERT INTO smtp_config (id, smtp_host, smtp_port, smtp_secure, smtp_user, smtp_pass, smtp_from, mail_transport)
+         VALUES (1, ?, ?, ?, ?, ?, ?, ?)`,
+        [smtp_host || null, smtp_port || 587, smtp_secure ? 1 : 0, smtp_user || null, smtp_pass || null, smtp_from || 'SMPS Performance <noreply@smps.bowdot.online>', mail_transport || 'auto']
+      );
+    } else {
+      // Update existing config
+      const updates: string[] = [];
+      const values: unknown[] = [];
+
+      if (smtp_host !== undefined) {
+        updates.push('smtp_host = ?');
+        values.push(smtp_host || null);
+      }
+      if (smtp_port !== undefined) {
+        updates.push('smtp_port = ?');
+        values.push(smtp_port);
+      }
+      if (smtp_secure !== undefined) {
+        updates.push('smtp_secure = ?');
+        values.push(smtp_secure ? 1 : 0);
+      }
+      if (smtp_user !== undefined) {
+        updates.push('smtp_user = ?');
+        values.push(smtp_user || null);
+      }
+      if (smtp_pass !== undefined && smtp_pass !== '') {
+        updates.push('smtp_pass = ?');
+        values.push(smtp_pass);
+      }
+      if (smtp_from !== undefined) {
+        updates.push('smtp_from = ?');
+        values.push(smtp_from);
+      }
+      if (mail_transport !== undefined) {
+        updates.push('mail_transport = ?');
+        values.push(mail_transport);
+      }
+
+      if (updates.length > 0) {
+        values.push(1);
+        await db.run(`UPDATE smtp_config SET ${updates.join(', ')} WHERE id = ?`, values);
+      }
+    }
+
+    const config = await db.get('SELECT * FROM smtp_config WHERE id = 1');
+    return res.json({
+      ...config,
+      smtp_pass: config.smtp_pass && config.smtp_pass.length > 4 ? '••••' + config.smtp_pass.slice(-4) : '',
+      is_configured: true,
+    });
+  } catch (err) {
+    console.error('Update SMTP config error:', err);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// ─── POST /api/system/smtp-test ──────────────────────────────────────────────
+router.post('/smtp-test', authMiddleware, requireSuperUser, async (req: Request, res: Response) => {
+  try {
+    const { smtp_host, smtp_port, smtp_secure, smtp_user, smtp_pass } = req.body as {
+      smtp_host?: string;
+      smtp_port?: number;
+      smtp_secure?: boolean;
+      smtp_user?: string;
+      smtp_pass?: string;
+    };
+
+    // Import nodemailer dynamically
+    const nodemailer = (await import('nodemailer')).default;
+
+    // Create transporter with provided config
+    const transporter = nodemailer.createTransport({
+      host: smtp_host || process.env.SMTP_HOST,
+      port: smtp_port || parseInt(process.env.SMTP_PORT || '587'),
+      secure: smtp_secure !== undefined ? smtp_secure : process.env.SMTP_SECURE === 'true',
+      auth: smtp_user && smtp_pass
+        ? { user: smtp_user, pass: smtp_pass }
+        : (process.env.SMTP_USER && process.env.SMTP_PASS
+            ? { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS }
+            : undefined),
+    });
+
+    // Verify connection
+    try {
+      await transporter.verify();
+      return res.json({ ok: true, message: 'Conexión SMTP exitosa' });
+    } catch (verifyErr: any) {
+      return res.status(400).json({
+        ok: false,
+        message: `Error de conexión: ${verifyErr.message || 'Verifica las credenciales'}`,
+      });
+    }
+  } catch (err: any) {
+    console.error('SMTP test error:', err);
+    return res.status(500).json({ error: `Error interno: ${err.message}` });
+  }
+});
+
 // ─── POST /api/system/backfill-timeline ───────────────────────────────
 // Backfill timeline events from historical data (SuperUser only)
 router.post('/backfill-timeline', authMiddleware, requireSuperUser, async (req: Request, res: Response) => {

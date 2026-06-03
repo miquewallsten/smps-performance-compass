@@ -374,6 +374,18 @@ export async function migrate(): Promise<void> {
       temperature DOUBLE NOT NULL DEFAULT 0.3
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
 
+    `CREATE TABLE IF NOT EXISTS smtp_config (
+      id INT PRIMARY KEY DEFAULT 1,
+      smtp_host VARCHAR(255) DEFAULT NULL,
+      smtp_port INT DEFAULT 587,
+      smtp_secure TINYINT(1) DEFAULT 0,
+      smtp_user VARCHAR(255) DEFAULT NULL,
+      smtp_pass TEXT DEFAULT NULL,
+      smtp_from VARCHAR(255) DEFAULT 'SMPS Performance <noreply@smps.bowdot.online>',
+      mail_transport VARCHAR(50) DEFAULT 'auto',
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+
     // ─── New tables for full DB migration (replacing hardcoded .ts data files) ────
 
     `CREATE TABLE IF NOT EXISTS evaluation_categories (

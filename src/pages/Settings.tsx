@@ -35,7 +35,10 @@ export default function SettingsPage() {
     e.preventDefault();
     setPasswordError('');
     setPasswordSuccess(false);
-    if (newPassword.length < 6) { setPasswordError('La nueva contraseña debe tener al menos 6 caracteres.'); return; }
+    if (newPassword.length < 8) { setPasswordError('La contraseña debe tener al menos 8 caracteres.'); return; }
+    if (!/[A-Z]/.test(newPassword)) { setPasswordError('La contraseña debe contener al menos una letra mayúscula.'); return; }
+    if (!/[a-z]/.test(newPassword)) { setPasswordError('La contraseña debe contener al menos una letra minúscula.'); return; }
+    if (!/[0-9]/.test(newPassword)) { setPasswordError('La contraseña debe contener al menos un número.'); return; }
     if (newPassword !== confirmNewPassword) { setPasswordError('Las contraseñas no coinciden.'); return; }
     setPasswordLoading(true);
     try {

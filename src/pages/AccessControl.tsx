@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useUsers, useSystemStatus, useUpdateSystemStatus, useSystemModules, useUpdateSystemModules, useActivationHistory, useCopilotConfig, useUpdateCopilotConfig } from "@/api/queries";
-import { Shield, Calendar, CreditCard, Power, Users, Ticket, Clock, ToggleLeft, ToggleRight, History, Bot, Eye, EyeOff, Save } from 'lucide-react';
+import { useUsers, useSystemStatus, useUpdateSystemStatus, useSystemModules, useUpdateSystemModules, useActivationHistory, useCopilotConfig, useUpdateCopilotConfig, useSmtpConfig, useUpdateSmtpConfig } from "@/api/queries";
+import { Shield, Calendar, CreditCard, Power, Users, Ticket, Clock, ToggleLeft, ToggleRight, History, Bot, Eye, EyeOff, Save, Mail, Server, Key, Lock, TestTube } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
@@ -17,6 +17,8 @@ export default function AccessControl() {
   const { data: activationHistory = [] } = useActivationHistory();
   const { data: copilotConfig } = useCopilotConfig();
   const updateCopilotConfig = useUpdateCopilotConfig().mutate;
+  const { data: smtpConfig } = useSmtpConfig();
+  const updateSmtpConfig = useUpdateSmtpConfig().mutate;
   const status = systemStatus || { status: 'active' as const, activationDate: '', paymentPlan: 'monthly' as const, maxUsers: 50, maxAdminUsers: 3, tickets: 0 };
 
   const [activationDate, setActivationDate] = useState(status.activationDate || '');
@@ -32,6 +34,17 @@ export default function AccessControl() {
   const [showApiKey, setShowApiKey] = useState(false);
   const [aiBaseUrl, setAiBaseUrl] = useState(copilotConfig?.apiBaseUrl || '');
 
+  // SMTP Config state
+  const [smtpHost, setSmtpHost] = useState(smtpConfig?.smtp_host || '');
+  const [smtpPort, setSmtpPort] = useState(smtpConfig?.smtp_port || 587);
+  const [smtpSecure, setSmtpSecure] = useState(smtpConfig?.smtp_secure || false);
+  const [smtpUser, setSmtpUser] = useState(smtpConfig?.smtp_user || '');
+  const [smtpPass, setSmtpPass] = useState('');
+  const [smtpFrom, setSmtpFrom] = useState(smtpConfig?.smtp_from || 'SMPS Performance <notificaciones@bowdot.online>');
+  const [mailTransport, setMailTransport] = useState(smtpConfig?.mail_transport || 'auto');
+  const [showSmtpPass, setShowSmtpPass] = useState(false);
+  const [testingSmtp, setTestingSmtp] = useState(false);
+
   useEffect(() => {
     if (systemStatus) {
       setMaxAdminUsers((systemStatus as any).maxAdminUsers || 3);
@@ -46,6 +59,17 @@ export default function AccessControl() {
     }
   }, [copilotConfig]);
 
+  useEffect(() => {
+    if (smtpConfig) {
+      setSmtpHost(smtpConfig.smtp_host || '');
+      setSmtpPort(smtpConfig.smtp_port || 587);
+      setSmtpSecure(smtpConfig.smtp_secure || false);
+      setSmtpUser(smtpConfig.smtp_user || '');
+      setSmtpFrom(smtpConfig.smtp_from || 'SMPS Performance <notificaciones@bowdot.online>');
+      setMailTransport(smtpConfig.mail_transport || 'auto');
+    }
+  }, [smtpConfig]);
+
   const handleSaveAiConfig = () => {
     const updates: Record<string, unknown> = { apiProvider: aiProvider, model: aiModel };
     if (aiApiKey) updates.apiKey = aiApiKey;
@@ -53,6 +77,51 @@ export default function AccessControl() {
     updateCopilotConfig(updates);
     setAiApiKey('');
     toast.success('Configuración de IA guardada correctamente');
+  };
+
+  const handleSaveSmtpConfig = () => {
+    const updates: Record<string, unknown> = {
+      smtp_host: smtpHost,
+      smtp_port: smtpPort,
+      smtp_secure: smtpSecure,
+      smtp_user: smtpUser,
+      smtp_from: smtpFrom,
+      mail_transport: mailTransport,
+    };
+    if (smtpPass) updates.smtp_pass = smtpPass;
+    updateSmtpConfig(updates);
+    setSmtpPass('');
+    toast.success('Configuración de correo guardada correctamente');
+  };
+
+  const handleTestSmtp = async () => {
+    setTestingSmtp(true);
+    try {
+      const response = await fetch('/api/system/smtp-test', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        },
+        body: JSON.stringify({
+          smtp_host: smtpHost,
+          smtp_port: smtpPort,
+          smtp_secure: smtpSecure,
+          smtp_user: smtpUser,
+          smtp_pass: smtpPass || undefined,
+        }),
+      });
+      const result = await response.json();
+      if (result.ok) {
+        toast.success('✅ ' + result.message);
+      } else {
+        toast.error('❌ ' + result.message);
+      }
+    } catch (err: any) {
+      toast.error('Error de conexión: ' + (err.message || 'No se pudo conectar'));
+    } finally {
+      setTestingSmtp(false);
+    }
   };
 
   if (!currentUser?.isSuperUser) return <p className="text-center py-12 text-muted-foreground">Acceso restringido.</p>;
@@ -380,6 +449,133 @@ export default function AccessControl() {
           </div>
         </div>
       )}
+
+      {/* Email/SMTP Configuration - SuperAdmin Only */}
+      <div className="smps-surface-elevated">
+        <h3 className="smps-section-title font-display text-base font-semibold mb-3 flex items-center gap-2">
+          <Mail className="h-5 w-5 text-accent" /> Configuración de Correo Electrónico
+        </h3>
+        <div className="space-y-4">
+          <div>
+            <label className="text-sm text-muted-foreground block mb-1">Transporte de Correo</label>
+            <select value={mailTransport} onChange={e => setMailTransport(e.target.value)}
+              className="w-full px-4 py-2.5 rounded-lg border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-accent">
+              <option value="auto">Automático (Sendmail en producción) ⭐</option>
+              <option value="sendmail">Sendmail (/usr/sbin/sendmail)</option>
+              <option value="smtp">SMTP con credenciales</option>
+              <option value="stub">Stub (solo logs, no envía)</option>
+            </select>
+            <p className="text-xs text-muted-foreground mt-1">
+              {mailTransport === 'auto' && 'En producción usa Hostinger sendmail, en desarrollo usa SMTP si está configurado.'}
+              {mailTransport === 'sendmail' && 'Usa el binario sendmail de Hostinger - ideal para hosting compartido.'}
+              {mailTransport === 'smtp' && 'Requiere credenciales SMTP completas.'}
+              {mailTransport === 'stub' && 'Los correos se registran en consola pero no se envían - útil para desarrollo.'}
+            </p>
+          </div>
+
+          {(mailTransport === 'smtp' || mailTransport === 'auto') && (
+            <>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-sm text-muted-foreground block mb-1">Servidor SMTP</label>
+                  <input
+                    type="text"
+                    value={smtpHost}
+                    onChange={e => setSmtpHost(e.target.value)}
+                    placeholder="smtp.gmail.com"
+                    className="w-full px-4 py-2.5 rounded-lg border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-accent"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm text-muted-foreground block mb-1">Puerto</label>
+                  <input
+                    type="number"
+                    value={smtpPort}
+                    onChange={e => setSmtpPort(Number(e.target.value))}
+                    placeholder="587"
+                    className="w-full px-4 py-2.5 rounded-lg border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-accent"
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <label className="flex items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={smtpSecure}
+                    onChange={e => setSmtpSecure(e.target.checked)}
+                    className="rounded border-input"
+                  />
+                  <span className="text-muted-foreground">Usar SSL/TLS</span>
+                </label>
+              </div>
+
+              <div>
+                <label className="text-sm text-muted-foreground block mb-1">Usuario SMTP</label>
+                <input
+                  type="text"
+                  value={smtpUser}
+                  onChange={e => setSmtpUser(e.target.value)}
+                  placeholder="tu-cuenta@gmail.com"
+                  className="w-full px-4 py-2.5 rounded-lg border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-accent"
+                />
+              </div>
+
+              <div>
+                <label className="text-sm text-muted-foreground block mb-1">Contraseña / App Password</label>
+                <div className="flex items-center gap-2">
+                  <div className="flex-1 relative">
+                    <input
+                      type={showSmtpPass ? 'text' : 'password'}
+                      value={smtpPass}
+                      onChange={e => setSmtpPass(e.target.value)}
+                      placeholder={smtpConfig?.smtp_pass && smtpConfig.smtp_pass !== '••••' ? '••••••••' : 'Ingresa tu contraseña'}
+                      className="w-full px-4 py-2.5 rounded-lg border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-accent pr-10"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowSmtpPass(!showSmtpPass)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    >
+                      {showSmtpPass ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {smtpConfig?.smtp_pass && !smtpPass ? 'Ya hay una contraseña configurada. Ingresa una nueva para cambiarla.' : 'Para Gmail/Outlook, usa un "App Password", no tu contraseña normal.'}
+                </p>
+              </div>
+            </>
+          )}
+
+          <div>
+            <label className="text-sm text-muted-foreground block mb-1">Remitente (From)</label>
+            <input
+              type="text"
+              value={smtpFrom}
+              onChange={e => setSmtpFrom(e.target.value)}
+              placeholder="SMPS Performance <noreply@smps.bowdot.online>"
+              className="w-full px-4 py-2.5 rounded-lg border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-accent"
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              Formato: "Nombre del Sistema &lt;correo@dominio.com&gt;"
+            </p>
+          </div>
+
+          <div className="flex gap-2">
+            <button
+              onClick={handleTestSmtp}
+              disabled={testingSmtp || mailTransport === 'stub'}
+              className="flex-1 py-2.5 rounded-lg bg-slate-100 text-slate-700 text-sm font-semibold hover:bg-slate-200 transition-colors flex items-center justify-center gap-2 disabled:opacity-50">
+              <TestTube className="h-4 w-4" /> {testingSmtp ? 'Probando...' : 'Probar Conexión'}
+            </button>
+            <button onClick={handleSaveSmtpConfig}
+              className="flex-1 py-2.5 rounded-lg bg-accent text-accent-foreground text-sm font-semibold hover:opacity-90 transition-opacity flex items-center justify-center gap-2">
+              <Save className="h-4 w-4" /> Guardar Configuración
+            </button>
+          </div>
+        </div>
+      </div>
 
       {/* Activation History */}
       {activationHistory.length > 0 && (
