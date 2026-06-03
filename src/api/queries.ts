@@ -32,8 +32,12 @@ export function useDeleteUser() {
 }
 export function useResetUserPassword() {
   return useMutation({
-    mutationFn: ({ id }: { id: string }) => api.post(`/api/users/${id}/reset-password`, {}),
-    onSuccess: () => toast.success('Correo de restablecimiento enviado al usuario'),
+    mutationFn: ({ id }: { id: string }) => api.post<{ message: string; resetLink?: string }>(`/api/users/${id}/reset-password`, {}),
+    onSuccess: (data) => {
+      if (!data?.resetLink) {
+        toast.success('Correo de restablecimiento enviado al usuario');
+      }
+    },
     onError: (err: Error) => toast.error(err.message || 'Error al restablecer contraseña'),
   });
 }

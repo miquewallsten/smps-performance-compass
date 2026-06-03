@@ -35,6 +35,7 @@ export default function UserManagement() {
   const [showAddUser, setShowAddUser] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [newUser, setNewUser] = useState({ name: '', email: '', cve: '', locationId: '', password: '' });
+  const [manualResetLink, setManualResetLink] = useState<{ email: string; link: string } | null>(null);
 
   // Build catalog from API data (single source of truth)
   const sortedAreas = [...workAreas].sort((a: any, b: any) => (a.sortOrder || 0) - (b.sortOrder || 0));
@@ -109,9 +110,22 @@ export default function UserManagement() {
     if (!showPasswordModal) return;
     changePasswordMut.mutate(
       { id: showPasswordModal },
-      { onSuccess: () => { toast.success('Correo de restablecimiento enviado'); setShowPasswordModal(null); setNewPassword(''); }, onError: (err: Error) => toast.error(err.message || 'Error') }
+      {
+        onSuccess: (data) => {
+          if (data?.resetLink) {
+            // Email failed, show manual reset link
+            setManualResetLink({ email: users.find(u => u.id === showPasswordModal)?.email || '', link: data.resetLink });
+            setShowPasswordModal(null);
+          } else {
+            toast.success('Correo de restablecimiento enviado');
+            setShowPasswordModal(null);
+            setNewPassword('');
+          }
+        },
+        onError: (err: Error) => toast.error(err.message || 'Error')
+      }
     );
-  }, [showPasswordModal, changePasswordMut]);
+  }, [showPasswordModal, changePasswordMut, users]);
 
 
 
@@ -331,6 +345,36 @@ export default function UserManagement() {
             <div className="flex gap-3 mt-4">
               <button onClick={() => setShowPasswordModal(null)} className="flex-1 py-2 rounded-lg border text-sm font-medium hover:bg-muted transition-colors">Cancelar</button>
               <button onClick={handleResetPassword} className="flex-1 py-2 rounded-lg bg-accent text-accent-foreground text-sm font-medium hover:opacity-90">Enviar Enlace</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Manual Reset Link Modal — shown when email fails */}
+      {manualResetLink && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-foreground/20 backdrop-blur-sm" onClick={() => setManualResetLink(null)}>
+          <div className="smps-surface-elevated w-full max-w-md shadow-xl mx-4" onClick={e => e.stopPropagation()}>
+            <h3 className="smps-section-title font-display text-base font-semibold mb-3">Enlace de Restablecimiento</h3>
+            <div className="space-y-3">
+              <p className="text-sm text-foreground">No se pudo enviar el correo a <strong>{manualResetLink.email}</strong>. Comparta este enlace manualmente:</p>
+              <div className="bg-muted p-3 rounded-lg border border-input">
+                <code className="text-xs break-all text-foreground">{manualResetLink.link}</code>
+              </div>
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(manualResetLink.link);
+                  toast.success('Enlace copiado');
+                }}
+                className="w-full py-2 rounded-lg bg-accent text-accent-foreground text-sm font-medium hover:opacity-90"
+              >
+                Copiar Enlace
+              </button>
+              <button
+                onClick={() => setManualResetLink(null)}
+                className="w-full py-2 rounded-lg border text-sm font-medium hover:bg-muted transition-colors"
+              >
+                Cerrar
+              </button>
             </div>
           </div>
         </div>
