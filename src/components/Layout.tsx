@@ -173,6 +173,7 @@ export default function Layout() {
           <h1 className="font-display text-lg font-bold tracking-tight">Performance Compass</h1>
         </div>
         <div className="flex items-center gap-2">
+          <NotificationBell />
           <span className="text-sm text-primary-foreground/70 hidden sm:block">{currentUser.name}</span>
           <span className="text-xs text-primary-foreground/40 hidden sm:block">&middot;</span>
           <span className="text-xs text-primary-foreground/50 hidden sm:block">{currentPeriod}</span>

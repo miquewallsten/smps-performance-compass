@@ -472,7 +472,7 @@ export default function Evaluations() {
         if (evalsWithPendingNA.length === 0) return null;
         return (
           <div className="mb-6">
-            <h3 className="smps-section-title font-display text-base font-semibold mb-3 text-smps-warning">Aprobaciones "No Aplica" Pendientes</h3>
+            <h3 className="smps-section-title font-display text-base font-semibold mb-3 text-smps-warning">Pendientes de Aprobación "No Aplica"</h3>
             <div className="space-y-3">
               {evalsWithPendingNA.map(ev => {
                 const evaluated = users.find(u => u.id === ev.evaluatedId);

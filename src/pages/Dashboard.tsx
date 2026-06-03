@@ -405,10 +405,10 @@ export default function Dashboard() {
           <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-3">Acciones Pendientes</p>
           <div className="space-y-2">
             {actions.slice(0, 5).map((action: any, idx: number) => (
-              <button key={idx} onClick={() => navigate(action.path || '#')} className="w-full flex items-center justify-between py-2 px-3 rounded-md hover:bg-muted/50 transition-colors text-left">
+              <button key={idx} onClick={() => navigate(action.url || '#')} className="w-full flex items-center justify-between py-2 px-3 rounded-md hover:bg-muted/50 transition-colors text-left">
                 <div className="flex items-center gap-2">
                   <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />
-                  <span className="text-xs">{action.label}</span>
+                  <span className="text-xs">{action.title || action.label}</span>
                 </div>
                 <ArrowRight className="h-3.5 w-3.5 text-muted-foreground" />
               </button>
