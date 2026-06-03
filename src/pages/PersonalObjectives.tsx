@@ -495,7 +495,7 @@ export default function PersonalObjectivesPage() {
         </div>
       </div>
       {reviewing && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/20 backdrop-blur-sm" onClick={() => setReviewing(null)}>
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-foreground/20 backdrop-blur-sm" onClick={() => setReviewing(null)}>
           <div className="bg-card rounded-2xl border shadow-xl p-6 w-full max-w-md" onClick={e => e.stopPropagation()}>
             <h2 className="font-display text-lg font-bold mb-2">{reviewing.status === 'approved' ? 'Aprobar objetivo' : 'Rechazar objetivo'}</h2>
             <p className="text-sm text-muted-foreground mb-3">Deja un comentario para el colaborador.</p>

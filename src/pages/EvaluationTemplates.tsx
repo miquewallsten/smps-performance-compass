@@ -83,12 +83,12 @@ export default function EvaluationTemplates() {
       const pos = q.position;
       if (!grouped[pos]) grouped[pos] = [];
       grouped[pos].push({
-        id: q.questionId || q.id,
+        id: q.questionId || q.question_id || q.id,
         category: q.category,
-        text: q.questionText || q.text || '',
+        text: q.questionText || q.text || q.question_text || '',
         weight: q.weight || 1,
         section: q.section,
-        practiceArea: q.practiceArea,
+        practiceArea: q.practiceArea || q.practice_area,
       });
     }
     // For legal positions, filter técnico questions by selected practice area

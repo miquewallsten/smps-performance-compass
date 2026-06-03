@@ -15,20 +15,22 @@ export function SuccessAnimation({ onComplete }: { onComplete?: () => void }) {
   }, [onComplete]);
 
   return (
-    <div className={`fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm transition-opacity duration-200 ${phase === 'fading' ? 'opacity-0' : 'opacity-100'}`}>
-      <div className="flex flex-col items-center gap-3">
-        <svg width="72" height="72" viewBox="0 0 72 72" fill="none">
-          <circle cx="36" cy="36" r="32" fill="hsl(var(--smps-success)/10)" stroke="hsl(var(--smps-success))" strokeWidth="2.5"
-            strokeDasharray="201" strokeDashoffset={phase === 'drawing' ? '201' : '0'}
-            className="transition-[stroke-dashoffset] duration-500 ease-out"
-          />
-          <path d="M22 36 L32 46 L50 26" stroke="hsl(var(--smps-success))" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"
-            strokeDasharray="42" strokeDashoffset={phase === 'drawing' ? '42' : '0'}
-            className="transition-[stroke-dashoffset] duration-400 ease-out"
-            style={{ transitionDelay: '150ms' }}
-          />
-        </svg>
-        <p className="font-display text-lg font-semibold text-foreground">Evaluación enviada</p>
+    <div className={`fixed inset-0 z-[100] flex items-center justify-center bg-background/80 backdrop-blur-sm transition-opacity duration-300 ${phase === 'fading' ? 'opacity-0' : 'opacity-100'}`}>
+      <div className="flex flex-col items-center gap-4 animate-in fade-in zoom-in duration-300">
+        <div className="relative">
+          <svg width="96" height="96" viewBox="0 0 96 96" fill="none" className="drop-shadow-lg">
+            <circle cx="48" cy="48" r="42" fill="hsl(var(--smps-success)/15)" stroke="hsl(var(--smps-success))" strokeWidth="3"
+              strokeDasharray="264" strokeDashoffset={phase === 'drawing' ? '264' : '0'}
+              className="transition-[stroke-dashoffset] duration-500 ease-out"
+            />
+            <path d="M28 48 L42 62 L68 36" stroke="hsl(var(--smps-success))" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"
+              strokeDasharray="56" strokeDashoffset={phase === 'drawing' ? '56' : '0'}
+              className="transition-[stroke-dashoffset] duration-400 ease-out"
+              style={{ transitionDelay: '150ms' }}
+            />
+          </svg>
+        </div>
+        <p className="font-display text-xl font-semibold text-foreground drop-shadow-sm">Evaluación enviada</p>
       </div>
     </div>
   );

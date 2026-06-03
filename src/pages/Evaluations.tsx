@@ -49,7 +49,7 @@ export default function Evaluations() {
     const grouped: Record<string, EvalQuestion[]> = {};
     for (const q of allTemplateQuestions) {
       const pos = q.position;
-      if (pos) { if (!grouped[pos]) grouped[pos] = []; grouped[pos].push({ id: q.questionId || q.id, category: q.category, text: q.questionText || q.text, weight: q.weight, section: q.section, practiceArea: q.practiceArea }); }
+      if (pos) { if (!grouped[pos]) grouped[pos] = []; grouped[pos].push({ id: q.questionId || q.question_id || q.id, category: q.category, text: q.questionText || q.text || q.question_text, weight: q.weight, section: q.section, practiceArea: q.practiceArea || q.practice_area }); }
     }
     return grouped;
   }, [allTemplateQuestions]);
@@ -354,7 +354,7 @@ export default function Evaluations() {
         </div>
 
         {showConfirm && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/20 backdrop-blur-sm" onClick={() => setShowConfirm(false)}>
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-foreground/20 backdrop-blur-sm" onClick={() => setShowConfirm(false)}>
             <div className="smps-surface-card w-full max-w-sm shadow-xl" onClick={e => e.stopPropagation()}>
               <h3 className="smps-section-title font-display text-base font-semibold mb-2">Confirmar Envío</h3>
               <p className="text-sm text-muted-foreground mb-4">Una vez enviada la evaluación, <strong>no será posible modificarla</strong>. ¿Desea continuar?</p>
@@ -611,7 +611,7 @@ export default function Evaluations() {
 
       {/* Action Plan Modal */}
       {actionPlanEmployee && (
-        <div className="fixed inset-0 z-50 bg-foreground/20 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => { setActionPlanEmployee(null); setActionPlanContent(''); }}>
+        <div className="fixed inset-0 z-[100] bg-foreground/20 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => { setActionPlanEmployee(null); setActionPlanContent(''); }}>
           <div className="bg-card rounded-xl border shadow-xl w-full max-w-lg" onClick={e => e.stopPropagation()}>
             <div className="p-4 border-b">
               <h3 className="smps-section-title font-display text-base font-semibold flex items-center gap-2">

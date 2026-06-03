@@ -67,7 +67,7 @@ export default function SettingsPage() {
   const renderEvalDetail = (ev: Evaluation) => {
     const evaluated = users.find(u => u.id === ev.evaluatedId);
     if (!evaluated) return null;
-    const questions = templateQuestions.map((q: any) => ({ id: q.questionId || q.id, category: q.category, text: q.questionText || q.text, weight: q.weight, section: q.section, practiceArea: q.practiceArea }));
+    const questions = templateQuestions.map((q: any) => ({ id: q.questionId || q.question_id || q.id, category: q.category, text: q.questionText || q.text || q.question_text, weight: q.weight, section: q.section, practiceArea: q.practiceArea || q.practice_area }));
     const categories = [...new Set(questions.map(q => q.category))];
 
     return (

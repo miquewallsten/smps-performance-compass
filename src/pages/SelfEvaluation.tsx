@@ -28,12 +28,12 @@ export default function SelfEvaluation() {
   const questions = useMemo(() => {
     if (!templateData?.questions) return [] as EvalQuestion[];
     return templateData.questions.map((q: any) => ({
-      id: q.questionId || q.id,
+      id: q.questionId || q.question_id || q.id,
       category: q.category,
-      text: q.questionText || q.text,
+      text: q.questionText || q.text || q.question_text,
       weight: q.weight,
       section: q.section,
-      practiceArea: q.practiceArea,
+      practiceArea: q.practiceArea || q.practice_area,
     })) as EvalQuestion[];
   }, [templateData]);
 
@@ -167,6 +167,9 @@ export default function SelfEvaluation() {
         weight: q?.weight || 1,
       };
     });
+
+    // Scroll to top before showing success animation
+    window.scrollTo({ top: 0, behavior: 'smooth' });
 
     createEvaluationMut.mutate({
       evaluatedId: currentUser.id,
@@ -421,8 +424,8 @@ export default function SelfEvaluation() {
 
         {/* ─── Confirm Modal ─────────────────────────────────────────────── */}
         {showConfirm && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center smps-overlay" onClick={() => setShowConfirm(false)}>
-            <div className="smps-surface-card w-full max-w-sm shadow-xl smps-scale-in" onClick={e => e.stopPropagation()}>
+          <div className="fixed inset-0 z-[100] flex items-center justify-center smps-overlay" onClick={() => setShowConfirm(false)}>
+            <div className="smps-surface-card w-full max-w-sm shadow-2xl smps-scale-in mx-4" onClick={e => e.stopPropagation()}>
               <h3 className="font-display text-lg font-semibold mb-2">Confirmar Envío</h3>
               <p className="text-sm text-muted-foreground mb-4">Una vez enviada la autoevaluación, <strong>no será posible modificarla</strong>. ¿Desea continuar?</p>
               <div className="flex gap-3">

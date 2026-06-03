@@ -321,7 +321,7 @@ export default function UserManagement() {
 
       {/* Password Reset Modal — now sends email reset link instead of setting password */}
       {showPasswordModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/20 backdrop-blur-sm" onClick={() => setShowPasswordModal(null)}>
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-foreground/20 backdrop-blur-sm" onClick={() => setShowPasswordModal(null)}>
           <div className="smps-surface-elevated w-full max-w-sm shadow-xl" onClick={e => e.stopPropagation()}>
             <h3 className="smps-section-title font-display text-base font-semibold mb-3">Restablecer Contraseña</h3>
             <div>
@@ -338,7 +338,7 @@ export default function UserManagement() {
 
       {/* Add User Modal */}
       {showAddUser && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/20 backdrop-blur-sm" onClick={() => setShowAddUser(false)}>
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-foreground/20 backdrop-blur-sm" onClick={() => setShowAddUser(false)}>
           <div className="smps-surface-elevated w-full max-w-md shadow-xl" onClick={e => e.stopPropagation()}>
             <h3 className="smps-section-title font-display text-base font-semibold mb-3">Nuevo Usuario</h3>
             <div className="space-y-3">
@@ -397,7 +397,7 @@ export default function UserManagement() {
         if (!targetUser) return null;
         const userEvals = evaluations.filter(e => e.evaluatedId === selectedUser);
         return (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/20 backdrop-blur-sm" onClick={() => setSelectedUser(null)}>
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-foreground/20 backdrop-blur-sm" onClick={() => setSelectedUser(null)}>
             <div className="smps-surface-elevated w-full max-w-lg shadow-xl max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
               <div className="flex items-center justify-between mb-4">
                 <h3 className="font-display text-base font-semibold">Evaluaciones de {targetUser.name}</h3>

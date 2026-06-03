@@ -285,7 +285,7 @@ export default function PositionManagement() {
 
           {/* Add Area Modal */}
           {showAddArea && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/20 backdrop-blur-sm" onClick={() => setShowAddArea(false)}>
+            <div className="fixed inset-0 z-[100] flex items-center justify-center bg-foreground/20 backdrop-blur-sm" onClick={() => setShowAddArea(false)}>
               <div className="smps-surface-elevated w-full max-w-md shadow-xl" onClick={e => e.stopPropagation()}>
                 <h3 className="smps-section-title font-display text-base font-semibold mb-3">Nueva Área de Trabajo</h3>
                 <div className="space-y-3">
@@ -311,7 +311,7 @@ export default function PositionManagement() {
 
           {/* Add Position Modal */}
           {showAddPosition && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/20 backdrop-blur-sm" onClick={() => setShowAddPosition(null)}>
+            <div className="fixed inset-0 z-[100] flex items-center justify-center bg-foreground/20 backdrop-blur-sm" onClick={() => setShowAddPosition(null)}>
               <div className="smps-surface-elevated w-full max-w-md shadow-xl" onClick={e => e.stopPropagation()}>
                 <h3 className="smps-section-title font-display text-base font-semibold mb-3">Nuevo Puesto</h3>
                 <div className="space-y-3">
@@ -420,7 +420,7 @@ export default function PositionManagement() {
 
           {/* Add Location Modal */}
           {showAddLocation && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/20 backdrop-blur-sm" onClick={() => setShowAddLocation(false)}>
+            <div className="fixed inset-0 z-[100] flex items-center justify-center bg-foreground/20 backdrop-blur-sm" onClick={() => setShowAddLocation(false)}>
               <div className="smps-surface-elevated w-full max-w-sm shadow-xl" onClick={e => e.stopPropagation()}>
                 <h3 className="smps-section-title font-display text-base font-semibold mb-3">Nueva Ubicación</h3>
                 <div className="space-y-3">

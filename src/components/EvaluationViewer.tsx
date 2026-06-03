@@ -24,7 +24,7 @@ export default function EvaluationViewer({ evaluation, onClose }: Props) {
     const grouped: Record<string, EvalQuestion[]> = {};
     for (const q of allTemplateQuestions) {
       const pos = q.position;
-      if (pos) { if (!grouped[pos]) grouped[pos] = []; grouped[pos].push({ id: q.questionId || q.id, category: q.category, text: q.questionText || q.text, weight: q.weight, section: q.section, practiceArea: q.practiceArea }); }
+      if (pos) { if (!grouped[pos]) grouped[pos] = []; grouped[pos].push({ id: q.questionId || q.question_id || q.id, category: q.category, text: q.questionText || q.text || q.question_text, weight: q.weight, section: q.section, practiceArea: q.practiceArea || q.practice_area }); }
     }
     return grouped;
   }, [allTemplateQuestions]);
@@ -102,7 +102,7 @@ export default function EvaluationViewer({ evaluation, onClose }: Props) {
 
 
   return (
-    <div className="fixed inset-0 z-50 bg-foreground/20 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-[100] bg-foreground/20 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose}>
       <div className="bg-card rounded-xl border shadow-xl w-full max-w-2xl max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
         <div className="sticky top-0 bg-card border-b p-4 flex items-center justify-between">
           <div>

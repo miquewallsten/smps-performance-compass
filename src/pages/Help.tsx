@@ -167,7 +167,7 @@ export default function Help() {
           ) : (
             <div className="space-y-3">
               {competencies.map((c, i) => (
-                <div key={i} className="bg-muted/30 rounded-lg p-4">
+                <div key={`${c.positionLevel}-${c.name}-${i}`} className="bg-muted/30 rounded-lg p-4">
                   <h3 className="font-semibold text-sm text-accent mb-1">{c.name}</h3>
                   <p className="text-sm text-muted-foreground leading-relaxed">{c.definition}</p>
                 </div>
@@ -177,7 +177,7 @@ export default function Help() {
         </section>
 
         {visible.map((s, i) => (
-          <section key={i} className="smps-surface-card hover:shadow-sm transition-shadow">
+          <section key={`${s.title}-${i}`} className="smps-surface-card hover:shadow-sm transition-shadow">
             <div className="flex items-start gap-4">
               <div className="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center flex-shrink-0">
                 <s.icon className="h-5 w-5 text-accent" />
@@ -188,7 +188,7 @@ export default function Help() {
                 {s.smartDesc && (
                   <div className="mt-3 space-y-2">
                     {s.smartDesc.map((item, j) => (
-                      <div key={j} className="flex items-start gap-2">
+                      <div key={`${s.title}-${item.letter}`} className="flex items-start gap-2">
                         <span className="flex-shrink-0 w-7 h-7 rounded-full bg-accent/10 text-accent text-xs font-bold flex items-center justify-center">{item.letter}</span>
                         <div>
                           <p className="text-sm font-medium">{item.title}</p>

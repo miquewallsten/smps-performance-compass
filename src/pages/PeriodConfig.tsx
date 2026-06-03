@@ -66,7 +66,7 @@ export default function PeriodConfigPage() {
   useEffect(() => {
     const found = periodConfigs.find(c => c.period === selectedPeriod);
     setCfg(found || defaultsFor(selectedPeriod));
-  }, [selectedPeriod, JSON.stringify(periodConfigs)]);
+  }, [selectedPeriod, periodConfigs]);
 
   // Seed defaults for any missing period configs on first render
   useEffect(() => {
@@ -101,6 +101,8 @@ export default function PeriodConfigPage() {
       onSuccess: () => {
         toast.success(`Configuración del periodo ${cfg.period} guardada`);
         setSaving(false);
+        // Force refresh by invalidating query
+        setTimeout(() => window.location.reload(), 500);
       },
       onError: (err: Error) => {
         toast.error('Error al guardar: ' + (err.message || 'Intente de nuevo'));
