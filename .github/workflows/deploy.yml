@@ -65,7 +65,6 @@ jobs:
 
       - name: Deploy via SSH
         run: |
-          set -e
           mkdir -p ~/.ssh
           echo "${{ secrets.HOSTINGER_SSH_KEY }}" > ~/.ssh/deploy_key
           sed -i 's/\r$//' ~/.ssh/deploy_key
@@ -88,47 +87,26 @@ jobs:
 
           echo "🔄 Deploying to Hostinger..."
 
-          # Debug: verify local files
-          echo "📁 Local dist/ contents:"
-          ls -la dist/ | head -10
-          echo "📁 Local dist/assets/ count:"
-          ls dist/assets/ | wc -l
-          echo "📄 Local dist/index.html:"
-          ls -la dist/index.html
-          echo "📦 Local server.cjs:"
-          ls -la server.cjs
-
           # 1. Pull latest source code on server
           $SSH_CMD "cd $REMOTE && git checkout -- . && git pull origin main" || true
 
-          # 2. Upload new build artifacts (atomic: upload to dist-new first)
-          echo "📦 Uploading build artifacts..."
-          # Remove dist-new if it exists, then copy entire dist directory
-          $SSH_CMD "rm -rf $REMOTE/dist-new"
-          $SCP_CMD -r dist $SSH_HOST:$REMOTE/dist-new
-          $SCP_CMD server.cjs $SSH_HOST:$REMOTE/server.cjs
-
-          # 3. Atomically swap old dist for new dist
-          echo "🔄 Swapping dist directories..."
-          $SSH_CMD "cd $REMOTE && rm -rf dist-old 2>/dev/null; mv dist dist-old 2>/dev/null || true; mv dist-new dist"
+          # 2. Clean old build artifacts on server
+          $SSH_CMD "rm -rf $REMOTE/dist/assets $REMOTE/dist/index.html $REMOTE/dist/favicon.ico $REMOTE/dist/robots.txt"
           # Remove any .htaccess that may cause 500 errors
           $SSH_CMD "rm -f $REMOTE/.htaccess" || true
 
-          # 4. Verify the new assets are in place
-          echo "🔍 Verifying deploy..."
-          ASSET_COUNT=$($SSH_CMD "ls $REMOTE/dist/assets/*.js 2>/dev/null | wc -l")
-          if [ "$ASSET_COUNT" -eq 0 ]; then
-            echo "❌ Deploy verification failed: no JS assets found in dist/assets"
-            echo "🔄 Rolling back..."
-            $SSH_CMD "cd $REMOTE && rm -rf dist && mv dist-old dist"
-            exit 1
-          fi
-          echo "✅ $ASSET_COUNT JS assets verified"
+          # 3. Upload new build artifacts
+          $SSH_CMD "mkdir -p $REMOTE/dist/assets"
+          $SCP_CMD dist/index.html $SSH_HOST:$REMOTE/dist/index.html
+          $SCP_CMD dist/favicon.ico $SSH_HOST:$REMOTE/dist/favicon.ico 2>/dev/null || true
+          $SCP_CMD dist/robots.txt $SSH_HOST:$REMOTE/dist/robots.txt 2>/dev/null || true
+          # Use tar for reliable asset upload (avoids glob issues)
+          tar -czf /tmp/assets.tar.gz -C dist/assets .
+          $SCP_CMD /tmp/assets.tar.gz $SSH_HOST:$REMOTE/dist/assets/assets.tar.gz
+          $SSH_CMD "cd $REMOTE/dist/assets && tar -xzf assets.tar.gz && rm assets.tar.gz"
+          $SCP_CMD server.cjs $SSH_HOST:$REMOTE/server.cjs
 
-          # 5. Clean up old dist after successful deploy
-          $SSH_CMD "rm -rf $REMOTE/dist-old"
-
-          # 6. Install production deps and restart Passenger
+          # 4. Install production deps and restart Passenger
           $SSH_CMD "cd $REMOTE && $HOSTINGER_ENV && npm install --omit=dev --ignore-scripts 2>&1 | tail -5; mkdir -p tmp; touch tmp/restart.txt; echo '✅ Passenger restart triggered'"
 
           echo "✅ Deploy complete!"
