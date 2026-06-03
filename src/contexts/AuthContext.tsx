@@ -61,48 +61,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  // ─── Non-blocking auth init: fire all checks in parallel ───────────────
   useEffect(() => {
     const init = async () => {
-      // Check system init and user auth in parallel
-      const [initResult] = await Promise.allSettled([
-        api.get<{ initialized: boolean }>('/api/system/initialized'),
-      ]);
-
-      if (initResult.status === 'fulfilled') {
-        setSystemInitialized(initResult.value.initialized);
-      } else {
-        console.error('[Auth] Failed to check system initialization:', initResult.reason);
+      try {
+        const result = await api.get<{ initialized: boolean }>('/api/system/initialized');
+        setSystemInitialized(result.initialized);
+      } catch (err) {
+        console.error('[Auth] Failed to check system initialization:', err);
         setSystemInitialized(false);
       }
-
       if (getToken()) {
-        // Refresh user and module config in parallel
-        const [userResult, modResult] = await Promise.allSettled([
-          api.get<{ user: AuthUser }>('/api/auth/me'),
-          api.get<ModuleConfig>('/api/system/modules'),
-        ]);
-
-        if (userResult.status === 'fulfilled') {
-          setUser(userResult.value.user);
-        } else {
-          console.error('[Auth] Failed to refresh user session:', userResult.reason);
-          setUser(null);
-          setToken(null);
-        }
-
-        if (modResult.status === 'fulfilled') {
-          setModuleConfig(modResult.value);
-        } else {
-          console.error('[Auth] Failed to load module config:', modResult.reason);
+        await refreshUser();
+        try {
+          const modCfg = await api.get<ModuleConfig>('/api/system/modules');
+          setModuleConfig(modCfg);
+        } catch (err) {
+          console.error('[Auth] Failed to load module config:', err);
           setModuleConfig(null);
         }
       }
-
       setLoading(false);
     };
     init();
-  }, []);
+  }, [refreshUser]);
 
   const login = useCallback(async (email: string, password: string) => {
     const result = await api.post<{ token: string; user: AuthUser }>('/api/auth/login', { email, password });
