@@ -11,7 +11,7 @@ import { useDisplayPeriod } from '@/hooks/useDisplayPeriod';
 import { useFullTemplate, usePositionConfig, useTemplateQuestions } from '@/hooks/useEvaluationConfig';
 import { Download } from 'lucide-react';
 import { toast } from 'sonner';
-import { CheckCircle, AlertCircle, Eye, ArrowLeft, Ban, ShieldCheck, ShieldX, FileText, MessageSquare, MinusCircle } from 'lucide-react';
+import { CheckCircle, AlertCircle, Eye, ArrowLeft, Ban, ShieldCheck, ShieldX, FileText, MessageSquare, MinusCircle, ClipboardCheck } from 'lucide-react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import EvaluationViewer from '@/components/EvaluationViewer';
 import HierarchyFilters, { filterByHierarchy } from '@/components/HierarchyFilters';
