@@ -4,7 +4,12 @@ import { toast } from 'sonner';
 
 // ── Users ──
 export function useUsers() {
-  return useQuery({ queryKey: ['users'], queryFn: () => api.get<any[]>('/api/users') });
+  return useQuery({
+    queryKey: ['users'],
+    queryFn: () => api.get<any[]>('/api/users'),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 10 * 60 * 1000,   // 10 minutes
+  });
 }
 export function useCreateUser() {
   const qc = useQueryClient();
@@ -52,7 +57,12 @@ export function useUpdateUserRole() {
 
 // ── Assignments ──
 export function useAssignments(period?: string) {
-  return useQuery({ queryKey: ['assignments', period], queryFn: () => api.get<any[]>(`/api/assignments${period ? `?period=${period}` : ''}`) });
+  return useQuery({
+    queryKey: ['assignments', period],
+    queryFn: () => api.get<any[]>(`/api/assignments${period ? `?period=${period}` : ''}`),
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+  });
 }
 export function useCreateAssignment() {
   const qc = useQueryClient();
@@ -79,7 +89,9 @@ export function useEvaluations(filters?: Record<string, string>) {
     queryFn: async () => {
       const data = await api.get<any[]>(`/api/evaluations${params}`);
       return normalizeEvaluations(data);
-    }
+    },
+    staleTime: 2 * 60 * 1000, // 2 minutes - evaluations change more frequently
+    gcTime: 10 * 60 * 1000,
   });
 }
 export function useEvaluation(id: string) {
@@ -161,7 +173,12 @@ export function useExportEvaluationsCSV() {
 // ── Action Plans ──
 export function useActionPlans(filters?: Record<string, string>) {
   const params = filters ? '?' + new URLSearchParams(filters).toString() : '';
-  return useQuery({ queryKey: ['actionPlans', filters], queryFn: () => api.get<any[]>(`/api/action-plans${params}`) });
+  return useQuery({
+    queryKey: ['actionPlans', filters],
+    queryFn: () => api.get<any[]>(`/api/action-plans${params}`),
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+  });
 }
 export function useCreateActionPlan() {
   const qc = useQueryClient();
@@ -218,7 +235,12 @@ export function useReviewObjective() {
 
 // ── Announcements ──
 export function useAnnouncements() {
-  return useQuery({ queryKey: ['announcements'], queryFn: () => api.get<any[]>('/api/announcements') });
+  return useQuery({
+    queryKey: ['announcements'],
+    queryFn: () => api.get<any[]>('/api/announcements'),
+    staleTime: 10 * 60 * 1000, // 10 minutes
+    gcTime: 20 * 60 * 1000,
+  });
 }
 export function useCreateAnnouncement() {
   const qc = useQueryClient();
@@ -249,7 +271,12 @@ export function useMarkAnnouncementRead() {
 
 // ── Vacations ──
 export function useVacationRequests() {
-  return useQuery({ queryKey: ['vacationRequests'], queryFn: () => api.get<any[]>('/api/vacations/requests') });
+  return useQuery({
+    queryKey: ['vacationRequests'],
+    queryFn: () => api.get<any[]>('/api/vacations/requests'),
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+  });
 }
 export function useVacationConfig() {
   return useQuery({ queryKey: ['vacationConfig'], queryFn: () => api.get<any>('/api/vacations/config') });

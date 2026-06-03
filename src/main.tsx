@@ -7,6 +7,21 @@ import { AuthProvider } from "@/contexts/AuthContext";
 // Set browser tab title
 document.title = "SMPS";
 
+// Remove loading spinner when app mounts
+const removeLoadingSpinner = () => {
+  const spinner = document.getElementById('loading-spinner');
+  if (spinner) {
+    // Add fade-out class to trigger CSS transition
+    spinner.classList.add('fade-out');
+    // Remove spinner from DOM after transition completes
+    setTimeout(() => {
+      if (spinner.parentNode) {
+        spinner.parentNode.removeChild(spinner);
+      }
+    }, 300); // Match the CSS transition duration
+  }
+};
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -18,10 +33,15 @@ const queryClient = new QueryClient({
   },
 });
 
-createRoot(document.getElementById("root")!).render(
+const root = createRoot(document.getElementById("root")!);
+
+root.render(
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
       <App />
     </AuthProvider>
   </QueryClientProvider>
 );
+
+// Remove loading spinner after React app mounts
+removeLoadingSpinner();

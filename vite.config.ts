@@ -25,6 +25,6 @@ export default defineConfig(({ mode }) => ({
     },
   },
   optimizeDeps: {
-    include: ['xlsx'],
+    exclude: ['xlsx'], // Don't pre-bundle - loaded on-demand
   },
 }));

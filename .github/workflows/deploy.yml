@@ -87,6 +87,9 @@ jobs:
           HOSTINGER_ENV='export PATH="/opt/alt/alt-nodejs24/root/usr/bin:/usr/local/bin:/usr/bin:/bin:$PATH"'
 
           echo "🔄 Deploying to Hostinger..."
+          echo "SSH_HOST=$SSH_HOST"
+          echo "SSH_PORT=$SSH_PORT"
+          echo "REMOTE=$REMOTE"
           echo "Testing SSH connection..."
           $SSH_CMD "echo 'SSH connection successful'" || { echo "❌ SSH connection failed"; exit 1; }
 
@@ -105,7 +108,7 @@ jobs:
           $SSH_CMD "mkdir -p $REMOTE/dist/assets" || { echo "❌ Failed to create remote directory"; exit 1; }
 
           echo "  - Uploading dist/index.html..."
-          $SCP_CMD -v dist/index.html $SSH_HOST:$REMOTE/dist/index.html 2>&1 || { echo "❌ Failed to upload index.html"; exit 1; }
+          $SCP_CMD dist/index.html $SSH_HOST:$REMOTE/dist/index.html || { echo "❌ Failed to upload index.html"; exit 1; }
 
           echo "  - Uploading dist/favicon.ico..."
           $SCP_CMD dist/favicon.ico $SSH_HOST:$REMOTE/dist/favicon.ico 2>/dev/null || echo "⚠️ favicon.ico not found"
@@ -117,13 +120,13 @@ jobs:
           tar -czf /tmp/assets.tar.gz -C dist/assets . || { echo "❌ Failed to create tarball"; exit 1; }
 
           echo "  - Uploading assets.tar.gz..."
-          $SCP_CMD -v /tmp/assets.tar.gz $SSH_HOST:$REMOTE/dist/assets/assets.tar.gz 2>&1 || { echo "❌ Failed to upload assets"; exit 1; }
+          $SCP_CMD /tmp/assets.tar.gz $SSH_HOST:$REMOTE/dist/assets/assets.tar.gz || { echo "❌ Failed to upload assets"; exit 1; }
 
           echo "  - Extracting assets on server..."
           $SSH_CMD "cd $REMOTE/dist/assets && tar -xzf assets.tar.gz && rm assets.tar.gz 2>&1" || { echo "❌ Failed to extract assets"; exit 1; }
 
           echo "  - Uploading server.cjs..."
-          $SCP_CMD -v server.cjs $SSH_HOST:$REMOTE/server.cjs 2>&1 || { echo "❌ Failed to upload server.cjs"; exit 1; }
+          $SCP_CMD server.cjs $SSH_HOST:$REMOTE/server.cjs || { echo "❌ Failed to upload server.cjs"; exit 1; }
 
           # 4. Install production deps and restart Passenger
           echo "📦 Step 4: Installing dependencies and restarting..."
