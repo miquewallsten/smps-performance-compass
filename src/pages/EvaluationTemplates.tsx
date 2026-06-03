@@ -6,8 +6,9 @@ import {
   SECTION_LABELS, SECTION_ORDER, getSectionWeights, getSectionByCategory,
 } from '@/lib/evaluationConfig';
 import { Position, QuestionCategory, EvalQuestion, EvalSection } from '@/types';
-import { ChevronDown, ChevronRight, Trash2, AlertCircle, Save, BookOpen, Search, Pencil, Plus } from 'lucide-react';
+import { ChevronDown, ChevronRight, Trash2, AlertCircle, Save, BookOpen, Search, Pencil, Plus, CircleX } from 'lucide-react';
 import { getCategoriesList } from './QuestionLibrary';
+import { toast } from 'sonner';
 
 const MAX_QUESTIONS = 20;
 
@@ -147,7 +148,15 @@ export default function EvaluationTemplates() {
   const isValid = totalWeight === 100;
 
   const handleSave = () => {
-    if (!editingPosition || !isValid) return;
+    if (!editingPosition) return;
+    if (!isValid) {
+      const diff = totalWeight - 100;
+      toast.error(
+        `Peso inválido: ${totalWeight}% (debe ser 100%). ${diff > 0 ? 'Reduce' : 'Aumenta'} ${Math.abs(diff)}%.`,
+        { icon: <CircleX className="h-4 w-4 text-red-500" /> }
+      );
+      return;
+    }
     const questions = editQuestions.map((q, i) => ({
       id: q.id,
       questionId: q.id,
@@ -163,6 +172,7 @@ export default function EvaluationTemplates() {
       onSuccess: () => {
         setEditingPosition(null);
         setEditQuestions([]);
+        toast.success('Plantilla guardada correctamente');
       }
     });
   };
@@ -308,16 +318,26 @@ export default function EvaluationTemplates() {
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between pt-2">
-                  <span className={`text-xs font-medium ${isValid ? 'text-smps-success' : 'text-smps-warning'}`}>
-                    Peso total: {totalWeight}% {isValid ? '✓' : '(debe ser 100%)'}
-                  </span>
-                  <div className="flex gap-2">
-                    <button onClick={cancelEditing} className="px-3 py-1.5 rounded-lg border text-sm font-medium hover:bg-muted">Cancelar</button>
-                    <button onClick={handleSave} disabled={!isValid || putTemplate.isPending}
-                      className="px-3 py-1.5 rounded-lg bg-accent text-accent-foreground text-sm font-medium hover:opacity-90 disabled:opacity-40 flex items-center gap-1">
-                      <Save className="h-3.5 w-3.5" /> {putTemplate.isPending ? 'Guardando...' : 'Guardar'}
-                    </button>
+                <div className="space-y-2 pt-2">
+                  {!isValid && (
+                    <div className="flex items-center gap-2 p-2 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-xs">
+                      <AlertCircle className="h-4 w-4 flex-shrink-0" />
+                      <span className="font-medium">
+                        Peso total: {totalWeight}% — {totalWeight > 100 ? 'excede' : 'faltan'} {Math.abs(totalWeight - 100)}% para completar 100%
+                      </span>
+                    </div>
+                  )}
+                  <div className="flex items-center justify-between">
+                    <span className={`text-xs font-medium ${isValid ? 'text-smps-success' : 'text-smps-warning'}`}>
+                      {isValid ? '✓ Peso correcto' : `Peso: ${totalWeight}% (debe ser 100%)`}
+                    </span>
+                    <div className="flex gap-2">
+                      <button onClick={cancelEditing} className="px-3 py-1.5 rounded-lg border text-sm font-medium hover:bg-muted">Cancelar</button>
+                      <button onClick={handleSave} disabled={!isValid || putTemplate.isPending}
+                        className="px-3 py-1.5 rounded-lg bg-accent text-accent-foreground text-sm font-medium hover:opacity-90 disabled:opacity-40 flex items-center gap-1">
+                        <Save className="h-3.5 w-3.5" /> {putTemplate.isPending ? 'Guardando...' : 'Guardar'}
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>

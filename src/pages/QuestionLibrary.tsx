@@ -3,7 +3,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useTemplateQuestions, useLibraryQuestionsConfig, useCreateLibraryQuestionConfig, useUpdateLibraryQuestionConfig, useDeleteLibraryQuestionConfig } from '@/hooks/useEvaluationConfig';
 import { SECTION_LABELS, SECTION_ORDER, getSectionByCategory, getPositionLabel, getCategories } from '@/lib/evaluationConfig';
 import { QuestionCategory, EvalQuestion, LibraryQuestion, EvalSection, Position } from '@/types';
-import { BookOpen, Search, Plus, Pencil, Trash2, Save, X, Download, SlidersHorizontal, ChevronDown, ChevronRight, XCircle, Hash } from 'lucide-react';
+import { BookOpen, Search, Plus, Pencil, Trash2, Save, X, Download, SlidersHorizontal, ChevronDown, ChevronRight, XCircle, Hash, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 export function getCategoriesList(): QuestionCategory[] {
@@ -11,19 +11,13 @@ export function getCategoriesList(): QuestionCategory[] {
   if (dbCats && dbCats.length > 0) {
     return dbCats.map((c: any) => c.label || c.id);
   }
-  return []; // DB always loads categories — no hardcoded fallback needed
+  return [];
 }
 
 const SECTION_COLORS: Record<EvalSection, { border: string; bg: string; text: string; dot: string; bar: string }> = {
   competencias: { border: 'border-l-blue-500', bg: 'bg-blue-50', text: 'text-blue-700', dot: 'bg-blue-500', bar: 'bg-blue-500' },
   tecnico:      { border: 'border-l-violet-500', bg: 'bg-violet-50', text: 'text-violet-700', dot: 'bg-violet-500', bar: 'bg-violet-500' },
   blandas:      { border: 'border-l-emerald-500', bg: 'bg-emerald-50', text: 'text-emerald-700', dot: 'bg-emerald-500', bar: 'bg-emerald-500' },
-};
-
-const SECTION_LABELS: Record<EvalSection, string> = {
-  competencias: 'Competencias',
-  tecnico: 'Criterio Técnico',
-  blandas: 'Habilidades Blandas',
 };
 
 type GroupMode = 'section' | 'category' | 'position' | 'none';
@@ -43,6 +37,7 @@ interface QuestionItem {
   section: EvalSection;
   positions: string[];
   libraryId?: string;
+  libraryQuestionId?: string;
 }
 
 export default function QuestionLibrary() {
@@ -55,53 +50,99 @@ export default function QuestionLibrary() {
 
   const canEdit = !!(currentUser?.isAdmin || currentUser?.isSuperUser);
 
-  // Build position map: question text -> list of positions
+  // Build position map using library_question_id for accurate tracking
   const questionPositionMap = useMemo(() => {
-    const map = new Map<string, string[]>();
+    const map = new Map<string, { positions: string[]; libraryQuestionId?: string }>();
     for (const q of templateQuestionsRaw as any[]) {
       const text = (q.questionText || q.text || '').trim();
       if (!text) continue;
       const pos = q.position;
       if (!pos) continue;
-      if (!map.has(text)) map.set(text, []);
-      const arr = map.get(text)!;
-      if (!arr.includes(pos)) arr.push(pos);
+      const libQId = q.libraryQuestionId;
+
+      if (!map.has(text)) {
+        map.set(text, { positions: [], libraryQuestionId: libQId || undefined });
+      }
+      const entry = map.get(text)!;
+      if (!entry.positions.includes(pos)) {
+        entry.positions.push(pos);
+      }
+      // Store library_question_id if available
+      if (libQId && !entry.libraryQuestionId) {
+        entry.libraryQuestionId = libQId;
+      }
     }
     return map;
   }, [templateQuestionsRaw]);
 
-  // Build the unified, deduplicated list of ALL questions (84 unique)
+  // Build unified question list - FIXED: use library as primary source, merge template data correctly
   const allQuestions: QuestionItem[] = useMemo(() => {
-    const seen = new Map<string, QuestionItem>();
-    // Library questions are the authoritative source
+    const questionMap = new Map<string, QuestionItem>();
+
+    // Step 1: Add ALL library questions first (authoritative source)
     for (const q of libraryQuestionsRaw as any[]) {
       const text = (q.text || '').trim();
       if (!text) continue;
-      const key = text.toLowerCase();
-      const positions = questionPositionMap.get(text) || [];
+
+      const key = `lib-${q.id}`;
+      const templateData = questionPositionMap.get(text);
+      const positions = templateData?.positions || [];
       const section = (q.defaultSection as EvalSection) || getSectionByCategory(q.category);
-      if (!seen.has(key)) {
-        seen.set(key, { id: q.id, text, category: q.category, section, positions, libraryId: q.id });
-      } else {
-        const existing = seen.get(key)!;
-        for (const p of positions) { if (!existing.positions.includes(p)) existing.positions.push(p); }
-      }
+
+      questionMap.set(key, {
+        id: q.id,
+        text,
+        category: q.category,
+        section,
+        positions: [...positions],
+        libraryId: q.id,
+        libraryQuestionId: q.question_id,
+      });
     }
-    // Template-only questions (not in library)
+
+    // Step 2: Add template-only questions (not in library) - use question_id to avoid duplicates
     for (const q of templateQuestionsRaw as any[]) {
       const text = (q.questionText || q.text || '').trim();
       if (!text) continue;
-      const key = text.toLowerCase();
-      const pos = q.position;
-      if (!seen.has(key)) {
-        const section = (q.section as EvalSection) || getSectionByCategory(q.category);
-        seen.set(key, { id: q.id || key, text, category: q.category, section, positions: pos ? [pos] : [], libraryId: q.libraryQuestionId });
-      } else if (pos) {
-        const existing = seen.get(key)!;
-        if (!existing.positions.includes(pos)) existing.positions.push(pos);
+
+      const libQId = q.libraryQuestionId;
+
+      // Skip if this template question already has a library entry
+      if (libQId && questionMap.has(`lib-${libQId}`)) {
+        continue;
       }
+
+      // Check if we already have this exact text from library
+      const existingByLibId = libQId ? questionMap.get(`lib-${libQId}`) : null;
+      if (existingByLibId) continue;
+
+      // Check if text already exists in map (avoid duplicates)
+      const existingByText = Array.from(questionMap.values()).find(q => q.text === text);
+      if (existingByText) {
+        // Just add position to existing question
+        const pos = q.position;
+        if (pos && !existingByText.positions.includes(pos)) {
+          existingByText.positions.push(pos);
+        }
+        continue;
+      }
+
+      // This is a template-only question (not in library)
+      const key = `tpl-${q.id}`;
+      const section = (q.section as EvalSection) || getSectionByCategory(q.category);
+      const pos = q.position;
+
+      questionMap.set(key, {
+        id: q.id || `tpl-${Date.now()}`,
+        text,
+        category: q.category,
+        section,
+        positions: pos ? [pos] : [],
+        libraryQuestionId: libQId || undefined,
+      });
     }
-    return Array.from(seen.values());
+
+    return Array.from(questionMap.values());
   }, [libraryQuestionsRaw, templateQuestionsRaw, questionPositionMap]);
 
   // State
@@ -187,8 +228,7 @@ export default function QuestionLibrary() {
     };
   }, [allQuestions]);
 
-  // Auto-expand groups on mount or when grouping changes
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // Auto-expand groups
   useEffect(() => {
     setExpandedGroups(new Set(grouped.keys()));
   }, [grouped.size, groupMode]);
@@ -227,7 +267,7 @@ export default function QuestionLibrary() {
 
   const handleDelete = (q: QuestionItem) => {
     if (q.positions.length > 0) {
-      toast.error(`Esta pregunta se usa en ${q.positions.length} plantilla(s). Remuévela de las plantillas primero.`);
+      toast.error(`Esta pregunta se usa en ${q.positions.length} plantilla(s). Remuévala de las plantillas primero.`);
       return;
     }
     if (q.libraryId) {
@@ -248,7 +288,7 @@ export default function QuestionLibrary() {
       rows.push([q.text, q.category, SECTION_LABELS[q.section] || q.section, q.positions.map(p => getPositionLabel(p as Position) || p).join(', ')]);
     }
     const csv = rows.map(r => r.map(c => `"${c.replace(/"/g, '""')}"`).join(',')).join('\n');
-    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' });
+    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url; a.download = `preguntas-biblioteca-${new Date().toISOString().split('T')[0]}.csv`;
@@ -280,7 +320,6 @@ export default function QuestionLibrary() {
           <span className="text-[10px] text-muted-foreground uppercase tracking-widest">Distribución</span>
           <span className="text-[10px] text-muted-foreground tabular-nums">{stats.total} preguntas</span>
         </div>
-        {/* Stacked bar */}
         <div className="flex w-full h-3 rounded-full overflow-hidden bg-muted">
           {SECTION_ORDER.map(sec => {
             const count = stats.bySection[sec] || 0;
@@ -305,7 +344,7 @@ export default function QuestionLibrary() {
           })}
         </div>
         {/* Legend */}
-        <div className="flex items-center gap-4 mt-2">
+        <div className="flex items-center gap-4 mt-2 flex-wrap">
           {SECTION_ORDER.map(sec => {
             const count = stats.bySection[sec] || 0;
             const pct = stats.total > 0 ? Math.round((count / stats.total) * 100) : 0;
@@ -412,10 +451,24 @@ export default function QuestionLibrary() {
         </div>
       )}
 
-      {/* Results count */}
-      <p className="text-xs text-muted-foreground">
-        {filteredQuestions.length === allQuestions.length ? `${allQuestions.length} preguntas` : `${filteredQuestions.length} de ${allQuestions.length} preguntas`}
-      </p>
+      {/* Results count with validation */}
+      <div className="flex items-center gap-2">
+        <p className="text-xs text-muted-foreground">
+          {filteredQuestions.length === allQuestions.length ? `${allQuestions.length} preguntas` : `${filteredQuestions.length} de ${allQuestions.length} preguntas`}
+        </p>
+        {stats.notInTemplates > 0 && (
+          <span className="flex items-center gap-1 text-xs text-amber-600">
+            <AlertCircle className="h-3 w-3" />
+            {stats.notInTemplates} sin plantilla
+          </span>
+        )}
+        {stats.total === 144 && (
+          <span className="flex items-center gap-1 text-xs text-smps-success">
+            <CheckCircle2 className="h-3 w-3" />
+            Biblioteca completa
+          </span>
+        )}
+      </div>
 
       {/* Question groups */}
       <div className="space-y-3">
@@ -424,7 +477,7 @@ export default function QuestionLibrary() {
             <button onClick={() => toggleGroup(groupKey)} className="w-full flex items-center justify-between px-4 py-2.5 bg-muted/30 hover:bg-muted/50 transition-colors">
               <div className="flex items-center gap-2">
                 {groupMode !== 'none' && (
-                  <span className={`w-2.5 h-2.5 rounded-full ${groupMode === 'section' ? SECTION_COLORS[groupKey as EvalSection]?.dot || 'bg-gray-400' : groupMode === 'position' ? 'bg-blue-500' : 'bg-violet-500'}`} />
+                  <span className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${groupMode === 'section' ? SECTION_COLORS[groupKey as EvalSection]?.dot || 'bg-gray-400' : groupMode === 'position' ? 'bg-blue-500' : 'bg-violet-500'}`} />
                 )}
                 <span className="text-sm font-medium">{getGroupLabel(groupKey)}</span>
                 <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">{items.length}</span>
@@ -449,6 +502,11 @@ export default function QuestionLibrary() {
                             {item.positions.length > 0 && (
                               <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200">
                                 {item.positions.length} puesto{item.positions.length !== 1 ? 's' : ''}
+                              </span>
+                            )}
+                            {item.positions.length === 0 && (
+                              <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-200">
+                                Sin plantilla
                               </span>
                             )}
                           </div>
