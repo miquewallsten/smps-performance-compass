@@ -6,7 +6,7 @@ import { Evaluation, Position, EvalQuestion } from '@/types';
 import { SECTION_LABELS, SECTION_ORDER, getSectionForQuestion, calculateScore, getSectionWeights, getPositionLabel, getScoreLabels } from '@/lib/evaluationConfig';
 import { useCurrentPeriod } from '@/hooks/useCurrentPeriod';
 import { useFullTemplate } from '@/hooks/useEvaluationConfig';
-import { CheckCircle, AlertCircle, Ban, Clock, Users, MessageSquare, FileText, ClipboardCheck, ChevronDown, ChevronRight, RotateCcw } from 'lucide-react';
+import { CheckCircle, AlertCircle, Ban, Clock, Users, MessageSquare, FileText, ClipboardCheck, ChevronDown, ChevronRight, RotateCcw, MinusCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { PhaseStepper, getStageStatus, type EvalStage } from '@/components/shared/PhaseStepper';
@@ -42,7 +42,7 @@ export default function SelfEvaluation() {
       const saved = localStorage.getItem(DRAFT_KEY);
       if (saved) {
         const draft = JSON.parse(saved);
-        return { responses: draft.responses || {}, naQuestions: draft.naQuestions || {}, comments: draft.comments || '' };
+        return { responses: draft.responses || {}, naQuestions: draft.naQuestions || {}, noElementsQuestions: draft.noElementsQuestions || {}, comments: draft.comments || '' };
       }
     } catch { /* ignore */ }
     return null;
@@ -50,6 +50,7 @@ export default function SelfEvaluation() {
 
   const [responses, setResponses] = useState<Record<string, number>>(() => loadDraft()?.responses || {});
   const [naQuestions, setNaQuestions] = useState<Record<string, boolean>>(() => loadDraft()?.naQuestions || {});
+  const [noElementsQuestions, setNoElementsQuestions] = useState<Record<string, boolean>>({});
   const [comments, setComments] = useState<string>(() => loadDraft()?.comments || '');
   const [submitted, setSubmitted] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
@@ -59,15 +60,15 @@ export default function SelfEvaluation() {
 
   useEffect(() => {
     if (!submitted) {
-      const hasData = Object.keys(responses).length > 0 || Object.keys(naQuestions).length > 0 || comments.length > 0;
+      const hasData = Object.keys(responses).length > 0 || Object.keys(naQuestions).length > 0 || Object.keys(noElementsQuestions).length > 0 || comments.length > 0;
       if (hasData) {
-        localStorage.setItem(DRAFT_KEY, JSON.stringify({ responses, naQuestions, comments }));
+        localStorage.setItem(DRAFT_KEY, JSON.stringify({ responses, naQuestions, noElementsQuestions, comments }));
         setDraftSaved(true);
         const timer = setTimeout(() => setDraftSaved(false), 2000);
         return () => clearTimeout(timer);
       }
     }
-  }, [responses, naQuestions, comments, submitted]);
+  }, [responses, naQuestions, noElementsQuestions, comments, submitted]);
 
   const clearDraft = () => {
     localStorage.removeItem(DRAFT_KEY);
@@ -91,13 +92,14 @@ export default function SelfEvaluation() {
   const evalResponses = [
     ...Object.entries(responses).map(([questionId, score]) => ({ questionId, score, notApplicable: false })),
     ...Object.keys(naQuestions).map(questionId => ({ questionId, score: 0, notApplicable: true })),
+    ...Object.keys(noElementsQuestions).map(questionId => ({ questionId, score: 0, noElements: true })),
   ];
   const totalScore = calculateScore(questions, evalResponses);
   const totalQuestions = questions.length;
   const answeredQuestions = Object.keys(responses).length + Object.keys(naQuestions).length;
   const progressPct = totalQuestions > 0 ? Math.round((answeredQuestions / totalQuestions) * 100) : 0;
   const wordCount = comments.trim().split(/\s+/).filter(Boolean).length;
-  const commentsValid = wordCount >= 10 && wordCount <= 300;
+  const commentsValid = comments.trim().length > 0;
   const allAnswered = answeredQuestions >= totalQuestions;
 
   const canSubmit = allAnswered && commentsValid && !submitted;
@@ -131,6 +133,28 @@ export default function SelfEvaluation() {
     }
   };
 
+  const handleNoElements = (questionId: string) => {
+    if (noElementsQuestions[questionId]) {
+      const newNoElements = { ...noElementsQuestions };
+      delete newNoElements[questionId];
+      setNoElementsQuestions(newNoElements);
+    } else {
+      setNoElementsQuestions(prev => ({ ...prev, [questionId]: true }));
+      const newResponses = { ...responses };
+      delete newResponses[questionId];
+      setResponses(newResponses);
+      const newNa = { ...naQuestions };
+      delete newNa[questionId];
+      setNaQuestions(newNa);
+    }
+  };
+
+  const clearQuestion = (questionId: string) => {
+    const newResponses = { ...responses };
+    delete newResponses[questionId];
+    setResponses(newResponses);
+  };
+
   const handleSubmit = () => {
     if (!canSubmit) return;
     const formattedResponses = Object.entries(responses).map(([questionId, score]) => {
@@ -139,6 +163,7 @@ export default function SelfEvaluation() {
         questionId,
         score,
         notApplicable: !!naQuestions[questionId],
+        noElements: !!noElementsQuestions[questionId],
         weight: q?.weight || 1,
       };
     });
@@ -262,7 +287,7 @@ export default function SelfEvaluation() {
             const sectionLabel = SECTION_LABELS[sectionKey] || sectionKey;
             const sectionWeight = sectionWeights?.[sectionKey] || 0;
             const sectionTotal = sectionQuestions.length;
-            const sectionAnswered = sectionQuestions.filter(q => responses[q.id] !== undefined || naQuestions[q.id]).length;
+            const sectionAnswered = sectionQuestions.filter(q => responses[q.id] !== undefined || naQuestions[q.id] || noElementsQuestions[q.id]).length;
             const isOpen = openSections.has(sectionKey);
             const sectionComplete = sectionAnswered >= sectionTotal;
 
@@ -270,13 +295,16 @@ export default function SelfEvaluation() {
             const sectionScorePct = (() => {
               const sResponses: Record<string, number> = {};
               const sNA: Record<string, boolean> = {};
+              const sNoElements: Record<string, boolean> = {};
               sectionQuestions.forEach(q => {
                 if (responses[q.id] !== undefined) sResponses[q.id] = responses[q.id];
                 if (naQuestions[q.id]) sNA[q.id] = true;
+                if (noElementsQuestions[q.id]) sNoElements[q.id] = true;
               });
               const sEvalResponses = [
                 ...Object.entries(sResponses).map(([questionId, score]) => ({ questionId, score, notApplicable: false })),
                 ...Object.keys(sNA).map(questionId => ({ questionId, score: 0, notApplicable: true })),
+                ...Object.keys(sNoElements).map(questionId => ({ questionId, score: 0, noElements: true })),
               ];
               const sScore = calculateScore(sectionQuestions, sEvalResponses);
               return sectionAnswered > 0 ? Math.round(sScore) : null;
@@ -325,9 +353,10 @@ export default function SelfEvaluation() {
 
                     {sectionQuestions.map(q => {
                       const isNA = !!naQuestions[q.id];
+                      const isNoElements = !!noElementsQuestions[q.id];
                       const hasResponse = responses[q.id] !== undefined;
                       return (
-                        <div key={q.id} className={`pl-4 smps-accent-bar ${isNA ? 'opacity-50' : ''}`} style={{ '--bar-color': hasResponse || isNA ? 'hsl(var(--smps-success))' : 'hsl(var(--muted-foreground))' } as React.CSSProperties}>
+                        <div key={q.id} className={`pl-4 smps-accent-bar ${isNA || isNoElements ? 'opacity-50' : ''}`} style={{ '--bar-color': hasResponse || isNA || isNoElements ? 'hsl(var(--smps-success))' : 'hsl(var(--muted-foreground))' } as React.CSSProperties}>
                           <p className="text-sm font-medium mb-2">{q.text}</p>
                           {q.practiceArea && (
                             <span className="inline-block text-[10px] px-1.5 py-0.5 rounded bg-muted/50 text-muted-foreground mb-2">{q.practiceArea}</span>
@@ -337,15 +366,22 @@ export default function SelfEvaluation() {
                               className={`smps-score-btn min-w-[72px] py-1.5 px-2 rounded-md text-xs font-medium border transition-[background-color,border-color,transform] duration-150 flex items-center justify-center gap-1 ${isNA ? 'bg-foreground/10 text-foreground border-foreground/20' : 'bg-muted/50 text-muted-foreground border-transparent hover:border-border'}`}>
                               <Ban className="h-3 w-3" /> No Aplica
                             </button>
+                            <button onClick={() => { clearQuestion(q.id); setNoElementsQuestions(prev => ({ ...prev, [q.id]: true })); }}
+                              className={`smps-score-btn min-w-[72px] py-1.5 px-2 rounded-md text-xs font-medium border transition-[background-color,border-color,transform] duration-150 flex items-center justify-center gap-1 ${isNoElements ? 'bg-foreground/10 text-foreground border-foreground/20' : 'bg-muted/50 text-muted-foreground border-transparent hover:border-border'}`}>
+                              <MinusCircle className="h-3 w-3" /> Sin Elementos
+                            </button>
                             {[1, 2, 3, 4, 5].map(score => (
                               <button key={score} onClick={() => handleScore(q.id, score)}
-                                className={`smps-score-btn flex-1 min-w-[60px] py-1.5 px-2 rounded-md text-xs font-medium border transition-[background-color,border-color,transform] duration-150 ${!isNA && responses[q.id] === score ? 'bg-accent text-accent-foreground border-accent shadow-sm' : 'bg-muted/50 text-muted-foreground border-transparent hover:border-border'}`}>
+                                className={`smps-score-btn flex-1 min-w-[60px] py-1.5 px-2 rounded-md text-xs font-medium border transition-[background-color,border-color,transform] duration-150 ${!isNA && !isNoElements && responses[q.id] === score ? 'bg-accent text-accent-foreground border-accent shadow-sm' : 'bg-muted/50 text-muted-foreground border-transparent hover:border-border'}`}>
                                 {getScoreLabels()[score]}
                               </button>
                             ))}
                           </div>
                           {isNA && (
                             <p className="text-[11px] text-smps-warning mt-1.5">Requiere aprobación del evaluador para validar que no aplica.</p>
+                          )}
+                          {isNoElements && (
+                            <p className="text-[11px] text-smps-warning mt-1.5">Se marca como Sin Elementos y no se califica.</p>
                           )}
                         </div>
                       );

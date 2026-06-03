@@ -9,7 +9,12 @@ document.title = "SMPS";
 
 const queryClient = new QueryClient({
   defaultOptions: {
-    queries: { staleTime: 30_000, retry: 1 },
+    queries: {
+      staleTime: 5 * 60 * 1000, // 5 minutes - reduce refetch frequency
+      retry: 1,
+      refetchOnWindowFocus: false, // Don't refetch when user switches tabs
+      refetchOnReconnect: false, // Don't refetch on reconnect
+    },
   },
 });
 
