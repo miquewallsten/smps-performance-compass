@@ -46,6 +46,13 @@ export function useResetUserPassword() {
     onError: (err: Error) => toast.error(err.message || 'Error al restablecer contraseña'),
   });
 }
+export function useResendActivation() {
+  return useMutation({
+    mutationFn: ({ email }: { email: string }) => api.post<{ message: string }>(`/api/auth/resend-activation`, { email }),
+    onSuccess: () => toast.success('Enlace de activación reenviado (si la cuenta existe)'),
+    onError: (err: Error) => toast.error(err.message || 'Error al reenviar activación'),
+  });
+}
 export function useUpdateUserRole() {
   const qc = useQueryClient();
   return useMutation({
@@ -658,5 +665,20 @@ export function usePendingActions(period?: string) {
     queryKey: ['pendingActions', period],
     queryFn: () => api.get<any>(`/api/notifications/pending-actions${period ? `?period=${period}` : ''}`),
     enabled: !!period,
+  });
+}
+
+// ── Test Email ──
+export function useTestEmail() {
+  return useMutation({
+    mutationFn: (to: string) => api.post<{ ok: boolean; message: string }>('/api/system/test-email', { to }),
+    onSuccess: (data) => {
+      if (data.ok) {
+        toast.success(data.message);
+      } else {
+        toast.error(data.message || 'Error al enviar correo de prueba');
+      }
+    },
+    onError: (err: Error) => toast.error(err.message || 'Error al enviar correo de prueba'),
   });
 }

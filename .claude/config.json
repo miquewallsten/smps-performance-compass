@@ -1,0 +1,4 @@
+{
+  "primaryApiKey": "ollama",
+  "dangerouslyAllowCustomBases": true
+}

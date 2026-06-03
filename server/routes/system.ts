@@ -469,6 +469,50 @@ router.post('/smtp-test', authMiddleware, requireSuperUser, async (req: Request,
   }
 });
 
+// ─── POST /api/system/test-email ──────────────────────────────────────────────
+// Send a test email to verify email delivery (not just SMTP connection)
+router.post('/test-email', authMiddleware, requireSuperUser, async (req: Request, res: Response) => {
+  try {
+    const { to } = req.body as { to?: string };
+    if (!to) {
+      return res.status(400).json({ error: 'El correo de destino es requerido' });
+    }
+
+    // Import email service dynamically
+    const { sendPasswordResetEmail } = await import('../services/email.js');
+
+    // Generate a test token
+    const { generateTokenPair } = await import('../services/tokens.js');
+    const { token, tokenHash } = generateTokenPair();
+    const now = new Date().toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, '');
+
+    // Store the test token in password_reset_tokens table (will be cleaned up on next reset)
+    await db.run(
+      `INSERT INTO password_reset_tokens (id, user_id, token_hash, expires_at, ip_address, created_at)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [uuidv4(), 'system-test', tokenHash, toMySQLDate(new Date(Date.now() + 60 * 60 * 1000)), '127.0.0.1', now]
+    );
+
+    // Create a fake user name from email
+    const name = to.split('@')[0].replace('.', ' ').replace('_', ' ').replace(/([a-z])([A-Z])/g, '$1 $2').replace(/\b\w/g, c => c.toUpperCase()) || 'Usuario';
+
+    // Send the test email using the reset email function
+    const emailSent = await sendPasswordResetEmail(to, name, token, 1);
+
+    // Clean up the test token immediately after sending
+    await db.run('DELETE FROM password_reset_tokens WHERE user_id = ?', ['system-test']);
+
+    if (emailSent) {
+      return res.json({ ok: true, message: `Correo de prueba enviado a ${to}. Revisa tu bandeja de entrada.` });
+    } else {
+      return res.status(500).json({ ok: false, message: 'No se pudo enviar el correo. Revisa la configuración de SMTP en los logs.' });
+    }
+  } catch (err: any) {
+    console.error('Test email error:', err);
+    return res.status(500).json({ error: `Error interno: ${err.message}` });
+  }
+});
+
 // ─── POST /api/system/backfill-timeline ───────────────────────────────
 // Backfill timeline events from historical data (SuperUser only)
 router.post('/backfill-timeline', authMiddleware, requireSuperUser, async (req: Request, res: Response) => {

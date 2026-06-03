@@ -1,11 +1,11 @@
 import { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { useUsers, useEvaluations, useUpdateUser, useResetUserPassword, useCreateUser, useDeleteUser, useSystemStatus, useUpdateUserRole, usePositions, useWorkAreas, useLocations } from '@/api/queries';
+import { useUsers, useEvaluations, useUpdateUser, useResetUserPassword, useCreateUser, useDeleteUser, useSystemStatus, useUpdateUserRole, usePositions, useWorkAreas, useLocations, useResendActivation } from '@/api/queries';
 import { Position } from '@/types';
 import { getPositionLabel } from '@/lib/evaluationConfig';
 import { getLegalHierarchy, getAdminHierarchy } from '@/lib/evaluationConfig';
-import { Eye, Key, UserCheck, UserX, Search, Plus, Trash2, Star, Shield, Pencil, MapPin, Clock, Loader2, X, ChevronRight } from 'lucide-react';
+import { Eye, Key, UserCheck, UserX, Search, Plus, Trash2, Star, Shield, Pencil, MapPin, Clock, Loader2, X, ChevronRight, Send } from 'lucide-react';
 import { ScoreBadge } from '@/components/shared/ScoreBadge';
 import { calculateScore, getScoreLabels } from '@/lib/evaluationConfig';
 import EvaluationViewer from '@/components/EvaluationViewer';
@@ -21,6 +21,7 @@ export default function UserManagement() {
   const addUserMut = useCreateUser();
   const deleteUserMut = useDeleteUser();
   const updateUserRoleMut = useUpdateUserRole();
+  const resendActivationMut = useResendActivation();
   const { data: systemStatus } = useSystemStatus();
   const { data: customPositions = [] } = usePositions();
   const { data: workAreas = [] } = useWorkAreas();
@@ -196,6 +197,24 @@ export default function UserManagement() {
     );
   }, [users, updateUserRoleMut]);
 
+  const handleResendActivation = useCallback((user: any) => {
+    if (!user.email) { toast.error('El usuario no tiene correo'); return; }
+    // Check if user needs activation (no password hash and not active)
+    if (user.isActive && user.password_hash) {
+      toast.info('Este usuario ya está activo y tiene contraseña');
+      return;
+    }
+    resendActivationMut.mutate(
+      { email: user.email },
+      {
+        onSuccess: () => {
+          toast.success(`Enlace de activación reenviado a ${user.email}`);
+        },
+        onError: (err: Error) => toast.error(err.message || 'Error al reenviar activación')
+      }
+    );
+  }, [resendActivationMut]);
+
   // ─── Render helpers ───
 
   const evalToView = viewingEval ? evaluations.find(e => e.id === viewingEval) : null;
@@ -264,6 +283,9 @@ export default function UserManagement() {
             </button>
             <button onClick={() => setShowPasswordModal(user.id)} className="p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors" title="Restablecer contraseña">
               <Key className="h-3.5 w-3.5" />
+            </button>
+            <button onClick={() => handleResendActivation(user)} className="p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors" title="Reenviar enlace de activación">
+              <Send className="h-3.5 w-3.5" />
             </button>
             {isSuperUser && (
               <>

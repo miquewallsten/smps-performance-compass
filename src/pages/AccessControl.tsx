@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useUsers, useSystemStatus, useUpdateSystemStatus, useSystemModules, useUpdateSystemModules, useActivationHistory, useCopilotConfig, useUpdateCopilotConfig, useSmtpConfig, useUpdateSmtpConfig } from "@/api/queries";
-import { Shield, Calendar, CreditCard, Power, Users, Ticket, Clock, ToggleLeft, ToggleRight, History, Bot, Eye, EyeOff, Save, Mail, Server, Key, Lock, TestTube } from 'lucide-react';
+import { useUsers, useSystemStatus, useUpdateSystemStatus, useSystemModules, useUpdateSystemModules, useActivationHistory, useCopilotConfig, useUpdateCopilotConfig, useSmtpConfig, useUpdateSmtpConfig, useTestEmail } from "@/api/queries";
+import { Shield, Calendar, CreditCard, Power, Users, Ticket, Clock, ToggleLeft, ToggleRight, History, Bot, Eye, EyeOff, Save, Mail, Server, Key, Lock, TestTube, Send } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
@@ -19,6 +19,7 @@ export default function AccessControl() {
   const updateCopilotConfig = useUpdateCopilotConfig().mutate;
   const { data: smtpConfig } = useSmtpConfig();
   const updateSmtpConfig = useUpdateSmtpConfig().mutate;
+  const testEmailMutation = useTestEmail();
   const status = systemStatus || { status: 'active' as const, activationDate: '', paymentPlan: 'monthly' as const, maxUsers: 50, maxAdminUsers: 3, tickets: 0 };
 
   const [activationDate, setActivationDate] = useState(status.activationDate || '');
@@ -40,10 +41,12 @@ export default function AccessControl() {
   const [smtpSecure, setSmtpSecure] = useState(smtpConfig?.smtp_secure || false);
   const [smtpUser, setSmtpUser] = useState(smtpConfig?.smtp_user || '');
   const [smtpPass, setSmtpPass] = useState('');
+  // Default to Hostinger sendmail configuration
   const [smtpFrom, setSmtpFrom] = useState(smtpConfig?.smtp_from || 'SMPS Performance <notificaciones@bowdot.online>');
   const [mailTransport, setMailTransport] = useState(smtpConfig?.mail_transport || 'auto');
   const [showSmtpPass, setShowSmtpPass] = useState(false);
   const [testingSmtp, setTestingSmtp] = useState(false);
+  const [testEmailRecipient, setTestEmailRecipient] = useState('');
 
   useEffect(() => {
     if (systemStatus) {
@@ -79,7 +82,57 @@ export default function AccessControl() {
     toast.success('Configuración de IA guardada correctamente');
   };
 
-  const handleSaveSmtpConfig = () => {
+  const handleSaveSmtpConfig = async () => {
+    // Validate configuration based on transport mode
+    const testRecipient = currentUser?.email || 'admin@smps.bowdot.online';
+
+    // Check transport mode
+    if (mailTransport === 'stub') {
+      toast.warning('⚠️ Modo stub activo: Los correos no se enviarán. Guarda solo para desarrollo.');
+      // Continue to save even in stub mode
+    } else if (mailTransport === 'sendmail') {
+      // Sendmail mode - no credentials needed, save directly
+      toast.info('ℹ️ Modo sendmail: No se requiere configuración SMTP');
+    } else if (mailTransport === 'smtp') {
+      // SMTP mode - must have complete credentials
+      if (!smtpHost || !smtpUser || (!smtpPass && !smtpConfig?.smtp_pass)) {
+        toast.error('❌ Faltan credenciales SMTP. Requiere: Servidor, Usuario y Contraseña');
+        return;
+      }
+      // Verify SMTP connection
+      const verifyResponse = await fetch('/api/system/smtp-test', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        },
+        body: JSON.stringify({
+          smtp_host: smtpHost,
+          smtp_port: smtpPort,
+          smtp_secure: smtpSecure,
+          smtp_user: smtpUser,
+          smtp_pass: smtpPass || undefined,
+        }),
+      });
+      const verifyResult = await verifyResponse.json();
+      if (!verifyResult.ok) {
+        toast.error('❌ Configuración SMTP inválida. Corrige las credenciales antes de guardar.');
+        toast.error(`Error: ${verifyResult.message}`);
+        return;
+      }
+    } else if (mailTransport === 'auto') {
+      // Auto mode - in production uses Hostinger sendmail, in dev uses SMTP if configured
+      if (process.env.NODE_ENV === 'production') {
+        toast.info('ℹ️ Modo automático en producción: usa Hostinger sendmail sin credenciales');
+      } else {
+        // In development, check if SMTP is configured
+        if (!smtpHost || !smtpUser) {
+          toast.warning('⚠️ Modo automático en desarrollo requiere configuración SMTP para pruebas');
+        }
+      }
+    }
+
+    // Now save the configuration
     const updates: Record<string, unknown> = {
       smtp_host: smtpHost,
       smtp_port: smtpPort,
@@ -89,12 +142,14 @@ export default function AccessControl() {
       mail_transport: mailTransport,
     };
     if (smtpPass) updates.smtp_pass = smtpPass;
+
     updateSmtpConfig(updates);
     setSmtpPass('');
-    toast.success('Configuración de correo guardada correctamente');
+    toast.success('✅ Configuración de correo guardada correctamente');
   };
 
-  const handleTestSmtp = async () => {
+  // Test SMTP connection (only verifies SMTP connection, not email sending)
+  const handleTestSmtpConnection = async () => {
     setTestingSmtp(true);
     try {
       const response = await fetch('/api/system/smtp-test', {
@@ -123,6 +178,22 @@ export default function AccessControl() {
       setTestingSmtp(false);
     }
   };
+
+  // Send a test email to verify actual email delivery
+  const handleTestSendEmail = useCallback(async (recipient: string) => {
+    if (!recipient.trim()) {
+      toast.error('Ingresa un correo de destino');
+      return;
+    }
+    setTestingSmtp(true);
+    try {
+      testEmailMutation.mutate(recipient);
+    } catch (err: any) {
+      toast.error('Error al enviar correo: ' + (err.message || 'Desconocido'));
+    } finally {
+      setTestingSmtp(false);
+    }
+  }, [testEmailMutation]);
 
   if (!currentUser?.isSuperUser) return <p className="text-center py-12 text-muted-foreground">Acceso restringido.</p>;
 
@@ -562,13 +633,66 @@ export default function AccessControl() {
             </p>
           </div>
 
+          {/* Email Test Section */}
+          <div className="bg-muted/30 rounded-lg p-4 border border-muted">
+            <h4 className="text-sm font-semibold mb-3 flex items-center gap-2">
+              <TestTube className="h-4 w-4 text-accent" /> Probar Configuración de Correo
+            </h4>
+            <p className="text-xs text-muted-foreground mb-3">
+              Envía un correo de prueba para verificar que la configuración funciona correctamente.
+            </p>
+
+            {/* Test to SuperAdmin (current user) */}
+            <div className="mb-3">
+              <label className="text-xs text-muted-foreground block mb-1.5">Prueba a tu correo (SuperAdmin)</label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={currentUser?.email || ''}
+                  disabled
+                  className="flex-1 px-3 py-2 rounded-lg border border-input bg-muted text-muted-foreground text-sm"
+                />
+                <button
+                  onClick={() => handleTestSendEmail(currentUser?.email || '')}
+                  disabled={testingSmtp || !currentUser?.email || mailTransport === 'stub'}
+                  className="px-4 py-2 rounded-lg bg-slate-100 text-slate-700 text-sm font-semibold hover:bg-slate-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">
+                  <Send className="h-4 w-4" /> {testingSmtp ? 'Enviando...' : 'Probar Envío'}
+                </button>
+              </div>
+            </div>
+
+            {/* Test to custom email */}
+            <div className="mb-3">
+              <label className="text-xs text-muted-foreground block mb-1.5">Prueba a otro correo</label>
+              <div className="flex gap-2">
+                <input
+                  type="email"
+                  value={testEmailRecipient}
+                  onChange={e => setTestEmailRecipient(e.target.value)}
+                  placeholder="destinatario@ejemplo.com"
+                  className="flex-1 px-3 py-2 rounded-lg border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-accent"
+                />
+                <button
+                  onClick={() => handleTestSendEmail(testEmailRecipient)}
+                  disabled={testingSmtp || !testEmailRecipient.trim() || mailTransport === 'stub'}
+                  className="px-4 py-2 rounded-lg bg-slate-100 text-slate-700 text-sm font-semibold hover:bg-slate-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">
+                  <Send className="h-4 w-4" /> {testingSmtp ? 'Enviando...' : 'Probar Envío'}
+                </button>
+              </div>
+            </div>
+
+            {/* Test SMTP Connection only */}
+            <div className="flex items-center gap-2 mt-3 pt-3 border-t border-muted">
+              <button
+                onClick={handleTestSmtpConnection}
+                disabled={testingSmtp || mailTransport === 'stub'}
+                className="text-xs text-muted-foreground hover:text-foreground underline flex items-center gap-1 disabled:opacity-50">
+                <TestTube className="h-3 w-3" /> Probar solo conexión SMTP
+              </button>
+            </div>
+          </div>
+
           <div className="flex gap-2">
-            <button
-              onClick={handleTestSmtp}
-              disabled={testingSmtp || mailTransport === 'stub'}
-              className="flex-1 py-2.5 rounded-lg bg-slate-100 text-slate-700 text-sm font-semibold hover:bg-slate-200 transition-colors flex items-center justify-center gap-2 disabled:opacity-50">
-              <TestTube className="h-4 w-4" /> {testingSmtp ? 'Probando...' : 'Probar Conexión'}
-            </button>
             <button onClick={handleSaveSmtpConfig}
               className="flex-1 py-2.5 rounded-lg bg-accent text-accent-foreground text-sm font-semibold hover:opacity-90 transition-opacity flex items-center justify-center gap-2">
               <Save className="h-4 w-4" /> Guardar Configuración
