@@ -92,19 +92,20 @@ jobs:
 
           # 1. Pull latest source code on server
           echo "📦 Step 1: Pulling latest code..."
-          $SSH_CMD "cd $REMOTE && git checkout -- . && git pull origin main" || echo "⚠️ Git pull failed, continuing with upload"
+          $SSH_CMD "cd $REMOTE && git checkout -- . && git pull origin main 2>&1" || echo "⚠️ Git pull failed, continuing with upload"
 
           # 2. Clean old build artifacts on server
           echo "🧹 Step 2: Cleaning old artifacts..."
-          $SSH_CMD "rm -rf $REMOTE/dist/assets $REMOTE/dist/index.html $REMOTE/dist/favicon.ico $REMOTE/dist/robots.txt" || true
-          $SSH_CMD "rm -f $REMOTE/.htaccess" || true
+          $SSH_CMD "rm -rf $REMOTE/dist/assets $REMOTE/dist/index.html $REMOTE/dist/favicon.ico $REMOTE/dist/robots.txt 2>&1" || true
+          $SSH_CMD "rm -f $REMOTE/.htaccess 2>&1" || true
 
           # 3. Upload new build artifacts
           echo "📤 Step 3: Uploading build artifacts..."
+          echo "Creating remote directory..."
           $SSH_CMD "mkdir -p $REMOTE/dist/assets" || { echo "❌ Failed to create remote directory"; exit 1; }
 
           echo "  - Uploading dist/index.html..."
-          $SCP_CMD dist/index.html $SSH_HOST:$REMOTE/dist/index.html || { echo "❌ Failed to upload index.html"; exit 1; }
+          $SCP_CMD -v dist/index.html $SSH_HOST:$REMOTE/dist/index.html 2>&1 || { echo "❌ Failed to upload index.html"; exit 1; }
 
           echo "  - Uploading dist/favicon.ico..."
           $SCP_CMD dist/favicon.ico $SSH_HOST:$REMOTE/dist/favicon.ico 2>/dev/null || echo "⚠️ favicon.ico not found"
@@ -116,13 +117,13 @@ jobs:
           tar -czf /tmp/assets.tar.gz -C dist/assets . || { echo "❌ Failed to create tarball"; exit 1; }
 
           echo "  - Uploading assets.tar.gz..."
-          $SCP_CMD /tmp/assets.tar.gz $SSH_HOST:$REMOTE/dist/assets/assets.tar.gz || { echo "❌ Failed to upload assets"; exit 1; }
+          $SCP_CMD -v /tmp/assets.tar.gz $SSH_HOST:$REMOTE/dist/assets/assets.tar.gz 2>&1 || { echo "❌ Failed to upload assets"; exit 1; }
 
           echo "  - Extracting assets on server..."
-          $SSH_CMD "cd $REMOTE/dist/assets && tar -xzf assets.tar.gz && rm assets.tar.gz" || { echo "❌ Failed to extract assets"; exit 1; }
+          $SSH_CMD "cd $REMOTE/dist/assets && tar -xzf assets.tar.gz && rm assets.tar.gz 2>&1" || { echo "❌ Failed to extract assets"; exit 1; }
 
           echo "  - Uploading server.cjs..."
-          $SCP_CMD server.cjs $SSH_HOST:$REMOTE/server.cjs || { echo "❌ Failed to upload server.cjs"; exit 1; }
+          $SCP_CMD -v server.cjs $SSH_HOST:$REMOTE/server.cjs 2>&1 || { echo "❌ Failed to upload server.cjs"; exit 1; }
 
           # 4. Install production deps and restart Passenger
           echo "📦 Step 4: Installing dependencies and restarting..."
@@ -130,7 +131,7 @@ jobs:
           $SSH_CMD "cd $REMOTE && $HOSTINGER_ENV && npm install --omit=dev --ignore-scripts 2>&1 | tail -5" || echo "⚠️ npm install had warnings"
 
           echo "  - Triggering Passenger restart..."
-          $SSH_CMD "cd $REMOTE && mkdir -p tmp && touch tmp/restart.txt" || { echo "❌ Failed to restart Passenger"; exit 1; }
+          $SSH_CMD "cd $REMOTE && mkdir -p tmp && touch tmp/restart.txt 2>&1" || { echo "❌ Failed to restart Passenger"; exit 1; }
 
           echo "✅ Deploy complete!"
 
