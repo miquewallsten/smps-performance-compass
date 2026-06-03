@@ -103,12 +103,9 @@ jobs:
 
           # 2. Upload new build artifacts (atomic: upload to dist-new first)
           echo "📦 Uploading build artifacts..."
-          $SSH_CMD "mkdir -p $REMOTE/dist-new/assets"
-          $SCP_CMD dist/index.html $SSH_HOST:$REMOTE/dist-new/index.html
-          $SCP_CMD dist/favicon.ico $SSH_HOST:$REMOTE/dist-new/favicon.ico 2>/dev/null || true
-          $SCP_CMD dist/robots.txt $SSH_HOST:$REMOTE/dist-new/robots.txt 2>/dev/null || true
-          # Use recursive scp for assets (avoids glob expansion issues)
-          $SCP_CMD -r dist/assets/ $SSH_HOST:$REMOTE/dist-new/assets/
+          # Remove dist-new if it exists, then copy entire dist directory
+          $SSH_CMD "rm -rf $REMOTE/dist-new"
+          $SCP_CMD -r dist $SSH_HOST:$REMOTE/dist-new
           $SCP_CMD server.cjs $SSH_HOST:$REMOTE/server.cjs
 
           # 3. Atomically swap old dist for new dist
