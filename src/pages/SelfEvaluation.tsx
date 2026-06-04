@@ -11,6 +11,7 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { PhaseStepper, getStageStatus, type EvalStage } from '@/components/shared/PhaseStepper';
 import { SuccessAnimation } from '@/components/shared/SuccessAnimation';
+import Portal from '@/components/Portal';
 
 const DRAFT_KEY = 'smps-self-eval-draft';
 
@@ -424,16 +425,18 @@ export default function SelfEvaluation() {
 
         {/* ─── Confirm Modal ─────────────────────────────────────────────── */}
         {showConfirm && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center smps-overlay" onClick={() => setShowConfirm(false)}>
-            <div className="smps-surface-card w-full max-w-sm shadow-2xl smps-scale-in mx-4" onClick={e => e.stopPropagation()}>
-              <h3 className="font-display text-lg font-semibold mb-2">Confirmar Envío</h3>
-              <p className="text-sm text-muted-foreground mb-4">Una vez enviada la autoevaluación, <strong>no será posible modificarla</strong>. ¿Desea continuar?</p>
-              <div className="flex gap-3">
-                <button onClick={() => setShowConfirm(false)} className="flex-1 py-2 rounded-md border text-sm font-medium hover:bg-muted transition-colors duration-150">Cancelar</button>
-                <button onClick={handleSubmit} className="flex-1 py-2 rounded-md bg-accent text-accent-foreground text-sm font-medium hover:opacity-90 transition-[opacity,transform] duration-150 active:scale-[0.98]">Confirmar</button>
+          <Portal>
+            <div className="fixed inset-0 z-[9999] flex items-center justify-center smps-overlay" onClick={() => setShowConfirm(false)}>
+              <div className="smps-surface-card w-full max-w-sm shadow-2xl smps-scale-in mx-4" onClick={e => e.stopPropagation()}>
+                <h3 className="font-display text-lg font-semibold mb-2">Confirmar Envío</h3>
+                <p className="text-sm text-muted-foreground mb-4">Una vez enviada la autoevaluación, <strong>no será posible modificarla</strong>. ¿Desea continuar?</p>
+                <div className="flex gap-3">
+                  <button onClick={() => setShowConfirm(false)} className="flex-1 py-2 rounded-md border text-sm font-medium hover:bg-muted transition-colors duration-150">Cancelar</button>
+                  <button onClick={handleSubmit} className="flex-1 py-2 rounded-md bg-accent text-accent-foreground text-sm font-medium hover:opacity-90 transition-[opacity,transform] duration-150 active:scale-[0.98]">Confirmar</button>
+                </div>
               </div>
             </div>
-          </div>
+          </Portal>
         )}
       </div>
     </>

@@ -5,6 +5,7 @@ import { Evaluation, EvalQuestion } from '@/types';
 import { calculateScore, getSectionWeights, getPositionLabel, getScoreLabels, SECTION_ORDER } from '@/lib/evaluationConfig';
 import { useTemplateQuestions } from '@/hooks/useEvaluationConfig';
 import { Ban, ShieldCheck, ShieldX, MinusCircle, FileText } from 'lucide-react';
+import Portal from '@/components/Portal';
 
 interface Props {
   evaluation: Evaluation;
@@ -102,8 +103,9 @@ export default function EvaluationViewer({ evaluation, onClose }: Props) {
 
 
   return (
-    <div className="fixed inset-0 z-[100] bg-foreground/20 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-card rounded-xl border shadow-xl w-full max-w-2xl max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+    <Portal>
+      <div className="fixed inset-0 z-[9999] bg-foreground/20 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose}>
+        <div className="bg-card rounded-xl border shadow-xl w-full max-w-2xl max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
         <div className="sticky top-0 bg-card border-b p-4 flex items-center justify-between">
           <div>
             <h3 className="font-display text-lg font-semibold">
