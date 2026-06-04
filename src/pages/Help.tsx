@@ -107,7 +107,7 @@ export default function Help() {
 
   const levelLabel = currentUser ? (getPositionLevel(currentUser.position) === 'legal' ? 'Legal' : 'Administrativo') : '';
   // Group competencies by position level (DB-driven)
-  const competenciesByLevel = competenciesData.reduce((acc: Record<string, any[]>, c: any) => {
+  const competenciesByLevel = Array.isArray(competenciesData) ? competenciesData.reduce((acc: Record<string, any[]>, c: any) => {
     if (!acc[c.positionLevel]) acc[c.positionLevel] = [];
     acc[c.positionLevel].push({ name: c.name, definition: c.definition });
     return acc;
