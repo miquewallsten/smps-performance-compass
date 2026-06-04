@@ -452,6 +452,17 @@ export function useSystemStatus() {
 export function useSystemModules() {
   return useQuery({ queryKey: ['systemModules'], queryFn: () => api.get<any>('/api/system/modules') });
 }
+export function useFeatureVisibility() {
+  return useQuery({ queryKey: ['featureVisibility'], queryFn: () => api.get<any>('/api/feature-visibility') });
+}
+export function useUpdateFeatureVisibility() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: any) => api.put('/api/feature-visibility', data),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['featureVisibility'] }); toast.success('Configuración de visibilidad actualizada'); },
+    onError: (err: Error) => toast.error(err.message || 'Error al actualizar visibilidad'),
+  });
+}
 export function useSystemInitialized() {
   return useQuery({ queryKey: ['systemInitialized'], queryFn: () => api.get<{ initialized: boolean }>('/api/system/initialized') });
 }

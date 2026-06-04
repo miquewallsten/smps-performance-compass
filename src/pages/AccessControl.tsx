@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useUsers, useSystemStatus, useUpdateSystemStatus, useSystemModules, useUpdateSystemModules, useActivationHistory, useCopilotConfig, useUpdateCopilotConfig, useSmtpConfig, useUpdateSmtpConfig, useTestEmail } from "@/api/queries";
+import { useUsers, useSystemStatus, useUpdateSystemStatus, useSystemModules, useUpdateSystemModules, useFeatureVisibility, useUpdateFeatureVisibility, useActivationHistory, useCopilotConfig, useUpdateCopilotConfig, useSmtpConfig, useUpdateSmtpConfig, useTestEmail } from "@/api/queries";
 import { Shield, Calendar, CreditCard, Power, Users, Ticket, Clock, ToggleLeft, ToggleRight, History, Bot, Eye, EyeOff, Save, Mail, Server, Key, Lock, TestTube, Send } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
+import FeatureVisibility from '@/components/FeatureVisibility';
 
 export default function AccessControl() {
   const { user: currentUser } = useAuth();
@@ -699,6 +700,17 @@ export default function AccessControl() {
             </button>
           </div>
         </div>
+      </div>
+
+      {/* Feature Visibility Configuration */}
+      <div className="smps-surface-elevated">
+        <h3 className="smps-section-title font-display text-base font-semibold mb-3 flex items-center gap-2">
+          <Eye className="h-5 w-5 text-accent" /> Visibilidad de Funcionalidades
+        </h3>
+        <p className="text-sm text-muted-foreground mb-4">
+          Controla qué funcionalidades pueden ver los usuarios según su rol. Los cambios se aplican automáticamente al guardar.
+        </p>
+        <FeatureVisibility />
       </div>
 
       {/* Activation History */}

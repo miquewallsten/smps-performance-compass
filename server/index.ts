@@ -16,6 +16,8 @@ import { migrateAnalytics } from './db/migrate-analytics.js';
 import analyticsRoutes from './routes/analytics.js';
 import { refreshAnalytics } from './services/analytics-refresh.js';
 import { migrateNotifications } from './db/migrate-notifications.js';
+import { migrateFeatureVisibility } from './db/migrate-feature-visibility.js';
+import featureVisibilityRoutes from './routes/feature-visibility.js';
 import notificationRoutes from './routes/notifications.js';
 import { startNotificationScheduler } from './services/notification-scheduler.js';
 
@@ -153,6 +155,7 @@ app.use('/api/deploy', deployLimiter, deployRoutes);
 app.use('/api/users', timelineRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/feature-visibility', featureVisibilityRoutes);
 
 
   // ─── TECH DIAGRAM: Public static page at /techdiagram.html ─────────────────
@@ -210,6 +213,8 @@ async function startServer() {
     await migrateAnalytics();
     console.log('Running notifications migration...');
     await migrateNotifications();
+    console.log('Running feature visibility migration...');
+    await migrateFeatureVisibility();
     console.log('Seeding database...');
     await seed();
     console.log('Seeding evaluation data...');
