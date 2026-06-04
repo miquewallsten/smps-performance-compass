@@ -17,6 +17,7 @@ import analyticsRoutes from './routes/analytics.js';
 import { refreshAnalytics } from './services/analytics-refresh.js';
 import { migrateNotifications } from './db/migrate-notifications.js';
 import { migrateFeatureVisibility } from './db/migrate-feature-visibility.js';
+import { migrateSmtpConfig } from './db/migrate-smtp-config.js';
 import featureVisibilityRoutes from './routes/feature-visibility.js';
 import notificationRoutes from './routes/notifications.js';
 import { startNotificationScheduler } from './services/notification-scheduler.js';
@@ -213,6 +214,8 @@ async function startServer() {
     await migrateAnalytics();
     console.log('Running notifications migration...');
     await migrateNotifications();
+    console.log('Running SMTP config migration...');
+    await migrateSmtpConfig();
     console.log('Running feature visibility migration...');
     await migrateFeatureVisibility();
     console.log('Seeding database...');
