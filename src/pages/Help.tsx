@@ -111,7 +111,7 @@ export default function Help() {
     if (!acc[c.positionLevel]) acc[c.positionLevel] = [];
     acc[c.positionLevel].push({ name: c.name, definition: c.definition });
     return acc;
-  }, {});
+  }, {}) : {};
   const level = getPositionLevel(selectedPos);
   const competencies = competenciesByLevel[level] || [];
 
