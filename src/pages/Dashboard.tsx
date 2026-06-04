@@ -1,6 +1,6 @@
 import * as React from "react";
 import { useAuth } from '@/contexts/AuthContext';
-import { useUsers, useEvaluations, useAssignments, useAnalyticsOverview, useAnalyticsEvaluations, usePendingActions, useUnreadNotificationCount, usePeriods } from '@/api/queries';
+import { useUsers, useEvaluations, useAssignments, useAnalyticsOverview, useAnalyticsEvaluations, useUnreadNotificationCount, usePeriods } from '@/api/queries';
 import { useCurrentPeriod } from '@/hooks/useCurrentPeriod';
 import { useDisplayPeriod } from '@/hooks/useDisplayPeriod';
 import { getPositionLabel, getPositionLevel, getPositionRank, getLegalHierarchy, getAdminHierarchy, getPositionHierarchy } from '@/lib/evaluationConfig';
@@ -178,7 +178,6 @@ export default function Dashboard() {
   const supDone = supCompleted > 0;
   const fbDone = feedbackCompleted > 0;
   const planDone = (overview?.actionPlansCreated || 0) > 0;
-  const actions = pendingActions?.actions || [];
 
   return (
     <div className="space-y-4">
@@ -398,24 +397,6 @@ export default function Dashboard() {
           })}
         </div>
       </div>
-
-      {/* ─── Pending Actions ───────────────────────────────────────── */}
-      {actions.length > 0 && (
-        <section className="rounded-lg border bg-card p-4">
-          <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-3">Acciones Pendientes</p>
-          <div className="space-y-2">
-            {actions.slice(0, 5).map((action: any, idx: number) => (
-              <button key={idx} onClick={() => navigate(action.url || '#')} className="w-full flex items-center justify-between py-2 px-3 rounded-md hover:bg-muted/50 transition-colors text-left">
-                <div className="flex items-center gap-2">
-                  <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />
-                  <span className="text-xs">{action.title || action.label}</span>
-                </div>
-                <ArrowRight className="h-3.5 w-3.5 text-muted-foreground" />
-              </button>
-            ))}
-          </div>
-        </section>
-      )}
 
       {/* ─── Evaluation Score Breakdown ─────────────────────────────── */}
       {evalAnalytics && evalAnalytics.byType && (evalAnalytics.byType.self || evalAnalytics.byType.supervisor) && (

@@ -1,17 +1,17 @@
 import { ScoreBadge } from '@/components/shared/ScoreBadge';
 import { useState, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useUsers, useEvaluations, useAssignments, useCreateEvaluation, useUpdateEvaluation, useCompleteFeedback, useApproveNA, useActionPlans, useCreateActionPlan, useExportEvaluationsCSV , usePeriods } from '@/api/queries';
+import { useUsers, useEvaluations, useAssignments, useCreateEvaluation, useUpdateEvaluation, useCompleteFeedback, useApproveNA, useExportEvaluationsCSV , usePeriods } from '@/api/queries';
 import { calculateScore, getSectionForQuestion, SECTION_LABELS, SECTION_ORDER } from '@/lib/evaluationConfig';
 
-import { User, EvalQuestion, ActionPlan } from '@/types';
+import { User, EvalQuestion } from '@/types';
 import { getSectionWeights, getPositionLabel, getScoreLabels, getLegalHierarchy, getAdminHierarchy } from '@/lib/evaluationConfig';
 import { useCurrentPeriod } from '@/hooks/useCurrentPeriod';
 import { useDisplayPeriod } from '@/hooks/useDisplayPeriod';
 import { useFullTemplate, usePositionConfig, useTemplateQuestions } from '@/hooks/useEvaluationConfig';
 import { Download } from 'lucide-react';
 import { toast } from 'sonner';
-import { CheckCircle, AlertCircle, Eye, ArrowLeft, Ban, ShieldCheck, ShieldX, FileText, MessageSquare, MinusCircle, ClipboardCheck } from 'lucide-react';
+import { CheckCircle, AlertCircle, Eye, ArrowLeft, Ban, ShieldCheck, ShieldX, MessageSquare, MinusCircle, ClipboardCheck } from 'lucide-react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import EvaluationViewer from '@/components/EvaluationViewer';
 import HierarchyFilters, { filterByHierarchy } from '@/components/HierarchyFilters';
@@ -69,8 +69,6 @@ export default function Evaluations() {
   const { data: periodsData = [] } = usePeriods();
   const periods = periodsData.map((p: any) => p.period).sort();
   const [viewPeriod, setViewPeriod] = useState(displayPeriod);
-  const [actionPlanEmployee, setActionPlanEmployee] = useState<string | null>(null);
-  const [actionPlanContent, setActionPlanContent] = useState('');
 
   const exportEvaluationsCSV = useExportEvaluationsCSV().mutate;
   const handleExportCSV = () => {
@@ -134,23 +132,6 @@ export default function Evaluations() {
   });
 
   const evalToView = viewingEval ? evaluations.find(e => e.id === viewingEval) : null;
-
-  const handleSaveActionPlan = () => {
-    if (!actionPlanEmployee || !actionPlanContent.trim()) return;
-    const existing = actionPlans.find(p => p.employeeId === actionPlanEmployee && p.period === currentPeriod && p.supervisorId === currentUser.id);
-    const now = new Date().toISOString().split('T')[0];
-    addOrUpdateActionPlan({
-      id: existing?.id || `ap-${Date.now()}`,
-      employeeId: actionPlanEmployee,
-      supervisorId: currentUser.id,
-      period: currentPeriod,
-      content: actionPlanContent,
-      createdAt: existing?.createdAt || now,
-      updatedAt: now,
-    });
-    setActionPlanEmployee(null);
-    setActionPlanContent('');
-  };
 
   const handleMarkFeedback = (evalId: string) => {
     // Use the dedicated feedback endpoint instead of the general update
@@ -428,7 +409,6 @@ export default function Evaluations() {
           <h3 className="smps-section-title font-display text-base font-semibold mb-3 text-smps-success">Completadas ({completedEmployees.length})</h3>
           <div className="space-y-2">
             {completedEmployees.map(({ user: emp, eval: ev }) => {
-              const hasActionPlan = actionPlans.some(p => p.employeeId === emp.id && p.period === currentPeriod && p.supervisorId === currentUser.id);
               return (
                 <div key={emp.id} className="flex items-center justify-between py-3 px-4 rounded-lg bg-card border">
                   <div>
@@ -449,10 +429,6 @@ export default function Evaluations() {
                         <MessageSquare className="h-4 w-4 text-smps-success" />
                       </span>
                     )}
-                    <button onClick={() => { setActionPlanEmployee(emp.id); const existing = actionPlans.find(p => p.employeeId === emp.id && p.period === currentPeriod && p.supervisorId === currentUser.id); setActionPlanContent(existing?.content || ''); }}
-                      className="p-1.5 rounded-lg hover:bg-muted transition-colors" title="Plan de acción">
-                      <FileText className={`h-4 w-4 ${hasActionPlan ? 'text-smps-success' : 'text-accent'}`} />
-                    </button>
                   </div>
                 </div>
               );
@@ -609,29 +585,7 @@ export default function Evaluations() {
 
       {evalToView && <EvaluationViewer evaluation={evalToView} onClose={() => setViewingEval(null)} />}
 
-      {/* Action Plan Modal */}
-      {actionPlanEmployee && (
-        <div className="fixed inset-0 z-[100] bg-foreground/20 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => { setActionPlanEmployee(null); setActionPlanContent(''); }}>
-          <div className="bg-card rounded-xl border shadow-xl w-full max-w-lg" onClick={e => e.stopPropagation()}>
-            <div className="p-4 border-b">
-              <h3 className="smps-section-title font-display text-base font-semibold flex items-center gap-2">
-                <FileText className="h-5 w-5 text-accent" />
-                Plan de Acción — {users.find(u => u.id === actionPlanEmployee)?.name}
-              </h3>
-              <p className="text-xs text-muted-foreground mt-1">Completar tras la sesión de feedback</p>
-            </div>
-            <div className="p-4">
-              <textarea value={actionPlanContent} onChange={e => setActionPlanContent(e.target.value)}
-                placeholder="Defina los objetivos, metas y acciones para el siguiente periodo..."
-                className="w-full h-40 px-4 py-3 rounded-lg border border-input bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent resize-none text-sm" />
-            </div>
-            <div className="p-4 border-t flex gap-3">
-              <button onClick={() => { setActionPlanEmployee(null); setActionPlanContent(''); }} className="flex-1 py-2 rounded-lg border text-sm font-medium hover:bg-muted transition-colors">Cancelar</button>
-              <button onClick={handleSaveActionPlan} disabled={!actionPlanContent.trim()} className="flex-1 py-2 rounded-lg bg-accent text-accent-foreground text-sm font-medium hover:opacity-90 disabled:opacity-40 transition-opacity">Guardar Plan</button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Action Plan Modal - REMOVED: Action plans are now created by employees, not evaluators */}
     </div>
   );
 }

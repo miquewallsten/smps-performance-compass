@@ -5,7 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useUsers, useEvaluations, useAssignments, useObjectives , usePeriods } from '@/api/queries';
 import { getPositionLabel, getPositionLevel, LEVEL_LABELS } from '@/lib/evaluationConfig';
 import { useCurrentPeriod } from '@/hooks/useCurrentPeriod';
-import { User as UserIcon, Target, TrendingUp, Sparkles, Clock } from 'lucide-react';
+import { User as UserIcon, Target, TrendingUp, Clock } from 'lucide-react';
 
 function TrafficLight({ value }: { value: number }) {
   let color = 'bg-destructive';
@@ -89,10 +89,6 @@ export default function MyProfile() {
       <div className="smps-surface-elevated">
         <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
           <h3 className="font-display text-lg font-semibold">Información Personal</h3>
-          <Link to={`/help?position=${currentUser.position}&open=competencias`}
-            className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-accent/10 text-accent hover:bg-accent/20 transition-colors">
-            <Sparkles className="h-3.5 w-3.5" /> ¿Qué se espera de mí?
-          </Link>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
           <div><span className="text-muted-foreground">Nombre:</span> <span className="font-medium">{currentUser.name}</span></div>
