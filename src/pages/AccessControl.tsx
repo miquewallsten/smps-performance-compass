@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import FeatureVisibility from '@/components/FeatureVisibility';
+import { hasRole } from '@/middleware/permissions';
 
 export default function AccessControl() {
   const { user: currentUser } = useAuth();
@@ -702,16 +703,18 @@ export default function AccessControl() {
         </div>
       </div>
 
-      {/* Feature Visibility Configuration */}
-      <div className="smps-surface-elevated">
-        <h3 className="smps-section-title font-display text-base font-semibold mb-3 flex items-center gap-2">
-          <Eye className="h-5 w-5 text-accent" /> Visibilidad de Funcionalidades
-        </h3>
-        <p className="text-sm text-muted-foreground mb-4">
-          Controla qué funcionalidades pueden ver los usuarios según su rol. Los cambios se aplican automáticamente al guardar.
-        </p>
-        <FeatureVisibility />
-      </div>
+      {/* Feature Visibility Configuration - Admin and Super Admin Only */}
+      {hasRole(currentUser, ['super_user', 'admin']) && (
+        <div className="smps-surface-elevated">
+          <h3 className="smps-section-title font-display text-base font-semibold mb-3 flex items-center gap-2">
+            <Eye className="h-5 w-5 text-accent" /> Visibilidad de Funcionalidades
+          </h3>
+          <p className="text-sm text-muted-foreground mb-4">
+            Controla qué funcionalidades pueden ver los usuarios según su rol. Los cambios se aplican automáticamente al guardar.
+          </p>
+          <FeatureVisibility />
+        </div>
+      )}
 
       {/* Activation History */}
       {activationHistory.length > 0 && (
