@@ -29,13 +29,33 @@ function phaseStatus(phase: PhaseKey, selfDone: boolean, supDone: boolean, fbDon
   }
 }
 
+class DashboardErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean; error: Error | null }> {
+  state = { hasError: false, error: null as Error | null };
+  static getDerivedStateFromError(error: Error) { return { hasError: true, error }; }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
+          <AlertTriangle className="h-8 w-8 text-[hsl(var(--smps-warning))] mb-3" />
+          <p className="text-sm font-semibold mb-1">Error al cargar el panel</p>
+          <p className="text-xs text-muted-foreground mb-4">{this.state.error?.message || 'Ocurrió un error inesperado.'}</p>
+          <button onClick={() => { this.setState({ hasError: false, error: null }); window.location.reload(); }}
+            className="px-4 py-2 rounded-lg bg-accent text-accent-foreground text-sm font-medium hover:opacity-90 transition-opacity">
+            Reintentar
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 export default function Dashboard() {
   const { user: currentUser } = useAuth();
   const currentPeriod = useCurrentPeriod();
   const { data: periodsData = [] } = usePeriods();
   const displayPeriod = useDisplayPeriod();
 
-  // Analytics: use display period (most recent with data)
   const { data: overview, isLoading: overviewLoading } = useAnalyticsOverview(displayPeriod);
   const hasCurrentData = overview && (overview.selfEvalCompleted > 0 || overview.supervisorEvalCompleted > 0);
   const analyticsPeriod = displayPeriod;
@@ -44,7 +64,6 @@ export default function Dashboard() {
   const { data: pendingActions, isLoading: actionsLoading } = usePendingActions(currentPeriod);
   const { data: notifCount } = useUnreadNotificationCount();
 
-  // Raw data for per-employee table (original behavior)
   const { data: allUsers = [], isLoading: usersLoading } = useUsers();
   const { data: allEvaluations = [], isLoading: evalsLoading } = useEvaluations({ period: currentPeriod });
   const { data: allAssignments = [], isLoading: assignLoading } = useAssignments(currentPeriod);
@@ -63,18 +82,15 @@ export default function Dashboard() {
   const isAdminOrMore = isAdmin || isSocio || !!currentUser.isManagingPartner;
   const isSuperUser = currentUser.isSuperUser;
 
-  // ── Period data for per-employee table ──
   const periodAssignments = allAssignments.filter((a: any) => a.period === currentPeriod);
   const periodEvals = allEvaluations.filter((e: any) => e.period === currentPeriod);
 
-  // Visibility filtering
   const myTeamIds = isAdminOrMore
     ? null
     : periodAssignments.filter((a: any) => a.supervisorId === currentUser.id).map((a: any) => a.employeeId);
 
   const getRelevantUsers = () => {
     let base = allUsers.filter((u: any) => u.isActive && !u.isSuperUser);
-    // Apply visibility rules
     base = base.filter((u: any) => canViewUserEvaluations(currentUser, u));
     if (myTeamIds) {
       base = base.filter((u: any) => myTeamIds.includes(u.id) || u.id === currentUser.id);
@@ -94,13 +110,11 @@ export default function Dashboard() {
   const selfEvals = relevantEvals.filter((e: any) => e.type === 'self');
   const supervisorEvals = relevantEvals.filter((e: any) => e.type === 'supervisor');
 
-  // My evaluation status
   const mySelfEval = periodEvals.find((e: any) => e.type === 'self' && e.evaluatorId === currentUser.id);
   const myAssignments = periodAssignments.filter((a: any) => a.supervisorId === currentUser.id);
   const myCompletedEvals = periodEvals.filter((e: any) => e.type === 'supervisor' && e.evaluatorId === currentUser.id);
   const myPendingEvals = myAssignments.filter((a: any) => !myCompletedEvals.find((e: any) => e.evaluatedId === a.employeeId));
 
-  // Group users by LEGAL / ADMINISTRATIVO
   const legalHierarchy = getLegalHierarchy();
   const adminHierarchy = getAdminHierarchy();
   const legalUsers = relevantUsers.filter((u: any) => legalHierarchy.includes(u.position)).sort((a: any, b: any) => {
@@ -125,7 +139,6 @@ export default function Dashboard() {
     if (groupUsers.length === 0) return null;
     const hierarchy = groupLabel === 'LEGAL' ? legalHierarchy : adminHierarchy;
     const positions = [...new Set(groupUsers.map((u: any) => u.position))];
-    // Sort positions by hierarchy rank
     positions.sort((a, b) => hierarchy.indexOf(a) - hierarchy.indexOf(b));
     return (
       <div className="mb-4">
@@ -138,7 +151,6 @@ export default function Dashboard() {
               <div className="space-y-1">
                 {posUsers.map((u: any) => {
                   const hasSelfEval = periodEvals.some((e: any) => e.type === 'self' && e.evaluatorId === u.id);
-                  const userAssigns = periodAssignments.filter((a: any) => a.employeeId === u.id);
                   const completedSup = periodEvals.filter((e: any) => e.type === 'supervisor' && e.evaluatedId === u.id);
                   return (
                     <div key={u.id} className="flex items-center justify-between py-2 px-3 rounded-lg bg-muted/50 text-sm">
@@ -163,7 +175,6 @@ export default function Dashboard() {
     );
   };
 
-  // ── Analytics data ──
   const totalFromAnalytics = overview?.totalEmployees || 0;
   const completionRate = overview?.completionRate || 0;
   const avgFromAnalytics = overview?.avgOverallScore != null ? Math.round(overview.avgOverallScore) : null;
@@ -180,14 +191,16 @@ export default function Dashboard() {
   const planDone = (overview?.actionPlansCreated || 0) > 0;
 
   return (
-    <div className="space-y-4">
+    <DashboardErrorBoundary>
+    <div className="space-y-5">
+      {/* ─── Header ─────────────────────────────────────────────── */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="font-display text-lg font-bold">Panel</h1>
-          <p className="text-xs text-muted-foreground">Periodo: {currentPeriod}{isPeriodTransition && <span className="ml-1 text-amber-600">(mostrando datos de {analyticsPeriod})</span>}</p>
+          <h1 className="text-lg font-bold tracking-tight">Panel</h1>
+          <p className="text-xs text-muted-foreground mt-0.5">Periodo: {currentPeriod}{isPeriodTransition && <span className="ml-1 text-[hsl(var(--smps-warning))]">(mostrando datos de {analyticsPeriod})</span>}</p>
         </div>
         {notifCount?.unread > 0 && (
-          <button onClick={() => navigate('/notifications')} className="flex items-center gap-1.5 text-sm text-accent hover:opacity-80 transition-opacity">
+          <button onClick={() => navigate('/notifications')} className="flex items-center gap-1.5 text-sm text-accent hover:opacity-80 transition-[opacity]">
             <Bell className="h-4 w-4" />
             <span className="font-medium">{notifCount.unread}</span>
           </button>
@@ -203,7 +216,7 @@ export default function Dashboard() {
             { value: 'administrativo', label: 'Administrativo' },
           ] as const).map(opt => (
             <button key={opt.value} onClick={() => setSelectedLevel(opt.value)}
-              className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+              className={`px-3 py-1.5 rounded-md text-xs font-medium transition-[background-color,color] ${
                 selectedLevel === opt.value ? 'bg-accent text-accent-foreground' : 'text-muted-foreground hover:text-foreground'
               }`}>
               {opt.label}
@@ -212,70 +225,41 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* ─── Stat Cards ────────────────────────────────────────────── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <div className="smps-stat-card">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-muted-foreground text-xs font-medium uppercase tracking-wide">Empleados</p>
-              <p className="text-3xl font-bold font-display text-foreground mt-1">{totalEmployees}</p>
-            </div>
-            <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center">
-              <Users className="h-5 w-5 text-blue-500" />
-            </div>
+      {/* ─── Metrics Strip (replaces hero-metric cards) ─────────────── */}
+      <div className="smps-surface-card">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="smps-accent-bar pl-4" style={{ '--bar-color': 'hsl(215 50% 50%)' } as React.CSSProperties}>
+            <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">Empleados</p>
+            <p className="text-2xl font-bold tracking-tight mt-0.5">{totalEmployees}</p>
           </div>
-        </div>
-
-        <div className="smps-stat-card">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-muted-foreground text-xs font-medium uppercase tracking-wide">Autoevaluaciones</p>
-              <p className="text-3xl font-bold font-display text-foreground mt-1">{selfEvalCount}</p>
-            </div>
-            <div className="w-10 h-10 rounded-lg bg-green-500/10 flex items-center justify-center">
-              <CheckCircle className="h-5 w-5 text-green-500" />
-            </div>
+          <div className="smps-accent-bar pl-4" style={{ '--bar-color': 'hsl(var(--smps-success))' } as React.CSSProperties}>
+            <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">Autoevaluaciones</p>
+            <p className="text-2xl font-bold tracking-tight mt-0.5">{selfEvalCount}<span className="text-sm font-normal text-muted-foreground">/{totalEmployees}</span></p>
           </div>
-        </div>
-
-        <div className="smps-stat-card">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-muted-foreground text-xs font-medium uppercase tracking-wide">Evaluados</p>
-              <p className="text-3xl font-bold font-display text-foreground mt-1">{evaluatedCount}</p>
-            </div>
-            <div className="w-10 h-10 rounded-lg bg-purple-500/10 flex items-center justify-center">
-              <UserCheck className="h-5 w-5 text-purple-500" />
-            </div>
+          <div className="smps-accent-bar pl-4" style={{ '--bar-color': 'hsl(var(--accent))' } as React.CSSProperties}>
+            <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">Evaluados</p>
+            <p className="text-2xl font-bold tracking-tight mt-0.5">{evaluatedCount}<span className="text-sm font-normal text-muted-foreground">/{totalEmployees}</span></p>
           </div>
-        </div>
-
-        <div className="smps-stat-card" onClick={() => toggleCard('avg')} style={{ cursor: 'pointer' }}>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-muted-foreground text-xs font-medium uppercase tracking-wide">Promedio General</p>
-              <p className="text-3xl font-bold font-display text-foreground mt-1">{avgScore !== null ? `${avgScore}%` : '—'}</p>
-            </div>
-            <div className="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center">
-              <TrendingUp className="h-5 w-5 text-accent" />
-            </div>
+          <div className="smps-accent-bar pl-4" style={{ '--bar-color': 'hsl(var(--smps-gold))' } as React.CSSProperties}>
+            <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">Promedio</p>
+            <p className="text-2xl font-bold tracking-tight mt-0.5">{avgScore !== null ? `${avgScore}%` : '—'}</p>
           </div>
         </div>
       </div>
 
-      {/* ─── Expandable Cards ─────────────────────────────────────── */}
+      {/* ─── Expandable Toggles ─────────────────────────────────────── */}
       <div className="flex flex-wrap gap-2">
-        <button onClick={() => toggleCard('employees')} className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm font-medium transition-colors ${expandedCard === 'employees' ? 'bg-accent text-accent-foreground' : 'bg-card hover:bg-muted/50'}`}>
+        <button onClick={() => toggleCard('employees')} className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm font-medium transition-[background-color,color] ${expandedCard === 'employees' ? 'bg-accent text-accent-foreground' : 'bg-card hover:bg-muted/50'}`}>
           <Users className="h-4 w-4" />
           Empleados ({totalEmployees})
           <ChevronDown className={`h-4 w-4 transition-transform ${expandedCard === 'employees' ? 'rotate-180' : ''}`} />
         </button>
-        <button onClick={() => toggleCard('evaluated')} className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm font-medium transition-colors ${expandedCard === 'evaluated' ? 'bg-accent text-accent-foreground' : 'bg-card hover:bg-muted/50'}`}>
+        <button onClick={() => toggleCard('evaluated')} className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm font-medium transition-[background-color,color] ${expandedCard === 'evaluated' ? 'bg-accent text-accent-foreground' : 'bg-card hover:bg-muted/50'}`}>
           <CheckCircle className="h-4 w-4" />
           Evaluados ({evaluatedCount})
           <ChevronDown className={`h-4 w-4 transition-transform ${expandedCard === 'evaluated' ? 'rotate-180' : ''}`} />
         </button>
-        <button onClick={() => toggleCard('progress')} className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm font-medium transition-colors ${expandedCard === 'progress' ? 'bg-accent text-accent-foreground' : 'bg-card hover:bg-muted/50'}`}>
+        <button onClick={() => toggleCard('progress')} className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm font-medium transition-[background-color,color] ${expandedCard === 'progress' ? 'bg-accent text-accent-foreground' : 'bg-card hover:bg-muted/50'}`}>
           <Target className="h-4 w-4" />
           Progreso
           <ChevronDown className={`h-4 w-4 transition-transform ${expandedCard === 'progress' ? 'rotate-180' : ''}`} />
@@ -284,16 +268,16 @@ export default function Dashboard() {
 
       {/* ─── Employee List ─────────────────────────────────────────── */}
       {expandedCard === 'employees' && (
-        <div className="bg-card rounded-xl border p-6 animate-fade-in">
-          <h3 className="font-display text-lg font-semibold mb-4">Listado por Nivel ({totalEmployees})</h3>
+        <div className="smps-surface-elevated smps-fade-in">
+          <h3 className="text-base font-semibold mb-4">Listado por Nivel ({totalEmployees})</h3>
           {renderUserGroup(legalUsers, 'LEGAL')}
           {renderUserGroup(adminUsersGroup, 'ADMINISTRATIVO')}
         </div>
       )}
 
       {expandedCard === 'evaluated' && (
-        <div className="bg-card rounded-xl border p-6 animate-fade-in">
-          <h3 className="font-display text-lg font-semibold mb-2">Evaluados - {currentPeriod}</h3>
+        <div className="smps-surface-elevated smps-fade-in">
+          <h3 className="text-base font-semibold mb-2">Evaluados — {currentPeriod}</h3>
           {relevantEvals.length === 0 ? (
             <p className="text-muted-foreground text-sm">No hay evaluaciones completadas.</p>
           ) : (
@@ -303,8 +287,8 @@ export default function Dashboard() {
       )}
 
       {expandedCard === 'progress' && (
-        <div className="bg-card rounded-xl border p-6 animate-fade-in">
-          <h3 className="font-display text-lg font-semibold mb-4">Progreso por Posición</h3>
+        <div className="smps-surface-elevated smps-fade-in">
+          <h3 className="text-base font-semibold mb-4">Progreso por Posición</h3>
           {getPositionHierarchy().map(pos => {
             const posUsers = relevantUsers.filter((u: any) => u.position === pos);
             if (posUsers.length === 0) return null;
@@ -314,8 +298,8 @@ export default function Dashboard() {
               <div key={pos} className="mb-3">
                 <h4 className="text-sm font-semibold mb-1">{getPositionLabel(pos)} ({posUsers.length})</h4>
                 <p className="text-xs text-muted-foreground mb-1">Autoevaluaciones: {selfDone}/{posUsers.length}</p>
-                <div className="h-1.5 rounded-full bg-muted overflow-hidden">
-                  <div className="h-full rounded-full bg-green-500 transition-[width] duration-700 ease-out" style={{ width: `${selfPct}%` }} />
+                <div className="smps-progress-bar">
+                  <div className="fill" style={{ width: `${selfPct}%` }} />
                 </div>
               </div>
             );
@@ -323,13 +307,13 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* ─── My Autoevaluación + Pending Evals ─────────────────────── */}
+      {/* ─── My Status + Pending (flat surface, no card) ──────────── */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="bg-card rounded-xl border p-6">
-          <h3 className="font-display text-lg font-semibold mb-3">Mi Autoevaluación</h3>
+        <div className="smps-surface-card">
+          <p className="smps-section-title">Mi Autoevaluación</p>
           {mySelfEval ? (
             <div className="flex items-center gap-3">
-              <CheckCircle className="h-5 w-5 text-green-500" />
+              <CheckCircle className="h-5 w-5 text-[hsl(var(--smps-success))]" />
               <div>
                 <p className="text-sm font-medium">Completada</p>
                 <p className="text-xs text-muted-foreground">Calificación: {mySelfEval.totalScore}%</p>
@@ -339,18 +323,18 @@ export default function Dashboard() {
             <div>
               <p className="text-sm text-muted-foreground mb-3">No has completado tu autoevaluación para este periodo.</p>
               <button onClick={() => navigate('/self-evaluation')}
-                className="px-4 py-2 rounded-lg bg-accent text-accent-foreground text-sm font-medium hover:opacity-90 transition-opacity">
+                className="px-4 py-2 rounded-lg bg-accent text-accent-foreground text-sm font-medium hover:opacity-90 transition-[opacity]">
                 Iniciar Autoevaluación
               </button>
             </div>
           )}
         </div>
 
-        <div className="bg-card rounded-xl border p-6">
-          <h3 className="font-display text-lg font-semibold mb-3">Evaluaciones Pendientes</h3>
+        <div className="smps-surface-card">
+          <p className="smps-section-title">Evaluaciones Pendientes</p>
           {myPendingEvals.length === 0 ? (
             <div className="flex items-center gap-3">
-              <CheckCircle className="h-5 w-5 text-green-500" />
+              <CheckCircle className="h-5 w-5 text-[hsl(var(--smps-success))]" />
               <p className="text-sm">No tienes evaluaciones pendientes</p>
             </div>
           ) : (
@@ -361,7 +345,7 @@ export default function Dashboard() {
                   <div key={a.id} className="flex items-center justify-between py-2 px-3 rounded-lg bg-muted/50">
                     <p className="text-sm font-medium">{emp?.name} <span className="text-xs font-normal text-muted-foreground">— {emp ? getPositionLabel(emp.position) : ''}</span></p>
                     <button onClick={() => navigate(`/evaluations?evaluate=${a.employeeId}`)}
-                      className="px-3 py-1.5 rounded-lg bg-accent text-accent-foreground text-xs font-medium hover:opacity-90 transition-opacity">
+                      className="px-3 py-1.5 rounded-lg bg-accent text-accent-foreground text-xs font-medium hover:opacity-90 transition-[opacity]">
                       Evaluar
                     </button>
                   </div>
@@ -372,18 +356,18 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* ─── Phase Progress ────────────────────────────────────────── */}
-      <div className="rounded-lg border bg-card p-4">
+      {/* ─── Phase Progress (flat surface) ─────────────────────────── */}
+      <div className="smps-surface-flat">
         <div className="flex items-center justify-between mb-3">
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Fases del Periodo</p>
-          <span className="text-[10px] text-muted-foreground">{currentPeriod}</span>
+          <p className="smps-section-title mb-0">Fases del Periodo</p>
+          <span className="text-xs text-muted-foreground">{currentPeriod}</span>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
           {PHASES.map(p => {
             const status = phaseStatus(p.key, selfDone, supDone, fbDone, planDone);
             const config = {
-              done: { bg: 'bg-green-500/10', text: 'text-green-600', label: '✓' },
-              current: { bg: 'bg-amber-500/10', text: 'text-amber-600', label: '→' },
+              done: { bg: 'bg-[hsl(var(--smps-success)/0.1)]', text: 'text-[hsl(var(--smps-success))]', label: '✓' },
+              current: { bg: 'bg-[hsl(var(--smps-warning)/0.1)]', text: 'text-[hsl(var(--smps-warning))]', label: '→' },
               upcoming: { bg: 'bg-muted/30', text: 'text-muted-foreground', label: '—' },
             }[status];
             return (
@@ -398,24 +382,27 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* ─── Evaluation Score Breakdown ─────────────────────────────── */}
+      {/* ─── Score Breakdown (flat surface) ─────────────────────────── */}
       {evalAnalytics && evalAnalytics.byType && (evalAnalytics.byType.self || evalAnalytics.byType.supervisor) && (
-        <section className="rounded-lg border bg-card p-4 space-y-2">
-          <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">Calificaciones</p>
-          {evalAnalytics.byType.self && (
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-muted-foreground">Autoevaluación</span>
-              <ScoreBadge value={evalAnalytics.byType.self.avgScore ? Math.round(evalAnalytics.byType.self.avgScore) : 0} size="md" />
-            </div>
-          )}
-          {evalAnalytics.byType.supervisor && (
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-muted-foreground">Supervisor</span>
-              <ScoreBadge value={evalAnalytics.byType.supervisor.avgScore ? Math.round(evalAnalytics.byType.supervisor.avgScore) : 0} size="md" />
-            </div>
-          )}
-        </section>
+        <div className="smps-surface-flat">
+          <p className="smps-section-title">Calificaciones</p>
+          <div className="space-y-2">
+            {evalAnalytics.byType.self && (
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-muted-foreground">Autoevaluación</span>
+                <ScoreBadge value={evalAnalytics.byType.self.avgScore ? Math.round(evalAnalytics.byType.self.avgScore) : 0} size="md" />
+              </div>
+            )}
+            {evalAnalytics.byType.supervisor && (
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-muted-foreground">Supervisor</span>
+                <ScoreBadge value={evalAnalytics.byType.supervisor.avgScore ? Math.round(evalAnalytics.byType.supervisor.avgScore) : 0} size="md" />
+              </div>
+            )}
+          </div>
+        </div>
       )}
     </div>
+    </DashboardErrorBoundary>
   );
 }
