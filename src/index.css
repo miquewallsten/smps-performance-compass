@@ -156,8 +156,8 @@
   @media (hover: hover) and (pointer: fine) {
     .smps-accent-bar:hover::before { opacity: 1; top: 4px; bottom: 4px; }
   }
-  .smps-section-title { @apply font-display text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3; }
-  .smps-stat-value { @apply text-2xl font-bold font-display tracking-tight; }
+  .smps-section-title { @apply text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3; }
+  .smps-stat-value { @apply text-2xl font-bold tracking-tight; }
 }
 @keyframes smps-fade-in { from { opacity: 0; } to { opacity: 1; } }
 @keyframes smps-fade-up { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }

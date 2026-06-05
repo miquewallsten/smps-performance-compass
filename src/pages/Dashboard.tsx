@@ -227,20 +227,20 @@ export default function Dashboard() {
 
       {/* ─── Metrics Strip (replaces hero-metric cards) ─────────────── */}
       <div className="smps-surface-card">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="smps-accent-bar pl-4" style={{ '--bar-color': 'hsl(215 50% 50%)' } as React.CSSProperties}>
+        <div className="grid grid-cols-2 md:grid-cols-4 divide-x divide-border">
+          <div className="smps-accent-bar pl-4 py-1" style={{ '--bar-color': 'hsl(215 50% 50%)' } as React.CSSProperties}>
             <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">Empleados</p>
             <p className="text-2xl font-bold tracking-tight mt-0.5">{totalEmployees}</p>
           </div>
-          <div className="smps-accent-bar pl-4" style={{ '--bar-color': 'hsl(var(--smps-success))' } as React.CSSProperties}>
+          <div className="smps-accent-bar pl-4 py-1" style={{ '--bar-color': 'hsl(var(--smps-success))' } as React.CSSProperties}>
             <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">Autoevaluaciones</p>
             <p className="text-2xl font-bold tracking-tight mt-0.5">{selfEvalCount}<span className="text-sm font-normal text-muted-foreground">/{totalEmployees}</span></p>
           </div>
-          <div className="smps-accent-bar pl-4" style={{ '--bar-color': 'hsl(var(--accent))' } as React.CSSProperties}>
+          <div className="smps-accent-bar pl-4 py-1" style={{ '--bar-color': 'hsl(var(--accent))' } as React.CSSProperties}>
             <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">Evaluados</p>
             <p className="text-2xl font-bold tracking-tight mt-0.5">{evaluatedCount}<span className="text-sm font-normal text-muted-foreground">/{totalEmployees}</span></p>
           </div>
-          <div className="smps-accent-bar pl-4" style={{ '--bar-color': 'hsl(var(--smps-gold))' } as React.CSSProperties}>
+          <div className="smps-accent-bar pl-4 py-1" style={{ '--bar-color': 'hsl(var(--smps-gold))' } as React.CSSProperties}>
             <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">Promedio</p>
             <p className="text-2xl font-bold tracking-tight mt-0.5">{avgScore !== null ? `${avgScore}%` : '—'}</p>
           </div>
@@ -249,20 +249,20 @@ export default function Dashboard() {
 
       {/* ─── Expandable Toggles ─────────────────────────────────────── */}
       <div className="flex flex-wrap gap-2">
-        <button onClick={() => toggleCard('employees')} className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm font-medium transition-[background-color,color] ${expandedCard === 'employees' ? 'bg-accent text-accent-foreground' : 'bg-card hover:bg-muted/50'}`}>
-          <Users className="h-4 w-4" />
+        <button onClick={() => toggleCard('employees')} className={`flex items-center gap-2 px-3.5 py-2 rounded-lg border text-sm font-medium transition-[background-color,color,box-shadow] ${expandedCard === 'employees' ? 'bg-accent text-accent-foreground shadow-sm' : 'bg-card hover:bg-muted/50 text-foreground'}`}>
+          <Users className="h-3.5 w-3.5" />
           Empleados ({totalEmployees})
-          <ChevronDown className={`h-4 w-4 transition-transform ${expandedCard === 'employees' ? 'rotate-180' : ''}`} />
+          <ChevronDown className={`h-3.5 w-3.5 transition-transform duration-200 ${expandedCard === 'employees' ? 'rotate-180' : ''}`} />
         </button>
-        <button onClick={() => toggleCard('evaluated')} className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm font-medium transition-[background-color,color] ${expandedCard === 'evaluated' ? 'bg-accent text-accent-foreground' : 'bg-card hover:bg-muted/50'}`}>
-          <CheckCircle className="h-4 w-4" />
+        <button onClick={() => toggleCard('evaluated')} className={`flex items-center gap-2 px-3.5 py-2 rounded-lg border text-sm font-medium transition-[background-color,color,box-shadow] ${expandedCard === 'evaluated' ? 'bg-accent text-accent-foreground shadow-sm' : 'bg-card hover:bg-muted/50 text-foreground'}`}>
+          <CheckCircle className="h-3.5 w-3.5" />
           Evaluados ({evaluatedCount})
-          <ChevronDown className={`h-4 w-4 transition-transform ${expandedCard === 'evaluated' ? 'rotate-180' : ''}`} />
+          <ChevronDown className={`h-3.5 w-3.5 transition-transform duration-200 ${expandedCard === 'evaluated' ? 'rotate-180' : ''}`} />
         </button>
-        <button onClick={() => toggleCard('progress')} className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm font-medium transition-[background-color,color] ${expandedCard === 'progress' ? 'bg-accent text-accent-foreground' : 'bg-card hover:bg-muted/50'}`}>
-          <Target className="h-4 w-4" />
+        <button onClick={() => toggleCard('progress')} className={`flex items-center gap-2 px-3.5 py-2 rounded-lg border text-sm font-medium transition-[background-color,color,box-shadow] ${expandedCard === 'progress' ? 'bg-accent text-accent-foreground shadow-sm' : 'bg-card hover:bg-muted/50 text-foreground'}`}>
+          <Target className="h-3.5 w-3.5" />
           Progreso
-          <ChevronDown className={`h-4 w-4 transition-transform ${expandedCard === 'progress' ? 'rotate-180' : ''}`} />
+          <ChevronDown className={`h-3.5 w-3.5 transition-transform duration-200 ${expandedCard === 'progress' ? 'rotate-180' : ''}`} />
         </button>
       </div>
 
@@ -362,19 +362,22 @@ export default function Dashboard() {
           <p className="smps-section-title mb-0">Fases del Periodo</p>
           <span className="text-xs text-muted-foreground">{currentPeriod}</span>
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-          {PHASES.map(p => {
+        <div className="flex items-stretch gap-1">
+          {PHASES.map((p, i) => {
             const status = phaseStatus(p.key, selfDone, supDone, fbDone, planDone);
-            const config = {
-              done: { bg: 'bg-[hsl(var(--smps-success)/0.1)]', text: 'text-[hsl(var(--smps-success))]', label: '✓' },
-              current: { bg: 'bg-[hsl(var(--smps-warning)/0.1)]', text: 'text-[hsl(var(--smps-warning))]', label: '→' },
-              upcoming: { bg: 'bg-muted/30', text: 'text-muted-foreground', label: '—' },
-            }[status];
+            const isDone = status === 'done';
+            const isCurrent = status === 'current';
             return (
-              <div key={p.key} className={`rounded-md p-3 ${config.bg}`}>
-                <div className="flex items-center gap-2">
-                  <span className={`text-sm font-bold ${config.text}`}>{config.label}</span>
-                  <span className="text-xs font-medium">{p.short}</span>
+              <div key={p.key} className={`flex-1 rounded-lg px-3 py-2.5 text-center transition-[background-color,color] ${
+                isDone ? 'bg-[hsl(var(--smps-success)/0.08)]' :
+                isCurrent ? 'bg-[hsl(var(--smps-warning)/0.1)] ring-1 ring-[hsl(var(--smps-warning)/0.3)]' :
+                'bg-muted/30'
+              }`}>
+                <div className={`text-base font-bold ${isDone ? 'text-[hsl(var(--smps-success))]' : isCurrent ? 'text-[hsl(var(--smps-warning))]' : 'text-muted-foreground/50'}`}>
+                  {isDone ? '✓' : isCurrent ? '→' : '—'}
+                </div>
+                <div className={`text-[11px] font-medium mt-0.5 ${isDone ? 'text-[hsl(var(--smps-success))]' : isCurrent ? 'text-foreground' : 'text-muted-foreground'}`}>
+                  {p.short}
                 </div>
               </div>
             );
@@ -386,19 +389,31 @@ export default function Dashboard() {
       {evalAnalytics && evalAnalytics.byType && (evalAnalytics.byType.self || evalAnalytics.byType.supervisor) && (
         <div className="smps-surface-flat">
           <p className="smps-section-title">Calificaciones</p>
-          <div className="space-y-2">
-            {evalAnalytics.byType.self && (
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-muted-foreground">Autoevaluación</span>
-                <ScoreBadge value={evalAnalytics.byType.self.avgScore ? Math.round(evalAnalytics.byType.self.avgScore) : 0} size="md" />
-              </div>
-            )}
-            {evalAnalytics.byType.supervisor && (
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-muted-foreground">Supervisor</span>
-                <ScoreBadge value={evalAnalytics.byType.supervisor.avgScore ? Math.round(evalAnalytics.byType.supervisor.avgScore) : 0} size="md" />
-              </div>
-            )}
+          <div className="space-y-3">
+            {evalAnalytics.byType.self && (() => {
+              const score = evalAnalytics.byType.self.avgScore ? Math.round(evalAnalytics.byType.self.avgScore) : 0;
+              return (
+                <div className="flex items-center gap-3">
+                  <span className="text-xs text-muted-foreground w-24 shrink-0">Autoevaluación</span>
+                  <div className="flex-1 h-1.5 rounded-full bg-muted overflow-hidden">
+                    <div className="h-full rounded-full bg-[hsl(var(--smps-success))] transition-[width] duration-700 ease-out" style={{ width: `${score}%` }} />
+                  </div>
+                  <ScoreBadge value={score} size="md" />
+                </div>
+              );
+            })()}
+            {evalAnalytics.byType.supervisor && (() => {
+              const score = evalAnalytics.byType.supervisor.avgScore ? Math.round(evalAnalytics.byType.supervisor.avgScore) : 0;
+              return (
+                <div className="flex items-center gap-3">
+                  <span className="text-xs text-muted-foreground w-24 shrink-0">Supervisor</span>
+                  <div className="flex-1 h-1.5 rounded-full bg-muted overflow-hidden">
+                    <div className="h-full rounded-full bg-[hsl(var(--accent))] transition-[width] duration-700 ease-out" style={{ width: `${score}%` }} />
+                  </div>
+                  <ScoreBadge value={score} size="md" />
+                </div>
+              );
+            })()}
           </div>
         </div>
       )}

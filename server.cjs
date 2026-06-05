@@ -1043,12 +1043,12 @@ var require_depd = __commonJS({
       if ("value" in descriptor) {
         descriptor = convertDataDescriptorToAccessor(obj, prop, message);
       }
-      var get3 = descriptor.get;
+      var get4 = descriptor.get;
       var set = descriptor.set;
-      if (typeof get3 === "function") {
+      if (typeof get4 === "function") {
         descriptor.get = function getter() {
           log2.call(deprecate, message, site);
-          return get3.apply(this, arguments);
+          return get4.apply(this, arguments);
         };
       }
       if (typeof set === "function") {
@@ -33974,27 +33974,27 @@ var require_router = __commonJS({
     var slice = Array.prototype.slice;
     var flatten = Array.prototype.flat;
     var methods = METHODS.map((method) => method.toLowerCase());
-    module2.exports = Router21;
+    module2.exports = Router22;
     module2.exports.Route = Route;
-    function Router21(options) {
-      if (!(this instanceof Router21)) {
-        return new Router21(options);
+    function Router22(options) {
+      if (!(this instanceof Router22)) {
+        return new Router22(options);
       }
       const opts = options || {};
-      function router21(req, res, next) {
-        router21.handle(req, res, next);
+      function router22(req, res, next) {
+        router22.handle(req, res, next);
       }
-      Object.setPrototypeOf(router21, this);
-      router21.caseSensitive = opts.caseSensitive;
-      router21.mergeParams = opts.mergeParams;
-      router21.params = {};
-      router21.strict = opts.strict;
-      router21.stack = [];
-      return router21;
+      Object.setPrototypeOf(router22, this);
+      router22.caseSensitive = opts.caseSensitive;
+      router22.mergeParams = opts.mergeParams;
+      router22.params = {};
+      router22.strict = opts.strict;
+      router22.stack = [];
+      return router22;
     }
-    Router21.prototype = function() {
+    Router22.prototype = function() {
     };
-    Router21.prototype.param = function param(name, fn) {
+    Router22.prototype.param = function param(name, fn) {
       if (!name) {
         throw new TypeError("argument name is required");
       }
@@ -34014,7 +34014,7 @@ var require_router = __commonJS({
       params.push(fn);
       return this;
     };
-    Router21.prototype.handle = function handle(req, res, callback) {
+    Router22.prototype.handle = function handle(req, res, callback) {
       if (!callback) {
         throw new TypeError("argument callback is required");
       }
@@ -34141,7 +34141,7 @@ var require_router = __commonJS({
         }
       }
     };
-    Router21.prototype.use = function use(handler) {
+    Router22.prototype.use = function use(handler) {
       let offset = 0;
       let path3 = "/";
       if (typeof handler !== "function") {
@@ -34174,7 +34174,7 @@ var require_router = __commonJS({
       }
       return this;
     };
-    Router21.prototype.route = function route(path3) {
+    Router22.prototype.route = function route(path3) {
       const route2 = new Route(path3);
       const layer = new Layer(path3, {
         sensitive: this.caseSensitive,
@@ -34189,7 +34189,7 @@ var require_router = __commonJS({
       return route2;
     };
     methods.concat("all").forEach(function(method) {
-      Router21.prototype[method] = function(path3) {
+      Router22.prototype[method] = function(path3) {
         const route = this.route(path3);
         route[method].apply(route, slice.call(arguments, 1));
         return this;
@@ -34372,13 +34372,13 @@ var require_application = __commonJS({
     var compileTrust = require_utils3().compileTrust;
     var resolve = require("node:path").resolve;
     var once = require_once();
-    var Router21 = require_router();
+    var Router22 = require_router();
     var slice = Array.prototype.slice;
     var flatten = Array.prototype.flat;
     var app2 = exports2 = module2.exports = {};
     var trustProxyDefaultSymbol = "@@symbol:trust_proxy_default";
     app2.init = function init() {
-      var router21 = null;
+      var router22 = null;
       this.cache = /* @__PURE__ */ Object.create(null);
       this.engines = /* @__PURE__ */ Object.create(null);
       this.settings = /* @__PURE__ */ Object.create(null);
@@ -34387,13 +34387,13 @@ var require_application = __commonJS({
         configurable: true,
         enumerable: true,
         get: function getrouter() {
-          if (router21 === null) {
-            router21 = new Router21({
+          if (router22 === null) {
+            router22 = new Router22({
               caseSensitive: this.enabled("case sensitive routing"),
               strict: this.enabled("strict routing")
             });
           }
-          return router21;
+          return router22;
         }
       });
     };
@@ -34464,15 +34464,15 @@ var require_application = __commonJS({
       if (fns.length === 0) {
         throw new TypeError("app.use() requires a middleware function");
       }
-      var router21 = this.router;
+      var router22 = this.router;
       fns.forEach(function(fn2) {
         if (!fn2 || !fn2.handle || !fn2.set) {
-          return router21.use(path3, fn2);
+          return router22.use(path3, fn2);
         }
         debug(".use app under %s", path3);
         fn2.mountpath = path3;
         fn2.parent = this;
-        router21.use(path3, function mounted_app(req, res, next) {
+        router22.use(path3, function mounted_app(req, res, next) {
           var orig = req.app;
           fn2.handle(req, res, function(err) {
             Object.setPrototypeOf(req, orig.request);
@@ -56055,7 +56055,7 @@ var require_express = __commonJS({
     var EventEmitter = require("node:events").EventEmitter;
     var mixin = require_merge_descriptors();
     var proto = require_application();
-    var Router21 = require_router();
+    var Router22 = require_router();
     var req = require_request();
     var res = require_response();
     exports2 = module2.exports = createApplication;
@@ -56077,8 +56077,8 @@ var require_express = __commonJS({
     exports2.application = proto;
     exports2.request = req;
     exports2.response = res;
-    exports2.Route = Router21.Route;
-    exports2.Router = Router21;
+    exports2.Route = Router22.Route;
+    exports2.Router = Router22;
     exports2.json = bodyParser.json;
     exports2.raw = bodyParser.raw;
     exports2.static = require_serve_static();
@@ -67190,7 +67190,7 @@ var require_denque = __commonJS({
       i = this._head + i & this._capacityMask;
       return this._list[i];
     };
-    Denque.prototype.get = function get3(i) {
+    Denque.prototype.get = function get4(i) {
       return this.peekAt(i);
     };
     Denque.prototype.peek = function peek() {
@@ -84601,9 +84601,9 @@ var require_pool_connection2 = __commonJS({
     "use strict";
     var Connection = require_connection3();
     var PoolConnection = class extends Connection {
-      constructor(pool4, options) {
+      constructor(pool5, options) {
         super(options);
-        this._pool = pool4;
+        this._pool = pool5;
         this._released = false;
         this.lastActiveTime = Date.now();
         this.once("end", () => {
@@ -84651,9 +84651,9 @@ var require_pool_connection2 = __commonJS({
         if (!this._pool || this._pool._closed) {
           return;
         }
-        const pool4 = this._pool;
+        const pool5 = this._pool;
         this._pool = null;
-        pool4._removeConnection(this);
+        pool5._removeConnection(this);
       }
       promise(promiseImpl) {
         const PromisePoolConnection = require_pool_connection();
@@ -84976,11 +84976,11 @@ var require_pool2 = __commonJS({
     var inheritEvents = require_inherit_events();
     var BasePool = require_pool();
     var PromisePool = class _PromisePool extends EventEmitter {
-      constructor(pool4, thePromise) {
+      constructor(pool5, thePromise) {
         super();
-        this.pool = pool4;
+        this.pool = pool5;
         this.Promise = thePromise || Promise;
-        inheritEvents(pool4, this, ["acquire", "connection", "enqueue", "release"]);
+        inheritEvents(pool5, this, ["acquire", "connection", "enqueue", "release"]);
       }
       getConnection() {
         const corePool = this.pool;
@@ -85696,6 +85696,84 @@ var require_promise = __commonJS({
     exports2.clearParserCache = function() {
       parserCache.clearCache();
     };
+  }
+});
+
+// server/db/connection.ts
+async function get(sql, params) {
+  const [rows] = await pool.execute(sql, params);
+  return rows[0];
+}
+async function all(sql, params) {
+  const [rows] = await pool.execute(sql, params);
+  return rows;
+}
+async function run(sql, params) {
+  const [result] = await pool.execute(sql, params);
+  return result;
+}
+async function exec(sql) {
+  await pool.execute(sql);
+}
+async function getScalar(sql, params) {
+  const row = await get(sql, params);
+  if (!row) return void 0;
+  const values = Object.values(row);
+  return values[0];
+}
+async function transaction(callback) {
+  const conn = await pool.getConnection();
+  await conn.beginTransaction();
+  try {
+    const result = await callback(conn);
+    await conn.commit();
+    return result;
+  } catch (err) {
+    await conn.rollback();
+    throw err;
+  } finally {
+    conn.release();
+  }
+}
+async function tableExists(tableName) {
+  const [rows] = await pool.execute(
+    "SELECT COUNT(*) as cnt FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?",
+    [MYSQL_CONFIG.database, tableName]
+  );
+  return rows[0].cnt > 0;
+}
+var import_promise, MYSQL_CONFIG, pool, tx, db;
+var init_connection = __esm({
+  "server/db/connection.ts"() {
+    import_promise = __toESM(require_promise(), 1);
+    MYSQL_CONFIG = {
+      host: process.env.MYSQL_HOST || "localhost",
+      port: parseInt(process.env.MYSQL_PORT || "3306"),
+      user: process.env.MYSQL_USER || "root",
+      password: process.env.MYSQL_PASSWORD || "",
+      database: process.env.MYSQL_DATABASE || "smps_dev",
+      waitForConnections: true,
+      connectionLimit: 10,
+      queueLimit: 0,
+      charset: "utf8mb4",
+      timezone: "+00:00"
+    };
+    pool = import_promise.default.createPool(MYSQL_CONFIG);
+    tx = {
+      async get(conn, sql, params) {
+        const [rows] = await conn.execute(sql, params);
+        return rows[0];
+      },
+      async all(conn, sql, params) {
+        const [rows] = await conn.execute(sql, params);
+        return rows;
+      },
+      async run(conn, sql, params) {
+        const [result] = await conn.execute(sql, params);
+        return result;
+      }
+    };
+    db = { get, all, run, exec, getScalar, transaction, tableExists, tx };
   }
 });
 
@@ -99078,10 +99156,10 @@ var require_pool_resource = __commonJS({
     var errors = require_errors2();
     var EventEmitter = require("events");
     var PoolResource = class extends EventEmitter {
-      constructor(pool4) {
+      constructor(pool5) {
         super();
-        this.pool = pool4;
-        this.options = pool4.options;
+        this.pool = pool5;
+        this.options = pool5.options;
         this.logger = this.pool.logger;
         if (this.options.auth) {
           switch ((this.options.auth.type || "").toString().toUpperCase()) {
@@ -101444,6 +101522,320 @@ var require_nodemailer = __commonJS({
   }
 });
 
+// server/services/email.ts
+var email_exports = {};
+__export(email_exports, {
+  sendActivationEmail: () => sendActivationEmail,
+  sendAdminPasswordResetEmail: () => sendAdminPasswordResetEmail,
+  sendPasswordResetEmail: () => sendPasswordResetEmail,
+  sendTemplateEmail: () => sendTemplateEmail,
+  verifyEmailConfig: () => verifyEmailConfig
+});
+function getSendmailPath() {
+  if (process.env.SENDMAIL_PATH) return process.env.SENDMAIL_PATH;
+  const paths = ["/usr/sbin/sendmail", "/usr/lib/sendmail", "/usr/local/sbin/sendmail"];
+  for (const p of paths) {
+    try {
+      if ((0, import_fs.existsSync)(p)) return p;
+    } catch {
+    }
+  }
+  return null;
+}
+async function getSmtpConfig() {
+  const now3 = Date.now();
+  if (cachedSmtpConfig && lastConfigCheck && now3 - lastConfigCheck < 5e3) {
+    return cachedSmtpConfig;
+  }
+  try {
+    const dbConfig = await db.get("SELECT * FROM smtp_config WHERE id = 1");
+    if (dbConfig) {
+      cachedSmtpConfig = {
+        smtp_host: dbConfig.smtp_host,
+        smtp_port: dbConfig.smtp_port || 587,
+        smtp_secure: !!dbConfig.smtp_secure,
+        smtp_user: dbConfig.smtp_user,
+        smtp_pass: dbConfig.smtp_pass,
+        smtp_from: dbConfig.smtp_from || "SMPS Performance <noreply@smps.bowdot.online>",
+        mail_transport: dbConfig.mail_transport || "auto"
+      };
+    } else {
+      cachedSmtpConfig = {
+        smtp_host: process.env.SMTP_HOST || null,
+        smtp_port: parseInt(process.env.SMTP_PORT || "587"),
+        smtp_secure: process.env.SMTP_SECURE === "true",
+        smtp_user: process.env.SMTP_USER || null,
+        smtp_pass: process.env.SMTP_PASS || null,
+        smtp_from: process.env.SMTP_FROM || "SMPS Performance <noreply@smps.bowdot.online>",
+        mail_transport: process.env.MAIL_TRANSPORT || "auto"
+      };
+    }
+  } catch (err) {
+    console.warn("Failed to load SMTP config from DB, using env vars:", err);
+    cachedSmtpConfig = {
+      smtp_host: process.env.SMTP_HOST || null,
+      smtp_port: parseInt(process.env.SMTP_PORT || "587"),
+      smtp_secure: process.env.SMTP_SECURE === "true",
+      smtp_user: process.env.SMTP_USER || null,
+      smtp_pass: process.env.SMTP_PASS || null,
+      smtp_from: process.env.SMTP_FROM || "SMPS Performance <noreply@smps.bowdot.online>",
+      mail_transport: process.env.MAIL_TRANSPORT || "auto"
+    };
+  }
+  lastConfigCheck = now3;
+  return cachedSmtpConfig;
+}
+async function getTransporter() {
+  const config = await getSmtpConfig();
+  const configKey = `${config.mail_transport}|${config.smtp_host}|${config.smtp_port}|${config.smtp_secure}|${config.smtp_user}|${process.env.NODE_ENV}`;
+  if (transporter && cachedTransportConfig === configKey) {
+    return transporter;
+  }
+  transporter = null;
+  cachedTransportConfig = configKey;
+  const { smtp_host, smtp_port, smtp_secure, smtp_user, smtp_pass, smtp_from, mail_transport } = config;
+  if (mail_transport === "auto") {
+    if (process.env.NODE_ENV === "production") {
+      const sendmailPath = getSendmailPath();
+      if (sendmailPath) {
+        console.info(`\u{1F4E7} Using sendmail transport at ${sendmailPath} (Hostinger production)`);
+        transporter = import_nodemailer.default.createTransport({
+          sendmail: true,
+          path: sendmailPath,
+          args: ["-i"]
+        });
+        return transporter;
+      }
+      console.warn("\u26A0\uFE0F  sendmail not found on system, falling back to SMTP/stub");
+    }
+    if (smtp_host && smtp_user && smtp_pass) {
+      transporter = import_nodemailer.default.createTransport({
+        host: smtp_host,
+        port: smtp_port,
+        secure: smtp_secure,
+        auth: { user: smtp_user, pass: smtp_pass }
+      });
+      return transporter;
+    }
+    console.warn("\u26A0\uFE0F  SMTP not configured and not in production. Emails will not be sent.");
+    transporter = {
+      sendMail: async (options) => {
+        console.log("\u{1F4E7} [STUB] Email not sent (SMTP not configured):", {
+          to: options.to,
+          subject: options.subject
+        });
+        return { messageId: "stub", accepted: [options.to] };
+      }
+    };
+    return transporter;
+  }
+  if (mail_transport === "sendmail") {
+    const sendmailPath = getSendmailPath();
+    if (sendmailPath) {
+      console.info(`\u{1F4E7} Using sendmail transport at ${sendmailPath}`);
+      transporter = import_nodemailer.default.createTransport({
+        sendmail: true,
+        path: sendmailPath,
+        args: ["-i"]
+      });
+      return transporter;
+    }
+    console.error("\u274C Sendmail transport requested but /usr/sbin/sendmail not found. Falling back to stub.");
+  }
+  if (mail_transport === "smtp" && smtp_host && smtp_user && smtp_pass) {
+    transporter = import_nodemailer.default.createTransport({
+      host: smtp_host,
+      port: smtp_port,
+      secure: smtp_secure,
+      auth: { user: smtp_user, pass: smtp_pass }
+    });
+    return transporter;
+  }
+  console.warn("\u26A0\uFE0F  Email transport set to stub mode. Emails will not be sent.");
+  transporter = {
+    sendMail: async (options) => {
+      console.log("\u{1F4E7} [STUB] Email not sent:", {
+        to: options.to,
+        subject: options.subject
+      });
+      return { messageId: "stub", accepted: [options.to] };
+    }
+  };
+  return transporter;
+}
+async function getFromAddress() {
+  const config = await getSmtpConfig();
+  return config.smtp_from || "SMPS Performance <noreply@smps.bowdot.online>";
+}
+function getAppUrl() {
+  return process.env.APP_URL || "https://smps.bowdot.online";
+}
+async function sendActivationEmail(to, name, token) {
+  const activationLink = `${getAppUrl()}/activate-account?token=${token}`;
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+      <div style="text-align: center; margin-bottom: 30px;">
+        <div style="display: inline-block; background: #1e40af; color: white; padding: 12px 16px; border-radius: 8px; font-weight: bold; font-size: 18px;">
+          SM<br/>PS
+        </div>
+      </div>
+      <h2 style="color: #1e293b;">\xA1Bienvenido a SMPS Performance Compass!</h2>
+      <p style="color: #475569; font-size: 16px;">
+        Hola <strong>${name}</strong>,
+      </p>
+      <p style="color: #475569; font-size: 16px;">
+        Se ha creado una cuenta para usted en SMPS Performance Compass, el sistema de evaluaci\xF3n de desempe\xF1o.
+      </p>
+      <p style="color: #475569; font-size: 16px;">
+        Para activar su cuenta y establecer su contrase\xF1a, haga clic en el siguiente enlace:
+      </p>
+      <div style="text-align: center; margin: 30px 0;">
+        <a href="${activationLink}" style="background: #1e40af; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-size: 16px; font-weight: 600;">
+          Activar Cuenta
+        </a>
+      </div>
+      <p style="color: #64748b; font-size: 14px;">
+        Este enlace expirar\xE1 en <strong>48 horas</strong>.
+      </p>
+      <p style="color: #64748b; font-size: 14px;">
+        Si no solicit\xF3 esta cuenta, puede ignorar este correo.
+      </p>
+      <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 30px 0;" />
+      <p style="color: #94a3b8; font-size: 12px;">
+        Si el enlace no funciona, copie y pegue la siguiente URL en su navegador:<br/>
+        <a href="${activationLink}" style="color: #3b82f6; word-break: break-all;">${activationLink}</a>
+      </p>
+    </div>
+  `;
+  try {
+    const transport = await getTransporter();
+    const result = await transport.sendMail({
+      from: await getFromAddress(),
+      to,
+      subject: "SMPS \u2014 Activar Cuenta",
+      html
+    });
+    console.log(`\u{1F4E7} Activation email sent to ${to} ( messageId: ${result.messageId} )`);
+    const accepted = result.accepted?.length ?? 0;
+    const envelopeRecipients = result.envelope?.to?.length ?? 0;
+    return accepted > 0 || envelopeRecipients > 0;
+  } catch (error) {
+    console.error(`\u{1F4E7} Failed to send activation email to ${to}:`, error);
+    return false;
+  }
+}
+async function sendPasswordResetEmail(to, name, token, expiresInHours = 1) {
+  const resetLink = `${getAppUrl()}/reset-password?token=${token}`;
+  const hoursText = expiresInHours === 1 ? "1 hora" : `${expiresInHours} horas`;
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+      <div style="text-align: center; margin-bottom: 30px;">
+        <div style="display: inline-block; background: #1e40af; color: white; padding: 12px 16px; border-radius: 8px; font-weight: bold; font-size: 18px;">
+          SM<br/>PS
+        </div>
+      </div>
+      <h2 style="color: #1e293b;">Restablecer Contrase\xF1a</h2>
+      <p style="color: #475569; font-size: 16px;">
+        Hola <strong>${name}</strong>,
+      </p>
+      <p style="color: #475569; font-size: 16px;">
+        Recibimos una solicitud para restablecer su contrase\xF1a en SMPS Performance Compass.
+      </p>
+      <p style="color: #475569; font-size: 16px;">
+        Haga clic en el siguiente enlace para crear una nueva contrase\xF1a:
+      </p>
+      <div style="text-align: center; margin: 30px 0;">
+        <a href="${resetLink}" style="background: #1e40af; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-size: 16px; font-weight: 600;">
+          Restablecer Contrase\xF1a
+        </a>
+      </div>
+      <p style="color: #64748b; font-size: 14px;">
+        Este enlace expirar\xE1 en <strong>${hoursText}</strong>.
+      </p>
+      <p style="color: #64748b; font-size: 14px;">
+        Si no solicit\xF3 este cambio, puede ignorar este correo. Su contrase\xF1a no ser\xE1 modificada.
+      </p>
+      <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 30px 0;" />
+      <p style="color: #94a3b8; font-size: 12px;">
+        Si el enlace no funciona, copie y pegue la siguiente URL en su navegador:<br/>
+        <a href="${resetLink}" style="color: #3b82f6; word-break: break-all;">${resetLink}</a>
+      </p>
+    </div>
+  `;
+  try {
+    const transport = await getTransporter();
+    const result = await transport.sendMail({
+      from: await getFromAddress(),
+      to,
+      subject: "SMPS \u2014 Restablecer Contrase\xF1a",
+      html
+    });
+    console.log(`\u{1F4E7} Password reset email sent to ${to} ( messageId: ${result.messageId} )`);
+    const accepted = result.accepted?.length ?? 0;
+    const envelopeRecipients = result.envelope?.to?.length ?? 0;
+    return accepted > 0 || envelopeRecipients > 0;
+  } catch (error) {
+    console.error(`\u{1F4E7} Failed to send password reset email to ${to}:`, error);
+    return false;
+  }
+}
+async function sendAdminPasswordResetEmail(to, name, token) {
+  return sendPasswordResetEmail(to, name, token, 24);
+}
+async function verifyEmailConfig() {
+  try {
+    const config = await getSmtpConfig();
+    const mailTransport = config.mail_transport || "auto";
+    if (mailTransport === "sendmail" || mailTransport === "auto" && process.env.NODE_ENV === "production") {
+      const sendmailPath = getSendmailPath();
+      if (sendmailPath) {
+        return { ok: true, message: `Sendmail transport active (path: ${sendmailPath})` };
+      }
+      return { ok: false, message: "Sendmail transport configured but sendmail binary not found on system" };
+    }
+    const transport = await getTransporter();
+    if (!transport) {
+      return { ok: false, message: "Email transport not configured" };
+    }
+    if ("verify" in transport) {
+      await transport.verify();
+      return { ok: true, message: "SMTP connection verified" };
+    }
+    return { ok: true, message: `Email transport: ${mailTransport}` };
+  } catch (error) {
+    return { ok: false, message: `Email verification failed: ${error.message}` };
+  }
+}
+async function sendTemplateEmail(params) {
+  try {
+    const transport = await getTransporter();
+    const result = await transport.sendMail({
+      from: await getFromAddress(),
+      to: params.to,
+      subject: params.subject,
+      html: params.html
+    });
+    const accepted = result.accepted?.length ?? 0;
+    const envelopeRecipients = result.envelope?.to?.length ?? 0;
+    return accepted > 0 || envelopeRecipients > 0;
+  } catch (error) {
+    console.error(`\u{1F4E7} Failed to send template email to ${params.to}:`, error);
+    return false;
+  }
+}
+var import_nodemailer, import_fs, transporter, lastConfigCheck, cachedSmtpConfig, cachedTransportConfig;
+var init_email = __esm({
+  "server/services/email.ts"() {
+    import_nodemailer = __toESM(require_nodemailer(), 1);
+    import_fs = require("fs");
+    init_connection();
+    transporter = null;
+    lastConfigCheck = null;
+    cachedSmtpConfig = null;
+    cachedTransportConfig = null;
+  }
+});
+
 // server/services/tokens.ts
 var tokens_exports = {};
 __export(tokens_exports, {
@@ -101451,7 +101843,7 @@ __export(tokens_exports, {
   generateTokenPair: () => generateTokenPair,
   getExpiryDate: () => getExpiryDate,
   hashToken: () => hashToken2,
-  toMySQLDate: () => toMySQLDate,
+  toMySQLDate: () => toMySQLDate2,
   verifyToken: () => verifyToken2
 });
 function generateToken() {
@@ -101473,7 +101865,7 @@ function getExpiryDate(hours) {
   date.setHours(date.getHours() + hours);
   return date;
 }
-function toMySQLDate(date) {
+function toMySQLDate2(date) {
   return date.toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "");
 }
 var import_crypto3;
@@ -136629,7 +137021,7 @@ __export(index_exports, {
   default: () => index_default
 });
 module.exports = __toCommonJS(index_exports);
-var import_express21 = __toESM(require_express2(), 1);
+var import_express22 = __toESM(require_express2(), 1);
 var import_compression = __toESM(require_compression(), 1);
 
 // node_modules/helmet/index.mjs
@@ -137178,81 +137570,10 @@ var helmet = Object.assign(
 var import_cors = __toESM(require_lib4(), 1);
 var import_path2 = __toESM(require("path"), 1);
 var import_dotenv = __toESM(require_main(), 1);
-
-// server/db/connection.ts
-var import_promise = __toESM(require_promise(), 1);
-var MYSQL_CONFIG = {
-  host: process.env.MYSQL_HOST || "localhost",
-  port: parseInt(process.env.MYSQL_PORT || "3306"),
-  user: process.env.MYSQL_USER || "root",
-  password: process.env.MYSQL_PASSWORD || "",
-  database: process.env.MYSQL_DATABASE || "smps_dev",
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0,
-  charset: "utf8mb4",
-  timezone: "+00:00"
-};
-var pool = import_promise.default.createPool(MYSQL_CONFIG);
-async function get(sql, params) {
-  const [rows] = await pool.execute(sql, params);
-  return rows[0];
-}
-async function all(sql, params) {
-  const [rows] = await pool.execute(sql, params);
-  return rows;
-}
-async function run(sql, params) {
-  const [result] = await pool.execute(sql, params);
-  return result;
-}
-async function exec(sql) {
-  await pool.execute(sql);
-}
-async function getScalar(sql, params) {
-  const row = await get(sql, params);
-  if (!row) return void 0;
-  const values = Object.values(row);
-  return values[0];
-}
-async function transaction(callback) {
-  const conn = await pool.getConnection();
-  await conn.beginTransaction();
-  try {
-    const result = await callback(conn);
-    await conn.commit();
-    return result;
-  } catch (err) {
-    await conn.rollback();
-    throw err;
-  } finally {
-    conn.release();
-  }
-}
-var tx = {
-  async get(conn, sql, params) {
-    const [rows] = await conn.execute(sql, params);
-    return rows[0];
-  },
-  async all(conn, sql, params) {
-    const [rows] = await conn.execute(sql, params);
-    return rows;
-  },
-  async run(conn, sql, params) {
-    const [result] = await conn.execute(sql, params);
-    return result;
-  }
-};
-async function tableExists(tableName) {
-  const [rows] = await pool.execute(
-    "SELECT COUNT(*) as cnt FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?",
-    [MYSQL_CONFIG.database, tableName]
-  );
-  return rows[0].cnt > 0;
-}
-var db = { get, all, run, exec, getScalar, transaction, tableExists, tx };
+init_connection();
 
 // server/db/migrate.ts
+init_connection();
 async function migrate() {
   const createTables = [
     `CREATE TABLE IF NOT EXISTS users (
@@ -138111,6 +138432,7 @@ async function migrate() {
 }
 
 // server/db/seed-users.ts
+init_connection();
 init_dist_node();
 
 // node_modules/bcryptjs/index.js
@@ -140046,6 +140368,7 @@ if (import_meta.url === `file://${process.argv[1]}`) {
 }
 
 // server/db/seed-evaluation-data.ts
+init_connection();
 init_dist_node();
 var import_meta2 = {};
 async function seedEvaluationData() {
@@ -140599,6 +140922,7 @@ async function cleanupOldCustomQuestions() {
 }
 
 // server/db/migrate-auth.ts
+init_connection();
 async function migrateAuth() {
   console.log("Running auth migration...");
   try {
@@ -140736,6 +141060,7 @@ async function migrateAuth() {
 }
 
 // server/db/migrate-snapshots.ts
+init_connection();
 async function migrateSnapshots() {
   console.log("Running evaluation snapshot migration...");
   const snapshotColumns = [
@@ -140844,6 +141169,7 @@ async function migrateSnapshots() {
 }
 
 // server/db/migrate-fks.ts
+init_connection();
 async function migrateFKs() {
   console.log("Running foreign key migration...");
   const foreignKeys = [
@@ -140988,6 +141314,7 @@ async function migrateFKs() {
 }
 
 // server/db/migrate-indexes.ts
+init_connection();
 async function migrateIndexes() {
   console.log("Running index migration...");
   const indexes = [
@@ -141041,6 +141368,7 @@ async function migrateIndexes() {
 }
 
 // server/db/migrate-analytics.ts
+init_connection();
 async function migrateAnalytics() {
   console.log("Running analytics migration...");
   try {
@@ -141168,6 +141496,7 @@ async function migrateAnalytics() {
 
 // server/routes/analytics.ts
 var import_express = __toESM(require_express2(), 1);
+init_connection();
 
 // server/auth/jwt.ts
 var import_jsonwebtoken = __toESM(require_jsonwebtoken(), 1);
@@ -141209,6 +141538,7 @@ function getRole(user) {
 }
 
 // server/middleware/auth.ts
+init_connection();
 async function authMiddleware(req, res, next) {
   const authHeader = req.headers.authorization;
   if (!authHeader?.startsWith("Bearer ")) {
@@ -141240,8 +141570,12 @@ async function authMiddleware(req, res, next) {
   next();
 }
 
+// server/middleware/permissions.ts
+init_connection();
+
 // server/services/audit.ts
 init_dist_node();
+init_connection();
 async function auditLog(params) {
   try {
     const id = v4_default();
@@ -141628,6 +141962,7 @@ router.get("/action-plans", async (req, res) => {
 var analytics_default = router;
 
 // server/services/analytics-refresh.ts
+init_connection();
 init_dist_node();
 async function refreshAnalytics() {
   console.log("[Analytics] Refreshing analytics tables...");
@@ -141835,6 +142170,7 @@ async function refreshUserActivity() {
 }
 
 // server/db/migrate-notifications.ts
+init_connection();
 async function migrateNotifications() {
   console.log("Running notifications migration...");
   try {
@@ -141923,257 +142259,179 @@ async function migrateNotifications() {
   console.log("Notifications migration complete.");
 }
 
-// server/routes/notifications.ts
-var import_express2 = __toESM(require_express2(), 1);
-
-// server/services/email.ts
-var import_nodemailer = __toESM(require_nodemailer(), 1);
-var transporter = null;
-var lastConfigCheck = null;
-var cachedSmtpConfig = null;
-async function getSmtpConfig() {
-  const now3 = Date.now();
-  if (cachedSmtpConfig && lastConfigCheck && now3 - lastConfigCheck < 5e3) {
-    return cachedSmtpConfig;
-  }
+// server/db/migrate-feature-visibility.ts
+init_connection();
+var import_meta3 = {};
+async function migrateFeatureVisibility() {
+  console.log("\u{1F527} Migrating feature_visibility table...");
+  const createTable = `CREATE TABLE IF NOT EXISTS feature_visibility (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    role VARCHAR(50) NOT NULL,
+    feature VARCHAR(100) NOT NULL,
+    visible TINYINT(1) DEFAULT 1,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY unique_role_feature (role, feature)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`;
   try {
-    const dbConfig = await db.get("SELECT * FROM smtp_config WHERE id = 1");
-    if (dbConfig) {
-      cachedSmtpConfig = {
-        smtp_host: dbConfig.smtp_host,
-        smtp_port: dbConfig.smtp_port || 587,
-        smtp_secure: !!dbConfig.smtp_secure,
-        smtp_user: dbConfig.smtp_user,
-        smtp_pass: dbConfig.smtp_pass,
-        smtp_from: dbConfig.smtp_from || "SMPS Performance <noreply@smps.bowdot.online>",
-        mail_transport: dbConfig.mail_transport || "auto"
-      };
+    await run(createTable);
+    console.log("\u2705 feature_visibility table created (if not exists)");
+    const defaults = [
+      { role: "admin", feature: "objectives", visible: 1 },
+      { role: "admin", feature: "evaluations", visible: 1 },
+      { role: "admin", feature: "communications", visible: 1 },
+      { role: "admin", feature: "vacations", visible: 1 },
+      { role: "admin", feature: "reports", visible: 1 },
+      { role: "admin", feature: "user_management", visible: 1 },
+      { role: "admin", feature: "position_management", visible: 1 },
+      { role: "admin", feature: "evaluation_templates", visible: 1 },
+      { role: "admin", feature: "question_library", visible: 1 },
+      { role: "socio", feature: "objectives", visible: 1 },
+      { role: "socio", feature: "evaluations", visible: 1 },
+      { role: "socio", feature: "communications", visible: 1 },
+      { role: "socio", feature: "vacations", visible: 1 },
+      { role: "socio", feature: "reports", visible: 1 },
+      { role: "socio", feature: "user_management", visible: 0 },
+      { role: "socio", feature: "position_management", visible: 0 },
+      { role: "socio", feature: "evaluation_templates", visible: 0 },
+      { role: "socio", feature: "question_library", visible: 0 },
+      { role: "evaluator", feature: "objectives", visible: 1 },
+      { role: "evaluator", feature: "evaluations", visible: 1 },
+      { role: "evaluator", feature: "communications", visible: 1 },
+      { role: "evaluator", feature: "vacations", visible: 1 },
+      { role: "evaluator", feature: "reports", visible: 0 },
+      { role: "evaluator", feature: "user_management", visible: 0 },
+      { role: "evaluator", feature: "position_management", visible: 0 },
+      { role: "evaluator", feature: "evaluation_templates", visible: 0 },
+      { role: "evaluator", feature: "question_library", visible: 0 },
+      { role: "staff", feature: "objectives", visible: 1 },
+      { role: "staff", feature: "evaluations", visible: 1 },
+      { role: "staff", feature: "communications", visible: 1 },
+      { role: "staff", feature: "vacations", visible: 1 },
+      { role: "staff", feature: "reports", visible: 0 },
+      { role: "staff", feature: "user_management", visible: 0 },
+      { role: "staff", feature: "position_management", visible: 0 },
+      { role: "staff", feature: "evaluation_templates", visible: 0 },
+      { role: "staff", feature: "question_library", visible: 0 }
+    ];
+    for (const def of defaults) {
+      const existing = await pool.execute(
+        "SELECT id FROM feature_visibility WHERE role = ? AND feature = ?",
+        [def.role, def.feature]
+      );
+      if (!existing[0] || Array.isArray(existing[0]) && existing[0].length === 0) {
+        await run(
+          `INSERT INTO feature_visibility (role, feature, visible) VALUES (?, ?, ?)`,
+          [def.role, def.feature, def.visible]
+        );
+      }
+    }
+    console.log("\u2705 Default feature_visibility settings inserted");
+  } catch (err) {
+    console.error("\u274C Migration failed:", err);
+    throw err;
+  }
+}
+if (import_meta3.url === `file://${process.argv[1]}`) {
+  migrateFeatureVisibility().then(() => {
+    console.log("Migration complete");
+    process.exit(0);
+  }).catch((err) => {
+    console.error(err);
+    process.exit(1);
+  });
+}
+
+// server/db/migrate-smtp-config.ts
+init_connection();
+var import_meta4 = {};
+async function migrateSmtpConfig() {
+  console.log("\u{1F4E7} Migrating smtp_config table...");
+  const createTable = `CREATE TABLE IF NOT EXISTS smtp_config (
+    id INT PRIMARY KEY DEFAULT 1,
+    smtp_host VARCHAR(255) DEFAULT NULL,
+    smtp_port INT DEFAULT 587,
+    smtp_secure TINYINT(1) DEFAULT 0,
+    smtp_user VARCHAR(255) DEFAULT NULL,
+    smtp_pass TEXT DEFAULT NULL,
+    smtp_from VARCHAR(255) DEFAULT 'SMPS Performance <notificaciones@bowdot.online>',
+    mail_transport VARCHAR(50) DEFAULT 'auto',
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`;
+  try {
+    await run(createTable);
+    console.log("\u2705 smtp_config table created (if not exists)");
+    const existing = await pool.execute("SELECT id FROM smtp_config WHERE id = 1");
+    if (!existing[0] || Array.isArray(existing[0]) && existing[0].length === 0) {
+      await run(
+        `INSERT INTO smtp_config (id, smtp_from, mail_transport) VALUES (1, 'SMPS Performance <notificaciones@bowdot.online>', 'auto')`
+      );
+      console.log("\u2705 Default smtp_config inserted");
     } else {
-      cachedSmtpConfig = {
-        smtp_host: process.env.SMTP_HOST || null,
-        smtp_port: parseInt(process.env.SMTP_PORT || "587"),
-        smtp_secure: process.env.SMTP_SECURE === "true",
-        smtp_user: process.env.SMTP_USER || null,
-        smtp_pass: process.env.SMTP_PASS || null,
-        smtp_from: process.env.SMTP_FROM || "SMPS Performance <noreply@smps.bowdot.online>",
-        mail_transport: process.env.MAIL_TRANSPORT || "auto"
-      };
+      console.log("\u2139\uFE0F  smtp_config already exists");
     }
   } catch (err) {
-    console.warn("Failed to load SMTP config from DB, using env vars:", err);
-    cachedSmtpConfig = {
-      smtp_host: process.env.SMTP_HOST || null,
-      smtp_port: parseInt(process.env.SMTP_PORT || "587"),
-      smtp_secure: process.env.SMTP_SECURE === "true",
-      smtp_user: process.env.SMTP_USER || null,
-      smtp_pass: process.env.SMTP_PASS || null,
-      smtp_from: process.env.SMTP_FROM || "SMPS Performance <noreply@smps.bowdot.online>",
-      mail_transport: process.env.MAIL_TRANSPORT || "auto"
-    };
-  }
-  lastConfigCheck = now3;
-  return cachedSmtpConfig;
-}
-async function getTransporter() {
-  if (transporter) return transporter;
-  const config = await getSmtpConfig();
-  const { smtp_host, smtp_port, smtp_secure, smtp_user, smtp_pass, smtp_from, mail_transport } = config;
-  if (mail_transport === "auto") {
-    if (process.env.NODE_ENV === "production") {
-      console.info("\u{1F4E7} Using sendmail transport (Hostinger production)");
-      transporter = import_nodemailer.default.createTransport({
-        sendmail: true,
-        path: "/usr/sbin/sendmail",
-        args: ["-i"]
-      });
-      return transporter;
-    }
-    if (smtp_host && smtp_user && smtp_pass) {
-      transporter = import_nodemailer.default.createTransport({
-        host: smtp_host,
-        port: smtp_port,
-        secure: smtp_secure,
-        auth: { user: smtp_user, pass: smtp_pass }
-      });
-      return transporter;
-    }
-    console.warn("\u26A0\uFE0F  SMTP not configured and not in production. Emails will not be sent.");
-    transporter = {
-      sendMail: async (options) => {
-        console.log("\u{1F4E7} [STUB] Email not sent (SMTP not configured):", {
-          to: options.to,
-          subject: options.subject
-        });
-        return { messageId: "stub", accepted: [options.to] };
-      }
-    };
-    return transporter;
-  }
-  if (mail_transport === "sendmail") {
-    console.info("\u{1F4E7} Using sendmail transport");
-    transporter = import_nodemailer.default.createTransport({
-      sendmail: true,
-      path: "/usr/sbin/sendmail",
-      args: ["-i"]
-    });
-    return transporter;
-  }
-  if (mail_transport === "smtp" && smtp_host && smtp_user && smtp_pass) {
-    transporter = import_nodemailer.default.createTransport({
-      host: smtp_host,
-      port: smtp_port,
-      secure: smtp_secure,
-      auth: { user: smtp_user, pass: smtp_pass }
-    });
-    return transporter;
-  }
-  console.warn("\u26A0\uFE0F  Email transport set to stub mode. Emails will not be sent.");
-  transporter = {
-    sendMail: async (options) => {
-      console.log("\u{1F4E7} [STUB] Email not sent:", {
-        to: options.to,
-        subject: options.subject
-      });
-      return { messageId: "stub", accepted: [options.to] };
-    }
-  };
-  return transporter;
-}
-async function getFromAddress() {
-  const config = await getSmtpConfig();
-  return config.smtp_from || "SMPS Performance <noreply@smps.bowdot.online>";
-}
-function getAppUrl() {
-  return process.env.APP_URL || "https://smps.bowdot.online";
-}
-async function sendActivationEmail(to, name, token) {
-  const activationLink = `${getAppUrl()}/activate-account?token=${token}`;
-  const html = `
-    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-      <div style="text-align: center; margin-bottom: 30px;">
-        <div style="display: inline-block; background: #1e40af; color: white; padding: 12px 16px; border-radius: 8px; font-weight: bold; font-size: 18px;">
-          SM<br/>PS
-        </div>
-      </div>
-      <h2 style="color: #1e293b;">\xA1Bienvenido a SMPS Performance Compass!</h2>
-      <p style="color: #475569; font-size: 16px;">
-        Hola <strong>${name}</strong>,
-      </p>
-      <p style="color: #475569; font-size: 16px;">
-        Se ha creado una cuenta para usted en SMPS Performance Compass, el sistema de evaluaci\xF3n de desempe\xF1o.
-      </p>
-      <p style="color: #475569; font-size: 16px;">
-        Para activar su cuenta y establecer su contrase\xF1a, haga clic en el siguiente enlace:
-      </p>
-      <div style="text-align: center; margin: 30px 0;">
-        <a href="${activationLink}" style="background: #1e40af; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-size: 16px; font-weight: 600;">
-          Activar Cuenta
-        </a>
-      </div>
-      <p style="color: #64748b; font-size: 14px;">
-        Este enlace expirar\xE1 en <strong>48 horas</strong>.
-      </p>
-      <p style="color: #64748b; font-size: 14px;">
-        Si no solicit\xF3 esta cuenta, puede ignorar este correo.
-      </p>
-      <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 30px 0;" />
-      <p style="color: #94a3b8; font-size: 12px;">
-        Si el enlace no funciona, copie y pegue la siguiente URL en su navegador:<br/>
-        <a href="${activationLink}" style="color: #3b82f6; word-break: break-all;">${activationLink}</a>
-      </p>
-    </div>
-  `;
-  try {
-    const result = await getTransporter().sendMail({
-      from: await getFromAddress(),
-      to,
-      subject: "SMPS \u2014 Activar Cuenta",
-      html
-    });
-    console.log(`\u{1F4E7} Activation email sent to ${to} ( messageId: ${result.messageId} )`);
-    const accepted = result.accepted?.length ?? 0;
-    const envelopeRecipients = result.envelope?.to?.length ?? 0;
-    return accepted > 0 || envelopeRecipients > 0;
-  } catch (error) {
-    console.error(`\u{1F4E7} Failed to send activation email to ${to}:`, error);
-    return false;
+    console.error("\u274C Migration failed:", err);
+    throw err;
   }
 }
-async function sendPasswordResetEmail(to, name, token, expiresInHours = 1) {
-  const resetLink = `${getAppUrl()}/reset-password?token=${token}`;
-  const hoursText = expiresInHours === 1 ? "1 hora" : `${expiresInHours} horas`;
-  const html = `
-    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-      <div style="text-align: center; margin-bottom: 30px;">
-        <div style="display: inline-block; background: #1e40af; color: white; padding: 12px 16px; border-radius: 8px; font-weight: bold; font-size: 18px;">
-          SM<br/>PS
-        </div>
-      </div>
-      <h2 style="color: #1e293b;">Restablecer Contrase\xF1a</h2>
-      <p style="color: #475569; font-size: 16px;">
-        Hola <strong>${name}</strong>,
-      </p>
-      <p style="color: #475569; font-size: 16px;">
-        Recibimos una solicitud para restablecer su contrase\xF1a en SMPS Performance Compass.
-      </p>
-      <p style="color: #475569; font-size: 16px;">
-        Haga clic en el siguiente enlace para crear una nueva contrase\xF1a:
-      </p>
-      <div style="text-align: center; margin: 30px 0;">
-        <a href="${resetLink}" style="background: #1e40af; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-size: 16px; font-weight: 600;">
-          Restablecer Contrase\xF1a
-        </a>
-      </div>
-      <p style="color: #64748b; font-size: 14px;">
-        Este enlace expirar\xE1 en <strong>${hoursText}</strong>.
-      </p>
-      <p style="color: #64748b; font-size: 14px;">
-        Si no solicit\xF3 este cambio, puede ignorar este correo. Su contrase\xF1a no ser\xE1 modificada.
-      </p>
-      <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 30px 0;" />
-      <p style="color: #94a3b8; font-size: 12px;">
-        Si el enlace no funciona, copie y pegue la siguiente URL en su navegador:<br/>
-        <a href="${resetLink}" style="color: #3b82f6; word-break: break-all;">${resetLink}</a>
-      </p>
-    </div>
-  `;
-  try {
-    const result = await getTransporter().sendMail({
-      from: await getFromAddress(),
-      to,
-      subject: "SMPS \u2014 Restablecer Contrase\xF1a",
-      html
-    });
-    console.log(`\u{1F4E7} Password reset email sent to ${to} ( messageId: ${result.messageId} )`);
-    const accepted = result.accepted?.length ?? 0;
-    const envelopeRecipients = result.envelope?.to?.length ?? 0;
-    return accepted > 0 || envelopeRecipients > 0;
-  } catch (error) {
-    console.error(`\u{1F4E7} Failed to send password reset email to ${to}:`, error);
-    return false;
-  }
-}
-async function sendAdminPasswordResetEmail(to, name, token) {
-  return sendPasswordResetEmail(to, name, token, 24);
-}
-async function sendTemplateEmail(params) {
-  try {
-    const result = await getTransporter().sendMail({
-      from: await getFromAddress(),
-      to: params.to,
-      subject: params.subject,
-      html: params.html
-    });
-    const accepted = result.accepted?.length ?? 0;
-    const envelopeRecipients = result.envelope?.to?.length ?? 0;
-    return accepted > 0 || envelopeRecipients > 0;
-  } catch (error) {
-    console.error(`\u{1F4E7} Failed to send template email to ${params.to}:`, error);
-    return false;
-  }
+if (import_meta4.url === `file://${process.argv[1]}`) {
+  migrateSmtpConfig().then(() => {
+    console.log("Migration complete");
+    process.exit(0);
+  }).catch((err) => {
+    console.error(err);
+    process.exit(1);
+  });
 }
 
+// server/routes/feature-visibility.ts
+var import_express2 = __toESM(require_express2(), 1);
+init_connection();
+var router2 = (0, import_express2.Router)();
+router2.get("/", authMiddleware, async (req, res) => {
+  try {
+    if (!hasRole(req.user, ["super_user", "admin"])) {
+      return res.status(403).json({ error: "Admin access required" });
+    }
+    const settings = await all("SELECT * FROM feature_visibility ORDER BY role, feature");
+    return res.json({ settings });
+  } catch (err) {
+    console.error("Get feature visibility error:", err);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+});
+router2.put("/", authMiddleware, async (req, res) => {
+  try {
+    if (!hasRole(req.user, ["super_user", "admin"])) {
+      return res.status(403).json({ error: "Admin access required" });
+    }
+    const { settings } = req.body;
+    if (!Array.isArray(settings)) {
+      return res.status(400).json({ error: "Settings must be an array" });
+    }
+    for (const setting of settings) {
+      await run(
+        `INSERT INTO feature_visibility (role, feature, visible) VALUES (?, ?, ?)
+         ON DUPLICATE KEY UPDATE visible = VALUES(visible)`,
+        [setting.role, setting.feature, setting.visible ? 1 : 0]
+      );
+    }
+    return res.json({ success: true, message: "Feature visibility settings updated" });
+  } catch (err) {
+    console.error("Update feature visibility error:", err);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+});
+var feature_visibility_default = router2;
+
+// server/routes/notifications.ts
+var import_express3 = __toESM(require_express2(), 1);
+init_connection();
+
 // server/services/notifications.ts
+init_connection();
+init_email();
 async function createNotification(params) {
   try {
     const id = crypto.randomUUID();
@@ -142324,9 +142582,9 @@ async function cleanupExpiredNotifications() {
 }
 
 // server/routes/notifications.ts
-var router2 = (0, import_express2.Router)();
-router2.use(authMiddleware);
-router2.get("/", async (req, res) => {
+var router3 = (0, import_express3.Router)();
+router3.use(authMiddleware);
+router3.get("/", async (req, res) => {
   try {
     const userId = req.user.id;
     const limit = Math.min(parseInt(req.query.limit) || 50, 100);
@@ -142358,7 +142616,7 @@ router2.get("/", async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router2.get("/count", async (req, res) => {
+router3.get("/count", async (req, res) => {
   try {
     const count = await getUnreadCount(req.user.id);
     return res.json({ unread: count });
@@ -142366,7 +142624,7 @@ router2.get("/count", async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router2.patch("/:id/read", async (req, res) => {
+router3.patch("/:id/read", async (req, res) => {
   try {
     const success = await markNotificationRead(req.params.id, req.user.id);
     if (!success) return res.status(404).json({ error: "Notification not found" });
@@ -142375,7 +142633,7 @@ router2.patch("/:id/read", async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router2.post("/read-all", async (req, res) => {
+router3.post("/read-all", async (req, res) => {
   try {
     const count = await markAllNotificationsRead(req.user.id);
     return res.json({ success: true, markedRead: count });
@@ -142383,7 +142641,7 @@ router2.post("/read-all", async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router2.get("/preferences", async (req, res) => {
+router3.get("/preferences", async (req, res) => {
   try {
     const prefs = await db.all(
       "SELECT * FROM notification_preferences WHERE user_id = ?",
@@ -142394,7 +142652,7 @@ router2.get("/preferences", async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router2.patch("/preferences", async (req, res) => {
+router3.patch("/preferences", async (req, res) => {
   try {
     const { category, emailEnabled, inAppEnabled, reminderFrequency, digestEnabled } = req.body;
     if (!category) return res.status(400).json({ error: "category is required" });
@@ -142433,7 +142691,7 @@ router2.patch("/preferences", async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router2.get("/pending-actions", async (req, res) => {
+router3.get("/pending-actions", async (req, res) => {
   try {
     const userId = req.user.id;
     const currentPeriod = req.query.period;
@@ -142546,9 +142804,10 @@ router2.get("/pending-actions", async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-var notifications_default = router2;
+var notifications_default = router3;
 
 // server/services/notification-scheduler.ts
+init_connection();
 function cstNow() {
   return new Date((/* @__PURE__ */ new Date()).getTime() - 6 * 60 * 60 * 1e3);
 }
@@ -142830,8 +143089,9 @@ function startNotificationScheduler() {
 }
 
 // server/routes/auth.ts
-var import_express3 = __toESM(require_express2(), 1);
+var import_express4 = __toESM(require_express2(), 1);
 init_dist_node();
+init_connection();
 
 // server/auth/security.ts
 var SALT_ROUNDS = 12;
@@ -142847,6 +143107,7 @@ async function hashSecurityAnswer2(answer) {
 }
 
 // server/middleware/rbac.ts
+init_connection();
 function requireAdmin(req, res, next) {
   if (!req.user) return res.status(401).json({ error: "Not authenticated" });
   const role = req.user.role;
@@ -146962,7 +147223,7 @@ var SystemInitSchema = external_exports.object({
 });
 
 // server/routes/auth.ts
-var router3 = (0, import_express3.Router)();
+var router4 = (0, import_express4.Router)();
 function sanitizeUser(user) {
   const { password_hash, security_answer, activation_token_hash, ...safe } = user;
   return {
@@ -146974,7 +147235,7 @@ function sanitizeUser(user) {
     mustChangePassword: Boolean(user.must_change_password)
   };
 }
-router3.post("/login", validate2(LoginSchema), async (req, res) => {
+router4.post("/login", validate2(LoginSchema), async (req, res) => {
   try {
     const { email, password } = req.body;
     if (!email || !password) {
@@ -147019,7 +147280,7 @@ router3.post("/login", validate2(LoginSchema), async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router3.post("/logout", authMiddleware, requireAuthenticated, async (req, res) => {
+router4.post("/logout", authMiddleware, requireAuthenticated, async (req, res) => {
   try {
     const authHeader = req.headers.authorization;
     const token = authHeader.substring(7);
@@ -147038,7 +147299,7 @@ router3.post("/logout", authMiddleware, requireAuthenticated, async (req, res) =
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router3.get("/me", authMiddleware, requireAuthenticated, async (req, res) => {
+router4.get("/me", authMiddleware, requireAuthenticated, async (req, res) => {
   try {
     const user = await db.get("SELECT * FROM users WHERE id = ?", [req.user.id]);
     if (!user) {
@@ -147050,7 +147311,7 @@ router3.get("/me", authMiddleware, requireAuthenticated, async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router3.post("/change-password", validate2(ChangePasswordSchema), authMiddleware, requireAuthenticated, async (req, res) => {
+router4.post("/change-password", validate2(ChangePasswordSchema), authMiddleware, requireAuthenticated, async (req, res) => {
   try {
     const { currentPassword, newPassword, securityQuestion, securityAnswer } = req.body;
     const user = await db.get("SELECT * FROM users WHERE id = ?", [req.user.id]);
@@ -147099,19 +147360,20 @@ router3.post("/change-password", validate2(ChangePasswordSchema), authMiddleware
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router3.post("/security-question", async (req, res) => {
+router4.post("/security-question", async (req, res) => {
   await auditLog({ action: "legacy_auth_endpoint_access", userId: null, ipAddress: getClientIp(req), userAgent: getUserAgent(req), metadata: { endpoint: "POST /api/auth/security-question" } });
   return res.status(410).json({ error: "Este m\xE9todo de recuperaci\xF3n ha sido retirado. Utilice la recuperaci\xF3n por correo electr\xF3nico." });
 });
-router3.post("/reset-password", async (req, res) => {
+router4.post("/reset-password", async (req, res) => {
   await auditLog({ action: "legacy_auth_endpoint_access", userId: null, ipAddress: getClientIp(req), userAgent: getUserAgent(req), metadata: { endpoint: "POST /api/auth/reset-password" } });
   return res.status(410).json({ error: "Este m\xE9todo de recuperaci\xF3n ha sido retirado. Utilice la recuperaci\xF3n por correo electr\xF3nico." });
 });
-var auth_default = router3;
+var auth_default = router4;
 
 // server/routes/auth-new.ts
-var import_express4 = __toESM(require_express2(), 1);
+var import_express5 = __toESM(require_express2(), 1);
 init_dist_node();
+init_connection();
 
 // server/services/password.ts
 var PASSWORD_MIN_LENGTH = 8;
@@ -147137,7 +147399,8 @@ function validatePassword(password) {
 
 // server/routes/auth-new.ts
 init_tokens();
-var router4 = (0, import_express4.Router)();
+init_email();
+var router5 = (0, import_express5.Router)();
 var ActivateSchema = external_exports.object({
   token: external_exports.string().min(1, "Token requerido"),
   password: external_exports.string().min(8, "La contrase\xF1a debe tener al menos 8 caracteres"),
@@ -147160,7 +147423,7 @@ var CompletePasswordResetSchema = external_exports.object({
 var ResendActivationSchema = external_exports.object({
   email: external_exports.string().email("Email inv\xE1lido")
 });
-router4.post("/activate", async (req, res) => {
+router5.post("/activate", async (req, res) => {
   try {
     const parseResult = ActivateSchema.safeParse(req.body);
     if (!parseResult.success) {
@@ -147191,7 +147454,7 @@ router4.post("/activate", async (req, res) => {
       return res.status(400).json({ error: "El token de activaci\xF3n ha expirado. Solicite uno nuevo." });
     }
     const hashedPassword = await hashPassword(password);
-    const now3 = toMySQLDate(/* @__PURE__ */ new Date());
+    const now3 = toMySQLDate2(/* @__PURE__ */ new Date());
     await db.run(
       `UPDATE users SET
         password_hash = ?,
@@ -147218,7 +147481,7 @@ router4.post("/activate", async (req, res) => {
     return res.status(500).json({ error: "Error interno del servidor" });
   }
 });
-router4.get("/verify-activation", async (req, res) => {
+router5.get("/verify-activation", async (req, res) => {
   try {
     const token = req.query.token;
     if (!token) {
@@ -147249,7 +147512,7 @@ router4.get("/verify-activation", async (req, res) => {
     return res.status(500).json({ error: "Error interno del servidor" });
   }
 });
-router4.post("/resend-activation", async (req, res) => {
+router5.post("/resend-activation", async (req, res) => {
   try {
     const parseResult = ResendActivationSchema.safeParse(req.body);
     if (!parseResult.success) {
@@ -147263,8 +147526,8 @@ router4.post("/resend-activation", async (req, res) => {
       return res.json({ message: successMessage });
     }
     const { token, tokenHash } = generateTokenPair();
-    const expiresAt = toMySQLDate(new Date(Date.now() + 48 * 60 * 60 * 1e3));
-    const now3 = toMySQLDate(/* @__PURE__ */ new Date());
+    const expiresAt = toMySQLDate2(new Date(Date.now() + 48 * 60 * 60 * 1e3));
+    const now3 = toMySQLDate2(/* @__PURE__ */ new Date());
     await db.run(
       "UPDATE users SET activation_token_hash = ?, activation_expires_at = ?, updated_at = ? WHERE id = ?",
       [tokenHash, expiresAt, now3, user.id]
@@ -147283,7 +147546,7 @@ router4.post("/resend-activation", async (req, res) => {
     return res.status(500).json({ error: "Error interno del servidor" });
   }
 });
-router4.post("/request-password-reset", async (req, res) => {
+router5.post("/request-password-reset", async (req, res) => {
   try {
     const parseResult = RequestPasswordResetSchema.safeParse(req.body);
     if (!parseResult.success) {
@@ -147297,8 +147560,8 @@ router4.post("/request-password-reset", async (req, res) => {
       return res.json({ message: successMessage });
     }
     const { token, tokenHash } = generateTokenPair();
-    const expiresAt = toMySQLDate(new Date(Date.now() + 60 * 60 * 1e3));
-    const now3 = toMySQLDate(/* @__PURE__ */ new Date());
+    const expiresAt = toMySQLDate2(new Date(Date.now() + 60 * 60 * 1e3));
+    const now3 = toMySQLDate2(/* @__PURE__ */ new Date());
     await db.run(
       `INSERT INTO password_reset_tokens (id, user_id, token_hash, expires_at, ip_address, created_at)
        VALUES (?, ?, ?, ?, ?, ?)`,
@@ -147318,7 +147581,7 @@ router4.post("/request-password-reset", async (req, res) => {
     return res.status(500).json({ error: "Error interno del servidor" });
   }
 });
-router4.get("/verify-reset-token", async (req, res) => {
+router5.get("/verify-reset-token", async (req, res) => {
   try {
     const token = req.query.token;
     if (!token) {
@@ -147352,7 +147615,7 @@ router4.get("/verify-reset-token", async (req, res) => {
     return res.status(500).json({ error: "Error interno del servidor" });
   }
 });
-router4.post("/complete-password-reset", async (req, res) => {
+router5.post("/complete-password-reset", async (req, res) => {
   try {
     const parseResult = CompletePasswordResetSchema.safeParse(req.body);
     if (!parseResult.success) {
@@ -147381,7 +147644,7 @@ router4.post("/complete-password-reset", async (req, res) => {
       return res.status(400).json({ error: "El token ha expirado. Solicite uno nuevo." });
     }
     const hashedPassword = await hashPassword(newPassword);
-    const now3 = toMySQLDate(/* @__PURE__ */ new Date());
+    const now3 = toMySQLDate2(/* @__PURE__ */ new Date());
     await db.run(
       `UPDATE users SET
         password_hash = ?,
@@ -147412,13 +147675,15 @@ router4.post("/complete-password-reset", async (req, res) => {
     return res.status(500).json({ error: "Error interno del servidor" });
   }
 });
-var auth_new_default = router4;
+var auth_new_default = router5;
 
 // server/routes/users.ts
-var import_express5 = __toESM(require_express2(), 1);
+var import_express6 = __toESM(require_express2(), 1);
 init_dist_node();
+init_connection();
 init_tokens();
-var router5 = (0, import_express5.Router)();
+init_email();
+var router6 = (0, import_express6.Router)();
 async function getMaxAdminUsers() {
   try {
     const row = await db.get("SELECT max_admin_users FROM system_status WHERE id = 1");
@@ -147432,7 +147697,7 @@ function sanitizeUser2(user) {
   return safe;
 }
 var SAFE_USER_COLUMNS = `id, name, email, position, practice_area, custom_position_id, location_id, is_admin, is_super_user, is_managing_partner, is_active, must_change_password, created_at, updated_at`;
-router5.get("/", authMiddleware, async (req, res) => {
+router6.get("/", authMiddleware, async (req, res) => {
   try {
     if (!hasRole(req.user, ["super_user", "admin", "socio"])) {
       await auditLog({ action: "authorization_denied", userId: req.user.id, ipAddress: getClientIp(req), userAgent: getUserAgent(req), metadata: { resource: "GET /api/users", reason: "employee cannot list users" } });
@@ -147445,7 +147710,7 @@ router5.get("/", authMiddleware, async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router5.get("/:id", authMiddleware, async (req, res) => {
+router6.get("/:id", authMiddleware, async (req, res) => {
   try {
     const targetId = req.params.id;
     const userId = req.user.id;
@@ -147473,7 +147738,7 @@ router5.get("/:id", authMiddleware, async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router5.post("/", authMiddleware, requireAdmin, validate2(CreateUserSchema), async (req, res) => {
+router6.post("/", authMiddleware, requireAdmin, validate2(CreateUserSchema), async (req, res) => {
   try {
     const { name, email, position, password, practiceArea, customPositionId, locationId, isAdmin, isManagingPartner } = req.body;
     if (!name || !email || !position) {
@@ -147512,7 +147777,7 @@ router5.post("/", authMiddleware, requireAdmin, validate2(CreateUserSchema), asy
       const tokenPair = generateTokenPair();
       activationToken = tokenPair.token;
       activationTokenHash = tokenPair.tokenHash;
-      activationExpiresAt = toMySQLDate(new Date(Date.now() + 48 * 60 * 60 * 1e3));
+      activationExpiresAt = toMySQLDate2(new Date(Date.now() + 48 * 60 * 60 * 1e3));
       isActive = 0;
       mustChangePassword = 0;
     } else {
@@ -147573,7 +147838,7 @@ router5.post("/", authMiddleware, requireAdmin, validate2(CreateUserSchema), asy
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router5.patch("/:id", authMiddleware, requireSelfOrAdmin, async (req, res) => {
+router6.patch("/:id", authMiddleware, requireSelfOrAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     const user = await db.get("SELECT * FROM users WHERE id = ?", [id]);
@@ -147708,7 +147973,7 @@ router5.patch("/:id", authMiddleware, requireSelfOrAdmin, async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router5.delete("/:id", authMiddleware, requireAdmin, async (req, res) => {
+router6.delete("/:id", authMiddleware, requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     const user = await db.get("SELECT id FROM users WHERE id = ?", [id]);
@@ -147724,7 +147989,7 @@ router5.delete("/:id", authMiddleware, requireAdmin, async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router5.post("/:id/reset-password", authMiddleware, requireAdmin, async (req, res) => {
+router6.post("/:id/reset-password", authMiddleware, requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     const user = await db.get("SELECT id, email, name, is_active FROM users WHERE id = ?", [id]);
@@ -147732,8 +147997,8 @@ router5.post("/:id/reset-password", authMiddleware, requireAdmin, async (req, re
       return res.status(404).json({ error: "User not found" });
     }
     const { token, tokenHash } = generateTokenPair();
-    const expiresAt = toMySQLDate(new Date(Date.now() + 24 * 60 * 60 * 1e3));
-    const now3 = toMySQLDate(/* @__PURE__ */ new Date());
+    const expiresAt = toMySQLDate2(new Date(Date.now() + 24 * 60 * 60 * 1e3));
+    const now3 = toMySQLDate2(/* @__PURE__ */ new Date());
     await db.run(
       `INSERT INTO password_reset_tokens (id, user_id, token_hash, expires_at, ip_address, created_at)
        VALUES (?, ?, ?, ?, ?, ?)`,
@@ -147760,7 +148025,7 @@ router5.post("/:id/reset-password", authMiddleware, requireAdmin, async (req, re
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router5.patch("/:id/role", authMiddleware, requireAdmin, async (req, res) => {
+router6.patch("/:id/role", authMiddleware, requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     const { isAdmin, isManagingPartner, isSuperUser } = req.body;
@@ -147839,7 +148104,7 @@ router5.patch("/:id/role", authMiddleware, requireAdmin, async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-var users_default = router5;
+var users_default = router6;
 async function logTimelineEvent(userId, eventType, options = {}) {
   try {
     const now3 = (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "");
@@ -147866,10 +148131,11 @@ async function logTimelineEvent(userId, eventType, options = {}) {
 }
 
 // server/routes/assignments.ts
-var import_express6 = __toESM(require_express2(), 1);
+var import_express7 = __toESM(require_express2(), 1);
 init_dist_node();
-var router6 = (0, import_express6.Router)();
-router6.get("/", authMiddleware, async (req, res) => {
+init_connection();
+var router7 = (0, import_express7.Router)();
+router7.get("/", authMiddleware, async (req, res) => {
   try {
     const { period, employeeId, supervisorId } = req.query;
     let sql = "SELECT * FROM supervisor_assignments WHERE 1=1";
@@ -147904,7 +148170,7 @@ router6.get("/", authMiddleware, async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router6.post("/", authMiddleware, requireAdmin, async (req, res) => {
+router7.post("/", authMiddleware, requireAdmin, async (req, res) => {
   try {
     const { employeeId, supervisorId, period } = req.body;
     if (!employeeId || !supervisorId || !period) {
@@ -147940,7 +148206,7 @@ router6.post("/", authMiddleware, requireAdmin, async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router6.delete("/:id", authMiddleware, requireAdmin, async (req, res) => {
+router7.delete("/:id", authMiddleware, requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     const assignment = await db.get("SELECT id FROM supervisor_assignments WHERE id = ?", [id]);
@@ -147963,11 +148229,12 @@ router6.delete("/:id", authMiddleware, requireAdmin, async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-var assignments_default = router6;
+var assignments_default = router7;
 
 // server/routes/system.ts
-var import_express7 = __toESM(require_express2(), 1);
+var import_express8 = __toESM(require_express2(), 1);
 init_dist_node();
+init_connection();
 
 // server/data/positionCatalog.ts
 var WORK_AREAS = [
@@ -148017,7 +148284,7 @@ var POSITION_CATALOG = [
 ];
 
 // server/routes/system.ts
-var router7 = (0, import_express7.Router)();
+var router8 = (0, import_express8.Router)();
 function sanitizeUser3(user) {
   const { password_hash, security_answer, ...safe } = user;
   return safe;
@@ -148039,7 +148306,7 @@ var VACATION_DEFAULTS = {
   soporte: 10,
   archivista: 10
 };
-router7.get("/initialized", async (_req, res) => {
+router8.get("/initialized", async (_req, res) => {
   try {
     const row = await db.get("SELECT id FROM system_status LIMIT 1");
     return res.json({ initialized: !!row });
@@ -148048,7 +148315,7 @@ router7.get("/initialized", async (_req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router7.post("/init", validate2(SystemInitSchema), async (req, res) => {
+router8.post("/init", validate2(SystemInitSchema), async (req, res) => {
   try {
     const existing = await db.get("SELECT id FROM system_status LIMIT 1");
     if (existing) {
@@ -148127,7 +148394,7 @@ router7.post("/init", validate2(SystemInitSchema), async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router7.get("/status", authMiddleware, async (req, res) => {
+router8.get("/status", authMiddleware, async (req, res) => {
   try {
     if (!hasRole(req.user, ["super_user", "admin"])) {
       await auditLog({ action: "authorization_denied", userId: req.user.id, ipAddress: getClientIp(req), userAgent: getUserAgent(req), metadata: { resource: "GET /api/system/status", reason: "non-admin access" } });
@@ -148143,7 +148410,7 @@ router7.get("/status", authMiddleware, async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router7.patch("/status", authMiddleware, requireSuperUser, async (req, res) => {
+router8.patch("/status", authMiddleware, requireSuperUser, async (req, res) => {
   try {
     const { status, activationDate, paymentPlan, maxUsers, tickets, maxAdminUsers } = req.body;
     const updates = [];
@@ -148204,7 +148471,7 @@ router7.patch("/status", authMiddleware, requireSuperUser, async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router7.get("/modules", authMiddleware, async (_req, res) => {
+router8.get("/modules", authMiddleware, async (_req, res) => {
   try {
     const row = await db.get("SELECT * FROM module_config LIMIT 1");
     if (!row) {
@@ -148216,7 +148483,7 @@ router7.get("/modules", authMiddleware, async (_req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router7.patch("/modules", authMiddleware, requireSuperUser, async (req, res) => {
+router8.patch("/modules", authMiddleware, requireSuperUser, async (req, res) => {
   try {
     const { evaluations, communications, vacations, copilot } = req.body;
     const updates = [];
@@ -148248,7 +148515,7 @@ router7.patch("/modules", authMiddleware, requireSuperUser, async (req, res) => 
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router7.get("/activation-history", authMiddleware, requireSuperUser, async (_req, res) => {
+router8.get("/activation-history", authMiddleware, requireSuperUser, async (_req, res) => {
   try {
     const rows = await db.all("SELECT * FROM activation_history ORDER BY date DESC");
     return res.json(rows);
@@ -148257,7 +148524,7 @@ router7.get("/activation-history", authMiddleware, requireSuperUser, async (_req
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router7.get("/smtp-config", authMiddleware, requireSuperUser, async (_req, res) => {
+router8.get("/smtp-config", authMiddleware, requireSuperUser, async (_req, res) => {
   try {
     const config = await db.get("SELECT * FROM smtp_config WHERE id = 1");
     if (!config) {
@@ -148282,7 +148549,7 @@ router7.get("/smtp-config", authMiddleware, requireSuperUser, async (_req, res) 
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router7.patch("/smtp-config", authMiddleware, requireSuperUser, async (req, res) => {
+router8.patch("/smtp-config", authMiddleware, requireSuperUser, async (req, res) => {
   try {
     const { smtp_host, smtp_port, smtp_secure, smtp_user, smtp_pass, smtp_from, mail_transport } = req.body;
     const existing = await db.get("SELECT id FROM smtp_config WHERE id = 1");
@@ -148339,7 +148606,7 @@ router7.patch("/smtp-config", authMiddleware, requireSuperUser, async (req, res)
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router7.post("/smtp-test", authMiddleware, requireSuperUser, async (req, res) => {
+router8.post("/smtp-test", authMiddleware, requireSuperUser, async (req, res) => {
   try {
     const { smtp_host, smtp_port, smtp_secure, smtp_user, smtp_pass } = req.body;
     const nodemailer2 = (await Promise.resolve().then(() => __toESM(require_nodemailer(), 1))).default;
@@ -148363,7 +148630,35 @@ router7.post("/smtp-test", authMiddleware, requireSuperUser, async (req, res) =>
     return res.status(500).json({ error: `Error interno: ${err.message}` });
   }
 });
-router7.post("/backfill-timeline", authMiddleware, requireSuperUser, async (req, res) => {
+router8.post("/test-email", authMiddleware, requireSuperUser, async (req, res) => {
+  try {
+    const { to } = req.body;
+    if (!to) {
+      return res.status(400).json({ error: "El correo de destino es requerido" });
+    }
+    const { sendPasswordResetEmail: sendPasswordResetEmail2 } = await Promise.resolve().then(() => (init_email(), email_exports));
+    const { generateTokenPair: generateTokenPair2 } = await Promise.resolve().then(() => (init_tokens(), tokens_exports));
+    const { token, tokenHash } = generateTokenPair2();
+    const now3 = (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "");
+    await db.run(
+      `INSERT INTO password_reset_tokens (id, user_id, token_hash, expires_at, ip_address, created_at)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [v4_default(), "system-test", tokenHash, toMySQLDate(new Date(Date.now() + 60 * 60 * 1e3)), "127.0.0.1", now3]
+    );
+    const name = to.split("@")[0].replace(".", " ").replace("_", " ").replace(/([a-z])([A-Z])/g, "$1 $2").replace(/\b\w/g, (c) => c.toUpperCase()) || "Usuario";
+    const emailSent = await sendPasswordResetEmail2(to, name, token, 1);
+    await db.run("DELETE FROM password_reset_tokens WHERE user_id = ?", ["system-test"]);
+    if (emailSent) {
+      return res.json({ ok: true, message: `Correo de prueba enviado a ${to}. Revisa tu bandeja de entrada.` });
+    } else {
+      return res.status(500).json({ ok: false, message: "No se pudo enviar el correo. Revisa la configuraci\xF3n de SMTP en los logs." });
+    }
+  } catch (err) {
+    console.error("Test email error:", err);
+    return res.status(500).json({ error: `Error interno: ${err.message}` });
+  }
+});
+router8.post("/backfill-timeline", authMiddleware, requireSuperUser, async (req, res) => {
   try {
     let totalCreated = 0;
     const users = await db.all("SELECT id, name, position, is_super_user, created_at FROM users ORDER BY created_at ASC");
@@ -148417,7 +148712,7 @@ router7.post("/backfill-timeline", authMiddleware, requireSuperUser, async (req,
     return res.status(500).json({ error: "Backfill failed" });
   }
 });
-router7.get("/integrity", authMiddleware, async (req, res) => {
+router8.get("/integrity", authMiddleware, async (req, res) => {
   try {
     const user = req.user;
     if (!user.isAdmin && !user.isSuperUser) {
@@ -148524,12 +148819,13 @@ router7.get("/integrity", authMiddleware, async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-var system_default = router7;
+var system_default = router8;
 
 // server/routes/evaluations.ts
-var import_express8 = __toESM(require_express2(), 1);
+var import_express9 = __toESM(require_express2(), 1);
 init_dist_node();
-var router8 = (0, import_express8.Router)();
+init_connection();
+var router9 = (0, import_express9.Router)();
 async function fetchResponses(evaluationIds) {
   if (evaluationIds.length === 0) return /* @__PURE__ */ new Map();
   const placeholders = evaluationIds.map(() => "?").join(",");
@@ -148552,7 +148848,7 @@ async function fetchNaApprovals(evaluationIds) {
   }
   return map;
 }
-router8.get("/export/csv", authMiddleware, async (req, res) => {
+router9.get("/export/csv", authMiddleware, async (req, res) => {
   try {
     const { period } = req.query;
     if (!period) return res.status(400).json({ error: "period query parameter is required" });
@@ -148655,7 +148951,7 @@ router8.get("/export/csv", authMiddleware, async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router8.get("/", authMiddleware, async (req, res) => {
+router9.get("/", authMiddleware, async (req, res) => {
   try {
     const { period, evaluatorId, evaluatedId, type } = req.query;
     let sql = "SELECT * FROM evaluations WHERE 1=1";
@@ -148699,7 +148995,7 @@ router8.get("/", authMiddleware, async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router8.get(
+router9.get(
   "/:id",
   authMiddleware,
   requireEntityAccess({
@@ -148719,7 +149015,7 @@ router8.get(
     }
   }
 );
-router8.post("/", authMiddleware, async (req, res) => {
+router9.post("/", authMiddleware, async (req, res) => {
   try {
     const { evaluatorId, evaluatedId, period, type, comments, supervisorComments, responses } = req.body;
     if (!evaluatorId || !evaluatedId || !period || !type) {
@@ -148784,7 +149080,7 @@ router8.post("/", authMiddleware, async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router8.put(
+router9.put(
   "/:id",
   authMiddleware,
   requireEntityAccess({
@@ -148893,7 +149189,7 @@ router8.put(
     }
   }
 );
-router8.patch(
+router9.patch(
   "/:id/feedback",
   authMiddleware,
   requireSupervisorAction({
@@ -148925,7 +149221,7 @@ router8.patch(
     }
   }
 );
-router8.patch(
+router9.patch(
   "/:id/na-approval",
   authMiddleware,
   requireSupervisorAction({
@@ -148953,13 +149249,14 @@ router8.patch(
     }
   }
 );
-var evaluations_default = router8;
+var evaluations_default = router9;
 
 // server/routes/action-plans.ts
-var import_express9 = __toESM(require_express2(), 1);
+var import_express10 = __toESM(require_express2(), 1);
 init_dist_node();
-var router9 = (0, import_express9.Router)();
-router9.get("/", authMiddleware, async (req, res) => {
+init_connection();
+var router10 = (0, import_express10.Router)();
+router10.get("/", authMiddleware, async (req, res) => {
   try {
     const { employeeId, period } = req.query;
     let sql = "SELECT * FROM action_plans WHERE 1=1";
@@ -148992,7 +149289,7 @@ router9.get("/", authMiddleware, async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router9.post("/", authMiddleware, async (req, res) => {
+router10.post("/", authMiddleware, async (req, res) => {
   try {
     const { employeeId, supervisorId, period, content, items } = req.body;
     if (!employeeId || !supervisorId || !period) {
@@ -149046,7 +149343,7 @@ router9.post("/", authMiddleware, async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router9.patch(
+router10.patch(
   "/:id",
   authMiddleware,
   requireEntityAccess({
@@ -149091,7 +149388,7 @@ router9.patch(
     }
   }
 );
-router9.post(
+router10.post(
   "/:id/approve",
   authMiddleware,
   requireSupervisorAction({
@@ -149137,13 +149434,14 @@ router9.post(
     }
   }
 );
-var action_plans_default = router9;
+var action_plans_default = router10;
 
 // server/routes/objectives.ts
-var import_express10 = __toESM(require_express2(), 1);
+var import_express11 = __toESM(require_express2(), 1);
 init_dist_node();
-var router10 = (0, import_express10.Router)();
-router10.get("/", authMiddleware, async (req, res) => {
+init_connection();
+var router11 = (0, import_express11.Router)();
+router11.get("/", authMiddleware, async (req, res) => {
   try {
     const { userId, period } = req.query;
     let sql = "SELECT * FROM personal_objectives WHERE 1=1";
@@ -149181,7 +149479,7 @@ router10.get("/", authMiddleware, async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router10.post("/", authMiddleware, async (req, res) => {
+router11.post("/", authMiddleware, async (req, res) => {
   try {
     const { userId, period, type, adminObjectives, legalObjective } = req.body;
     if (!userId || !period || !type) {
@@ -149264,7 +149562,7 @@ router10.post("/", authMiddleware, async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router10.post("/:id/submit", authMiddleware, async (req, res) => {
+router11.post("/:id/submit", authMiddleware, async (req, res) => {
   try {
     const obj = await db.get("SELECT * FROM personal_objectives WHERE id = ?", [req.params.id]);
     if (!obj) return res.status(404).json({ error: "Objectives not found" });
@@ -149288,7 +149586,7 @@ router10.post("/:id/submit", authMiddleware, async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router10.post("/:id/review", authMiddleware, async (req, res) => {
+router11.post("/:id/review", authMiddleware, async (req, res) => {
   try {
     const obj = await db.get("SELECT * FROM personal_objectives WHERE id = ?", [req.params.id]);
     if (!obj) return res.status(404).json({ error: "Objectives not found" });
@@ -149314,17 +149612,18 @@ router10.post("/:id/review", authMiddleware, async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-var objectives_default = router10;
+var objectives_default = router11;
 
 // server/routes/announcements.ts
-var import_express11 = __toESM(require_express2(), 1);
+var import_express12 = __toESM(require_express2(), 1);
 init_dist_node();
-var router11 = (0, import_express11.Router)();
+init_connection();
+var router12 = (0, import_express12.Router)();
 function getUserLevel(user) {
   const legalPositions = ["socio", "salary_partner", "counsel", "asociado_sr", "asociado_mid", "asociado_jr", "pasante_carrera", "pasante"];
   return legalPositions.includes(user.position) ? "legal" : "administrativo";
 }
-router11.get("/", authMiddleware, async (req, res) => {
+router12.get("/", authMiddleware, async (req, res) => {
   try {
     const includeArchived = req.query.includeArchived === "true";
     let sql = "SELECT * FROM announcements WHERE 1=1";
@@ -149349,7 +149648,7 @@ router11.get("/", authMiddleware, async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router11.post("/", authMiddleware, requireAdmin, async (req, res) => {
+router12.post("/", authMiddleware, requireAdmin, async (req, res) => {
   try {
     const { title, body, audience, expiresAt } = req.body;
     if (!title || !body || !audience) return res.status(400).json({ error: "title, body, and audience required" });
@@ -149367,7 +149666,7 @@ router11.post("/", authMiddleware, requireAdmin, async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router11.patch("/:id", authMiddleware, requireAdmin, async (req, res) => {
+router12.patch("/:id", authMiddleware, requireAdmin, async (req, res) => {
   try {
     const announcement = await db.get("SELECT * FROM announcements WHERE id = ?", [req.params.id]);
     if (!announcement) return res.status(404).json({ error: "Announcement not found" });
@@ -149406,7 +149705,7 @@ router11.patch("/:id", authMiddleware, requireAdmin, async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router11.post("/:id/read", authMiddleware, async (req, res) => {
+router12.post("/:id/read", authMiddleware, async (req, res) => {
   try {
     const announcement = await db.get("SELECT * FROM announcements WHERE id = ?", [req.params.id]);
     if (!announcement) return res.status(404).json({ error: "Announcement not found" });
@@ -149420,13 +149719,14 @@ router11.post("/:id/read", authMiddleware, async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-var announcements_default = router11;
+var announcements_default = router12;
 
 // server/routes/vacations.ts
-var import_express12 = __toESM(require_express2(), 1);
+var import_express13 = __toESM(require_express2(), 1);
 init_dist_node();
-var router12 = (0, import_express12.Router)();
-router12.get("/requests", authMiddleware, async (req, res) => {
+init_connection();
+var router13 = (0, import_express13.Router)();
+router13.get("/requests", authMiddleware, async (req, res) => {
   try {
     const { userId, status } = req.query;
     let sql = "SELECT * FROM vacation_requests WHERE 1=1";
@@ -149458,7 +149758,7 @@ router12.get("/requests", authMiddleware, async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router12.post("/requests", authMiddleware, async (req, res) => {
+router13.post("/requests", authMiddleware, async (req, res) => {
   try {
     const { userId, startDate, endDate, days, reason, period } = req.body;
     if (!userId || !startDate || !endDate || !days) {
@@ -149502,7 +149802,7 @@ router12.post("/requests", authMiddleware, async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router12.patch("/requests/:id", authMiddleware, async (req, res) => {
+router13.patch("/requests/:id", authMiddleware, async (req, res) => {
   try {
     const request = await db.get("SELECT * FROM vacation_requests WHERE id = ?", [req.params.id]);
     if (!request) return res.status(404).json({ error: "Request not found" });
@@ -149546,7 +149846,7 @@ router12.patch("/requests/:id", authMiddleware, async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router12.post("/requests/:id/approve", authMiddleware, async (req, res) => {
+router13.post("/requests/:id/approve", authMiddleware, async (req, res) => {
   try {
     const request = await db.get("SELECT * FROM vacation_requests WHERE id = ?", [req.params.id]);
     if (!request) return res.status(404).json({ error: "Request not found" });
@@ -149586,7 +149886,7 @@ router12.post("/requests/:id/approve", authMiddleware, async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router12.delete("/requests/:id", authMiddleware, async (req, res) => {
+router13.delete("/requests/:id", authMiddleware, async (req, res) => {
   try {
     const request = await db.get("SELECT * FROM vacation_requests WHERE id = ?", [req.params.id]);
     if (!request) return res.status(404).json({ error: "Request not found" });
@@ -149605,7 +149905,7 @@ router12.delete("/requests/:id", authMiddleware, async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router12.get("/config", authMiddleware, async (_req, res) => {
+router13.get("/config", authMiddleware, async (_req, res) => {
   try {
     const config = await db.all("SELECT * FROM vacation_config");
     return res.json(config);
@@ -149614,7 +149914,7 @@ router12.get("/config", authMiddleware, async (_req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router12.patch("/config", authMiddleware, requireAdmin, async (req, res) => {
+router13.patch("/config", authMiddleware, requireAdmin, async (req, res) => {
   try {
     const { positions } = req.body;
     if (!Array.isArray(positions)) return res.status(400).json({ error: "positions array required" });
@@ -149631,7 +149931,7 @@ router12.patch("/config", authMiddleware, requireAdmin, async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router12.get("/extra-days", authMiddleware, async (req, res) => {
+router13.get("/extra-days", authMiddleware, async (req, res) => {
   try {
     const { userId, period } = req.query;
     const role = normalizeRole(req.user);
@@ -149662,7 +149962,7 @@ router12.get("/extra-days", authMiddleware, async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router12.post("/extra-days", authMiddleware, requireAdmin, async (req, res) => {
+router13.post("/extra-days", authMiddleware, requireAdmin, async (req, res) => {
   try {
     const { userId, days, reason, period } = req.body;
     if (!userId || !days || !reason || !period) {
@@ -149681,13 +149981,14 @@ router12.post("/extra-days", authMiddleware, requireAdmin, async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-var vacations_default = router12;
+var vacations_default = router13;
 
 // server/routes/evaluation-config.ts
 init_dist_node();
-var import_express13 = __toESM(require_express2(), 1);
-var router13 = (0, import_express13.Router)();
-router13.get("/categories", authMiddleware, async (_req, res) => {
+var import_express14 = __toESM(require_express2(), 1);
+init_connection();
+var router14 = (0, import_express14.Router)();
+router14.get("/categories", authMiddleware, async (_req, res) => {
   try {
     const categories = await db.all("SELECT * FROM evaluation_categories ORDER BY sort_order");
     return res.json(categories);
@@ -149696,7 +149997,7 @@ router13.get("/categories", authMiddleware, async (_req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router13.post("/categories", authMiddleware, requireAdmin, async (req, res) => {
+router14.post("/categories", authMiddleware, requireAdmin, async (req, res) => {
   try {
     const { id, label, section, is_technical_subcategory, sort_order } = req.body;
     if (!id || !label || !section) {
@@ -149717,7 +150018,7 @@ router13.post("/categories", authMiddleware, requireAdmin, async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router13.get("/section-weights", authMiddleware, async (_req, res) => {
+router14.get("/section-weights", authMiddleware, async (_req, res) => {
   try {
     const weights = await db.all("SELECT * FROM section_weights");
     return res.json(weights);
@@ -149726,7 +150027,7 @@ router13.get("/section-weights", authMiddleware, async (_req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router13.get("/section-weights/:position", authMiddleware, async (req, res) => {
+router14.get("/section-weights/:position", authMiddleware, async (req, res) => {
   try {
     const row = await db.get("SELECT * FROM section_weights WHERE position = ?", [req.params.position]);
     if (!row) {
@@ -149738,7 +150039,7 @@ router13.get("/section-weights/:position", authMiddleware, async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router13.patch("/section-weights/:position", authMiddleware, requireAdmin, async (req, res) => {
+router14.patch("/section-weights/:position", authMiddleware, requireAdmin, async (req, res) => {
   try {
     const { tecnico, competencias, blandas } = req.body;
     if (tecnico === void 0 || competencias === void 0 || blandas === void 0) {
@@ -149765,7 +150066,7 @@ router13.patch("/section-weights/:position", authMiddleware, requireAdmin, async
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router13.get("/competencies", authMiddleware, async (_req, res) => {
+router14.get("/competencies", authMiddleware, async (_req, res) => {
   try {
     const competencies = await db.all("SELECT * FROM competency_definitions ORDER BY position_level, sort_order");
     return res.json(competencies);
@@ -149774,7 +150075,7 @@ router13.get("/competencies", authMiddleware, async (_req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router13.get("/competencies/:positionLevel", authMiddleware, async (req, res) => {
+router14.get("/competencies/:positionLevel", authMiddleware, async (req, res) => {
   try {
     const competencies = await db.all("SELECT * FROM competency_definitions WHERE position_level = ? ORDER BY sort_order", [req.params.positionLevel]);
     return res.json(competencies);
@@ -149783,7 +150084,7 @@ router13.get("/competencies/:positionLevel", authMiddleware, async (req, res) =>
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router13.get("/template-questions", authMiddleware, async (req, res) => {
+router14.get("/template-questions", authMiddleware, async (req, res) => {
   try {
     const { position, practiceArea, section, category, is_active } = req.query;
     let sql = "SELECT tq.*, ql.question_id as library_question_id_ref, ql.category as library_category, ql.text as library_text, ql.default_section, ql.default_weight FROM template_questions tq LEFT JOIN question_library ql ON tq.library_question_id = ql.id WHERE 1=1";
@@ -149816,7 +150117,7 @@ router13.get("/template-questions", authMiddleware, async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router13.put("/template-questions/:position", authMiddleware, requireAdmin, async (req, res) => {
+router14.put("/template-questions/:position", authMiddleware, requireAdmin, async (req, res) => {
   try {
     const { position } = req.params;
     const { questions } = req.body;
@@ -149860,7 +150161,7 @@ router13.put("/template-questions/:position", authMiddleware, requireAdmin, asyn
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router13.patch("/template-questions/:id", authMiddleware, requireAdmin, async (req, res) => {
+router14.patch("/template-questions/:id", authMiddleware, requireAdmin, async (req, res) => {
   try {
     const { text, category, weight, section, isActive, is_active, sortOrder, sort_order } = req.body;
     const updates = [];
@@ -149898,7 +150199,7 @@ router13.patch("/template-questions/:id", authMiddleware, requireAdmin, async (r
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router13.get("/full-template/:position", authMiddleware, async (req, res) => {
+router14.get("/full-template/:position", authMiddleware, async (req, res) => {
   try {
     let { position } = req.params;
     const practiceArea = req.query.practiceArea || "corporativo";
@@ -149953,7 +150254,7 @@ router13.get("/full-template/:position", authMiddleware, async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router13.get("/positions", authMiddleware, async (_req, res) => {
+router14.get("/positions", authMiddleware, async (_req, res) => {
   try {
     const positions = await db.all("SELECT * FROM position_config WHERE is_active = 1 ORDER BY level, sort_order");
     return res.json(positions);
@@ -149962,7 +150263,7 @@ router13.get("/positions", authMiddleware, async (_req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router13.get("/score-labels", authMiddleware, async (_req, res) => {
+router14.get("/score-labels", authMiddleware, async (_req, res) => {
   try {
     const labels = await db.all("SELECT * FROM score_config ORDER BY score");
     return res.json(labels);
@@ -149971,7 +150272,7 @@ router13.get("/score-labels", authMiddleware, async (_req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router13.get("/library", authMiddleware, async (_req, res) => {
+router14.get("/library", authMiddleware, async (_req, res) => {
   try {
     const questions = await db.all("SELECT * FROM question_library ORDER BY category, created_at");
     return res.json(questions);
@@ -149980,7 +150281,7 @@ router13.get("/library", authMiddleware, async (_req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router13.post("/library", authMiddleware, requireAdmin, async (req, res) => {
+router14.post("/library", authMiddleware, requireAdmin, async (req, res) => {
   try {
     const { category, text, defaultSection, defaultWeight } = req.body;
     if (!category || !text) {
@@ -150002,7 +150303,7 @@ router13.post("/library", authMiddleware, requireAdmin, async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router13.patch("/library/:id", authMiddleware, requireAdmin, async (req, res) => {
+router14.patch("/library/:id", authMiddleware, requireAdmin, async (req, res) => {
   try {
     const { category, text, defaultSection, defaultWeight } = req.body;
     const updates = [];
@@ -150050,7 +150351,7 @@ router13.patch("/library/:id", authMiddleware, requireAdmin, async (req, res) =>
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router13.delete("/library/:id", authMiddleware, requireAdmin, async (req, res) => {
+router14.delete("/library/:id", authMiddleware, requireAdmin, async (req, res) => {
   try {
     const usageCount = await db.getScalar("SELECT COUNT(*) as cnt FROM template_questions WHERE library_question_id = ?", [req.params.id]);
     if (usageCount && usageCount > 0) {
@@ -150063,7 +150364,7 @@ router13.delete("/library/:id", authMiddleware, requireAdmin, async (req, res) =
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router13.post("/reseed", authMiddleware, requireAdmin, async (_req, res) => {
+router14.post("/reseed", authMiddleware, requireAdmin, async (_req, res) => {
   try {
     await db.run("DELETE FROM template_questions WHERE source = 'seed'");
     await db.run("DELETE FROM section_weights");
@@ -150078,12 +150379,13 @@ router13.post("/reseed", authMiddleware, requireAdmin, async (_req, res) => {
     return res.status(500).json({ error: "Reseed failed: " + (err instanceof Error ? err.message : String(err)) });
   }
 });
-var evaluation_config_default = router13;
+var evaluation_config_default = router14;
 
 // server/routes/positions.ts
-var import_express14 = __toESM(require_express2(), 1);
-var router14 = (0, import_express14.Router)();
-router14.get("/", authMiddleware, async (req, res) => {
+var import_express15 = __toESM(require_express2(), 1);
+init_connection();
+var router15 = (0, import_express15.Router)();
+router15.get("/", authMiddleware, async (req, res) => {
   try {
     const { work_area_id } = req.query;
     let sql = `SELECT cp.*, wa.label AS work_area_label, wa.level AS work_area_level
@@ -150102,7 +150404,7 @@ router14.get("/", authMiddleware, async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router14.get("/:id", authMiddleware, async (req, res) => {
+router15.get("/:id", authMiddleware, async (req, res) => {
   try {
     const position = await db.get(
       `SELECT cp.*, wa.label AS work_area_label, wa.level AS work_area_level
@@ -150118,7 +150420,7 @@ router14.get("/:id", authMiddleware, async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router14.post("/", authMiddleware, requireAdmin, async (req, res) => {
+router15.post("/", authMiddleware, requireAdmin, async (req, res) => {
   try {
     const { id, label, workAreaId, basePosition } = req.body;
     if (!id || !label || !workAreaId || !basePosition) {
@@ -150145,7 +150447,7 @@ router14.post("/", authMiddleware, requireAdmin, async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router14.patch("/:id", authMiddleware, requireAdmin, async (req, res) => {
+router15.patch("/:id", authMiddleware, requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     const { label, workAreaId, basePosition, newId } = req.body;
@@ -150200,7 +150502,7 @@ router14.patch("/:id", authMiddleware, requireAdmin, async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router14.delete("/:id", authMiddleware, requireAdmin, async (req, res) => {
+router15.delete("/:id", authMiddleware, requireAdmin, async (req, res) => {
   try {
     const position = await db.get("SELECT * FROM custom_positions WHERE id = ?", [req.params.id]);
     if (!position) return res.status(404).json({ error: "Position not found" });
@@ -150218,12 +150520,13 @@ router14.delete("/:id", authMiddleware, requireAdmin, async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-var positions_default = router14;
+var positions_default = router15;
 
 // server/routes/work-areas.ts
-var import_express15 = __toESM(require_express2(), 1);
-var router15 = (0, import_express15.Router)();
-router15.get("/", authMiddleware, async (_req, res) => {
+var import_express16 = __toESM(require_express2(), 1);
+init_connection();
+var router16 = (0, import_express16.Router)();
+router16.get("/", authMiddleware, async (_req, res) => {
   try {
     const areas = await db.all(
       `SELECT wa.*, 
@@ -150247,7 +150550,7 @@ router15.get("/", authMiddleware, async (_req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router15.post("/", authMiddleware, requireAdmin, async (req, res) => {
+router16.post("/", authMiddleware, requireAdmin, async (req, res) => {
   try {
     const { id, label, level, sortOrder } = req.body;
     if (!id || !label || !level) {
@@ -150271,7 +150574,7 @@ router15.post("/", authMiddleware, requireAdmin, async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router15.patch("/:id", authMiddleware, requireAdmin, async (req, res) => {
+router16.patch("/:id", authMiddleware, requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     const { label, level, sortOrder } = req.body;
@@ -150306,7 +150609,7 @@ router15.patch("/:id", authMiddleware, requireAdmin, async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router15.delete("/:id", authMiddleware, requireAdmin, async (req, res) => {
+router16.delete("/:id", authMiddleware, requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     const area = await db.get("SELECT * FROM work_areas WHERE id = ?", [id]);
@@ -150325,12 +150628,13 @@ router15.delete("/:id", authMiddleware, requireAdmin, async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-var work_areas_default = router15;
+var work_areas_default = router16;
 
 // server/routes/locations.ts
-var import_express16 = __toESM(require_express2(), 1);
-var router16 = (0, import_express16.Router)();
-router16.get("/", authMiddleware, async (_req, res) => {
+var import_express17 = __toESM(require_express2(), 1);
+init_connection();
+var router17 = (0, import_express17.Router)();
+router17.get("/", authMiddleware, async (_req, res) => {
   try {
     const locations = await db.all(
       `SELECT l.*, 
@@ -150343,7 +150647,7 @@ router16.get("/", authMiddleware, async (_req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router16.post("/", authMiddleware, requireAdmin, async (req, res) => {
+router17.post("/", authMiddleware, requireAdmin, async (req, res) => {
   try {
     const { id, label, city, office, floor, desk, sortOrder } = req.body;
     if (!id || !label) {
@@ -150364,7 +150668,7 @@ router16.post("/", authMiddleware, requireAdmin, async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router16.patch("/:id", authMiddleware, requireAdmin, async (req, res) => {
+router17.patch("/:id", authMiddleware, requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     const { label, city, office, floor, desk, sortOrder } = req.body;
@@ -150408,7 +150712,7 @@ router16.patch("/:id", authMiddleware, requireAdmin, async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router16.delete("/:id", authMiddleware, requireAdmin, async (req, res) => {
+router17.delete("/:id", authMiddleware, requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     const location = await db.get("SELECT * FROM locations WHERE id = ?", [id]);
@@ -150427,12 +150731,13 @@ router16.delete("/:id", authMiddleware, requireAdmin, async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-var locations_default = router16;
+var locations_default = router17;
 
 // server/routes/periods.ts
-var import_express17 = __toESM(require_express2(), 1);
-var router17 = (0, import_express17.Router)();
-router17.get("/", authMiddleware, async (_req, res) => {
+var import_express18 = __toESM(require_express2(), 1);
+init_connection();
+var router18 = (0, import_express18.Router)();
+router18.get("/", authMiddleware, async (_req, res) => {
   try {
     const periods = await db.all("SELECT * FROM period_configs");
     return res.json(periods);
@@ -150441,7 +150746,7 @@ router17.get("/", authMiddleware, async (_req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router17.post("/", authMiddleware, requireAdmin, async (req, res) => {
+router18.post("/", authMiddleware, requireAdmin, async (req, res) => {
   try {
     const { period, selfStart, selfEnd, supervisorStart, supervisorEnd, feedbackStart, feedbackEnd, actionPlanStart, actionPlanEnd } = req.body;
     if (!period || !selfStart || !selfEnd || !supervisorStart || !supervisorEnd || !feedbackStart || !feedbackEnd || !actionPlanStart || !actionPlanEnd) {
@@ -150460,12 +150765,13 @@ router17.post("/", authMiddleware, requireAdmin, async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-var periods_default = router17;
+var periods_default = router18;
 
 // server/copilot/index.ts
-var import_express18 = __toESM(require_express2(), 1);
+var import_express19 = __toESM(require_express2(), 1);
 init_dist_node();
 var import_multer = __toESM(require("multer"), 1);
+init_connection();
 
 // server/copilot/knowledge.ts
 var COPILOT_KNOWLEDGE = `# SMPS Performance Compass \u2014 Knowledge Base (DB-Driven)
@@ -150691,6 +150997,7 @@ Bad: Any response with emojis, tables, decorative characters, or raw tool output
 `;
 
 // server/copilot/context.ts
+init_connection();
 async function buildRichContext() {
   const [
     userCount,
@@ -150924,7 +151231,11 @@ function coerceArgs(args) {
   return result;
 }
 
+// server/copilot/tools/analyze.ts
+init_connection();
+
 // server/copilot/tools/helpers.ts
+init_connection();
 async function getLatestPeriod() {
   try {
     const row = await db.get("SELECT period FROM period_configs ORDER BY period DESC LIMIT 1");
@@ -151196,6 +151507,7 @@ var analyzeTool = {
 
 // server/copilot/tools/users.ts
 init_dist_node();
+init_connection();
 
 // server/copilot/types.ts
 function toolToFunction(t) {
@@ -151211,6 +151523,7 @@ var USER_FIELDS = "id,name,email,position,practice_area,custom_position_id,locat
 
 // server/copilot/tools/users.ts
 init_tokens();
+init_email();
 var usersTool = {
   name: "users",
   description: "Gesti\xF3n de usuarios. Acciones: list, search, get, create, batch_create, update_role, deactivate, activate, assign_supervisor.",
@@ -151281,7 +151594,7 @@ var usersTool = {
       }
       const id = v4_default(), now3 = (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "");
       const { token, tokenHash } = generateTokenPair();
-      const expiresAt = toMySQLDate(new Date(Date.now() + 48 * 60 * 60 * 1e3));
+      const expiresAt = toMySQLDate2(new Date(Date.now() + 48 * 60 * 60 * 1e3));
       let derivedPosition = args.position;
       let derivedArea = args.practice_area || null;
       if (args.custom_position_id) {
@@ -151317,7 +151630,7 @@ var usersTool = {
         }
         const id = v4_default(), now3 = (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "");
         const { token: bToken, tokenHash: bTokenHash } = generateTokenPair();
-        const bExpiresAt = toMySQLDate(new Date(Date.now() + 48 * 60 * 60 * 1e3));
+        const bExpiresAt = toMySQLDate2(new Date(Date.now() + 48 * 60 * 60 * 1e3));
         let bPosition = u.position;
         let bArea = u.practice_area || null;
         if (u.custom_position_id) {
@@ -151382,6 +151695,7 @@ var usersTool = {
 
 // server/copilot/tools/evaluations.ts
 init_dist_node();
+init_connection();
 var evaluationsTool = {
   name: "evaluations",
   description: `Evaluaciones de desempe\xF1o. Acciones:
@@ -151582,6 +151896,7 @@ var evaluationsTool = {
 
 // server/copilot/tools/vacations.ts
 init_dist_node();
+init_connection();
 var vacationsTool = {
   name: "vacations",
   description: `Vacaciones. Acciones:
@@ -151711,6 +152026,7 @@ var vacationsTool = {
 
 // server/copilot/tools/announcements.ts
 init_dist_node();
+init_connection();
 var announcementsTool = {
   name: "announcements",
   description: `Comunicados y anuncios. Acciones:
@@ -151801,6 +152117,7 @@ var announcementsTool = {
 
 // server/copilot/tools/admin.ts
 init_dist_node();
+init_connection();
 var periodsTool = {
   name: "periods",
   description: `Periodos de evaluaci\xF3n. Acciones:
@@ -152097,6 +152414,7 @@ var analyticsTool = {
 };
 
 // server/copilot/tools/org-structure.ts
+init_connection();
 function now() {
   return (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "");
 }
@@ -152384,6 +152702,7 @@ var locationsTool = {
 };
 
 // server/copilot/tools/eval-config.ts
+init_connection();
 function now2() {
   return (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "");
 }
@@ -152771,6 +153090,7 @@ var positionConfigTool = {
 
 // server/copilot/tools/action-plans.ts
 init_dist_node();
+init_connection();
 var actionPlansTool = {
   name: "action_plans",
   description: `Planes de acci\xF3n. Acciones:
@@ -152911,6 +153231,7 @@ var actionPlansTool = {
 
 // server/copilot/tools/timeline.ts
 init_dist_node();
+init_connection();
 var timelineTool = {
   name: "timeline",
   description: `L\xEDnea de tiempo del usuario. Acciones:
@@ -153043,6 +153364,7 @@ var timelineTool = {
 
 // server/copilot/tools/personal-objectives.ts
 init_dist_node();
+init_connection();
 var personalObjectivesTool = {
   name: "personal_objectives",
   description: `Objetivos personales. Acciones:
@@ -153211,6 +153533,7 @@ var personalObjectivesTool = {
 
 // server/copilot/tools/supervisor-assignments.ts
 init_dist_node();
+init_connection();
 var supervisorAssignmentsTool = {
   name: "supervisor_assignments",
   description: `Asignaciones de supervisor. Acciones:
@@ -153383,7 +153706,7 @@ function getTools(cfg) {
 var TOOL_COUNT = ALL_TOOLS.length;
 
 // server/copilot/index.ts
-var router18 = (0, import_express18.Router)();
+var router19 = (0, import_express19.Router)();
 var upload = (0, import_multer.default)({
   storage: import_multer.default.memoryStorage(),
   limits: { fileSize: 10 * 1024 * 1024 },
@@ -153419,8 +153742,8 @@ function llmErrorMessage(status, body) {
       return detail ? `Error del servicio de IA (${status}): ${detail}` : `Error del servicio de IA (c\xF3digo ${status}). Intenta de nuevo.`;
   }
 }
-router18.use(authMiddleware, requireSuperUser);
-router18.use(async (_req, res, next) => {
+router19.use(authMiddleware, requireSuperUser);
+router19.use(async (_req, res, next) => {
   try {
     const moduleConfig = await db.get("SELECT copilot FROM module_config WHERE id=1");
     if (!moduleConfig?.copilot) {
@@ -153432,7 +153755,7 @@ router18.use(async (_req, res, next) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router18.get("/config", async (_req, res) => {
+router19.get("/config", async (_req, res) => {
   try {
     let cfg = await db.get("SELECT * FROM copilot_config WHERE id=1");
     if (!cfg) {
@@ -153448,7 +153771,7 @@ router18.get("/config", async (_req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 });
-router18.patch("/config", async (req, res) => {
+router19.patch("/config", async (req, res) => {
   try {
     const fieldMap = {
       model: "model",
@@ -153500,7 +153823,7 @@ router18.patch("/config", async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router18.put("/config", async (req, res) => {
+router19.put("/config", async (req, res) => {
   try {
     const { model, api_provider, api_base_url, api_key, can_manage_users, can_manage_evaluations, can_manage_vacations, can_manage_announcements, can_manage_periods, can_manage_system, can_view_reports, max_tokens, temperature } = req.body;
     const current = await db.get("SELECT api_key FROM copilot_config WHERE id=1");
@@ -153519,7 +153842,7 @@ router18.put("/config", async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router18.post("/conversations", async (req, res) => {
+router19.post("/conversations", async (req, res) => {
   try {
     const { title } = req.body;
     const id = v4_default();
@@ -153531,7 +153854,7 @@ router18.post("/conversations", async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 });
-router18.get("/conversations", async (_req, res) => {
+router19.get("/conversations", async (_req, res) => {
   try {
     const convs = await db.all("SELECT * FROM copilot_conversations WHERE user_id=? ORDER BY updated_at DESC", [_req.user.id]);
     res.json(convs);
@@ -153540,7 +153863,7 @@ router18.get("/conversations", async (_req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 });
-router18.get("/conversations/:id", async (req, res) => {
+router19.get("/conversations/:id", async (req, res) => {
   try {
     const conv = await db.get("SELECT * FROM copilot_conversations WHERE id=? AND user_id=?", [req.params.id, req.user.id]);
     if (!conv) return res.status(404).json({ error: "Conversation not found" });
@@ -153551,7 +153874,7 @@ router18.get("/conversations/:id", async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 });
-router18.delete("/conversations/:id", async (req, res) => {
+router19.delete("/conversations/:id", async (req, res) => {
   try {
     await db.run("DELETE FROM copilot_messages WHERE conversation_id=?", [req.params.id]);
     await db.run("DELETE FROM copilot_conversations WHERE id=? AND user_id=?", [req.params.id, req.user.id]);
@@ -153561,7 +153884,7 @@ router18.delete("/conversations/:id", async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 });
-router18.delete("/conversations", async (req, res) => {
+router19.delete("/conversations", async (req, res) => {
   try {
     const convs = await db.all("SELECT id FROM copilot_conversations WHERE user_id=?", [req.user.id]);
     for (const c of convs) {
@@ -153574,7 +153897,7 @@ router18.delete("/conversations", async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 });
-router18.post("/chat", upload.single("file"), async (req, res) => {
+router19.post("/chat", upload.single("file"), async (req, res) => {
   try {
     const { message, conversationId } = req.body;
     if (!message && !req.file) return res.status(400).json({ error: "Message or file required" });
@@ -153763,19 +154086,19 @@ ${fileContent}` : message || "";
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-var copilot_default = router18;
+var copilot_default = router19;
 
 // server/routes/deploy.ts
-var import_express19 = __toESM(require_express2(), 1);
+var import_express20 = __toESM(require_express2(), 1);
 var import_crypto4 = __toESM(require("crypto"), 1);
 var import_child_process = require("child_process");
 var import_util4 = require("util");
-var router19 = (0, import_express19.Router)();
+var router20 = (0, import_express20.Router)();
 var execAsync = (0, import_util4.promisify)(import_child_process.exec);
 function getDeploySecret() {
   return process.env.DEPLOY_WEBHOOK_SECRET || null;
 }
-router19.post("/", async (req, res) => {
+router20.post("/", async (req, res) => {
   const DEPLOY_SECRET = getDeploySecret();
   if (!DEPLOY_SECRET) {
     console.error("[Deploy] DEPLOY_WEBHOOK_SECRET is not set. Deploy webhook is DISABLED.");
@@ -153835,12 +154158,13 @@ async function deployAsync() {
     console.error("[Deploy] Error:", deployErr);
   }
 }
-var deploy_default = router19;
+var deploy_default = router20;
 
 // server/routes/timeline.ts
-var import_express20 = __toESM(require_express2(), 1);
+var import_express21 = __toESM(require_express2(), 1);
 init_dist_node();
-var router20 = (0, import_express20.Router)();
+init_connection();
+var router21 = (0, import_express21.Router)();
 async function canAccessTimeline(requester, targetId) {
   if (requester.id === targetId) return "allow";
   if (hasRole(requester, ["super_user", "admin", "socio"])) return "allow";
@@ -153848,7 +154172,7 @@ async function canAccessTimeline(requester, targetId) {
   if (await isSupervisorOf(targetId, requester.id)) return "allow";
   return "deny";
 }
-router20.get("/:id/timeline", authMiddleware, async (req, res) => {
+router21.get("/:id/timeline", authMiddleware, async (req, res) => {
   try {
     const { id } = req.params;
     const { type, from, to, limit, offset } = req.query;
@@ -153903,7 +154227,7 @@ router20.get("/:id/timeline", authMiddleware, async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router20.post("/:id/timeline", authMiddleware, requireAdmin, async (req, res) => {
+router21.post("/:id/timeline", authMiddleware, requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     const { eventType, note, metadata, oldValue, newValue } = req.body;
@@ -153940,7 +154264,7 @@ router20.post("/:id/timeline", authMiddleware, requireAdmin, async (req, res) =>
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router20.patch("/:id/timeline/:eventId", authMiddleware, requireAdmin, async (req, res) => {
+router21.patch("/:id/timeline/:eventId", authMiddleware, requireAdmin, async (req, res) => {
   try {
     const { id, eventId } = req.params;
     const { note } = req.body;
@@ -153960,7 +154284,7 @@ router20.patch("/:id/timeline/:eventId", authMiddleware, requireAdmin, async (re
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-router20.delete("/:id/timeline/:eventId", authMiddleware, requireAdmin, async (req, res) => {
+router21.delete("/:id/timeline/:eventId", authMiddleware, requireAdmin, async (req, res) => {
   try {
     const { id, eventId } = req.params;
     const event = await db.get("SELECT * FROM user_timeline WHERE id = ?", [eventId]);
@@ -153974,7 +154298,7 @@ router20.delete("/:id/timeline/:eventId", authMiddleware, requireAdmin, async (r
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-var timeline_default = router20;
+var timeline_default = router21;
 
 // node_modules/express-rate-limit/dist/index.mjs
 var import_node_net = require("node:net");
@@ -154959,7 +155283,7 @@ var apiLimiter = rate_limit_default({
 // server/services/backup-scheduler.ts
 var import_child_process2 = require("child_process");
 var import_path = __toESM(require("path"), 1);
-var import_fs = __toESM(require("fs"), 1);
+var import_fs2 = __toESM(require("fs"), 1);
 var BACKUP_DIR = import_path.default.join(process.env.HOME || "/home/u906489923", "backups/smps");
 var DB_DIR = import_path.default.join(BACKUP_DIR, "db");
 var SOURCE_DIR = import_path.default.join(BACKUP_DIR, "source");
@@ -154974,22 +155298,22 @@ var APP_DIR = process.cwd();
 function log(message) {
   const entry = `[${(/* @__PURE__ */ new Date()).toISOString()}] ${message}
 `;
-  import_fs.default.appendFileSync(LOG_FILE, entry);
+  import_fs2.default.appendFileSync(LOG_FILE, entry);
   console.log(`[Backup] ${message}`);
 }
 function ensureDirs() {
   [BACKUP_DIR, DB_DIR, SOURCE_DIR].forEach((dir) => {
-    if (!import_fs.default.existsSync(dir)) import_fs.default.mkdirSync(dir, { recursive: true });
+    if (!import_fs2.default.existsSync(dir)) import_fs2.default.mkdirSync(dir, { recursive: true });
   });
 }
 function cleanupOld(dir, prefix) {
   try {
-    const files = import_fs.default.readdirSync(dir).filter((f) => f.startsWith(prefix)).map((f) => ({ name: f, path: import_path.default.join(dir, f), mtime: import_fs.default.statSync(import_path.default.join(dir, f)).mtime })).sort((a, b) => b.mtime.getTime() - a.mtime.getTime());
+    const files = import_fs2.default.readdirSync(dir).filter((f) => f.startsWith(prefix)).map((f) => ({ name: f, path: import_path.default.join(dir, f), mtime: import_fs2.default.statSync(import_path.default.join(dir, f)).mtime })).sort((a, b) => b.mtime.getTime() - a.mtime.getTime());
     const cutoff = Date.now() - RETENTION_DAYS * 24 * 60 * 60 * 1e3;
     let removed = 0;
     files.forEach((f) => {
       if (f.mtime.getTime() < cutoff) {
-        import_fs.default.unlinkSync(f.path);
+        import_fs2.default.unlinkSync(f.path);
         removed++;
       }
     });
@@ -155006,13 +155330,13 @@ function runDatabaseBackup() {
   try {
     const cmd = `mysqldump -h "${DB_HOST}" -P "${DB_PORT}" -u "${DB_USER}" -p"${DB_PASS}" --single-transaction --routines --triggers "${DB_NAME}" 2>/dev/null | gzip > "${backupFile}"`;
     (0, import_child_process2.execSync)(cmd, { timeout: 12e4 });
-    const size = import_fs.default.statSync(backupFile).size;
+    const size = import_fs2.default.statSync(backupFile).size;
     const sizeStr = size > 1048576 ? `${(size / 1048576).toFixed(1)}MB` : `${(size / 1024).toFixed(0)}KB`;
     log(`SUCCESS: Database backup created ${import_path.default.basename(backupFile)} (${sizeStr})`);
     cleanupOld(DB_DIR, "smps_db_");
   } catch (err) {
     log(`FAILED: Database backup error: ${err.message}`);
-    if (import_fs.default.existsSync(backupFile)) import_fs.default.unlinkSync(backupFile);
+    if (import_fs2.default.existsSync(backupFile)) import_fs2.default.unlinkSync(backupFile);
   }
   log("--- Database backup finished ---");
 }
@@ -155024,13 +155348,13 @@ function runSourceBackup() {
   try {
     const cmd = `cd "${import_path.default.dirname(APP_DIR)}" && tar czf "${backupFile}" --exclude='node_modules' --exclude='dist' --exclude='tmp' --exclude='.git' --exclude='*.log' "$(basename "${APP_DIR}")" 2>/dev/null`;
     (0, import_child_process2.execSync)(cmd, { timeout: 12e4 });
-    const size = import_fs.default.statSync(backupFile).size;
+    const size = import_fs2.default.statSync(backupFile).size;
     const sizeStr = size > 1048576 ? `${(size / 1048576).toFixed(1)}MB` : `${(size / 1024).toFixed(0)}KB`;
     log(`SUCCESS: Source backup created ${import_path.default.basename(backupFile)} (${sizeStr})`);
     cleanupOld(SOURCE_DIR, "smps_source_");
   } catch (err) {
     log(`FAILED: Source backup error: ${err.message}`);
-    if (import_fs.default.existsSync(backupFile)) import_fs.default.unlinkSync(backupFile);
+    if (import_fs2.default.existsSync(backupFile)) import_fs2.default.unlinkSync(backupFile);
   }
   log("--- Source backup finished ---");
 }
@@ -155063,6 +155387,7 @@ function startBackupScheduler() {
 }
 
 // server/services/integrity-scheduler.ts
+init_connection();
 init_dist_node();
 var CHECKS = [
   {
@@ -155210,11 +155535,12 @@ function startIntegrityScheduler() {
 }
 
 // server/services/session-cleanup.ts
-function toMySQLDate2(d) {
+init_connection();
+function toMySQLDate3(d) {
   return d.toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "");
 }
 async function runSessionCleanup() {
-  const now3 = toMySQLDate2(/* @__PURE__ */ new Date());
+  const now3 = toMySQLDate3(/* @__PURE__ */ new Date());
   const result = {
     expiredSessions: 0,
     expiredResetTokens: 0,
@@ -155295,7 +155621,7 @@ if (process.env.NODE_ENV === "production" && !process.env.JWT_SECRET) {
   console.error("FATAL: JWT_SECRET environment variable is not set. Refusing to start in production without it.");
   process.exit(1);
 }
-var app = (0, import_express21.default)();
+var app = (0, import_express22.default)();
 var PORT = process.env.PORT || 3e3;
 app.use((0, import_compression.default)());
 if (process.env.NODE_ENV === "production") {
@@ -155306,7 +155632,7 @@ if (process.env.NODE_ENV === "production") {
 } else {
   app.use((0, import_cors.default)());
 }
-app.use(import_express21.default.json());
+app.use(import_express22.default.json());
 app.use(helmet({
   contentSecurityPolicy: false,
   // Disabled for SPA; CSP should be added later
@@ -155368,6 +155694,7 @@ app.use("/api/deploy", deployLimiter, deploy_default);
 app.use("/api/users", timeline_default);
 app.use("/api/analytics", analytics_default);
 app.use("/api/notifications", notifications_default);
+app.use("/api/feature-visibility", feature_visibility_default);
 app.get("/techdiagram.html", (_req, res) => {
   res.sendFile(import_path2.default.resolve(process.cwd(), "dist/techdiagram.html"));
 });
@@ -155377,13 +155704,13 @@ if (process.env.NODE_ENV === "production") {
   const landingPath = import_path2.default.resolve(process.cwd(), "landing");
   app.use((req, _res, next) => {
     if (!isSmpsDomain(req.get("host")) && !req.path.startsWith("/api")) {
-      import_express21.default.static(landingPath)(req, _res, next);
+      import_express22.default.static(landingPath)(req, _res, next);
     } else {
       next();
     }
   });
   const distPath = import_path2.default.resolve(process.cwd(), "dist");
-  app.use(import_express21.default.static(distPath));
+  app.use(import_express22.default.static(distPath));
   app.use((req, res) => {
     if (isSmpsDomain(req.get("host"))) {
       res.sendFile(import_path2.default.join(distPath, "index.html"));
@@ -155408,6 +155735,10 @@ async function startServer() {
     await migrateAnalytics();
     console.log("Running notifications migration...");
     await migrateNotifications();
+    console.log("Running SMTP config migration...");
+    await migrateSmtpConfig();
+    console.log("Running feature visibility migration...");
+    await migrateFeatureVisibility();
     console.log("Seeding database...");
     await seed();
     console.log("Seeding evaluation data...");
