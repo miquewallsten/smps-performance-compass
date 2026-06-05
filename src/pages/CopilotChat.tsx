@@ -77,6 +77,8 @@ function CopilotConfigPanel({ config, onSave }: { config: any; onSave: (data: an
       { value: 'qwen3.5:397b', label: 'Qwen3.5 397B ⭐ Recomendado' },
       { value: 'qwen3-next:80b', label: 'Qwen3 Next 80B' },
       { value: 'deepseek-v3.2', label: 'DeepSeek V3.2' },
+      { value: 'gpt-oss:20b-cloud', label: 'GPT-OSS 20B Cloud' },
+      { value: 'glm-5.1:cloud', label: 'GLM 5.1 Cloud' },
       { value: 'llama3.3:70b', label: 'Llama 3.3 70B' },
       { value: 'gemma3:27b', label: 'Gemma 3 27B' },
       { value: 'mistral:7b', label: 'Mistral 7B' },
