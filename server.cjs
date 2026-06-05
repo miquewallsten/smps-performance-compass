@@ -142342,49 +142342,6 @@ if (import_meta3.url === `file://${process.argv[1]}`) {
   });
 }
 
-// server/db/migrate-smtp-config.ts
-init_connection();
-var import_meta4 = {};
-async function migrateSmtpConfig() {
-  console.log("\u{1F4E7} Migrating smtp_config table...");
-  const createTable = `CREATE TABLE IF NOT EXISTS smtp_config (
-    id INT PRIMARY KEY DEFAULT 1,
-    smtp_host VARCHAR(255) DEFAULT NULL,
-    smtp_port INT DEFAULT 587,
-    smtp_secure TINYINT(1) DEFAULT 0,
-    smtp_user VARCHAR(255) DEFAULT NULL,
-    smtp_pass TEXT DEFAULT NULL,
-    smtp_from VARCHAR(255) DEFAULT 'SMPS Performance <notificaciones@bowdot.online>',
-    mail_transport VARCHAR(50) DEFAULT 'auto',
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`;
-  try {
-    await run(createTable);
-    console.log("\u2705 smtp_config table created (if not exists)");
-    const existing = await pool.execute("SELECT id FROM smtp_config WHERE id = 1");
-    if (!existing[0] || Array.isArray(existing[0]) && existing[0].length === 0) {
-      await run(
-        `INSERT INTO smtp_config (id, smtp_from, mail_transport) VALUES (1, 'SMPS Performance <notificaciones@bowdot.online>', 'auto')`
-      );
-      console.log("\u2705 Default smtp_config inserted");
-    } else {
-      console.log("\u2139\uFE0F  smtp_config already exists");
-    }
-  } catch (err) {
-    console.error("\u274C Migration failed:", err);
-    throw err;
-  }
-}
-if (import_meta4.url === `file://${process.argv[1]}`) {
-  migrateSmtpConfig().then(() => {
-    console.log("Migration complete");
-    process.exit(0);
-  }).catch((err) => {
-    console.error(err);
-    process.exit(1);
-  });
-}
-
 // server/routes/feature-visibility.ts
 var import_express2 = __toESM(require_express2(), 1);
 init_connection();
@@ -155712,7 +155669,10 @@ if (process.env.NODE_ENV === "production") {
   const distPath = import_path2.default.resolve(process.cwd(), "dist");
   app.use(import_express22.default.static(distPath));
   app.use((req, res) => {
-    if (isSmpsDomain(req.get("host"))) {
+    const isAsset = /\.(js|css|woff2?|ttf|otf|eot|png|jpg|jpeg|gif|svg|ico|webp|map|json|wasm)$/i.test(req.path);
+    if (isAsset) {
+      res.status(404).send("Not found");
+    } else if (isSmpsDomain(req.get("host"))) {
       res.sendFile(import_path2.default.join(distPath, "index.html"));
     } else {
       res.sendFile(import_path2.default.join(landingPath, "index.html"));
@@ -155735,8 +155695,6 @@ async function startServer() {
     await migrateAnalytics();
     console.log("Running notifications migration...");
     await migrateNotifications();
-    console.log("Running SMTP config migration...");
-    await migrateSmtpConfig();
     console.log("Running feature visibility migration...");
     await migrateFeatureVisibility();
     console.log("Seeding database...");

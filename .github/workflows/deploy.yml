@@ -103,18 +103,11 @@ jobs:
           $SSH_CMD "rm -f $REMOTE/.htaccess 2>&1" || true
 
           # 3. Upload new build artifacts
+          # CRITICAL: Upload assets BEFORE index.html to avoid serving
+          # a new index.html that references assets that don't exist yet
           echo "📤 Step 3: Uploading build artifacts..."
           echo "Creating remote directory..."
           $SSH_CMD "mkdir -p $REMOTE/dist/assets" || { echo "❌ Failed to create remote directory"; exit 1; }
-
-          echo "  - Uploading dist/index.html..."
-          $SCP_CMD dist/index.html $SSH_HOST:$REMOTE/dist/index.html || { echo "❌ Failed to upload index.html"; exit 1; }
-
-          echo "  - Uploading dist/favicon.ico..."
-          $SCP_CMD dist/favicon.ico $SSH_HOST:$REMOTE/dist/favicon.ico 2>/dev/null || echo "⚠️ favicon.ico not found"
-
-          echo "  - Uploading dist/robots.txt..."
-          $SCP_CMD dist/robots.txt $SSH_HOST:$REMOTE/dist/robots.txt 2>/dev/null || echo "⚠️ robots.txt not found"
 
           echo "  - Creating assets tarball..."
           tar -czf /tmp/assets.tar.gz -C dist/assets . || { echo "❌ Failed to create tarball"; exit 1; }
@@ -124,6 +117,19 @@ jobs:
 
           echo "  - Extracting assets on server..."
           $SSH_CMD "cd $REMOTE/dist/assets && tar -xzf assets.tar.gz && rm assets.tar.gz 2>&1" || { echo "❌ Failed to extract assets"; exit 1; }
+
+          echo "  - Verifying assets exist..."
+          $SSH_CMD "ls $REMOTE/dist/assets/ | head -5" || { echo "❌ Assets directory empty"; exit 1; }
+
+          # Upload index.html AFTER assets are in place
+          echo "  - Uploading dist/index.html..."
+          $SCP_CMD dist/index.html $SSH_HOST:$REMOTE/dist/index.html || { echo "❌ Failed to upload index.html"; exit 1; }
+
+          echo "  - Uploading dist/favicon.ico..."
+          $SCP_CMD dist/favicon.ico $SSH_HOST:$REMOTE/dist/favicon.ico 2>/dev/null || echo "⚠️ favicon.ico not found"
+
+          echo "  - Uploading dist/robots.txt..."
+          $SCP_CMD dist/robots.txt $SSH_HOST:$REMOTE/dist/robots.txt 2>/dev/null || echo "⚠️ robots.txt not found"
 
           echo "  - Uploading server.cjs..."
           $SCP_CMD server.cjs $SSH_HOST:$REMOTE/server.cjs || { echo "❌ Failed to upload server.cjs"; exit 1; }

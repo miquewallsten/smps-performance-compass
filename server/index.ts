@@ -17,7 +17,6 @@ import analyticsRoutes from './routes/analytics.js';
 import { refreshAnalytics } from './services/analytics-refresh.js';
 import { migrateNotifications } from './db/migrate-notifications.js';
 import { migrateFeatureVisibility } from './db/migrate-feature-visibility.js';
-import { migrateSmtpConfig } from './db/migrate-smtp-config.js';
 import featureVisibilityRoutes from './routes/feature-visibility.js';
 import notificationRoutes from './routes/notifications.js';
 import { startNotificationScheduler } from './services/notification-scheduler.js';
@@ -186,9 +185,13 @@ if (process.env.NODE_ENV === 'production') {
   const distPath = path.resolve(process.cwd(), 'dist');
   app.use(express.static(distPath));
 
-  // SPA fallback for SMPS app
+  // SPA fallback for SMPS app — only serve index.html for page navigation,
+  // NOT for asset requests (.js, .css, .woff2, .png, etc.) which should 404
   app.use((req, res) => {
-    if (isSmpsDomain(req.get('host'))) {
+    const isAsset = /\.(js|css|woff2?|ttf|otf|eot|png|jpg|jpeg|gif|svg|ico|webp|map|json|wasm)$/i.test(req.path);
+    if (isAsset) {
+      res.status(404).send('Not found');
+    } else if (isSmpsDomain(req.get('host'))) {
       res.sendFile(path.join(distPath, 'index.html'));
     } else {
       // Main domain: serve landing page for any non-API route
@@ -214,8 +217,6 @@ async function startServer() {
     await migrateAnalytics();
     console.log('Running notifications migration...');
     await migrateNotifications();
-    console.log('Running SMTP config migration...');
-    await migrateSmtpConfig();
     console.log('Running feature visibility migration...');
     await migrateFeatureVisibility();
     console.log('Seeding database...');
