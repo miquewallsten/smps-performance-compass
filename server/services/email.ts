@@ -3,11 +3,11 @@
  *
  * Supports multiple transport modes via MAIL_TRANSPORT env var or database config:
  *   - "auto" (default): Uses sendmail in production, SMTP if configured, stub otherwise
- *   - "sendmail": Uses Hostinger's /usr/sbin/sendmail binary (no credentials needed)
+ *   - "sendmail": Uses Hostinger's sendmail binary (no credentials needed)
  *   - "smtp": Uses SMTP with credentials from SMTP_HOST, SMTP_USER, SMTP_PASS
  *   - "stub": Logs emails but does not send (for development)
  *
- * On Hostinger shared hosting, sendmail is the recommended transport.
+ * On Hostinger hosting, sendmail is the recommended transport.
  * It routes through Hostinger's mail infrastructure with proper DKIM signing.
  *
  * Configuration priority: Database (smtp_config table) > Environment variables
@@ -19,11 +19,31 @@
  *   APP_URL: Base URL for generating links
  */
 import nodemailer from 'nodemailer';
+import { existsSync } from 'fs';
 import { db } from '../db/connection.js';
 
 let transporter: nodemailer.Transporter | null = null;
 let lastConfigCheck: number | null = null;
 let cachedSmtpConfig: any = null;
+let cachedTransportConfig: string | null = null; // Track which config the transporter was built from
+
+/**
+ * Find the sendmail binary on the system.
+ * Checks common paths and the SENDMAIL_PATH env var.
+ */
+function getSendmailPath(): string | null {
+  // Allow override via env var
+  if (process.env.SENDMAIL_PATH) return process.env.SENDMAIL_PATH;
+
+  // Common sendmail paths on Hostinger and Linux
+  const paths = ['/usr/sbin/sendmail', '/usr/lib/sendmail', '/usr/local/sbin/sendmail'];
+  for (const p of paths) {
+    try {
+      if (existsSync(p)) return p;
+    } catch { /* ignore */ }
+  }
+  return null;
+}
 
 /**
  * Get SMTP configuration from database or environment variables.
@@ -87,22 +107,37 @@ async function getSmtpConfig(): Promise<{
 }
 
 async function getTransporter(): Promise<nodemailer.Transporter> {
-  if (transporter) return transporter;
-
   const config = await getSmtpConfig();
+  // Build a config fingerprint to detect changes
+  const configKey = `${config.mail_transport}|${config.smtp_host}|${config.smtp_port}|${config.smtp_secure}|${config.smtp_user}|${process.env.NODE_ENV}`;
+
+  // If transporter exists and config hasn't changed, reuse it
+  if (transporter && cachedTransportConfig === configKey) {
+    return transporter;
+  }
+
+  // Config changed or first call — reset transporter
+  transporter = null;
+  cachedTransportConfig = configKey;
+
   const { smtp_host, smtp_port, smtp_secure, smtp_user, smtp_pass, smtp_from, mail_transport } = config;
 
   // AUTO mode: prefer sendmail in production (Hostinger), fall back to SMTP, then stub
   if (mail_transport === 'auto') {
     if (process.env.NODE_ENV === 'production') {
-      // In production on Hostinger, use sendmail transport (always available)
-      console.info('📧 Using sendmail transport (Hostinger production)');
-      transporter = nodemailer.createTransport({
-        sendmail: true,
-        path: '/usr/sbin/sendmail',
-        args: ['-i'],
-      } as any);
-      return transporter;
+      // In production on Hostinger, use sendmail transport
+      const sendmailPath = getSendmailPath();
+      if (sendmailPath) {
+        console.info(`📧 Using sendmail transport at ${sendmailPath} (Hostinger production)`);
+        transporter = nodemailer.createTransport({
+          sendmail: true,
+          path: sendmailPath,
+          args: ['-i'],
+        } as any);
+        return transporter;
+      }
+      // No sendmail found — fall through to SMTP or stub
+      console.warn('⚠️  sendmail not found on system, falling back to SMTP/stub');
     }
     // In development, try SMTP if configured
     if (smtp_host && smtp_user && smtp_pass) {
@@ -130,13 +165,18 @@ async function getTransporter(): Promise<nodemailer.Transporter> {
 
   // Explicit SENDMAIL mode
   if (mail_transport === 'sendmail') {
-    console.info('📧 Using sendmail transport');
-    transporter = nodemailer.createTransport({
-      sendmail: true,
-      path: '/usr/sbin/sendmail',
-      args: ['-i'],
-    } as any);
-    return transporter;
+    const sendmailPath = getSendmailPath();
+    if (sendmailPath) {
+      console.info(`📧 Using sendmail transport at ${sendmailPath}`);
+      transporter = nodemailer.createTransport({
+        sendmail: true,
+        path: sendmailPath,
+        args: ['-i'],
+      } as any);
+      return transporter;
+    }
+    console.error('❌ Sendmail transport requested but /usr/sbin/sendmail not found. Falling back to stub.');
+    // Fall through to stub
   }
 
   // Explicit SMTP mode
@@ -221,7 +261,8 @@ export async function sendActivationEmail(
   `;
 
   try {
-    const result = await getTransporter().sendMail({
+    const transport = await getTransporter();
+    const result = await transport.sendMail({
       from: await getFromAddress(),
       to,
       subject: 'SMPS — Activar Cuenta',
@@ -289,7 +330,8 @@ export async function sendPasswordResetEmail(
   `;
 
   try {
-    const result = await getTransporter().sendMail({
+    const transport = await getTransporter();
+    const result = await transport.sendMail({
       from: await getFromAddress(),
       to,
       subject: 'SMPS — Restablecer Contraseña',
@@ -322,14 +364,18 @@ export async function sendAdminPasswordResetEmail(
  */
 export async function verifyEmailConfig(): Promise<{ ok: boolean; message: string }> {
   try {
-    const transport = getTransporter();
-    const mailTransport = process.env.MAIL_TRANSPORT || 'auto';
+    const config = await getSmtpConfig();
+    const mailTransport = config.mail_transport || 'auto';
 
     if (mailTransport === 'sendmail' || (mailTransport === 'auto' && process.env.NODE_ENV === 'production')) {
-      // Sendmail transport — verify by sending a test email
-      return { ok: true, message: 'Sendmail transport active (Hostinger production)' };
+      const sendmailPath = getSendmailPath();
+      if (sendmailPath) {
+        return { ok: true, message: `Sendmail transport active (path: ${sendmailPath})` };
+      }
+      return { ok: false, message: 'Sendmail transport configured but sendmail binary not found on system' };
     }
 
+    const transport = await getTransporter();
     if (!transport) {
       return { ok: false, message: 'Email transport not configured' };
     }
@@ -356,7 +402,8 @@ export async function sendTemplateEmail(params: {
   html: string;
 }): Promise<boolean> {
   try {
-    const result = await getTransporter().sendMail({
+    const transport = await getTransporter();
+    const result = await transport.sendMail({
       from: await getFromAddress(),
       to: params.to,
       subject: params.subject,
