@@ -101531,17 +101531,6 @@ __export(email_exports, {
   sendTemplateEmail: () => sendTemplateEmail,
   verifyEmailConfig: () => verifyEmailConfig
 });
-function getSendmailPath() {
-  if (process.env.SENDMAIL_PATH) return process.env.SENDMAIL_PATH;
-  const paths = ["/usr/sbin/sendmail", "/usr/lib/sendmail", "/usr/local/sbin/sendmail"];
-  for (const p of paths) {
-    try {
-      if ((0, import_fs.existsSync)(p)) return p;
-    } catch {
-    }
-  }
-  return null;
-}
 async function getSmtpConfig() {
   const now3 = Date.now();
   if (cachedSmtpConfig && lastConfigCheck && now3 - lastConfigCheck < 5e3) {
@@ -101586,27 +101575,18 @@ async function getSmtpConfig() {
   return cachedSmtpConfig;
 }
 async function getTransporter() {
+  if (transporter) return transporter;
   const config = await getSmtpConfig();
-  const configKey = `${config.mail_transport}|${config.smtp_host}|${config.smtp_port}|${config.smtp_secure}|${config.smtp_user}|${process.env.NODE_ENV}`;
-  if (transporter && cachedTransportConfig === configKey) {
-    return transporter;
-  }
-  transporter = null;
-  cachedTransportConfig = configKey;
   const { smtp_host, smtp_port, smtp_secure, smtp_user, smtp_pass, smtp_from, mail_transport } = config;
   if (mail_transport === "auto") {
     if (process.env.NODE_ENV === "production") {
-      const sendmailPath = getSendmailPath();
-      if (sendmailPath) {
-        console.info(`\u{1F4E7} Using sendmail transport at ${sendmailPath} (Hostinger production)`);
-        transporter = import_nodemailer.default.createTransport({
-          sendmail: true,
-          path: sendmailPath,
-          args: ["-i"]
-        });
-        return transporter;
-      }
-      console.warn("\u26A0\uFE0F  sendmail not found on system, falling back to SMTP/stub");
+      console.info("\u{1F4E7} Using sendmail transport (Hostinger production)");
+      transporter = import_nodemailer.default.createTransport({
+        sendmail: true,
+        path: "/usr/sbin/sendmail",
+        args: ["-i"]
+      });
+      return transporter;
     }
     if (smtp_host && smtp_user && smtp_pass) {
       transporter = import_nodemailer.default.createTransport({
@@ -101630,17 +101610,13 @@ async function getTransporter() {
     return transporter;
   }
   if (mail_transport === "sendmail") {
-    const sendmailPath = getSendmailPath();
-    if (sendmailPath) {
-      console.info(`\u{1F4E7} Using sendmail transport at ${sendmailPath}`);
-      transporter = import_nodemailer.default.createTransport({
-        sendmail: true,
-        path: sendmailPath,
-        args: ["-i"]
-      });
-      return transporter;
-    }
-    console.error("\u274C Sendmail transport requested but /usr/sbin/sendmail not found. Falling back to stub.");
+    console.info("\u{1F4E7} Using sendmail transport");
+    transporter = import_nodemailer.default.createTransport({
+      sendmail: true,
+      path: "/usr/sbin/sendmail",
+      args: ["-i"]
+    });
+    return transporter;
   }
   if (mail_transport === "smtp" && smtp_host && smtp_user && smtp_pass) {
     transporter = import_nodemailer.default.createTransport({
@@ -101708,8 +101684,7 @@ async function sendActivationEmail(to, name, token) {
     </div>
   `;
   try {
-    const transport = await getTransporter();
-    const result = await transport.sendMail({
+    const result = await getTransporter().sendMail({
       from: await getFromAddress(),
       to,
       subject: "SMPS \u2014 Activar Cuenta",
@@ -101763,8 +101738,7 @@ async function sendPasswordResetEmail(to, name, token, expiresInHours = 1) {
     </div>
   `;
   try {
-    const transport = await getTransporter();
-    const result = await transport.sendMail({
+    const result = await getTransporter().sendMail({
       from: await getFromAddress(),
       to,
       subject: "SMPS \u2014 Restablecer Contrase\xF1a",
@@ -101784,16 +101758,11 @@ async function sendAdminPasswordResetEmail(to, name, token) {
 }
 async function verifyEmailConfig() {
   try {
-    const config = await getSmtpConfig();
-    const mailTransport = config.mail_transport || "auto";
+    const transport = getTransporter();
+    const mailTransport = process.env.MAIL_TRANSPORT || "auto";
     if (mailTransport === "sendmail" || mailTransport === "auto" && process.env.NODE_ENV === "production") {
-      const sendmailPath = getSendmailPath();
-      if (sendmailPath) {
-        return { ok: true, message: `Sendmail transport active (path: ${sendmailPath})` };
-      }
-      return { ok: false, message: "Sendmail transport configured but sendmail binary not found on system" };
+      return { ok: true, message: "Sendmail transport active (Hostinger production)" };
     }
-    const transport = await getTransporter();
     if (!transport) {
       return { ok: false, message: "Email transport not configured" };
     }
@@ -101808,8 +101777,7 @@ async function verifyEmailConfig() {
 }
 async function sendTemplateEmail(params) {
   try {
-    const transport = await getTransporter();
-    const result = await transport.sendMail({
+    const result = await getTransporter().sendMail({
       from: await getFromAddress(),
       to: params.to,
       subject: params.subject,
@@ -101823,16 +101791,14 @@ async function sendTemplateEmail(params) {
     return false;
   }
 }
-var import_nodemailer, import_fs, transporter, lastConfigCheck, cachedSmtpConfig, cachedTransportConfig;
+var import_nodemailer, transporter, lastConfigCheck, cachedSmtpConfig;
 var init_email = __esm({
   "server/services/email.ts"() {
     import_nodemailer = __toESM(require_nodemailer(), 1);
-    import_fs = require("fs");
     init_connection();
     transporter = null;
     lastConfigCheck = null;
     cachedSmtpConfig = null;
-    cachedTransportConfig = null;
   }
 });
 
@@ -142389,10 +142355,34 @@ init_connection();
 // server/services/notifications.ts
 init_connection();
 init_email();
+
+// server/utils/helpers.ts
+function sanitizeUser(user) {
+  const {
+    password_hash,
+    security_answer,
+    activation_token_hash,
+    ...safe
+  } = user;
+  return {
+    ...safe,
+    isAdmin: Boolean(user.is_admin),
+    isSuperUser: Boolean(user.is_super_user),
+    isManagingPartner: Boolean(user.is_managing_partner),
+    isActive: Boolean(user.is_active),
+    mustChangePassword: Boolean(user.must_change_password)
+  };
+}
+function toMySQLDate(date) {
+  const d = date ?? /* @__PURE__ */ new Date();
+  return d.toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "");
+}
+
+// server/services/notifications.ts
 async function createNotification(params) {
   try {
     const id = crypto.randomUUID();
-    const now3 = (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "");
+    const now3 = toMySQLDate();
     const pref = await db.get(
       "SELECT email_enabled, in_app_enabled FROM notification_preferences WHERE user_id = ? AND category = ?",
       [params.recipientId, params.category]
@@ -142477,7 +142467,7 @@ async function sendNotificationEmail(notificationId, params) {
       subject: `SMPS \u2014 ${params.title}`,
       html
     });
-    const now3 = (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "");
+    const now3 = toMySQLDate();
     if (result) {
       await db.run("UPDATE notifications SET is_email_sent = 1, email_sent_at = ? WHERE id = ?", [now3, notificationId]);
       await db.run(
@@ -142492,7 +142482,7 @@ async function sendNotificationEmail(notificationId, params) {
     }
   } catch (err) {
     console.error("[Notifications] Email delivery error:", err);
-    const now3 = (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "");
+    const now3 = toMySQLDate();
     await db.run(
       `INSERT INTO notification_deliveries (id, notification_id, channel, status, attempted_at, error_message) VALUES (?, ?, 'email', 'failed', ?, ?)`,
       [crypto.randomUUID(), notificationId, now3, err.message?.slice(0, 200)]
@@ -142504,7 +142494,7 @@ async function markNotificationRead(notificationId, userId) {
     const notif = await db.get("SELECT id, is_read FROM notifications WHERE id = ? AND recipient_id = ?", [notificationId, userId]);
     if (!notif) return false;
     if (notif.is_read) return true;
-    const now3 = (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "");
+    const now3 = toMySQLDate();
     await db.run("UPDATE notifications SET is_read = 1, read_at = ? WHERE id = ?", [now3, notificationId]);
     return true;
   } catch (err) {
@@ -143058,7 +143048,7 @@ async function hashPassword(password) {
 async function verifyPassword(password, hash2) {
   return bcryptjs_default.compare(password, hash2);
 }
-async function hashSecurityAnswer2(answer) {
+async function hashSecurityAnswer(answer) {
   const normalized = answer.toLowerCase().trim().replace(/\s+/g, " ");
   return bcryptjs_default.hash(normalized, SALT_ROUNDS);
 }
@@ -147181,17 +147171,6 @@ var SystemInitSchema = external_exports.object({
 
 // server/routes/auth.ts
 var router4 = (0, import_express4.Router)();
-function sanitizeUser(user) {
-  const { password_hash, security_answer, activation_token_hash, ...safe } = user;
-  return {
-    ...safe,
-    isAdmin: Boolean(user.is_admin),
-    isSuperUser: Boolean(user.is_super_user),
-    isManagingPartner: Boolean(user.is_managing_partner),
-    isActive: Boolean(user.is_active),
-    mustChangePassword: Boolean(user.must_change_password)
-  };
-}
 router4.post("/login", validate2(LoginSchema), async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -147246,9 +147225,9 @@ router4.post("/logout", authMiddleware, requireAuthenticated, async (req, res) =
     const payload = req.user;
     await db.run(
       "INSERT INTO sessions (id, user_id, token_hash, created_at, expires_at) VALUES (?, ?, ?, ?, ?)",
-      [v4_default(), payload.id, tokenHash, (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, ""), expiresAt]
+      [v4_default(), payload.id, tokenHash, toMySQLDate(), expiresAt]
     );
-    await db.run("DELETE FROM sessions WHERE expires_at < ?", [(/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "")]);
+    await db.run("DELETE FROM sessions WHERE expires_at < ?", [toMySQLDate()]);
     await auditLog({ action: "logout", userId: payload.id, ipAddress: getClientIp(req), userAgent: getUserAgent(req) });
     return res.json({ message: "Logged out successfully" });
   } catch (err) {
@@ -147297,7 +147276,7 @@ router4.post("/change-password", validate2(ChangePasswordSchema), authMiddleware
       return res.status(400).json({ error: "La contrase\xF1a debe contener al menos un n\xFAmero" });
     }
     const hashedPassword = await hashPassword(newPassword);
-    const now3 = (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "");
+    const now3 = toMySQLDate();
     if (securityQuestion && securityAnswer) {
       const hashedAnswer = await hashSecurityAnswer(securityAnswer);
       await db.run(
@@ -147649,10 +147628,6 @@ async function getMaxAdminUsers() {
     return 3;
   }
 }
-function sanitizeUser2(user) {
-  const { password_hash, security_answer, ...safe } = user;
-  return safe;
-}
 var SAFE_USER_COLUMNS = `id, name, email, position, practice_area, custom_position_id, location_id, is_admin, is_super_user, is_managing_partner, is_active, must_change_password, created_at, updated_at`;
 router6.get("/", authMiddleware, async (req, res) => {
   try {
@@ -147674,19 +147649,19 @@ router6.get("/:id", authMiddleware, async (req, res) => {
     if (hasRole(req.user, ["super_user", "admin", "socio"])) {
       const user = await db.get(`SELECT ${SAFE_USER_COLUMNS} FROM users WHERE id = ?`, [targetId]);
       if (!user) return res.status(404).json({ error: "User not found" });
-      return res.json(sanitizeUser2(user));
+      return res.json(sanitizeUser(user));
     }
     if (userId === targetId) {
       const user = await db.get(`SELECT ${SAFE_USER_COLUMNS} FROM users WHERE id = ?`, [targetId]);
       if (!user) return res.status(404).json({ error: "User not found" });
-      return res.json(sanitizeUser2(user));
+      return res.json(sanitizeUser(user));
     }
     const isDirectSupervisor = await isSupervisorOf(userId, targetId);
     const isSupervisedBy = await isSupervisorOf(targetId, userId);
     if (isDirectSupervisor || isSupervisedBy) {
       const user = await db.get(`SELECT ${SAFE_USER_COLUMNS} FROM users WHERE id = ?`, [targetId]);
       if (!user) return res.status(404).json({ error: "User not found" });
-      return res.json(sanitizeUser2(user));
+      return res.json(sanitizeUser(user));
     }
     await auditLog({ action: "authorization_denied", userId: req.user.id, ipAddress: getClientIp(req), userAgent: getUserAgent(req), metadata: { resource: "GET /api/users/:id", targetId, reason: "unrelated employee" } });
     return res.status(403).json({ error: "Access denied" });
@@ -147723,7 +147698,7 @@ router6.post("/", authMiddleware, requireAdmin, validate2(CreateUserSchema), asy
       }
     }
     const id = v4_default();
-    const now3 = (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "");
+    const now3 = toMySQLDate();
     let hashedPassword = null;
     let activationTokenHash = null;
     let activationExpiresAt = null;
@@ -147734,7 +147709,7 @@ router6.post("/", authMiddleware, requireAdmin, validate2(CreateUserSchema), asy
       const tokenPair = generateTokenPair();
       activationToken = tokenPair.token;
       activationTokenHash = tokenPair.tokenHash;
-      activationExpiresAt = toMySQLDate2(new Date(Date.now() + 48 * 60 * 60 * 1e3));
+      activationExpiresAt = toMySQLDate(new Date(Date.now() + 48 * 60 * 60 * 1e3));
       isActive = 0;
       mustChangePassword = 0;
     } else {
@@ -147742,7 +147717,7 @@ router6.post("/", authMiddleware, requireAdmin, validate2(CreateUserSchema), asy
       mustChangePassword = 1;
     }
     const securityQuestion = "\xBFCu\xE1l es su correo electr\xF3nico?";
-    const hashedAnswer = await hashSecurityAnswer2(email);
+    const hashedAnswer = await hashSecurityAnswer(email);
     await db.run(
       `INSERT INTO users (id, email, password_hash, security_question, security_answer, name, position, practice_area, custom_position_id, location_id, is_admin, is_super_user, is_managing_partner, is_active, must_change_password, activation_token_hash, activation_expires_at, created_at, updated_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -147783,7 +147758,7 @@ router6.post("/", authMiddleware, requireAdmin, validate2(CreateUserSchema), asy
       note: "Usuario creado",
       createdBy: req.user.id
     });
-    const response = sanitizeUser2(user);
+    const response = sanitizeUser(user);
     if (useActivation) {
       response.activationSent = true;
       if (!activationToken) {
@@ -147920,11 +147895,11 @@ router6.patch("/:id", authMiddleware, requireSelfOrAdmin, async (req, res) => {
       return res.status(400).json({ error: "No fields to update" });
     }
     updates.push("updated_at = ?");
-    values.push((/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, ""));
+    values.push(toMySQLDate());
     values.push(id);
     await db.run(`UPDATE users SET ${updates.join(", ")} WHERE id = ?`, values);
     const updatedUser = await db.get(`SELECT ${SAFE_USER_COLUMNS} FROM users WHERE id = ?`, [id]);
-    return res.json(sanitizeUser2(updatedUser));
+    return res.json(sanitizeUser(updatedUser));
   } catch (err) {
     console.error("Update user error:", err);
     return res.status(500).json({ error: "Internal server error" });
@@ -147954,8 +147929,8 @@ router6.post("/:id/reset-password", authMiddleware, requireAdmin, async (req, re
       return res.status(404).json({ error: "User not found" });
     }
     const { token, tokenHash } = generateTokenPair();
-    const expiresAt = toMySQLDate2(new Date(Date.now() + 24 * 60 * 60 * 1e3));
-    const now3 = toMySQLDate2(/* @__PURE__ */ new Date());
+    const expiresAt = toMySQLDate(new Date(Date.now() + 24 * 60 * 60 * 1e3));
+    const now3 = toMySQLDate(/* @__PURE__ */ new Date());
     await db.run(
       `INSERT INTO password_reset_tokens (id, user_id, token_hash, expires_at, ip_address, created_at)
        VALUES (?, ?, ?, ?, ?, ?)`,
@@ -148034,7 +148009,7 @@ router6.patch("/:id/role", authMiddleware, requireAdmin, async (req, res) => {
       return res.status(400).json({ error: "No fields to update" });
     }
     updates.push("updated_at = ?");
-    values.push((/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, ""));
+    values.push(toMySQLDate());
     values.push(id);
     await db.run(`UPDATE users SET ${updates.join(", ")} WHERE id = ?`, values);
     const roleChanges = [];
@@ -148055,7 +148030,7 @@ router6.patch("/:id/role", authMiddleware, requireAdmin, async (req, res) => {
       });
     }
     const updatedUser = await db.get(`SELECT ${SAFE_USER_COLUMNS} FROM users WHERE id = ?`, [id]);
-    return res.json(sanitizeUser2(updatedUser));
+    return res.json(sanitizeUser(updatedUser));
   } catch (err) {
     console.error("Update role error:", err);
     return res.status(500).json({ error: "Internal server error" });
@@ -148064,7 +148039,7 @@ router6.patch("/:id/role", authMiddleware, requireAdmin, async (req, res) => {
 var users_default = router6;
 async function logTimelineEvent(userId, eventType, options = {}) {
   try {
-    const now3 = (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "");
+    const now3 = toMySQLDate();
     await db.run(
       `INSERT INTO user_timeline (id, user_id, event_type, event_date, old_value, new_value, metadata, note, created_by, created_at, updated_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -148242,10 +148217,6 @@ var POSITION_CATALOG = [
 
 // server/routes/system.ts
 var router8 = (0, import_express8.Router)();
-function sanitizeUser3(user) {
-  const { password_hash, security_answer, ...safe } = user;
-  return safe;
-}
 var VACATION_DEFAULTS = {
   socio: 20,
   salary_partner: 20,
@@ -148289,10 +148260,10 @@ router8.post("/init", validate2(SystemInitSchema), async (req, res) => {
     if (existingUser) {
       return res.status(409).json({ error: "Email is already registered" });
     }
-    const now3 = (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "");
+    const now3 = toMySQLDate();
     const userId = v4_default();
     const hashedPassword = await hashPassword(password);
-    const hashedAnswer = await hashSecurityAnswer2(securityAnswer);
+    const hashedAnswer = await hashSecurityAnswer(securityAnswer);
     await db.transaction(async (conn) => {
       await tx.run(
         conn,
@@ -148345,7 +148316,7 @@ router8.post("/init", validate2(SystemInitSchema), async (req, res) => {
       name
     });
     const user = await db.get("SELECT * FROM users WHERE id = ?", [userId]);
-    return res.status(201).json({ token, user: sanitizeUser3(user) });
+    return res.status(201).json({ token, user: sanitizeUser(user) });
   } catch (err) {
     console.error("System init error:", err);
     return res.status(500).json({ error: "Internal server error" });
@@ -148378,7 +148349,7 @@ router8.patch("/status", authMiddleware, requireSuperUser, async (req, res) => {
       }
       updates.push("status = ?");
       values.push(status);
-      const now3 = (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "");
+      const now3 = toMySQLDate();
       const action2 = status === "active" ? "activated" : "deactivated";
       await db.run(
         `INSERT INTO activation_history (id, action, date, by_user_id) VALUES (?, ?, ?, ?)`,
@@ -148596,7 +148567,7 @@ router8.post("/test-email", authMiddleware, requireSuperUser, async (req, res) =
     const { sendPasswordResetEmail: sendPasswordResetEmail2 } = await Promise.resolve().then(() => (init_email(), email_exports));
     const { generateTokenPair: generateTokenPair2 } = await Promise.resolve().then(() => (init_tokens(), tokens_exports));
     const { token, tokenHash } = generateTokenPair2();
-    const now3 = (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "");
+    const now3 = toMySQLDate();
     await db.run(
       `INSERT INTO password_reset_tokens (id, user_id, token_hash, expires_at, ip_address, created_at)
        VALUES (?, ?, ?, ?, ?, ?)`,
@@ -148683,7 +148654,7 @@ router8.get("/integrity", authMiddleware, async (req, res) => {
     const totalAssignments = await db.getScalar("SELECT COUNT(*) FROM supervisor_assignments");
     const totalActionPlans = await db.getScalar("SELECT COUNT(*) FROM action_plans");
     const periods = await db.all("SELECT period, self_start, self_end, action_plan_end FROM period_configs ORDER BY period");
-    const now3 = (/* @__PURE__ */ new Date()).toISOString();
+    const now3 = toMySQLDate();
     const currentPeriod = await db.get(
       "SELECT period FROM period_configs WHERE self_start <= ? AND action_plan_end >= ? ORDER BY period DESC LIMIT 1",
       [now3, now3]
@@ -148986,7 +148957,7 @@ router9.post("/", authMiddleware, async (req, res) => {
       }
     }
     const id = v4_default();
-    const now3 = (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "");
+    const now3 = toMySQLDate();
     const respArr = responses || [];
     let totalScore = req.body.totalScore !== void 0 ? Number(req.body.totalScore) : respArr.length > 0 ? respArr.reduce((sum, r) => sum + (r.score || 0), 0) / respArr.length : 0;
     if (respArr.length > 0) {
@@ -149049,7 +149020,7 @@ router9.put(
       const evaluation = req._entity || await db.get("SELECT * FROM evaluations WHERE id = ?", [req.params.id]);
       if (!evaluation) return res.status(404).json({ error: "Evaluation not found" });
       const { comments, supervisorComments, totalScore, responses } = req.body;
-      const now3 = (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "");
+      const now3 = toMySQLDate();
       const updates = [];
       const params = [];
       if (comments !== void 0) {
@@ -149156,7 +149127,7 @@ router9.patch(
     try {
       const evaluation = req._entity || await db.get("SELECT * FROM evaluations WHERE id = ?", [req.params.id]);
       if (!evaluation) return res.status(404).json({ error: "Evaluation not found" });
-      const now3 = (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "");
+      const now3 = toMySQLDate();
       await db.run(
         "UPDATE evaluations SET feedback_completed = 1, feedback_completed_at = ?, feedback_completed_by = ? WHERE id = ?",
         [now3, req.user.id, req.params.id]
@@ -149194,7 +149165,7 @@ router9.patch(
         `INSERT INTO evaluation_na_approvals (id, evaluation_id, question_id, approved, approved_by, approved_at)
        VALUES (?, ?, ?, ?, ?, ?)
        ON DUPLICATE KEY UPDATE approved = VALUES(approved), approved_by = VALUES(approved_by), approved_at = VALUES(approved_at)`,
-        [v4_default(), req.params.id, questionId, approved ? 1 : 0, req.user.id, (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "")]
+        [v4_default(), req.params.id, questionId, approved ? 1 : 0, req.user.id, toMySQLDate()]
       );
       const evalResponses = await db.all("SELECT * FROM evaluation_responses WHERE evaluation_id = ?", [req.params.id]);
       const allApprovals = await db.all("SELECT * FROM evaluation_na_approvals WHERE evaluation_id = ?", [req.params.id]);
@@ -149260,7 +149231,7 @@ router10.post("/", authMiddleware, async (req, res) => {
       }
     }
     const id = v4_default();
-    const now3 = (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "");
+    const now3 = toMySQLDate();
     await db.transaction(async (conn) => {
       await tx.run(
         conn,
@@ -149312,7 +149283,7 @@ router10.patch(
       const plan = req._entity || await db.get("SELECT * FROM action_plans WHERE id = ?", [req.params.id]);
       if (!plan) return res.status(404).json({ error: "Action plan not found" });
       const { content, items } = req.body;
-      const now3 = (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "");
+      const now3 = toMySQLDate();
       const updates = [];
       const params = [];
       if (content !== void 0) {
@@ -149359,7 +149330,7 @@ router10.post(
       if (!["approved", "rejected"].includes(status)) {
         return res.status(400).json({ error: "Status must be approved or rejected" });
       }
-      const now3 = (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "");
+      const now3 = toMySQLDate();
       await db.run(
         "UPDATE action_plans SET approval_status = ?, approval_comments = ?, approved_by = ?, approved_at = ?, updated_at = ? WHERE id = ?",
         [status, comments || null, req.user.id, now3, now3, req.params.id]
@@ -153803,7 +153774,7 @@ router19.post("/conversations", async (req, res) => {
   try {
     const { title } = req.body;
     const id = v4_default();
-    await db.run("INSERT INTO copilot_conversations (id,user_id,title,created_at,updated_at) VALUES(?,?,?,?,?)", [id, req.user.id, title || "New conversation", (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, ""), (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "")]);
+    await db.run("INSERT INTO copilot_conversations (id,user_id,title,created_at,updated_at) VALUES(?,?,?,?,?)", [id, req.user.id, title || "New conversation", toMySQLDate(), toMySQLDate()]);
     const conv = await db.get("SELECT * FROM copilot_conversations WHERE id=?", [id]);
     res.json(conv);
   } catch (e) {
@@ -153876,12 +153847,12 @@ ${fileContent}` : message || "";
     if (!conversationId) {
       await db.run(
         "INSERT INTO copilot_conversations (id,user_id,title,created_at,updated_at) VALUES(?,?,?,?,?)",
-        [convId, req.user.id, (message || "New conversation").slice(0, 100), (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, ""), (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "")]
+        [convId, req.user.id, (message || "New conversation").slice(0, 100), toMySQLDate(), toMySQLDate()]
       );
     }
     await db.run(
       "INSERT INTO copilot_messages (id,conversation_id,role,content,created_at) VALUES(?,?,?,?,?)",
-      [v4_default(), convId, "user", fullMessage, (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "")]
+      [v4_default(), convId, "user", fullMessage, toMySQLDate()]
     );
     const historyRows = await db.all(
       "SELECT role, content, tool_calls, tool_results FROM copilot_messages WHERE conversation_id=? ORDER BY created_at ASC",
@@ -154035,8 +154006,8 @@ ${fileContent}` : message || "";
         break;
       }
     }
-    await db.run("INSERT INTO copilot_messages (id,conversation_id,role,content,tool_calls,tool_results,created_at) VALUES(?,?,?,?,?,?,?)", [v4_default(), convId, "assistant", finalResponse, toolCallsData, toolResultsData, (/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, "")]);
-    await db.run("UPDATE copilot_conversations SET updated_at=? WHERE id=?", [(/* @__PURE__ */ new Date()).toISOString().replace("T", " ").replace(/\.\d{3}Z$/, ""), convId]);
+    await db.run("INSERT INTO copilot_messages (id,conversation_id,role,content,tool_calls,tool_results,created_at) VALUES(?,?,?,?,?,?,?)", [v4_default(), convId, "assistant", finalResponse, toolCallsData, toolResultsData, toMySQLDate()]);
+    await db.run("UPDATE copilot_conversations SET updated_at=? WHERE id=?", [toMySQLDate(), convId]);
     return res.json({ conversationId: convId, message: { id: v4_default(), role: "assistant", content: finalResponse } });
   } catch (e) {
     console.error("Chat error:", e);
@@ -155240,7 +155211,7 @@ var apiLimiter = rate_limit_default({
 // server/services/backup-scheduler.ts
 var import_child_process2 = require("child_process");
 var import_path = __toESM(require("path"), 1);
-var import_fs2 = __toESM(require("fs"), 1);
+var import_fs = __toESM(require("fs"), 1);
 var BACKUP_DIR = import_path.default.join(process.env.HOME || "/home/u906489923", "backups/smps");
 var DB_DIR = import_path.default.join(BACKUP_DIR, "db");
 var SOURCE_DIR = import_path.default.join(BACKUP_DIR, "source");
@@ -155255,22 +155226,22 @@ var APP_DIR = process.cwd();
 function log(message) {
   const entry = `[${(/* @__PURE__ */ new Date()).toISOString()}] ${message}
 `;
-  import_fs2.default.appendFileSync(LOG_FILE, entry);
+  import_fs.default.appendFileSync(LOG_FILE, entry);
   console.log(`[Backup] ${message}`);
 }
 function ensureDirs() {
   [BACKUP_DIR, DB_DIR, SOURCE_DIR].forEach((dir) => {
-    if (!import_fs2.default.existsSync(dir)) import_fs2.default.mkdirSync(dir, { recursive: true });
+    if (!import_fs.default.existsSync(dir)) import_fs.default.mkdirSync(dir, { recursive: true });
   });
 }
 function cleanupOld(dir, prefix) {
   try {
-    const files = import_fs2.default.readdirSync(dir).filter((f) => f.startsWith(prefix)).map((f) => ({ name: f, path: import_path.default.join(dir, f), mtime: import_fs2.default.statSync(import_path.default.join(dir, f)).mtime })).sort((a, b) => b.mtime.getTime() - a.mtime.getTime());
+    const files = import_fs.default.readdirSync(dir).filter((f) => f.startsWith(prefix)).map((f) => ({ name: f, path: import_path.default.join(dir, f), mtime: import_fs.default.statSync(import_path.default.join(dir, f)).mtime })).sort((a, b) => b.mtime.getTime() - a.mtime.getTime());
     const cutoff = Date.now() - RETENTION_DAYS * 24 * 60 * 60 * 1e3;
     let removed = 0;
     files.forEach((f) => {
       if (f.mtime.getTime() < cutoff) {
-        import_fs2.default.unlinkSync(f.path);
+        import_fs.default.unlinkSync(f.path);
         removed++;
       }
     });
@@ -155287,13 +155258,13 @@ function runDatabaseBackup() {
   try {
     const cmd = `mysqldump -h "${DB_HOST}" -P "${DB_PORT}" -u "${DB_USER}" -p"${DB_PASS}" --single-transaction --routines --triggers "${DB_NAME}" 2>/dev/null | gzip > "${backupFile}"`;
     (0, import_child_process2.execSync)(cmd, { timeout: 12e4 });
-    const size = import_fs2.default.statSync(backupFile).size;
+    const size = import_fs.default.statSync(backupFile).size;
     const sizeStr = size > 1048576 ? `${(size / 1048576).toFixed(1)}MB` : `${(size / 1024).toFixed(0)}KB`;
     log(`SUCCESS: Database backup created ${import_path.default.basename(backupFile)} (${sizeStr})`);
     cleanupOld(DB_DIR, "smps_db_");
   } catch (err) {
     log(`FAILED: Database backup error: ${err.message}`);
-    if (import_fs2.default.existsSync(backupFile)) import_fs2.default.unlinkSync(backupFile);
+    if (import_fs.default.existsSync(backupFile)) import_fs.default.unlinkSync(backupFile);
   }
   log("--- Database backup finished ---");
 }
@@ -155305,13 +155276,13 @@ function runSourceBackup() {
   try {
     const cmd = `cd "${import_path.default.dirname(APP_DIR)}" && tar czf "${backupFile}" --exclude='node_modules' --exclude='dist' --exclude='tmp' --exclude='.git' --exclude='*.log' "$(basename "${APP_DIR}")" 2>/dev/null`;
     (0, import_child_process2.execSync)(cmd, { timeout: 12e4 });
-    const size = import_fs2.default.statSync(backupFile).size;
+    const size = import_fs.default.statSync(backupFile).size;
     const sizeStr = size > 1048576 ? `${(size / 1048576).toFixed(1)}MB` : `${(size / 1024).toFixed(0)}KB`;
     log(`SUCCESS: Source backup created ${import_path.default.basename(backupFile)} (${sizeStr})`);
     cleanupOld(SOURCE_DIR, "smps_source_");
   } catch (err) {
     log(`FAILED: Source backup error: ${err.message}`);
-    if (import_fs2.default.existsSync(backupFile)) import_fs2.default.unlinkSync(backupFile);
+    if (import_fs.default.existsSync(backupFile)) import_fs.default.unlinkSync(backupFile);
   }
   log("--- Source backup finished ---");
 }
@@ -155596,6 +155567,17 @@ app.use(helmet({
   crossOriginEmbedderPolicy: false
   // Allow iframe embedding for future integrations
 }));
+app.use((req, res, next) => {
+  const wantsJson = Boolean(req.accepts("json")) && req.path.startsWith("/api");
+  if (wantsJson) {
+    const origRedirect = res.redirect.bind(res);
+    res.redirect = (url) => {
+      return res.status(401).json({ error: "Unauthorized", redirect: String(url) });
+    };
+    res._origRedirect = origRedirect;
+  }
+  next();
+});
 app.set("trust proxy", 1);
 app.use("/api/auth/login", loginLimiter);
 app.use("/api/auth/reset-password", resetPasswordLimiter);
@@ -155652,6 +155634,9 @@ app.use("/api/users", timeline_default);
 app.use("/api/analytics", analytics_default);
 app.use("/api/notifications", notifications_default);
 app.use("/api/feature-visibility", feature_visibility_default);
+app.use("/api", (_req, res) => {
+  res.status(404).json({ error: "API endpoint not found" });
+});
 app.get("/techdiagram.html", (_req, res) => {
   res.sendFile(import_path2.default.resolve(process.cwd(), "dist/techdiagram.html"));
 });
@@ -155669,10 +155654,7 @@ if (process.env.NODE_ENV === "production") {
   const distPath = import_path2.default.resolve(process.cwd(), "dist");
   app.use(import_express22.default.static(distPath));
   app.use((req, res) => {
-    const isAsset = /\.(js|css|woff2?|ttf|otf|eot|png|jpg|jpeg|gif|svg|ico|webp|map|json|wasm)$/i.test(req.path);
-    if (isAsset) {
-      res.status(404).send("Not found");
-    } else if (isSmpsDomain(req.get("host"))) {
+    if (isSmpsDomain(req.get("host"))) {
       res.sendFile(import_path2.default.join(distPath, "index.html"));
     } else {
       res.sendFile(import_path2.default.join(landingPath, "index.html"));

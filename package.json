@@ -12,7 +12,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "dev:server": "tsx watch server/index.ts",
-    "dev:full": "concurrently \"npm run dev\" \"npm run dev:server\"",
+    "dev:full": "concurrently \"VITE_API_URL=http://localhost:3001 npm run dev\" \"PORT=3001 npm run dev:server\"",
     "build:server": "node build-server.mjs",
     "db:migrate": "tsx server/db/migrate.ts",
     "db:seed": "tsx server/db/seed.ts",

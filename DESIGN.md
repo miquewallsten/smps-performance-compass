@@ -25,13 +25,12 @@
 
 | Role | Family | Weight | Size |
 |------|--------|--------|------|
-| Display / Headings | Source Sans 3, system-ui, sans-serif | 600–700 | 20–24px |
+| Display / Headings | Playfair Display, Georgia, serif | 600–700 | 20–24px |
 | Body / UI | Source Sans 3, system-ui, sans-serif | 400–600 | 12–16px |
-| Section title | Body | 600, uppercase, tracking-widest | 12px |
-| Stat value | Body, bold, tracking-tight | 700 | 24px |
+| Section title | Display | 600, uppercase, tracking-widest | 12px |
+| Stat value | Display, bold, tracking-tight | 700 | 24px |
 | Badge | Body, medium | 500 | 12px |
 | Nav label | Body | 500 | 14px |
-| Auth headings | Playfair Display, Georgia, serif | 700 | 24–32px |
 
 ### Spacing
 
