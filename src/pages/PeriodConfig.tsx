@@ -2,7 +2,7 @@ import * as React from 'react';
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePeriods, useCreatePeriod } from '@/api/queries';
-import { Calendar, Save } from 'lucide-react';
+import { Calendar, Save, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 
 /**
@@ -56,7 +56,9 @@ export default function PeriodConfigPage() {
   const createPeriodMut = useCreatePeriod();
   const [selectedPeriod, setSelectedPeriod] = useState(periods[0] || '');
   const [saving, setSaving] = useState(false);
-  const [seeded, setSeeded] = useState(false);
+  const [showNewPeriod, setShowNewPeriod] = useState(false);
+  const [newPeriodYear, setNewPeriodYear] = useState(new Date().getFullYear().toString());
+  const [newPeriodHalf, setNewPeriodHalf] = useState<'H1' | 'H2'>('H2');
 
   // Derive current config from server data, fall back to defaults
   const existing = periodConfigs.find(c => c.period === selectedPeriod);
@@ -68,24 +70,22 @@ export default function PeriodConfigPage() {
     setCfg(found || defaultsFor(selectedPeriod));
   }, [selectedPeriod, periodConfigs]);
 
-  // Seed defaults for any missing period configs on first render
+  // Auto-select first period when periods list changes
   useEffect(() => {
-    if (seeded || periodConfigs.length === 0) return;
-    let needsSeed = false;
+    if (periods.length > 0 && !periods.includes(selectedPeriod)) {
+      setSelectedPeriod(periods[0]);
+    }
+  }, [periods]);
+
+  // Seed defaults for any missing period configs
+  useEffect(() => {
+    if (periods.length === 0) return;
     periods.forEach(p => {
       if (!periodConfigs.find(c => c.period === p)) {
-        needsSeed = true;
+        createPeriodMut.mutate(defaultsFor(p));
       }
     });
-    if (needsSeed) {
-      periods.forEach(p => {
-        if (!periodConfigs.find(c => c.period === p)) {
-          createPeriodMut.mutate(defaultsFor(p));
-        }
-      });
-    }
-    setSeeded(true);
-  }, [periodConfigs.length > 0]);
+  }, [periods.length]);
 
   if (!currentUser?.isAdmin && !currentUser?.isSuperUser) {
     return <p className="text-center py-12 text-muted-foreground">Acceso restringido al administrador.</p>;
@@ -93,6 +93,24 @@ export default function PeriodConfigPage() {
 
   const handlePeriodChange = (p: string) => {
     setSelectedPeriod(p);
+  };
+
+  const handleCreateNewPeriod = () => {
+    const periodStr = `${newPeriodYear}-${newPeriodHalf}`;
+    if (periods.includes(periodStr)) {
+      toast.error(`El periodo ${periodStr} ya existe`);
+      return;
+    }
+    createPeriodMut.mutate(defaultsFor(periodStr), {
+      onSuccess: () => {
+        toast.success(`Periodo ${periodStr} creado`);
+        setSelectedPeriod(periodStr);
+        setShowNewPeriod(false);
+      },
+      onError: (err: Error) => {
+        toast.error('Error al crear periodo: ' + (err.message || 'Intente de nuevo'));
+      },
+    });
   };
 
   const handleSave = () => {
@@ -131,11 +149,39 @@ export default function PeriodConfigPage() {
             Periodos por defecto: H1 = Diciembre–Mayo · H2 = Junio–Noviembre. Los usuarios reciben una alerta dos meses antes del cierre.
           </p>
         </div>
-        <select value={selectedPeriod} onChange={e => handlePeriodChange(e.target.value)}
-          className="px-4 py-2 rounded-lg border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-accent">
-          {periods.map(p => <option key={p} value={p}>{p}</option>)}
-        </select>
+        <div className="flex items-center gap-2">
+          <select value={selectedPeriod} onChange={e => handlePeriodChange(e.target.value)}
+            className="px-4 py-2 rounded-lg border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-accent">
+            {periods.length === 0 && <option value="">Sin periodos</option>}
+            {periods.map(p => <option key={p} value={p}>{p}</option>)}
+          </select>
+          <button onClick={() => setShowNewPeriod(!showNewPeriod)}
+            className="px-3 py-2 rounded-lg border border-input bg-background text-sm font-medium hover:bg-muted flex items-center gap-1.5">
+            <Plus className="h-4 w-4" /> Nuevo Periodo
+          </button>
+        </div>
       </div>
+
+      {showNewPeriod && (
+        <div className="smps-surface-card flex items-center gap-3 flex-wrap">
+          <span className="text-sm font-medium">Crear periodo:</span>
+          <input type="number" value={newPeriodYear} onChange={e => setNewPeriodYear(e.target.value)}
+            min="2024" max="2035" className="w-24 px-3 py-2 rounded-lg border border-input bg-background text-sm" placeholder="Año" />
+          <select value={newPeriodHalf} onChange={e => setNewPeriodHalf(e.target.value as 'H1' | 'H2')}
+            className="px-3 py-2 rounded-lg border border-input bg-background text-sm">
+            <option value="H1">H1 (Dic-May)</option>
+            <option value="H2">H2 (Jun-Nov)</option>
+          </select>
+          <button onClick={handleCreateNewPeriod}
+            className="px-4 py-2 rounded-lg bg-accent text-accent-foreground text-sm font-medium hover:opacity-90">
+            Crear
+          </button>
+          <button onClick={() => setShowNewPeriod(false)}
+            className="px-3 py-2 rounded-lg border text-sm hover:bg-muted">
+            Cancelar
+          </button>
+        </div>
+      )}
 
       <div className="smps-surface-elevated">
         <div className="flex items-center justify-between mb-5">

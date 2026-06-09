@@ -1,13 +1,13 @@
 import * as React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useAssignments, useEvaluations, useAnnouncements, useVacationRequests, useSystemStatus, useSystemModules } from '@/api/queries';
+import { useAssignments, useEvaluations, useVacationRequests, useSystemStatus, useSystemModules } from '@/api/queries';
 import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 import {
   Clock,
   ClipboardList,
   LayoutDashboard, ClipboardCheck, Users, BarChart3, Settings, LogOut,
   UserCheck, ChevronLeft, ChevronRight, Menu, Shield, FileText, Target, Bot,
-  Megaphone, Palmtree, ChevronDown, HelpCircle, BookOpen, Calendar, User as UserIcon, Briefcase, TrendingUp
+  Palmtree, ChevronDown, HelpCircle, BookOpen, Calendar, User as UserIcon, Briefcase, TrendingUp
 } from 'lucide-react';
 import { useState, useEffect, useRef, Suspense } from 'react';
 import { Loader2 } from 'lucide-react';
@@ -41,8 +41,6 @@ export default function Layout() {
   const { data: systemStatus } = useSystemStatus();
   const { data: evaluationsData } = useEvaluations({ period: currentPeriod });
   const evaluations = Array.isArray(evaluationsData) ? evaluationsData : [];
-  const { data: announcementsData } = useAnnouncements();
-  const announcements = Array.isArray(announcementsData) ? announcementsData : [];
   const { data: vacationRequestsData } = useVacationRequests();
   const vacationRequests = Array.isArray(vacationRequestsData) ? vacationRequestsData : [];
   const { data: moduleConfig } = useSystemModules();
@@ -96,18 +94,6 @@ export default function Layout() {
     return count;
   })();
 
-  const unreadAnnouncementCount = (() => {
-    if (!modules.communications) return 0;
-    return announcements.filter(a => {
-      if (a.archived) return false;
-      if (a.readBy && a.readBy.includes(currentUser.id)) return false;
-      if (a.audience === 'all') return true;
-      if (a.audience === myLevel) return true;
-      if (isAdminOrSuper || isManagingPartner || isSocio) return true;
-      return false;
-    }).length;
-  })();
-
   const pendingVacationCount = (() => {
     if (!modules.vacations) return 0;
     const myEvaluados = assignments.filter(a => a.supervisorId === currentUser.id && a.period === currentPeriod).map(a => a.employeeId);
@@ -142,7 +128,7 @@ export default function Layout() {
     { to: '/evaluation-templates', icon: BookOpen, label: 'Plantillas', show: isAdminOrSuper },
     { to: '/question-library', icon: BookOpen, label: 'Preguntas', show: isAdminOrSuper },
     { to: '/personal-objectives', icon: Target, label: 'Objetivos', show: showEvalModule && (isAdminOrSuper || isManagingPartner || isSocio || hasTeam) },
-    { to: '/communications', icon: Megaphone, label: 'Comunicación', show: modules.communications, badge: unreadAnnouncementCount },
+    // Comunicación removed per client request - notification bell causing errors
     { to: '/vacations', icon: Palmtree, label: 'Vacaciones', show: modules.vacations, badge: pendingVacationCount },
     { to: '/period-config', icon: Calendar, label: 'Periodos', show: isAdminOrSuper },
     { to: '/access', icon: Shield, label: 'Acceso Sistema', show: isSuperUser },
@@ -243,7 +229,7 @@ export default function Layout() {
           {[
             { to: '/dashboard', icon: LayoutDashboard, label: 'Panel' },
             { to: '/self-evaluation', icon: ClipboardCheck, label: 'Evaluar' },
-            { to: '/communications', icon: Megaphone, label: 'Avisos' },
+            { to: '/settings', icon: Settings, label: 'Más' },
             { to: '/vacations', icon: Palmtree, label: 'Vacaciones' },
             { to: '/settings', icon: Settings, label: 'Más' },
           ].map(item => (

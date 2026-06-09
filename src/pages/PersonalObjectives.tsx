@@ -78,10 +78,19 @@ export default function PersonalObjectivesPage() {
   const isSocio = currentUser.position === 'socio';
   const isSupervisorOf = (userId: string) => assignments.some(a => a.employeeId === userId && a.supervisorId === currentUser.id && a.period === period);
   const canEditUser = (userId: string) => canViewAll || userId === currentUser.id;
-  const canReview = (userId: string) => canViewAll || isSocio || isSupervisorOf(userId);
+  const canReview = (userId: string) => canViewAll || isSupervisorOf(userId);
 
+  // Visibility: only admin, managing partner, super user see ALL
+  // Regular users (including socios) see only their own + team + evaluated/evaluators
+  const periodAssignments = assignments.filter((a: any) => a.period === period);
+  const visibleUserIds = canViewAll
+    ? null
+    : new Set([
+        ...periodAssignments.filter((a: any) => a.supervisorId === currentUser.id).map((a: any) => a.employeeId),
+        currentUser.id,
+      ]);
 
-  const activeUsers = users.filter(u => u.isActive && !u.isSuperUser && !u.isDummy && u.position !== 'dummy' && (canViewAll || canViewUserEvaluations(currentUser, u) || u.id === currentUser.id || isSupervisorOf(u.id)));
+  const activeUsers = users.filter(u => u.isActive && !u.isSuperUser && !u.isDummy && u.position !== 'dummy' && canViewUserEvaluations(currentUser, u) && (canViewAll || (visibleUserIds && visibleUserIds.has(u.id))));
   const adminUsers = activeUsers.filter(u => getPositionLevel(u.position) === 'administrativo').sort((a, b) => a.name.localeCompare(b.name, 'es'));
   const legalUsers = activeUsers.filter(u => getPositionLevel(u.position) === 'legal').sort((a, b) => a.name.localeCompare(b.name, 'es'));
 

@@ -69,21 +69,22 @@ export default function Dashboard() {
   const periodEvals = allEvaluations.filter((e: any) => e.period === currentPeriod);
 
   // Visibility filtering: only admin, managing partner, super user can see ALL
-  // Regular socios and other users see only their team + themselves + users they evaluated / were evaluated by
+  // Regular users (including socios) see only their team + evaluated + evaluators + self
   const myTeamIds = canViewAll
     ? null
-    : periodAssignments.filter((a: any) => a.supervisorId === currentUser.id).map((a: any) => a.employeeId);
-
-  // Users who evaluated me or who I evaluated
-  const myEvaluatedIds = periodEvals.filter((e: any) => e.evaluatorId === currentUser.id).map((e: any) => e.evaluatedId);
-  const myEvaluatorIds = periodEvals.filter((e: any) => e.evaluatedId === currentUser.id).map((e: any) => e.evaluatorId);
+    : [
+        ...periodAssignments.filter((a: any) => a.supervisorId === currentUser.id).map((a: any) => a.employeeId),
+        ...periodEvals.filter((e: any) => e.evaluatorId === currentUser.id).map((e: any) => e.evaluatedId),
+        ...periodEvals.filter((e: any) => e.evaluatedId === currentUser.id).map((e: any) => e.evaluatorId),
+        currentUser.id,
+      ];
 
   const getRelevantUsers = () => {
-    let base = allUsers.filter((u: any) => u.isActive && !u.isSuperUser);
+    let base = allUsers.filter((u: any) => u.isActive && !u.isSuperUser && !u.isDummy);
     // Apply visibility rules (socios can't see other socios)
     base = base.filter((u: any) => canViewUserEvaluations(currentUser, u));
     if (myTeamIds) {
-      const visibleIds = new Set([...myTeamIds, ...myEvaluatedIds, ...myEvaluatorIds, currentUser.id]);
+      const visibleIds = new Set(myTeamIds);
       base = base.filter((u: any) => visibleIds.has(u.id));
     }
     if (selectedLevel !== 'all' && isAdminOrMore) {

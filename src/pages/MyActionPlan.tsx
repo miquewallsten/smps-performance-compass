@@ -78,7 +78,7 @@ export default function MyActionPlan() {
   const supEvalsCount = evaluations.filter(e => e.evaluatedId === currentUser.id && e.type === 'supervisor' && e.period === period).length;
   const allSupDone = mySupervisorIds.length > 0 && supEvalsCount >= mySupervisorIds.length;
   const feedbackDone = evaluations.some(e => e.evaluatedId === currentUser.id && e.type === 'supervisor' && e.period === period && e.feedbackCompleted);
-  const canFillPlan = selfDone && !feedbackDone;
+  const canFillPlan = selfDone && allSupDone && feedbackDone;
   const allEvalsReady = selfDone && allSupDone;
 
   const updateItem = (id: string, patch: Partial<SmartActionItem>) =>
@@ -172,10 +172,15 @@ export default function MyActionPlan() {
           ⚠️ Debes completar primero tu <strong>autoevaluación</strong> para llenar el plan de acción.
         </div>
       )}
-      {selfDone && !allEvalsReady && !feedbackDone && (
+      {selfDone && !allSupDone && (
+        <div className="bg-smps-warning/10 border border-smps-warning/30 rounded-lg p-4 text-sm">
+          ⏳ Debes esperar a que tus evaluadores completen sus evaluaciones ({supEvalsCount}/{mySupervisorIds.length} completadas).
+        </div>
+      )}
+      {selfDone && allSupDone && !feedbackDone && (
         <div className="bg-accent/5 border border-accent/20 rounded-lg p-4 text-sm">
           <Clock className="h-4 w-4 inline mr-1 text-accent" />
-          Puedes redactar tu plan, aún faltan evaluaciones de tus evaluadores ({supEvalsCount}/{mySupervisorIds.length}).
+          Pendiente la sesión de feedback. Una vez realizada, podrás crear tu plan de acción.
         </div>
       )}
       {feedbackDone && (

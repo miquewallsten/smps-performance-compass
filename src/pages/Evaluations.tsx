@@ -43,7 +43,8 @@ export default function Evaluations() {
   const updateEvaluation = useUpdateEvaluation().mutate;
   const completeFeedback = useCompleteFeedback().mutate;
   const approveNA = useApproveNA().mutate;
-  const { data: actionPlans = [] } = useActionPlans();
+  const { data: actionPlansData } = useActionPlans();
+  const actionPlans = Array.isArray(actionPlansData) ? actionPlansData : [];
   const approveActionPlanMut = useApproveActionPlan().mutate;
   const { data: allTemplateQuestions = [] } = useTemplateQuestions();
   const customQuestions = useMemo(() => {
@@ -433,7 +434,7 @@ export default function Evaluations() {
                     <button onClick={() => setViewingEval(ev.id)} className="p-1.5 rounded-lg hover:bg-muted transition-colors" title="Ver evaluación">
                       <Eye className="h-4 w-4 text-muted-foreground" />
                     </button>
-                    {empActionPlan && (isSeniorEvaluator || canViewAllDetails) && (
+                    {empActionPlan && (isSeniorEvaluator || canViewAllDetails || emp.id === currentUser.id) && (
                       <button onClick={() => setViewingActionPlan(empActionPlan.id)} className="p-1.5 rounded-lg hover:bg-muted transition-colors" title={empActionPlan.approvalStatus === 'pending' ? 'Plan de acción pendiente de aprobación' : 'Ver plan de acción'}>
                         <FileText className={`h-4 w-4 ${empActionPlan.approvalStatus === 'pending' ? 'text-smps-warning' : empActionPlan.approvalStatus === 'approved' ? 'text-smps-success' : 'text-muted-foreground'}`} />
                       </button>

@@ -4,13 +4,11 @@ import { useUsers, useEvaluations, useAssignments, useActionPlans, usePeriods } 
 import { useDisplayPeriod } from '@/hooks/useDisplayPeriod';
 import { getPositionLabel, getPositionLevel, getLegalHierarchy, getAdminHierarchy, getPositionHierarchy } from '@/lib/evaluationConfig';
 import { canViewUserEvaluations } from '@/lib/visibility';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { Download } from 'lucide-react';
 import { ReportsSkeleton } from '@/components/shared/SkeletonPage';
 
 type AreaFilter = 'all' | 'legal' | 'administrativo';
-
-const PIE_COLORS = ['hsl(145, 60%, 40%)', 'hsl(210, 15%, 85%)'];
 
 export default function Reports() {
   const displayPeriod = useDisplayPeriod();
@@ -59,6 +57,8 @@ export default function Reports() {
     : getPositionHierarchy();
 
   // ── Stage completion data ──
+  const totalUsers = activeUsers.length;
+
   const selfEvalsDone = activeUsers.filter((u: any) => allEvaluations.some((e: any) => e.type === 'self' && e.evaluatorId === u.id && e.period === currentPeriod)).length;
   const supervisorEvalsDone = activeUsers.filter((u: any) => {
     const userAssigns = periodAssignments.filter((a: any) => a.employeeId === u.id);
@@ -70,23 +70,6 @@ export default function Reports() {
     return supEvals.some((e: any) => e.feedbackCompleted);
   }).length;
   const actionPlansDone = activeUsers.filter((u: any) => actionPlans.some((p: any) => p.employeeId === u.id && p.period === currentPeriod)).length;
-
-  const fullyCompleted = activeUsers.filter((u: any) => {
-    const hasSelf = allEvaluations.some((e: any) => e.type === 'self' && e.evaluatorId === u.id && e.period === currentPeriod);
-    const userAssigns = periodAssignments.filter((a: any) => a.employeeId === u.id);
-    const supEvals = allEvaluations.filter((e: any) => e.type === 'supervisor' && e.evaluatedId === u.id && e.period === currentPeriod);
-    const allSupDone = userAssigns.length > 0 && supEvals.length >= userAssigns.length;
-    const hasFeedback = supEvals.some((e: any) => e.feedbackCompleted);
-    const hasActionPlan = actionPlans.some((p: any) => p.employeeId === u.id && p.period === currentPeriod);
-    return hasSelf && allSupDone && hasFeedback && hasActionPlan;
-  }).length;
-
-  const totalUsers = activeUsers.length;
-
-  const generalPieData = [
-    { name: 'Completado', value: fullyCompleted },
-    { name: 'En Proceso', value: totalUsers - fullyCompleted },
-  ];
 
   const stageData = [
     { name: 'Autoevaluación', completado: selfEvalsDone, pendiente: totalUsers - selfEvalsDone },
@@ -172,21 +155,6 @@ export default function Reports() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Completion Overview */}
-        <div className="smps-surface-card">
-          <h3 className="font-display text-base font-semibold mb-3">Evaluaciones Completadas (Todas las Etapas)</h3>
-          <ResponsiveContainer width="100%" height={250}>
-            <PieChart>
-              <Pie data={generalPieData} cx="50%" cy="50%" innerRadius={60} outerRadius={90} dataKey="value" label={({ name, value }: any) => `${name}: ${value}`}>
-                {generalPieData.map((_, i) => <Cell key={i} fill={PIE_COLORS[i]} />)}
-              </Pie>
-              <Legend />
-              <Tooltip />
-            </PieChart>
-          </ResponsiveContainer>
-          <p className="text-center text-sm text-muted-foreground mt-2">{fullyCompleted} de {totalUsers} empleados han completado todas las etapas</p>
-        </div>
-
         {/* Stage Completion */}
         <div className="smps-surface-card">
           <h3 className="font-display text-base font-semibold mb-3">Realización por Etapa</h3>
