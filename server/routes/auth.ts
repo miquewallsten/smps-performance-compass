@@ -2,26 +2,14 @@ import { Router, Request, Response } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import { db, tx } from '../db/connection.js';
 import { signToken, hashToken, getTokenExpiry, getRole } from '../auth/jwt.js';
-import { hashPassword, verifyPassword } from '../auth/security.js';
+import { hashPassword, verifyPassword, hashSecurityAnswer } from '../auth/security.js';
 import { authMiddleware } from '../middleware/auth.js';
 import { requireAuthenticated } from '../middleware/rbac.js';
 import { validate, LoginSchema, ChangePasswordSchema } from '../middleware/validate.js';
 import { auditLog, getClientIp, getUserAgent } from '../services/audit.js';
+import { sanitizeUser, toMySQLDate } from '../utils/helpers.js';
 
 const router = Router();
-
-// Helper to strip sensitive fields from a user row
-function sanitizeUser(user: Record<string, unknown>) {
-  const { password_hash, security_answer, activation_token_hash, ...safe } = user;
-  return {
-    ...safe,
-    isAdmin: Boolean(user.is_admin),
-    isSuperUser: Boolean(user.is_super_user),
-    isManagingPartner: Boolean(user.is_managing_partner),
-    isActive: Boolean(user.is_active),
-    mustChangePassword: Boolean(user.must_change_password),
-  };
-}
 
 // ─── POST /api/auth/login ──────────────────────────────────────────────────
 router.post('/login', validate(LoginSchema), async (req: Request, res: Response) => {
@@ -99,11 +87,11 @@ router.post('/logout', authMiddleware, requireAuthenticated, async (req: Request
     // Add token to blocklist
     await db.run(
       'INSERT INTO sessions (id, user_id, token_hash, created_at, expires_at) VALUES (?, ?, ?, ?, ?)',
-      [uuidv4(), payload.id, tokenHash, new Date().toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, ''), expiresAt]
+      [uuidv4(), payload.id, tokenHash, toMySQLDate(), expiresAt]
     );
 
     // Clean up expired sessions
-    await db.run('DELETE FROM sessions WHERE expires_at < ?', [new Date().toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, '')]);
+    await db.run('DELETE FROM sessions WHERE expires_at < ?', [toMySQLDate()]);
 
     await auditLog({ action: 'logout', userId: payload.id, ipAddress: getClientIp(req), userAgent: getUserAgent(req) });
 
@@ -170,7 +158,7 @@ router.post('/change-password', validate(ChangePasswordSchema), authMiddleware, 
     }
 
     const hashedPassword = await hashPassword(newPassword);
-    const now = new Date().toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, '');
+    const now = toMySQLDate();
 
     if (securityQuestion && securityAnswer) {
       const hashedAnswer = await hashSecurityAnswer(securityAnswer);

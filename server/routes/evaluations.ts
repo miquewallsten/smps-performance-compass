@@ -5,6 +5,7 @@ import { authMiddleware } from '../middleware/auth.js';
 import { isAdminOrSocio, isSupervisorOf, getSuperviseeIds, hasRole, normalizeRole, requireEntityAccess, requireSupervisorAction } from '../middleware/permissions.js';
 import { logTimelineEvent } from './users.js';
 import { createNotification } from '../services/notifications.js';
+import { toMySQLDate } from '../utils/helpers.js';
 
 const router = Router();
 
@@ -240,7 +241,7 @@ router.post('/', authMiddleware, async (req: Request, res: Response) => {
     }
 
     const id = uuidv4();
-    const now = new Date().toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, '');
+    const now = toMySQLDate();
     const respArr = responses || [];
     let totalScore = req.body.totalScore !== undefined
       ? Number(req.body.totalScore)
@@ -314,7 +315,7 @@ router.put('/:id', authMiddleware,
     if (!evaluation) return res.status(404).json({ error: 'Evaluation not found' });
 
     const { comments, supervisorComments, totalScore, responses } = req.body;
-    const now = new Date().toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, '');
+    const now = toMySQLDate();
 
     const updates: string[] = [];
     const params: any[] = [];
@@ -420,7 +421,7 @@ router.patch('/:id/feedback', authMiddleware,
   try {
     const evaluation = (req as any)._entity || await db.get('SELECT * FROM evaluations WHERE id = ?', [req.params.id]);
     if (!evaluation) return res.status(404).json({ error: 'Evaluation not found' });
-    const now = new Date().toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, '');
+    const now = toMySQLDate();
     await db.run('UPDATE evaluations SET feedback_completed = 1, feedback_completed_at = ?, feedback_completed_by = ? WHERE id = ?',
       [now, req.user!.id, req.params.id]);
     const updated = await db.get('SELECT * FROM evaluations WHERE id = ?', [req.params.id]);
@@ -457,7 +458,7 @@ router.patch('/:id/na-approval', authMiddleware,
       `INSERT INTO evaluation_na_approvals (id, evaluation_id, question_id, approved, approved_by, approved_at)
        VALUES (?, ?, ?, ?, ?, ?)
        ON DUPLICATE KEY UPDATE approved = VALUES(approved), approved_by = VALUES(approved_by), approved_at = VALUES(approved_at)`,
-      [uuidv4(), req.params.id, questionId, approved ? 1 : 0, req.user!.id, new Date().toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, '')]
+      [uuidv4(), req.params.id, questionId, approved ? 1 : 0, req.user!.id, toMySQLDate()]
     );
 
     const evalResponses = await db.all('SELECT * FROM evaluation_responses WHERE evaluation_id = ?', [req.params.id]);

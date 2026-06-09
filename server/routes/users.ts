@@ -2,13 +2,14 @@ import { Router, Request, Response } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import { db } from '../db/connection.js';
 import { hashPassword, hashSecurityAnswer } from '../auth/security.js';
-import { generateTokenPair, toMySQLDate } from '../services/tokens.js';
+import { generateTokenPair } from '../services/tokens.js';
 import { sendActivationEmail, sendAdminPasswordResetEmail } from '../services/email.js';
 import { auditLog, getClientIp, getUserAgent } from '../services/audit.js';
 import { authMiddleware } from '../middleware/auth.js';
 import { requireAdmin, requireSelfOrAdmin } from '../middleware/rbac.js';
 import { hasRole, normalizeRole, isSupervisorOf } from '../middleware/permissions.js';
 import { validate, CreateUserSchema } from '../middleware/validate.js';
+import { sanitizeUser, toMySQLDate } from '../utils/helpers.js';
 
 const router = Router();
 
@@ -21,13 +22,6 @@ async function getMaxAdminUsers(): Promise<number> {
   } catch {
     return 3; // fallback default
   }
-}
-
-
-// Helper to strip sensitive fields from a user row
-function sanitizeUser(user: Record<string, unknown>) {
-  const { password_hash, security_answer, ...safe } = user;
-  return safe;
 }
 
 // Columns to select for safe user responses (excludes password_hash and security_answer)
@@ -141,7 +135,7 @@ router.post('/', authMiddleware, requireAdmin, validate(CreateUserSchema), async
     }
 
     const id = uuidv4();
-    const now = new Date().toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, '');
+    const now = toMySQLDate();
     let hashedPassword: string | null = null;
     let activationTokenHash: string | null = null;
     let activationExpiresAt: string | null = null;
@@ -348,7 +342,7 @@ router.patch('/:id', authMiddleware, requireSelfOrAdmin, async (req: Request, re
     }
 
     updates.push('updated_at = ?');
-    values.push(new Date().toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, ''));
+    values.push(toMySQLDate());
     values.push(id);
 
     await db.run(`UPDATE users SET ${updates.join(', ')} WHERE id = ?`, values);
@@ -499,7 +493,7 @@ router.patch('/:id/role', authMiddleware, requireAdmin, async (req: Request, res
     }
 
     updates.push('updated_at = ?');
-    values.push(new Date().toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, ''));
+    values.push(toMySQLDate());
     values.push(id);
 
     await db.run(`UPDATE users SET ${updates.join(', ')} WHERE id = ?`, values);
@@ -548,7 +542,7 @@ export async function logTimelineEvent(
   } = {}
 ): Promise<void> {
   try {
-    const now = new Date().toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, '');
+    const now = toMySQLDate();
     await db.run(
       `INSERT INTO user_timeline (id, user_id, event_type, event_date, old_value, new_value, metadata, note, created_by, created_at, updated_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,

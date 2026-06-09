@@ -10,6 +10,7 @@ import { db } from '../db/connection.js';
 export type AuditAction =
   | 'login_success'
   | 'login_failed'
+  | 'login_failed_unknown_email'
   | 'login_failed_deactivated'
   | 'login_failed_not_activated'
   | 'logout'

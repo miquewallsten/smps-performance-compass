@@ -13,6 +13,7 @@
 import { db } from '../db/connection.js';
 import { sendTemplateEmail } from './email.js';
 import { auditLog } from './audit.js';
+import { toMySQLDate } from '../utils/helpers.js';
 
 // ─── Types ────────────────────────────────────────────────────────────────
 
@@ -37,7 +38,7 @@ export interface CreateNotificationParams {
 export async function createNotification(params: CreateNotificationParams): Promise<string | null> {
   try {
     const id = crypto.randomUUID();
-    const now = new Date().toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, '');
+    const now = toMySQLDate();
 
     // Check user preference
     const pref = await db.get(
@@ -133,7 +134,7 @@ async function sendNotificationEmail(notificationId: string, params: CreateNotif
       html,
     });
 
-    const now = new Date().toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, '');
+    const now = toMySQLDate();
 
     if (result) {
       await db.run('UPDATE notifications SET is_email_sent = 1, email_sent_at = ? WHERE id = ?', [now, notificationId]);
@@ -149,7 +150,7 @@ async function sendNotificationEmail(notificationId: string, params: CreateNotif
     }
   } catch (err) {
     console.error('[Notifications] Email delivery error:', err);
-    const now = new Date().toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, '');
+    const now = toMySQLDate();
     await db.run(
       `INSERT INTO notification_deliveries (id, notification_id, channel, status, attempted_at, error_message) VALUES (?, ?, 'email', 'failed', ?, ?)`,
       [crypto.randomUUID(), notificationId, now, (err as Error).message?.slice(0, 200)]
@@ -165,7 +166,7 @@ export async function markNotificationRead(notificationId: string, userId: strin
     if (!notif) return false;
     if ((notif as any).is_read) return true;
 
-    const now = new Date().toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, '');
+    const now = toMySQLDate();
     await db.run('UPDATE notifications SET is_read = 1, read_at = ? WHERE id = ?', [now, notificationId]);
     return true;
   } catch (err) {

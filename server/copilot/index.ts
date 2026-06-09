@@ -19,6 +19,7 @@ import { needsTools } from './intent.js';
 import { parseFile, coerceArgs } from './file-parser.js';
 import { getTools } from './tools/index.js';
 import { toolsToFunctions } from './types.js';
+import { toMySQLDate } from '../utils/helpers.js';
 
 const router = Router();
 const upload = multer({
@@ -160,7 +161,7 @@ router.post('/conversations', async (req: Request, res: Response) => {
   try {
     const { title } = req.body as { title?: string };
     const id = uuidv4();
-    await db.run('INSERT INTO copilot_conversations (id,user_id,title,created_at,updated_at) VALUES(?,?,?,?,?)', [id, req.user!.id, title || 'New conversation', new Date().toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, ''), new Date().toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, '')]);
+    await db.run('INSERT INTO copilot_conversations (id,user_id,title,created_at,updated_at) VALUES(?,?,?,?,?)', [id, req.user!.id, title || 'New conversation', toMySQLDate(), toMySQLDate()]);
     const conv = await db.get('SELECT * FROM copilot_conversations WHERE id=?', [id]);
     res.json(conv);
   } catch (e) { console.error('Create conversation error:', e); res.status(500).json({ error: 'Internal server error' }); }
@@ -228,12 +229,12 @@ router.post('/chat', upload.single('file'), async (req: Request, res: Response) 
     // Create conversation if new
     if (!conversationId) {
       await db.run('INSERT INTO copilot_conversations (id,user_id,title,created_at,updated_at) VALUES(?,?,?,?,?)',
-        [convId, req.user!.id, (message || 'New conversation').slice(0, 100), new Date().toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, ''), new Date().toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, '')]);
+        [convId, req.user!.id, (message || 'New conversation').slice(0, 100), toMySQLDate(), toMySQLDate()]);
     }
 
     // Save user message
     await db.run('INSERT INTO copilot_messages (id,conversation_id,role,content,created_at) VALUES(?,?,?,?,?)',
-      [uuidv4(), convId, 'user', fullMessage, new Date().toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, '')]);
+      [uuidv4(), convId, 'user', fullMessage, toMySQLDate()]);
 
     // Load conversation history (chronological order: oldest first)
     // Also load tool_calls and tool_results for full memory
@@ -406,8 +407,8 @@ router.post('/chat', upload.single('file'), async (req: Request, res: Response) 
       }
     }
 
-    await db.run('INSERT INTO copilot_messages (id,conversation_id,role,content,tool_calls,tool_results,created_at) VALUES(?,?,?,?,?,?,?)', [uuidv4(), convId, 'assistant', finalResponse, toolCallsData, toolResultsData, new Date().toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, '')]);
-    await db.run('UPDATE copilot_conversations SET updated_at=? WHERE id=?', [new Date().toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, ''), convId]);
+    await db.run('INSERT INTO copilot_messages (id,conversation_id,role,content,tool_calls,tool_results,created_at) VALUES(?,?,?,?,?,?,?)', [uuidv4(), convId, 'assistant', finalResponse, toolCallsData, toolResultsData, toMySQLDate()]);
+    await db.run('UPDATE copilot_conversations SET updated_at=? WHERE id=?', [toMySQLDate(), convId]);
 
     return res.json({ conversationId: convId, message: { id: uuidv4(), role: 'assistant', content: finalResponse } });
   } catch (e) { console.error('Chat error:', e); return res.status(500).json({ error: 'Internal server error' }); }

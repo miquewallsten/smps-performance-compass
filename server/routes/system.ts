@@ -9,14 +9,9 @@ import { requireSuperUser } from '../middleware/rbac.js';
 import { hasRole, normalizeRole } from '../middleware/permissions.js';
 import { auditLog, getClientIp, getUserAgent } from '../services/audit.js';
 import { WORK_AREAS, POSITION_CATALOG } from '../data/positionCatalog.js';
+import { sanitizeUser, toMySQLDate } from '../utils/helpers.js';
 
 const router = Router();
-
-// Helper to strip sensitive fields from a user row
-function sanitizeUser(user: Record<string, unknown>) {
-  const { password_hash, security_answer, ...safe } = user;
-  return safe;
-}
 
 // Vacation config defaults per position
 const VACATION_DEFAULTS: Record<string, number> = {
@@ -79,7 +74,7 @@ router.post('/init', validate(SystemInitSchema), async (req: Request, res: Respo
       return res.status(409).json({ error: 'Email is already registered' });
     }
 
-    const now = new Date().toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, '');
+    const now = toMySQLDate();
     const userId = uuidv4();
 
     // Hash password and security answer
@@ -194,7 +189,7 @@ router.patch('/status', authMiddleware, requireSuperUser, async (req: Request, r
       values.push(status);
 
       // Log activation/deactivation
-      const now = new Date().toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, '');
+      const now = toMySQLDate();
       const action = status === 'active' ? 'activated' : 'deactivated';
       await db.run(
         `INSERT INTO activation_history (id, action, date, by_user_id) VALUES (?, ?, ?, ?)`,
@@ -484,7 +479,7 @@ router.post('/test-email', authMiddleware, requireSuperUser, async (req: Request
     // Generate a test token
     const { generateTokenPair } = await import('../services/tokens.js');
     const { token, tokenHash } = generateTokenPair();
-    const now = new Date().toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, '');
+    const now = toMySQLDate();
 
     // Store the test token in password_reset_tokens table (will be cleaned up on next reset)
     await db.run(
@@ -600,7 +595,7 @@ router.get('/integrity', authMiddleware, async (req: Request, res: Response) => 
     const periods = await db.all('SELECT period, self_start, self_end, action_plan_end FROM period_configs ORDER BY period');
 
     // Current calendar period
-    const now = new Date().toISOString();
+    const now = toMySQLDate();
     const currentPeriod = await db.get(
       'SELECT period FROM period_configs WHERE self_start <= ? AND action_plan_end >= ? ORDER BY period DESC LIMIT 1',
       [now, now]
