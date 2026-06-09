@@ -63,7 +63,7 @@ export default function EvaluationViewer({ evaluation, onClose }: Props) {
   const evalPracticeArea = evaluated.practiceArea || 'corporativo';
   const evalQuestions = customQuestions[evalPos] || [];
   const sectionWeightsMap = getSectionWeights(evalPos);
-  const questions = useMemo(() => {
+  const questions = (() => {
     const tecnicasRaw = evalQuestions.filter(q => q.section === 'tecnico');
     const tecnicas = tecnicasRaw.filter(q => !q.practiceArea || q.practiceArea === evalPracticeArea || q.practiceArea === 'general').length > 0
       ? tecnicasRaw.filter(q => !q.practiceArea || q.practiceArea === evalPracticeArea || q.practiceArea === 'general')
@@ -80,13 +80,13 @@ export default function EvaluationViewer({ evaluation, onClose }: Props) {
       ...rescale(competencias, sectionWeightsMap.competencias),
       ...rescale(blandas, sectionWeightsMap.blandas),
     ];
-  }, [evalQuestions, evalPracticeArea, sectionWeightsMap]);
+  })();
   const categories: string[] = [...new Set(questions.map(q => q.category as string))];
   const responses = evaluation.responses || [];
 
   // Normalize naApprovals: convert from array to Record if needed
   // (should already be normalized by queries.ts, but defensive check)
-  const naApprovals: Record<string, boolean> = useMemo(() => {
+  const naApprovals: Record<string, boolean> = (() => {
     const raw = evaluation.naApprovals;
     if (!raw) return {};
     if (Array.isArray(raw)) {
@@ -99,7 +99,7 @@ export default function EvaluationViewer({ evaluation, onClose }: Props) {
       return result;
     }
     return raw as Record<string, boolean>;
-  }, [evaluation.naApprovals]);
+  })();
 
 
   return (
@@ -219,8 +219,8 @@ export default function EvaluationViewer({ evaluation, onClose }: Props) {
         <div className="border-t p-4">
           <button onClick={onClose} className="w-full py-2 rounded-lg border text-sm font-medium hover:bg-muted transition-colors">Cerrar</button>
         </div>
+        </div>
       </div>
-    </div>
     </Portal>
   );
 }

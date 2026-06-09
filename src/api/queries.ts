@@ -201,6 +201,14 @@ export function useCreateActionPlan() {
     onError: (err: Error, _vars, context: any) => { if (context?.prev) qc.setQueryData(['actionPlans'], context.prev); toast.error(err.message || 'Error al guardar plan'); },
   });
 }
+export function useUpdateActionPlan() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, ...data }: any) => api.patch(`/api/action-plans/${id}`, data),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['actionPlans'] }); qc.invalidateQueries({ queryKey: ['analyticsOverview'] }); qc.invalidateQueries({ queryKey: ['analyticsEvaluations'] }); toast.success('Plan de acción actualizado'); },
+    onError: (err: Error) => toast.error(err.message || 'Error al actualizar plan'),
+  });
+}
 export function useApproveActionPlan() {
   const qc = useQueryClient();
   return useMutation({

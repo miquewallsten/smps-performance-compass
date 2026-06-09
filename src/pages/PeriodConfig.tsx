@@ -101,8 +101,6 @@ export default function PeriodConfigPage() {
       onSuccess: () => {
         toast.success(`Configuración del periodo ${cfg.period} guardada`);
         setSaving(false);
-        // Force refresh by invalidating query
-        setTimeout(() => window.location.reload(), 500);
       },
       onError: (err: Error) => {
         toast.error('Error al guardar: ' + (err.message || 'Intente de nuevo'));

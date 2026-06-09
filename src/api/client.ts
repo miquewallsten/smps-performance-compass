@@ -141,6 +141,7 @@ let isRedirectingToLogin = false;
 export async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
   const isFormData = options?.body instanceof FormData;
   const headers: Record<string, string> = {
+    Accept: 'application/json',
     ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
     ...(options?.headers as Record<string, string> || {}),
   };
@@ -171,12 +172,26 @@ export async function apiFetch<T>(path: string, options?: RequestInit): Promise<
   }
 
   if (!response.ok) {
-    const error = await response.json().catch(() => ({ error: 'Request failed' }));
-    throw new Error(error.error || `HTTP ${response.status}`);
+    // Try to parse JSON error, otherwise include raw text (HTML) for diagnostics
+    try {
+      const error = await response.json();
+      throw new Error(error.error || `HTTP ${response.status}`);
+    } catch (e) {
+      const text = await response.text().catch(() => '');
+      const snippet = text ? `: ${text.slice(0,200)}` : '';
+      throw new Error(`Request failed (status ${response.status})${snippet}`);
+    }
   }
 
   isRedirectingToLogin = false;
-  const raw = await response.json();
+  let raw: any;
+  try {
+    raw = await response.json();
+  } catch (err) {
+    // Received non-JSON (probably HTML) — surface a clearer error message
+    const text = await response.text().catch(() => '');
+    throw new Error(`Unexpected non-JSON response from server${text ? ': ' + text.slice(0,200) : ''}`);
+  }
   return toCamelCase(raw) as T;
 }
 

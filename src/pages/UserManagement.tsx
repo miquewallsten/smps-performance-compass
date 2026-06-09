@@ -331,15 +331,6 @@ export default function UserManagement() {
     </div>
   );
 
-  // Computed values for user evaluations modal
-  const selectedUserData = selectedUser ? users.find(u => u.id === selectedUser) : null;
-  const selectedUserEvals = selectedUser ? evaluations.filter(e => e.evaluatedId === selectedUser) : [];
-
-  const handleCancelAddUser = () => {
-    setShowAddUser(false);
-    setNewUser({ name: '', email: '', cve: '', locationId: '', password: '' });
-  };
-
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-3">
@@ -366,7 +357,8 @@ export default function UserManagement() {
       {renderUserTable(adminUsers, 'Administrativo')}
 
       {/* Password Reset Modal — now sends email reset link instead of setting password */}
-      {showPasswordModal && <Portal>
+      {showPasswordModal && (
+        <Portal>
           <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-foreground/20 backdrop-blur-sm" onClick={() => setShowPasswordModal(null)}>
             <div className="smps-surface-elevated w-full max-w-sm shadow-xl" onClick={e => e.stopPropagation()}>
               <h3 className="smps-section-title font-display text-base font-semibold mb-3">Restablecer Contraseña</h3>
@@ -381,10 +373,11 @@ export default function UserManagement() {
             </div>
           </div>
         </Portal>
-      }
+      )}
 
       {/* Manual Reset Link Modal — shown when email fails */}
-      {manualResetLink && <Portal>
+      {manualResetLink && (
+        <Portal>
           <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-foreground/20 backdrop-blur-sm" onClick={() => setManualResetLink(null)}>
             <div className="smps-surface-elevated w-full max-w-md shadow-xl mx-4" onClick={e => e.stopPropagation()}>
               <h3 className="smps-section-title font-display text-base font-semibold mb-3">Enlace de Restablecimiento</h3>
@@ -412,76 +405,83 @@ export default function UserManagement() {
             </div>
           </div>
         </Portal>
-      }
+      )}
 
       {/* Add User Modal */}
-      {showAddUser && <Portal>
+      {showAddUser && (
+        <Portal>
           <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-foreground/20 backdrop-blur-sm" onClick={() => setShowAddUser(false)}>
             <div className="smps-surface-elevated w-full max-w-md shadow-xl" onClick={e => e.stopPropagation()}>
               <h3 className="smps-section-title font-display text-base font-semibold mb-3">Nuevo Usuario</h3>
-            <div className="space-y-3">
-              <div>
-                <label className="text-sm font-medium text-foreground">Nombre completo</label>
-                <input type="text" value={newUser.name} onChange={e => setNewUser(prev => ({ ...prev, name: e.target.value }))}
-                  placeholder="Nombre del colaborador" className="w-full px-3 py-2 rounded-lg border border-input bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent text-sm" />
+              <div className="space-y-3">
+                <div>
+                  <label className="text-sm font-medium text-foreground">Nombre completo</label>
+                  <input type="text" value={newUser.name} onChange={e => setNewUser(prev => ({ ...prev, name: e.target.value }))}
+                    placeholder="Nombre del colaborador" className="w-full px-3 py-2 rounded-lg border border-input bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent text-sm" />
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-foreground">Correo electrónico</label>
+                  <input type="email" value={newUser.email} onChange={e => setNewUser(prev => ({ ...prev, email: e.target.value }))}
+                    placeholder="correo@smps.com" className="w-full px-3 py-2 rounded-lg border border-input bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent text-sm" />
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-foreground">Puesto</label>
+                  <select value={newUser.cve} onChange={e => setNewUser(prev => ({ ...prev, cve: e.target.value }))}
+                    className="w-full px-3 py-2 rounded-lg border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-accent text-sm">
+                    <option value="" disabled>Selecciona un puesto</option>
+                    {sortedAreas.map((area: any) => (
+                      <optgroup key={area.id} label={area.label}>
+                        {sortedPositions.filter((p: any) => p.workAreaId === area.id).map((p: any) => (
+                          <option key={p.id} value={p.id}>{p.label}</option>
+                        ))}
+                      </optgroup>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-foreground">Ubicación</label>
+                  <select value={newUser.locationId} onChange={e => setNewUser(prev => ({ ...prev, locationId: e.target.value }))}
+                    className="w-full px-3 py-2 rounded-lg border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-accent text-sm">
+                    <option value="">Sin ubicación</option>
+                    {locations.map((loc: any) => (
+                      <option key={loc.id} value={loc.id}>{[loc.city, loc.office, loc.floor, loc.desk].filter(Boolean).join(' · ') || loc.label}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-foreground">Contraseña <span className="text-xs text-muted-foreground">(opcional — si se deja vacía, se enviará un enlace de activación)</span></label>
+                  <input type="password" value={newUser.password} onChange={e => setNewUser(prev => ({ ...prev, password: e.target.value }))}
+                    placeholder="Dejar vacío para enviar enlace de activación" className="w-full px-3 py-2 rounded-lg border border-input bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent text-sm" />
+                  <p className="text-xs text-muted-foreground mt-1">Si se deja vacía, el usuario recibirá un correo de activación para crear su propia contraseña.</p>
+                </div>
               </div>
-              <div>
-                <label className="text-sm font-medium text-foreground">Correo electrónico</label>
-                <input type="email" value={newUser.email} onChange={e => setNewUser(prev => ({ ...prev, email: e.target.value }))}
-                  placeholder="correo@smps.com" className="w-full px-3 py-2 rounded-lg border border-input bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent text-sm" />
+              <div className="flex gap-3 mt-5">
+                <button onClick={() => { setShowAddUser(false); setNewUser({ name: '', email: '', cve: '', locationId: '', password: '' }); }} className="flex-1 py-2 rounded-lg border text-sm font-medium hover:bg-muted transition-colors">Cancelar</button>
+                <button onClick={handleAddUser} disabled={!newUser.name.trim() || !newUser.email.trim() || !newUser.cve} className="flex-1 py-2 rounded-lg bg-accent text-accent-foreground text-sm font-medium disabled:opacity-40 hover:opacity-90 transition-opacity">Crear Usuario</button>
               </div>
-              <div>
-                <label className="text-sm font-medium text-foreground">Puesto</label>
-                <select value={newUser.cve} onChange={e => setNewUser(prev => ({ ...prev, cve: e.target.value }))}
-                  className="w-full px-3 py-2 rounded-lg border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-accent text-sm">
-                  <option value="" disabled>Selecciona un puesto</option>
-                  {sortedAreas.map((area: any) => (
-                    <optgroup key={area.id} label={area.label}>
-                      {sortedPositions.filter((p: any) => p.workAreaId === area.id).map((p: any) => (
-                        <option key={p.id} value={p.id}>{p.label}</option>
-                      ))}
-                    </optgroup>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-foreground">Ubicación</label>
-                <select value={newUser.locationId} onChange={e => setNewUser(prev => ({ ...prev, locationId: e.target.value }))}
-                  className="w-full px-3 py-2 rounded-lg border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-accent text-sm">
-                  <option value="">Sin ubicación</option>
-                  {locations.map((loc: any) => (
-                    <option key={loc.id} value={loc.id}>{[loc.city, loc.office, loc.floor, loc.desk].filter(Boolean).join(' · ') || loc.label}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-foreground">Contraseña <span className="text-xs text-muted-foreground">(opcional — si se deja vacía, se enviará un enlace de activación)</span></label>
-                <input type="password" value={newUser.password} onChange={e => setNewUser(prev => ({ ...prev, password: e.target.value }))}
-                  placeholder="Dejar vacío para enviar enlace de activación" className="w-full px-3 py-2 rounded-lg border border-input bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent text-sm" />
-                <p className="text-xs text-muted-foreground mt-1">Si se deja vacía, el usuario recibirá un correo de activación para crear su propia contraseña.</p>
-              </div>
-            </div>
-            <div className="flex gap-3 mt-5">
-              <button onClick={handleCancelAddUser} className="flex-1 py-2 rounded-lg border text-sm font-medium hover:bg-muted transition-colors">Cancelar</button>
-              <button onClick={handleAddUser} disabled={!newUser.name.trim() || !newUser.email.trim() || !newUser.cve} className="flex-1 py-2 rounded-lg bg-accent text-accent-foreground text-sm font-medium disabled:opacity-40 hover:opacity-90 transition-opacity">Crear Usuario</button>
             </div>
           </div>
-        </div>
-      </Portal>}
+        </Portal>
+      )}
 
       {/* User Evaluations Modal */}
-      {selectedUser && !viewingEval && selectedUserData && <Portal>
+      {selectedUser && !viewingEval && (() => {
+        const targetUser = users.find(u => u.id === selectedUser);
+        if (!targetUser) return null;
+        const userEvals = evaluations.filter(e => e.evaluatedId === selectedUser);
+        return (
+          <Portal>
             <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-foreground/20 backdrop-blur-sm" onClick={() => setSelectedUser(null)}>
               <div className="smps-surface-elevated w-full max-w-lg shadow-xl max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="font-display text-base font-semibold">Evaluaciones de {selectedUserData.name}</h3>
+                  <h3 className="font-display text-base font-semibold">Evaluaciones de {targetUser.name}</h3>
                   <button onClick={() => setSelectedUser(null)} className="p-1.5 rounded-lg hover:bg-muted transition-colors"><X className="h-4 w-4" /></button>
                 </div>
-                {selectedUserEvals.length === 0 ? (
+                {userEvals.length === 0 ? (
                   <p className="text-sm text-muted-foreground py-6 text-center">Sin evaluaciones registradas</p>
                 ) : (
                   <div className="space-y-2">
-                    {selectedUserEvals.map(ev => {
+                    {userEvals.map(ev => {
                       const evaluator = users.find(u => u.id === ev.evaluatorId);
                       const score = ev.responses && ev.responses.length > 0
                         ? calculateScore(
@@ -520,9 +520,10 @@ export default function UserManagement() {
               </div>
             </div>
           </Portal>
-      }
+        );
+      })()}
 
-      {evalToView && <Portal><EvaluationViewer evaluation={evalToView} onClose={() => setViewingEval(null)} /></Portal>}
+      {evalToView && <Portal><EvaluationViewer evaluation={evalToView} onClose={() => { setViewingEval(null); }} /></Portal>}
     </div>
   );
 }

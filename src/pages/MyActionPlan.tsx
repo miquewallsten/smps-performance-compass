@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useUsers, useEvaluations, useAssignments, useActionPlans, useCreateActionPlan, useApproveActionPlan , usePeriods } from '@/api/queries';
+import { useUsers, useEvaluations, useAssignments, useActionPlans, useCreateActionPlan, useUpdateActionPlan, useApproveActionPlan , usePeriods } from '@/api/queries';
 import { ActionPlan, SmartActionItem, QuestionCategory } from '@/types';
 import { getPositionLabel, getPositionRank, SECTION_LABELS, getSectionByCategory } from '@/lib/evaluationConfig';
 import { useCurrentPeriod } from '@/hooks/useCurrentPeriod';
@@ -52,6 +52,7 @@ export default function MyActionPlan() {
   const { data: assignments = [] } = useAssignments(period);
   const { data: actionPlans = [] } = useActionPlans({ period });
   const addOrUpdateActionPlan = useCreateActionPlan().mutate;
+  const updateActionPlan = useUpdateActionPlan().mutate;
   const approveActionPlan = useApproveActionPlan().mutate;
   const [items, setItems] = useState<SmartActionItem[]>([emptyItem()]);
   const [approvalComments, setApprovalComments] = useState('');
@@ -92,22 +93,31 @@ export default function MyActionPlan() {
   const handleSave = () => {
     if (!allItemsValid) { toast.error('Completa al menos competencia, objetivo, acciones y fecha de revisión en cada acción.'); return; }
     const now = new Date().toISOString().split('T')[0];
-    const plan: ActionPlan = {
-      id: myPlan?.id || `ap-${currentUser.id}-${period}-${Date.now()}`,
-      employeeId: currentUser.id,
-      supervisorId: seniorSupervisor?.id || currentUser.id,
-      period,
-      content: myPlan?.content || '',
-      items,
-      createdAt: myPlan?.createdAt || now,
-      updatedAt: now,
-      approvalStatus: myPlan?.approvalStatus === 'rejected' ? 'pending' : (myPlan?.approvalStatus || 'pending'),
-      approvalComments: myPlan?.approvalComments,
-      approvedBy: myPlan?.approvedBy,
-      approvedAt: myPlan?.approvedAt,
-    };
-    addOrUpdateActionPlan(plan);
-    toast.success('Plan de acción guardado. Pendiente de aprobación del evaluador senior.');
+    if (myPlan) {
+      // Update existing plan
+      updateActionPlan({
+        id: myPlan.id,
+        content: myPlan.content || '',
+        items,
+      });
+    } else {
+      // Create new plan
+      const plan: ActionPlan = {
+        id: `ap-${currentUser.id}-${period}-${Date.now()}`,
+        employeeId: currentUser.id,
+        supervisorId: seniorSupervisor?.id || currentUser.id,
+        period,
+        content: '',
+        items,
+        createdAt: now,
+        updatedAt: now,
+        approvalStatus: 'pending',
+        approvalComments: undefined,
+        approvedBy: undefined,
+        approvedAt: undefined,
+      };
+      addOrUpdateActionPlan(plan);
+    }
   };
 
   const isSeniorEvaluatorOfPlan = (plan: ActionPlan) => {

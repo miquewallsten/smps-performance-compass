@@ -1,17 +1,17 @@
 import { ScoreBadge } from '@/components/shared/ScoreBadge';
 import { useState, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useUsers, useEvaluations, useAssignments, useCreateEvaluation, useUpdateEvaluation, useCompleteFeedback, useApproveNA, useExportEvaluationsCSV , usePeriods } from '@/api/queries';
+import { useUsers, useEvaluations, useAssignments, useCreateEvaluation, useUpdateEvaluation, useCompleteFeedback, useApproveNA, useExportEvaluationsCSV, usePeriods, useActionPlans, useApproveActionPlan } from '@/api/queries';
 import { calculateScore, getSectionForQuestion, SECTION_LABELS, SECTION_ORDER } from '@/lib/evaluationConfig';
 
 import { User, EvalQuestion } from '@/types';
-import { getSectionWeights, getPositionLabel, getScoreLabels, getLegalHierarchy, getAdminHierarchy } from '@/lib/evaluationConfig';
+import { getSectionWeights, getPositionLabel, getPositionRank, getScoreLabels, getLegalHierarchy, getAdminHierarchy } from '@/lib/evaluationConfig';
 import { useCurrentPeriod } from '@/hooks/useCurrentPeriod';
 import { useDisplayPeriod } from '@/hooks/useDisplayPeriod';
 import { useFullTemplate, usePositionConfig, useTemplateQuestions } from '@/hooks/useEvaluationConfig';
 import { Download } from 'lucide-react';
 import { toast } from 'sonner';
-import { CheckCircle, AlertCircle, Eye, ArrowLeft, Ban, ShieldCheck, ShieldX, MessageSquare, MinusCircle, ClipboardCheck } from 'lucide-react';
+import { CheckCircle, AlertCircle, Eye, ArrowLeft, Ban, ShieldCheck, ShieldX, MessageSquare, MinusCircle, ClipboardCheck, FileText } from 'lucide-react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import EvaluationViewer from '@/components/EvaluationViewer';
 import HierarchyFilters, { filterByHierarchy } from '@/components/HierarchyFilters';
@@ -44,7 +44,7 @@ export default function Evaluations() {
   const completeFeedback = useCompleteFeedback().mutate;
   const approveNA = useApproveNA().mutate;
   const { data: actionPlans = [] } = useActionPlans();
-  const addOrUpdateActionPlan = useCreateActionPlan().mutate;
+  const approveActionPlanMut = useApproveActionPlan().mutate;
   const { data: allTemplateQuestions = [] } = useTemplateQuestions();
   const customQuestions = useMemo(() => {
     const grouped: Record<string, EvalQuestion[]> = {};
@@ -65,6 +65,8 @@ export default function Evaluations() {
   const [submitted, setSubmitted] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [viewingEval, setViewingEval] = useState<string | null>(null);
+  const [viewingActionPlan, setViewingActionPlan] = useState<string | null>(null);
+  const [actionPlanComments, setActionPlanComments] = useState('');
   const currentPeriod = useCurrentPeriod();
   const displayPeriod = useDisplayPeriod();
   const { data: periodsData = [] } = usePeriods();
@@ -412,6 +414,14 @@ export default function Evaluations() {
           <h3 className="smps-section-title font-display text-base font-semibold mb-3 text-smps-success">Completadas ({completedEmployees.length})</h3>
           <div className="space-y-2">
             {completedEmployees.map(({ user: emp, eval: ev }) => {
+              const empActionPlan = actionPlans.find((p: any) => p.employeeId === emp.id && p.period === ev.period);
+              const isSeniorEvaluator = (() => {
+                const supIds = assignments.filter((a: any) => a.employeeId === emp.id && a.period === ev.period).map((a: any) => a.supervisorId);
+                if (supIds.length === 0) return false;
+                const sups = users.filter((u: any) => supIds.includes(u.id));
+                const senior = [...sups].sort((a: any, b: any) => getPositionRank(a.position) - getPositionRank(b.position))[0];
+                return senior?.id === currentUser.id;
+              })();
               return (
                 <div key={emp.id} className="flex items-center justify-between py-3 px-4 rounded-lg bg-card border">
                   <div>
@@ -423,6 +433,11 @@ export default function Evaluations() {
                     <button onClick={() => setViewingEval(ev.id)} className="p-1.5 rounded-lg hover:bg-muted transition-colors" title="Ver evaluación">
                       <Eye className="h-4 w-4 text-muted-foreground" />
                     </button>
+                    {empActionPlan && (isSeniorEvaluator || canViewAllDetails) && (
+                      <button onClick={() => setViewingActionPlan(empActionPlan.id)} className="p-1.5 rounded-lg hover:bg-muted transition-colors" title={empActionPlan.approvalStatus === 'pending' ? 'Plan de acción pendiente de aprobación' : 'Ver plan de acción'}>
+                        <FileText className={`h-4 w-4 ${empActionPlan.approvalStatus === 'pending' ? 'text-smps-warning' : empActionPlan.approvalStatus === 'approved' ? 'text-smps-success' : 'text-muted-foreground'}`} />
+                      </button>
+                    )}
                     {!ev.feedbackCompleted ? (
                       <button onClick={() => handleMarkFeedback(ev.id)} className="p-1.5 rounded-lg hover:bg-muted transition-colors" title="Marcar sesión de feedback como realizada">
                         <MessageSquare className="h-4 w-4 text-smps-warning" />
@@ -588,7 +603,72 @@ export default function Evaluations() {
 
       {evalToView && <EvaluationViewer evaluation={evalToView} onClose={() => setViewingEval(null)} />}
 
-      {/* Action Plan Modal - REMOVED: Action plans are now created by employees, not evaluators */}
+      {/* Action Plan Approval Modal */}
+      {viewingActionPlan && (() => {
+        const plan = actionPlans.find((p: any) => p.id === viewingActionPlan);
+        if (!plan) return null;
+        const employee = users.find((u: any) => u.id === plan.employeeId);
+        const isSeniorEvaluator = (() => {
+          const supIds = assignments.filter((a: any) => a.employeeId === plan.employeeId && a.period === plan.period).map((a: any) => a.supervisorId);
+          if (supIds.length === 0) return false;
+          const sups = users.filter((u: any) => supIds.includes(u.id));
+          const senior = [...sups].sort((a: any, b: any) => getPositionRank(a.position) - getPositionRank(b.position))[0];
+          return senior?.id === currentUser.id;
+        })();
+        const canApprove = isSeniorEvaluator && plan.approvalStatus === 'pending';
+        const statusLabel = plan.approvalStatus === 'approved' ? 'Aprobado' : plan.approvalStatus === 'rejected' ? 'Rechazado' : 'Pendiente';
+        const statusColor = plan.approvalStatus === 'approved' ? 'text-smps-success' : plan.approvalStatus === 'rejected' ? 'text-destructive' : 'text-smps-warning';
+        return (
+          <div className="fixed inset-0 z-[9999] bg-foreground/20 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => { setViewingActionPlan(null); setActionPlanComments(''); }}>
+            <div className="bg-card rounded-xl border shadow-xl w-full max-w-2xl max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+              <div className="sticky top-0 bg-card border-b p-4 flex items-center justify-between">
+                <div>
+                  <h3 className="font-display text-lg font-semibold">Plan de Acción</h3>
+                  <p className="text-xs text-muted-foreground">{employee?.name} · {plan.period}</p>
+                </div>
+                <span className={`text-xs font-medium ${statusColor}`}>{statusLabel}</span>
+              </div>
+              <div className="p-4 space-y-3">
+                {plan.items && plan.items.length > 0 ? plan.items.map((item: any, idx: number) => (
+                  <div key={item.id || idx} className="bg-muted/30 rounded-lg p-3 text-sm border">
+                    <p className="font-semibold text-accent mb-1">#{idx + 1} · {item.competencia || 'Sin competencia'}</p>
+                    <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1.5 text-xs">
+                      <div><dt className="text-muted-foreground">Objetivo (SMART)</dt><dd>{item.objetivo || '—'}</dd></div>
+                      <div><dt className="text-muted-foreground">Acciones</dt><dd>{item.acciones || '—'}</dd></div>
+                      <div><dt className="text-muted-foreground">Qué debo evitar</dt><dd>{item.queEvitar || '—'}</dd></div>
+                      <div><dt className="text-muted-foreground">Fecha de revisión</dt><dd>{item.fechaRevision || '—'}</dd></div>
+                      <div className="sm:col-span-2"><dt className="text-muted-foreground">Apoyos requeridos</dt><dd>{item.apoyos || '—'}</dd></div>
+                    </dl>
+                  </div>
+                )) : (
+                  <p className="text-sm text-muted-foreground whitespace-pre-wrap">{plan.content || 'Sin contenido'}</p>
+                )}
+                {canApprove && (
+                  <div className="border-t pt-3 space-y-3">
+                    <textarea value={actionPlanComments} onChange={e => setActionPlanComments(e.target.value)}
+                      placeholder="Comentarios (opcional para aprobar, requerido para rechazar)..."
+                      className="w-full h-20 px-3 py-2 rounded-lg border border-input bg-background text-sm resize-none" />
+                    <div className="flex gap-2">
+                      <button onClick={() => { approveActionPlanMut({ id: plan.id, status: 'approved', comments: actionPlanComments }); setViewingActionPlan(null); setActionPlanComments(''); }}
+                        className="flex-1 py-2 rounded-lg bg-smps-success text-primary-foreground text-sm font-medium hover:opacity-90 flex items-center justify-center gap-1">
+                        <ShieldCheck className="h-4 w-4" /> Autorizar
+                      </button>
+                      <button onClick={() => { if (actionPlanComments.trim()) { approveActionPlanMut({ id: plan.id, status: 'rejected', comments: actionPlanComments }); setViewingActionPlan(null); setActionPlanComments(''); } }}
+                        disabled={!actionPlanComments.trim()}
+                        className="flex-1 py-2 rounded-lg bg-destructive text-destructive-foreground text-sm font-medium hover:opacity-90 disabled:opacity-40 flex items-center justify-center gap-1">
+                        <ShieldX className="h-4 w-4" /> Rechazar
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+              <div className="border-t p-4">
+                <button onClick={() => { setViewingActionPlan(null); setActionPlanComments(''); }} className="w-full py-2 rounded-lg border text-sm font-medium hover:bg-muted transition-colors">Cerrar</button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }

@@ -6,6 +6,7 @@ import {
   AdminObjective, LegalObjective, PersonalObjectives as POType, User,
 } from '@/types';
 import { getPositionLabel, getPositionLevel } from '@/lib/evaluationConfig';
+import { canViewUserEvaluations } from '@/lib/visibility';
 import { useCurrentPeriod } from '@/hooks/useCurrentPeriod';
 import { Target, ChevronDown, ChevronRight, Save, Plus, Trash2, Upload, Download } from 'lucide-react';
 
@@ -73,13 +74,14 @@ export default function PersonalObjectivesPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   if (!currentUser) return null;
-  const isAdminOrSocio = currentUser.isAdmin || currentUser.isSuperUser || !!currentUser.isManagingPartner || currentUser.position === 'socio' || currentUser.position === 'salary_partner';
+  const canViewAll = currentUser.isAdmin || currentUser.isSuperUser || !!currentUser.isManagingPartner;
+  const isSocio = currentUser.position === 'socio';
   const isSupervisorOf = (userId: string) => assignments.some(a => a.employeeId === userId && a.supervisorId === currentUser.id && a.period === period);
-  const canEditUser = (userId: string) => isAdminOrSocio || userId === currentUser.id;
-  const canReview = (userId: string) => isAdminOrSocio || isSupervisorOf(userId);
+  const canEditUser = (userId: string) => canViewAll || userId === currentUser.id;
+  const canReview = (userId: string) => canViewAll || isSocio || isSupervisorOf(userId);
 
 
-  const activeUsers = users.filter(u => u.isActive && !u.isSuperUser && !u.isDummy && u.position !== 'dummy' && (isAdminOrSocio || u.id === currentUser.id));
+  const activeUsers = users.filter(u => u.isActive && !u.isSuperUser && !u.isDummy && u.position !== 'dummy' && (canViewAll || canViewUserEvaluations(currentUser, u) || u.id === currentUser.id || isSupervisorOf(u.id)));
   const adminUsers = activeUsers.filter(u => getPositionLevel(u.position) === 'administrativo').sort((a, b) => a.name.localeCompare(b.name, 'es'));
   const legalUsers = activeUsers.filter(u => getPositionLevel(u.position) === 'legal').sort((a, b) => a.name.localeCompare(b.name, 'es'));
 
@@ -281,8 +283,12 @@ export default function PersonalObjectivesPage() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <label className="text-xs text-muted-foreground">Tipo de Objetivo</label>
-                      <input value={obj.tipoObjetivo} onChange={e => setEditAdminObjs(prev => prev.map(o => o.id === obj.id ? { ...o, tipoObjetivo: e.target.value } : o))}
-                        className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" />
+                      <select value={obj.tipoObjetivo} onChange={e => setEditAdminObjs(prev => prev.map(o => o.id === obj.id ? { ...o, tipoObjetivo: e.target.value } : o))}
+                        className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm">
+                        <option value="">Seleccionar...</option>
+                        <option value="Individual">Individual</option>
+                        <option value="Equipo">Equipo</option>
+                      </select>
                     </div>
                     <div>
                       <label className="text-xs text-muted-foreground">Nombre del Objetivo</label>
@@ -291,8 +297,13 @@ export default function PersonalObjectivesPage() {
                     </div>
                     <div>
                       <label className="text-xs text-muted-foreground">Pilares Estratégicos</label>
-                      <input value={obj.pilaresEstrategicos} onChange={e => setEditAdminObjs(prev => prev.map(o => o.id === obj.id ? { ...o, pilaresEstrategicos: e.target.value } : o))}
-                        className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" />
+                      <select value={obj.pilaresEstrategicos} onChange={e => setEditAdminObjs(prev => prev.map(o => o.id === obj.id ? { ...o, pilaresEstrategicos: e.target.value } : o))}
+                        className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm">
+                        <option value="">Seleccionar...</option>
+                        <option value="Desarrollo de Negocio">Desarrollo de Negocio</option>
+                        <option value="Cultura Excelencia">Cultura Excelencia</option>
+                        <option value="Institucionalidad">Institucionalidad</option>
+                      </select>
                     </div>
                     <div>
                       <label className="text-xs text-muted-foreground">Alcance</label>
@@ -442,11 +453,11 @@ export default function PersonalObjectivesPage() {
         <div>
           <h1 className="font-display text-2xl font-bold">Objetivos Personales</h1>
           <p className="text-muted-foreground text-sm">
-            Objetivos individuales por colaborador  {!isAdminOrSocio ? '(edita los tuyos)' : ''}
+            Objetivos individuales por colaborador  {!canViewAll ? '(edita los tuyos)' : ''}
           </p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
-          {isAdminOrSocio && (
+          {canViewAll && (
 
             <>
               <button onClick={downloadAdminTemplate}

@@ -485,10 +485,15 @@ export default function AccessControl() {
                     <option value="qwen3.5:397b">Qwen3 235B ⭐ Recomendado</option>
                     <option value="qwen3:30b">Qwen3 30B (Rápido)</option>
                     <option value="qwen3:14b">Qwen3 14B</option>
-                    <option value="gpt-oss:20b-cloud">GPT-OSS 20B Cloud</option>
-                    <option value="glm-5.1:cloud">GLM 5.1 Cloud</option>
                     <option value="llama3.3:70b">Llama 3.3 70B</option>
                     <option value="gemma3:27b">Gemma 3 27B</option>
+                    <option value="mistral:7b">Mistral 7B</option>
+                  </>
+                )}
+                {aiProvider === 'ollama' && (
+                  <>
+                    <option value="llama3.3:70b">Llama 3.3 70B</option>
+                    <option value="qwen2.5:72b">Qwen 2.5 72B</option>
                     <option value="mistral:7b">Mistral 7B</option>
                   </>
                 )}
