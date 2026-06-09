@@ -87,6 +87,22 @@ app.use(helmet({
   crossOriginEmbedderPolicy: false, // Allow iframe embedding for future integrations
 }));
 
+// If the server calls `res.redirect()` for any reason, XHR/fetch clients
+// that expect JSON should receive a JSON 401 instead of HTML redirect.
+app.use((req, res, next) => {
+  const wantsJson = Boolean(req.accepts('json')) && req.path.startsWith('/api');
+  if (wantsJson) {
+    const origRedirect = res.redirect.bind(res) as any;
+    // Override redirect to return JSON error for API XHR clients
+    (res as any).redirect = (url: string) => {
+      return res.status(401).json({ error: 'Unauthorized', redirect: String(url) });
+    };
+    // Preserve original just in case
+    (res as any)._origRedirect = origRedirect;
+  }
+  next();
+});
+
 // Trust proxy for rate limiting behind Passenger/nginx
 app.set("trust proxy", 1);
 
@@ -157,6 +173,11 @@ app.use('/api/analytics', analyticsRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/feature-visibility', featureVisibilityRoutes);
 
+// Return a JSON 404 for any unmatched API request so clients never receive HTML
+app.use('/api', (_req, res) => {
+  res.status(404).json({ error: 'API endpoint not found' });
+});
+
 
   // ─── TECH DIAGRAM: Public static page at /techdiagram.html ─────────────────
   app.get("/techdiagram.html", (_req, res) => {
@@ -185,13 +206,9 @@ if (process.env.NODE_ENV === 'production') {
   const distPath = path.resolve(process.cwd(), 'dist');
   app.use(express.static(distPath));
 
-  // SPA fallback for SMPS app — only serve index.html for page navigation,
-  // NOT for asset requests (.js, .css, .woff2, .png, etc.) which should 404
+  // SPA fallback for SMPS app
   app.use((req, res) => {
-    const isAsset = /\.(js|css|woff2?|ttf|otf|eot|png|jpg|jpeg|gif|svg|ico|webp|map|json|wasm)$/i.test(req.path);
-    if (isAsset) {
-      res.status(404).send('Not found');
-    } else if (isSmpsDomain(req.get('host'))) {
+    if (isSmpsDomain(req.get('host'))) {
       res.sendFile(path.join(distPath, 'index.html'));
     } else {
       // Main domain: serve landing page for any non-API route
