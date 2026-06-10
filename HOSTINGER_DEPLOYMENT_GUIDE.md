@@ -40,9 +40,10 @@ GitHub Actions builds, uploads artifacts, and restarts the server automatically.
 SSH into the server and run:
 ```bash
 ssh -p 65002 u906489923@82.29.157.108
-cd ~/domains/bowdot.online/smps-app
+cd ~/domains/bowdot.online/nodejs
 git pull
 npm install --omit=dev --ignore-scripts
+npm run build
 mkdir -p tmp && touch tmp/restart.txt
 ```
 
@@ -85,7 +86,7 @@ Set in **hPanel → Advanced → Node.js → Environment Variables**:
 | `HOSTINGER_HOST` | `82.29.157.108` |
 | `HOSTINGER_PORT` | `65002` |
 | `HOSTINGER_USER` | `u906489923` |
-| `HOSTINGER_PATH` | `~/domains/bowdot.online/smps-app` |
+| `HOSTINGER_PATH` | `~/domains/bowdot.online/nodejs` |
 
 ---
 

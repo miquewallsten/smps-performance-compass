@@ -99,7 +99,7 @@ jobs:
 
           # 2. Clean old build artifacts on server
           echo "🧹 Step 2: Cleaning old artifacts..."
-          $SSH_CMD "rm -rf $REMOTE/dist/assets $REMOTE/dist/index.html $REMOTE/dist/favicon.ico $REMOTE/dist/robots.txt 2>&1" || true
+          $SSH_CMD "rm -rf $REMOTE/dist/assets $REMOTE/dist/index.html $REMOTE/dist/favicon.ico $REMOTE/dist/robots.txt $REMOTE/dist/placeholder.svg $REMOTE/dist/.htaccess $REMOTE/dist/index.html.backup 2>&1" || true
           $SSH_CMD "rm -f $REMOTE/.htaccess 2>&1" || true
 
           # 3. Upload new build artifacts
